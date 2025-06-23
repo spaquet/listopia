@@ -43,18 +43,27 @@ class User < ApplicationRecord
 
   # Generate email verification token (using Rails 8 generates_token_for)
   def generate_email_verification_token
-    self.email_verification_token = generate_token_for(:email_verification)
+    token = generate_token_for(:email_verification)
+    self.email_verification_token = token
     save!
-    email_verification_token
+    token
   end
 
   # Find user by valid magic link token
   def self.find_by_magic_link_token(token)
     find_by_token_for(:magic_link, token)
+  rescue ActiveSupport::MessageVerifier::InvalidSignature
+    nil
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage
+    nil
   end
 
   # Find user by valid email verification token
   def self.find_by_email_verification_token(token)
     find_by_token_for(:email_verification, token)
+  rescue ActiveSupport::MessageVerifier::InvalidSignature
+    nil
+  rescue ActiveSupport::MessageEncryptor::InvalidMessage
+    nil
   end
 end
