@@ -1,0 +1,10 @@
+<!-- app/views/collaborations/create.turbo_stream.erb -->
+<%= turbo_stream.prepend "collaborations-list" do %>
+  <%= render "collaborations/collaboration", collaboration: @collaboration %>
+<% end %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>
+<%= turbo_stream.replace "new-collaboration-form" do %>
+  <%= render "collaborations/form", list: @list, collaboration: @list.list_collaborations.build %>
+<% end %>

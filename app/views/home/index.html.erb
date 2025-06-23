@@ -1,0 +1,70 @@
+<!-- app/views/home/index.html.erb -->
+<div class="relative overflow-hidden">
+  <!-- Hero Section -->
+  <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center">
+        <h1 class="text-5xl font-bold text-gray-900 mb-6">
+          Where Lists Come to 
+          <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Life</span>
+        </h1>
+        <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          Create, share, and collaborate on lists that evolve with your needs. 
+          From simple to-dos to complex project management, Listopia adapts to your workflow.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <%= link_to new_registration_path, class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg" do %>
+            Get Started Free
+          <% end %>
+          <% if current_user %>
+            <%= link_to dashboard_path, class: "text-gray-700 hover:text-blue-600 px-6 py-3 rounded-lg text-lg font-medium border border-gray-300 hover:border-blue-300 transition-all duration-200" do %>
+              Go to Dashboard
+            <% end %>
+          <% else %>
+            <%= link_to new_session_path, class: "text-gray-700 hover:text-blue-600 px-6 py-3 rounded-lg text-lg font-medium border border-gray-300 hover:border-blue-300 transition-all duration-200" do %>
+              Sign In
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Features Section -->
+  <div class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">Everything you need to stay organized</h2>
+        <p class="text-lg text-gray-600">Powerful features that grow with your needs</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Smart Lists</h3>
+          <p class="text-gray-600">Create dynamic lists with different item types, priorities, and due dates.</p>
+        </div>
+        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all duration-200">
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Real-time Collaboration</h3>
+          <p class="text-gray-600">Share lists and collaborate in real-time with your team or family.</p>
+        </div>
+        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold mb-2">Lightning Fast</h3>
+          <p class="text-gray-600">Built with Rails 8 and Hotwire for instant updates without page refreshes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

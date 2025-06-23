@@ -1,0 +1,33 @@
+<!-- app/views/lists/_filters.html.erb -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4" data-controller="filters">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+    <!-- Search -->
+    <div class="flex-1 max-w-md">
+      <%= form_with url: lists_path, method: :get, local: true, class: "flex", data: { turbo_frame: "lists-container" } do |f| %>
+        <div class="relative flex-1">
+          <%= f.text_field :search, value: params[:search], 
+                           placeholder: "Search lists...", 
+                           class: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <!-- Status Filter -->
+    <div class="flex space-x-2">
+      <%= link_to lists_path, 
+                  class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status].blank? ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}" do %>
+        All
+      <% end %>
+      <% %w[active completed archived].each do |status| %>
+        <%= link_to lists_path(status: status), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status] == status ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}" do %>
+          <%= status.titleize %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

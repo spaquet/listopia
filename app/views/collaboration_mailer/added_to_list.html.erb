@@ -1,0 +1,54 @@
+<!-- app/views/collaboration_mailer/added_to_list.html.erb -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { text-align: center; margin-bottom: 30px; }
+      .logo { background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; width: 60px; height: 60px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+      .button { display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+      .list-info { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+      .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">L</div>
+        <h1>You've been added to a list!</h1>
+      </div>
+      <p>Hi <%= @user.name %>,</p>
+      <p><strong><%= @inviter.name %></strong> has added you as a collaborator to their list:</p>
+      <div class="list-info">
+        <h2 style="margin: 0 0 10px 0; color: #374151;"><%= @list.title %></h2>
+        <% if @list.description.present? %>
+          <p style="margin: 0; color: #6b7280;"><%= @list.description %></p>
+        <% end %>
+        <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">
+          Permission: <span style="font-weight: bold;"><%= @collaboration.permission.titleize %></span>
+        </p>
+      </div>
+      <p>You can now:</p>
+      <ul>
+        <% if @collaboration.permission_collaborate? %>
+          <li>View and edit list items</li>
+          <li>Add new items to the list</li>
+          <li>Mark items as complete</li>
+          <li>Collaborate in real-time</li>
+        <% else %>
+          <li>View all list items</li>
+          <li>See updates in real-time</li>
+        <% end %>
+      </ul>
+      <div style="text-align: center;">
+        <a href="<%= @list_url %>" class="button">View List</a>
+      </div>
+      <div class="footer">
+        <p>Happy organizing!<br>
+          The Listopia Team</p>
+      </div>
+    </div>
+  </body>
+</html>

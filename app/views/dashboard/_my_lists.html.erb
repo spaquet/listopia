@@ -1,0 +1,32 @@
+<!-- app/views/dashboard/_my_lists.html.erb -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg font-medium text-gray-900">My Lists</h3>
+      <%= link_to lists_path, class: "text-sm text-blue-600 hover:text-blue-800" do %>
+        View all
+      <% end %>
+    </div>
+  </div>
+  <div class="divide-y divide-gray-200">
+    <% if lists.any? %>
+      <% lists.each do |list| %>
+        <%= render "shared/list_card", list: list %>
+      <% end %>
+    <% else %>
+      <div class="p-6 text-center">
+        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <h4 class="text-lg font-medium text-gray-900 mb-2">No lists yet</h4>
+        <p class="text-gray-600 mb-4">Create your first list to get started organizing your tasks and ideas.</p>
+        <%= link_to new_list_path, class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" do %>
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Create List
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

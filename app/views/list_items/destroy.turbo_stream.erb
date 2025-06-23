@@ -1,0 +1,19 @@
+<!-- app/views/list_items/destroy.turbo_stream.erb -->
+<%= turbo_stream.remove "list_item_<%= @list_item.id %>" %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>
+<!-- Update list stats when item is removed -->
+<%= turbo_stream.replace "list-stats" do %>
+  <% stats = list_completion_stats(@list) %>
+  <div class="flex items-center space-x-6 text-sm text-gray-600">
+    <div class="flex items-center">
+      <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
+      <span class="ml-1">completed</span>
+    </div>
+    <div class="flex-1 max-w-xs">
+      <%= progress_bar(stats[:percentage]) %>
+    </div>
+    <span class="font-medium"><%= stats[:percentage] %>%</span>
+  </div>
+<% end %>

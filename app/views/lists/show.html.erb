@@ -1,0 +1,159 @@
+<!-- app/views/lists/show.html.erb -->
+<div class="space-y-6" data-controller="list-management">
+  <!-- List Header -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-start justify-between">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center space-x-3 mb-2">
+          <h1 class="text-2xl font-bold text-gray-900"><%= @list.title %></h1>
+          <%= list_status_badge(@list) %>
+          <%= list_sharing_status(@list) %>
+        </div>
+        <% if @list.description.present? %>
+          <p class="text-gray-600 mb-4"><%= @list.description %></p>
+        <% end %>
+        <!-- Progress and Stats -->
+        <% stats = list_completion_stats(@list) %>
+        <div class="flex items-center space-x-6 text-sm text-gray-600">
+          <div class="flex items-center">
+            <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
+            <span class="ml-1">completed</span>
+          </div>
+          <div class="flex-1 max-w-xs">
+            <%= progress_bar(stats[:percentage]) %>
+          </div>
+          <span class="font-medium"><%= stats[:percentage] %>%</span>
+        </div>
+      </div>
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-3">
+        <% if can_access_list?(@list, current_user, :edit) %>
+          <%= link_to edit_list_path(@list), 
+                      class: "text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200",
+                      title: "Edit list" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          <% end %>
+          <%= link_to share_list_path(@list),
+                      class: "text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200",
+                      title: "Share list" do %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+            </svg>
+          <% end %>
+          <!-- Toggle Status Button -->
+          <%= form_with model: @list, url: toggle_status_list_path(@list), method: :patch, 
+                        data: { turbo_method: :patch }, class: "inline-block" do |f| %>
+            <button type="submit" 
+                    class="text-gray-600 hover:text-purple-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                    title="<%= @list.status_completed? ? 'Mark as active' : 'Mark as completed' %>">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <% if @list.status_completed? %>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <% else %>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <% end %>
+              </svg>
+            </button>
+          <% end %>
+        <% end %>
+        <!-- Dropdown Menu -->
+        <div class="relative" data-controller="dropdown">
+          <button data-action="click->dropdown#toggle" 
+            class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+            </svg>
+          </button>
+          <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
+            <%= link_to duplicate_list_path(@list), method: :post, 
+                        class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+              <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              Duplicate List
+            <% end %>
+            <%= link_to analytics_list_path(@list),
+                        class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+              <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              View Analytics
+            <% end %>
+            <% if @list.owner == current_user %>
+              <hr class="my-1">
+              <%= link_to @list, method: :delete, 
+                          data: { confirm: "Are you sure? This action cannot be undone." },
+                          class: "flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200" do %>
+                <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Delete List
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Quick Add Item (if user can collaborate) -->
+  <% if can_access_list?(@list, current_user, :edit) %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
+    </div>
+  <% end %>
+  <!-- List Items -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium text-gray-900">Items</h2>
+        <div class="flex items-center space-x-2">
+          <!-- Filter/Sort options -->
+          <div class="relative" data-controller="dropdown">
+            <button data-action="click->dropdown#toggle" 
+              class="text-sm text-gray-600 hover:text-gray-900 flex items-center space-x-1">
+              <span>Sort</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Priority</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Due Date</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Created</a>
+              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Updated</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="list-items" data-controller="sortable" data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>">
+      <% if @list_items.any? %>
+        <% @list_items.group_by(&:completed?).each do |completed, items| %>
+          <% unless completed && items.empty? %>
+            <div class="<%= 'border-t border-gray-200' if completed %>">
+              <% if completed %>
+                <div class="px-6 py-3 bg-gray-50">
+                  <h3 class="text-sm font-medium text-gray-700 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Completed (<%= items.count %>)
+                  </h3>
+                </div>
+              <% end %>
+              <div class="divide-y divide-gray-200">
+                <% items.each do |item| %>
+                  <%= render "list_items/item", item: item, list: @list %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      <% else %>
+        <%= render "list_items/empty_state", list: @list %>
+      <% end %>
+    </div>
+  </div>
+</div>

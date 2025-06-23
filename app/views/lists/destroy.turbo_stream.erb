@@ -1,0 +1,5 @@
+<!-- app/views/lists/destroy.turbo_stream.erb -->
+<%= turbo_stream.remove "list_<%= @list.id %>" %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>

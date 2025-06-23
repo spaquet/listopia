@@ -1,0 +1,37 @@
+<!-- app/views/dashboard/_recent_activity.html.erb -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
+  </div>
+  <div class="p-4 space-y-3 max-h-80 overflow-y-auto">
+    <% if items.any? %>
+      <% items.each do |item| %>
+        <div class="flex items-start space-x-3">
+          <div class="flex-shrink-0">
+            <% if item.completed? %>
+              <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+            <% else %>
+              <div class="w-2 h-2 bg-gray-300 rounded-full mt-2"></div>
+            <% end %>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-900 truncate">
+              <%= item.title %>
+            </p>
+            <p class="text-xs text-gray-500">
+              in <%= link_to item.list.title, item.list, class: "text-blue-600 hover:text-blue-800" %>
+              • <%= time_ago_in_words_or_date(item.updated_at) %>
+            </p>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="text-center py-6">
+        <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <p class="text-sm text-gray-500">No recent activity</p>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<!-- app/views/list_items/toggle_completion.turbo_stream.erb -->
+<%= turbo_stream.replace "list_item_<%= @list_item.id %>" do %>
+<%= render "list_items/item", item: @list_item, list: @list %>
+<% end %>
+<!-- Update list completion stats -->
+<%= turbo_stream.replace "list-stats" do %>
+  <% stats = list_completion_stats(@list) %>
+  <div class="flex items-center space-x-6 text-sm text-gray-600">
+    <div class="flex items-center">
+      <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
+      <span class="ml-1">completed</span>
+    </div>
+    <div class="flex-1 max-w-xs">
+      <%= progress_bar(stats[:percentage]) %>
+    </div>
+    <span class="font-medium"><%= stats[:percentage] %>%</span>
+  </div>
+<% end %>
+<!-- Animate completion if item was just completed -->
+<% if @list_item.completed? %>
+  <%= turbo_stream.append "body" do %>
+    <div id="completion-animation" class="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+      <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          <span>Task completed!</span>
+        </div>
+      </div>
+    </div>
+    <script>
+      setTimeout(() => {
+        document.getElementById('completion-animation')?.remove();
+      }, 2000);
+    </script>
+  <% end %>
+<% end %>

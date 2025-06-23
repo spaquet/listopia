@@ -1,0 +1,83 @@
+<!-- app/views/layouts/mailer.html.erb -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+      /* Email-specific CSS */
+      body {
+        margin: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #333333;
+        background-color: #f8f9fa;
+      }
+
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+
+      .email-header {
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        padding: 20px;
+        text-align: center;
+      }
+
+      .email-body {
+        padding: 30px;
+      }
+
+      .email-footer {
+        background-color: #f8f9fa;
+        padding: 20px;
+        text-align: center;
+        border-top: 1px solid #e9ecef;
+        color: #6c757d;
+        font-size: 14px;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: bold;
+        margin: 16px 0;
+      }
+
+      .button:hover {
+        background: linear-gradient(135deg, #2563EB, #7C3AED);
+      }
+
+      @media only screen and (max-width: 600px) {
+        .email-container {
+          width: 100% !important;
+        }
+
+        .email-header, .email-body, .email-footer {
+          padding: 20px !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <%= yield %>
+      <div class="email-footer">
+        <p>
+          <strong>Listopia</strong><br>
+          Where Lists Come to Life
+        </p>
+        <p>
+          <a href="<%= root_url %>" style="color: #3B82F6;">Visit Listopia</a> |
+          <a href="#" style="color: #3B82F6;">Unsubscribe</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+<!-- app/views/lists/update.turbo_stream.erb -->
+<%= turbo_stream.replace "list_<%= @list.id %>" do %>
+<%= render "lists/list_card", list: @list %>
+<% end %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>

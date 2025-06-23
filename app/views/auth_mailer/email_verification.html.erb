@@ -1,0 +1,44 @@
+<!-- app/views/auth_mailer/email_verification.html.erb -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { text-align: center; margin-bottom: 30px; }
+      .logo { background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; width: 60px; height: 60px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+      .button { display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+      .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">L</div>
+        <h1>Welcome to Listopia!</h1>
+      </div>
+      <p>Hi <%= @user.name %>,</p>
+      <p>Thanks for signing up for Listopia! To complete your registration, please verify your email address by clicking the button below:</p>
+      <div style="text-align: center;">
+        <a href="<%= @verification_url %>" class="button">Verify Email Address</a>
+      </div>
+      <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; background: #f5f5f5; padding: 10px; border-radius: 4px;">
+        <%= @verification_url %>
+      </p>
+      <p>Once verified, you'll be able to:</p>
+      <ul>
+        <li>Create and organize your lists</li>
+        <li>Collaborate with others in real-time</li>
+        <li>Access your lists from anywhere</li>
+        <li>And much more!</li>
+      </ul>
+      <div class="footer">
+        <p>If you didn't create an account with us, you can safely ignore this email.</p>
+        <p>Welcome aboard!<br>
+          The Listopia Team</p>
+      </div>
+    </div>
+  </body>
+</html>

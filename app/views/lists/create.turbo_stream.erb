@@ -1,0 +1,7 @@
+<!-- app/views/lists/create.turbo_stream.erb -->
+<%= turbo_stream.prepend "lists-container" do %>
+  <%= render "lists/list_card", list: @list %>
+<% end %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>
