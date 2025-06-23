@@ -1,4 +1,4 @@
-# db/migrate/20250623100332_create_sessions.rb
+# db/migrate/20
 class CreateSessions < ActiveRecord::Migration[8.0]
   def change
     create_table :sessions, id: :uuid do |t|

@@ -1,10 +1,10 @@
 # app/mailers/auth_mailer.rb
 class AuthMailer < ApplicationMailer
   # Send magic link for passwordless authentication
-  def magic_link(user, magic_link)
+  def magic_link(user, token)
     @user = user
-    @magic_link = magic_link
-    @login_url = authenticate_magic_link_url(token: magic_link.token)
+    @token = token
+    @login_url = authenticate_magic_link_url(token: token)
 
     mail(
       to: user.email,
@@ -13,9 +13,10 @@ class AuthMailer < ApplicationMailer
   end
 
   # Send email verification link
-  def email_verification(user)
+  def email_verification(user, token)
     @user = user
-    @verification_url = verify_email_token_url(token: user.email_verification_token)
+    @token = token
+    @verification_url = verify_email_token_url(token: token)
 
     mail(
       to: user.email,

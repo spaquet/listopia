@@ -1,4 +1,4 @@
-# app/controllers/sessions_controller.rb
+# app/controllers/sessions_controller.rb (This handles all authentication)
 class SessionsController < ApplicationController
   skip_before_action :authenticate_user!
   before_action :redirect_if_authenticated, except: [ :destroy ]
@@ -38,8 +38,8 @@ class SessionsController < ApplicationController
     user = User.find_by(email: email)
 
     if user
-      magic_link = user.generate_magic_link_token
-      AuthMailer.magic_link(user, magic_link).deliver_now
+      magic_link_token = user.generate_magic_link_token
+      AuthMailer.magic_link(user, magic_link_token).deliver_now
       redirect_to magic_link_sent_path, notice: "Magic link sent to your email!"
     else
       flash.now[:alert] = "No account found with that email address."
@@ -50,11 +50,10 @@ class SessionsController < ApplicationController
   # Handle magic link authentication
   def authenticate_magic_link
     token = params[:token]
-    magic_link = MagicLink.find_valid_by_token(token)
+    user = User.find_by_magic_link_token(token)
 
-    if magic_link
-      magic_link.use!
-      sign_in(magic_link.user)
+    if user
+      sign_in(user)
       redirect_to after_sign_in_path, notice: "Successfully signed in!"
     else
       redirect_to new_session_path, alert: "Invalid or expired magic link."

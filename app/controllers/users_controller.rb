@@ -1,0 +1,64 @@
+# app/controllers/users_controller.rb
+class UsersController < ApplicationController
+  before_action :authenticate_user!
+
+  def show
+    @user = current_user
+  end
+
+  def edit
+    @user = current_user
+  end
+
+  def update
+    @user = current_user
+    if @user.update(user_params)
+      redirect_to user_path, notice: "Profile updated successfully."
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def settings
+    @user = current_user
+  end
+
+  def update_password
+    @user = current_user
+    if @user.authenticate(params[:current_password])
+      if @user.update(password_params)
+        redirect_to settings_user_path, notice: "Password updated successfully."
+      else
+        flash.now[:alert] = "Password update failed."
+        render :settings, status: :unprocessable_entity
+      end
+    else
+      flash.now[:alert] = "Current password is incorrect."
+      render :settings, status: :unprocessable_entity
+    end
+  end
+
+  def update_preferences
+    @user = current_user
+    if @user.update(preference_params)
+      redirect_to settings_user_path, notice: "Preferences updated successfully."
+    else
+      flash.now[:alert] = "Failed to update preferences."
+      render :settings, status: :unprocessable_entity
+    end
+  end
+
+  private
+
+  def user_params
+    params.require(:user).permit(:name, :email, :bio, :avatar_url)
+  end
+
+  def password_params
+    params.require(:user).permit(:password, :password_confirmation)
+  end
+
+  def preference_params
+    params.require(:user).permit(:email_notifications, :theme_preference)
+  end
+end

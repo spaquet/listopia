@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   # root "posts#index"
 
+
   # Root route
   root "home#index"
 
@@ -83,7 +84,7 @@ Rails.application.routes.draw do
   # Public list access
   get "/public/:slug", to: "public_lists#show", as: :public_list
 
-  # API routes for mobile/external access
+  # API routes for mobile/external access (future)
   namespace :api do
     namespace :v1 do
       resources :lists, only: [ :index, :show, :create, :update, :destroy ] do
@@ -92,20 +93,4 @@ Rails.application.routes.draw do
       resources :users, only: [ :show, :update ]
     end
   end
-
-  # Admin routes (for future use)
-  namespace :admin do
-    resources :users, only: [ :index, :show, :edit, :update, :destroy ]
-    resources :lists, only: [ :index, :show, :destroy ]
-    root "dashboard#index"
-  end
-
-  # Webhook routes (for integrations)
-  namespace :webhooks do
-    post :stripe, to: "stripe#handle" # For future payment integration
-    post :slack, to: "slack#handle"   # For Slack integration
-  end
-
-  # Catch-all route for SPA-like behavior (optional)
-  # get "*path", to: "application#not_found", constraints: ->(request) { !request.xhr? && request.format.html? }
 end

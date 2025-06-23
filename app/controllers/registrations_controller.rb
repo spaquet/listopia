@@ -13,8 +13,9 @@ class RegistrationsController < ApplicationController
     @user = User.new(registration_params)
 
     if @user.save
-      # Send email verification
-      AuthMailer.email_verification(@user).deliver_now
+      # Generate email verification token and send email
+      token = @user.generate_email_verification_token
+      AuthMailer.email_verification(@user, token).deliver_now
       redirect_to verify_email_path, notice: "Please check your email to verify your account."
     else
       render :new, status: :unprocessable_entity
@@ -24,14 +25,14 @@ class RegistrationsController < ApplicationController
   # Handle email verification
   def verify_email
     token = params[:token]
-    user = User.find_by(email_verification_token: token)
+    user = User.find_by_email_verification_token(token)
 
     if user
       user.verify_email!
       sign_in(user)
       redirect_to dashboard_path, notice: "Email verified! Welcome to Listopia!"
     else
-      redirect_to root_path, alert: "Invalid verification link."
+      redirect_to root_path, alert: "Invalid or expired verification link."
     end
   end
 
