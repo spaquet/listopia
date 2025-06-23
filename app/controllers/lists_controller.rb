@@ -8,7 +8,6 @@ class ListsController < ApplicationController
   def index
     @lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items)
                         .order(updated_at: :desc)
-                        .page(params[:page])
 
     # Filter by status if provided
     @lists = @lists.where(status: params[:status]) if params[:status].present?

@@ -1,6 +1,6 @@
 # app/controllers/registrations_controller.rb
 class RegistrationsController < ApplicationController
-  skip_before_action :authenticate_user!
+  # skip_before_action :authenticate_user!
   before_action :redirect_if_authenticated
 
   # Show registration form

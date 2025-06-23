@@ -1,0 +1,115 @@
+<!-- app/views/users/settings.html.erb -->
+<div class="max-w-2xl mx-auto space-y-6">
+  <!-- Page Header -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h1 class="text-2xl font-bold text-gray-900">Account Settings</h1>
+    <p class="text-gray-600 mt-1">Manage your password and account preferences.</p>
+  </div>
+  <!-- Change Password -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Change Password</h2>
+    <%= form_with url: update_password_user_path, method: :patch, local: true, class: "space-y-4" do |f| %>
+      <% if flash[:alert] %>
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <%= flash[:alert] %>
+        </div>
+      <% end %>
+      <div>
+        <%= f.label :current_password, "Current Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.password_field :current_password,
+                             required: true,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+      </div>
+      <div>
+        <%= f.label "user[password]", "New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.password_field "user[password]",
+                             minlength: 8,
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+        <p class="mt-1 text-sm text-gray-500">Must be at least 8 characters long.</p>
+      </div>
+      <div>
+        <%= f.label "user[password_confirmation]", "Confirm New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.password_field "user[password_confirmation]",
+                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+      </div>
+      <div class="pt-4">
+        <%= f.submit "Update Password",
+                     class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+      </div>
+    <% end %>
+  </div>
+  <!-- Account Preferences -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Preferences</h2>
+    <%= form_with url: update_preferences_user_path, method: :patch, local: true, class: "space-y-4" do |f| %>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="text-sm font-medium text-gray-700">Email Notifications</label>
+            <p class="text-sm text-gray-500">Receive emails about list updates and collaborations</p>
+          </div>
+          <%= f.check_box "user[email_notifications]", 
+                          checked: true,
+                          class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
+        </div>
+        <div class="border-t border-gray-200 pt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Theme Preference</label>
+          <div class="space-y-2">
+            <label class="flex items-center">
+              <%= f.radio_button "user[theme_preference]", "light", checked: true, class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+              <span class="ml-2 text-sm text-gray-700">Light</span>
+            </label>
+            <label class="flex items-center">
+              <%= f.radio_button "user[theme_preference]", "dark", class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+              <span class="ml-2 text-sm text-gray-700">Dark</span>
+            </label>
+            <label class="flex items-center">
+              <%= f.radio_button "user[theme_preference]", "auto", class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+              <span class="ml-2 text-sm text-gray-700">Auto (System)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="pt-4">
+        <%= f.submit "Save Preferences",
+                     class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+      </div>
+    <% end %>
+  </div>
+  <!-- Account Actions -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h2>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div>
+          <h3 class="text-sm font-medium text-gray-900">Account Verification</h3>
+          <p class="text-sm text-gray-500">
+            <% if current_user.email_verified? %>
+              ✅ Your email is verified
+            <% else %>
+              ⚠️ Email not yet verified
+            <% end %>
+          </p>
+        </div>
+        <% unless current_user.email_verified? %>
+          <%= link_to "Resend Verification", "#", 
+                      class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+        <% end %>
+      </div>
+      <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+        <div>
+          <h3 class="text-sm font-medium text-red-900">Delete Account</h3>
+          <p class="text-sm text-red-700">Permanently delete your account and all data</p>
+        </div>
+        <%= link_to "Delete Account", "#", 
+                    class: "text-red-600 hover:text-red-800 text-sm font-medium",
+                    data: { confirm: "Are you sure? This action cannot be undone." } %>
+      </div>
+    </div>
+  </div>
+  <!-- Navigation -->
+  <div class="text-center">
+    <%= link_to "← Back to Profile", user_path, 
+                class: "text-blue-600 hover:text-blue-800 font-medium" %>
+  </div>
+</div>

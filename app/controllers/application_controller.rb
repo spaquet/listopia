@@ -6,8 +6,7 @@ class ApplicationController < ActionController::Base
   # Include authentication helpers
   include Authentication
 
-  # Before actions
-  before_action :authenticate_user!, except: [ :index, :show ] # Allow public access to some actions
+  # Before actions - only require authentication where needed
   before_action :set_current_user
 
   protected

@@ -3,11 +3,8 @@ module Authentication
   extend ActiveSupport::Concern
 
   included do
-    before_action :current_user
     helper_method :current_user, :user_signed_in?
   end
-
-  private
 
   # Get the current user from the session
   def current_user
@@ -19,7 +16,7 @@ module Authentication
     current_user.present?
   end
 
-  # Require user to be authenticated
+  # Require user to be authenticated - THIS NEEDS TO BE PUBLIC
   def authenticate_user!
     unless user_signed_in?
       store_location
@@ -45,6 +42,29 @@ module Authentication
   def after_sign_in_path
     stored_location || dashboard_path
   end
+
+  # Check if current user can access resource
+  def can_access?(resource, action = :read)
+    return false unless current_user
+
+    case resource
+    when List
+      case action
+      when :read
+        resource.readable_by?(current_user)
+      when :edit, :update, :destroy
+        resource.collaboratable_by?(current_user)
+      else
+        false
+      end
+    when ListItem
+      can_access?(resource.list, action)
+    else
+      false
+    end
+  end
+
+  private
 
   # Store location for redirect after authentication
   def store_location
@@ -101,27 +121,6 @@ module Authentication
   def authorize_user!(resource)
     unless resource.respond_to?(:user) && resource.user == current_user
       redirect_to root_path, alert: "Access denied."
-    end
-  end
-
-  # Check if current user can access resource
-  def can_access?(resource, action = :read)
-    return false unless current_user
-
-    case resource
-    when List
-      case action
-      when :read
-        resource.readable_by?(current_user)
-      when :edit, :update, :destroy
-        resource.collaboratable_by?(current_user)
-      else
-        false
-      end
-    when ListItem
-      can_access?(resource.list, action)
-    else
-      false
     end
   end
 end

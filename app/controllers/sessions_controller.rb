@@ -1,6 +1,6 @@
 # app/controllers/sessions_controller.rb (This handles all authentication)
 class SessionsController < ApplicationController
-  skip_before_action :authenticate_user!
+  # skip_before_action :authenticate_user!
   before_action :redirect_if_authenticated, except: [ :destroy ]
 
   # Show login form

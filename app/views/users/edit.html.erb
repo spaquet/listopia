@@ -1,0 +1,64 @@
+<!-- app/views/users/edit.html.erb -->
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Edit Profile</h1>
+      <p class="text-gray-600 mt-1">Update your personal information and preferences.</p>
+    </div>
+    <%= form_with model: @user, local: true, class: "space-y-6" do |f| %>
+      <% if @user.errors.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h3>
+          <ul class="text-sm text-red-700 space-y-1">
+            <% @user.errors.full_messages.each do |message| %>
+              <li>• <%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+      <div>
+        <%= f.label :name, "Full Name", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.text_field :name,
+                         class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+      </div>
+      <div>
+        <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.email_field :email,
+                          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+        <p class="mt-1 text-sm text-gray-500">
+          Changing your email will require verification of the new address.
+        </p>
+      </div>
+      <div>
+        <%= f.label :bio, "Bio", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.text_area :bio,
+                        rows: 3,
+                        placeholder: "Tell us a bit about yourself...",
+                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+      </div>
+      <div>
+        <%= f.label :avatar_url, "Avatar URL", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <%= f.url_field :avatar_url,
+                        placeholder: "https://example.com/avatar.jpg",
+                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+        <p class="mt-1 text-sm text-gray-500">
+          Optional: Link to your profile picture.
+        </p>
+      </div>
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+        <%= link_to user_path, 
+                    class: "text-gray-600 hover:text-gray-900 font-medium" do %>
+          Cancel
+        <% end %>
+        <div class="flex space-x-3">
+          <%= link_to settings_user_path, 
+                      class: "px-4 py-2 text-blue-600 hover:text-blue-800 font-medium" do %>
+            Password & Settings
+          <% end %>
+          <%= f.submit "Update Profile",
+                       class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

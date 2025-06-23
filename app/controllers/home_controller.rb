@@ -1,7 +1,6 @@
 # app/controllers/home_controller.rb
 class HomeController < ApplicationController
-  # Skip authentication for the home page to allow public access
-  skip_before_action :authenticate_user!, only: [ :index ]
+  # No need to skip authenticate_user! since it's not defined globally anymore
 
   # Main landing page - shows different content based on authentication status
   def index
