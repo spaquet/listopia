@@ -1,6 +1,6 @@
 # app/controllers/lists_controller.rb
 class ListsController < ApplicationController
-  before_action :authenticate_user!, except: [ :show ] # Allow public access to show if list is public
+  before_action :authenticate_user!, except: [ :show, :show_by_slug ] # Allow public access to show methods
   before_action :set_list, only: [ :show, :edit, :update, :destroy ]
   before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy ]
 
@@ -24,10 +24,27 @@ class ListsController < ApplicationController
     @list_items = @list.list_items.includes(:assigned_user)
                       .order(:position, :created_at)
 
-    @new_list_item = @list.list_items.build if @list.collaboratable_by?(current_user)
+    @new_list_item = @list.list_items.build if can_collaborate_on_list?
 
     # Track list views for analytics (optional)
     track_list_view if current_user
+  end
+
+  # Show public list by slug (prettier URLs for sharing)
+  def show_by_slug
+    @list = List.find_by!(public_slug: params[:slug], is_public: true)
+    @list_items = @list.list_items.includes(:assigned_user)
+                      .order(:position, :created_at)
+
+    @new_list_item = @list.list_items.build if can_collaborate_on_list?
+
+    # Track list views for analytics (optional)
+    track_list_view if current_user
+
+    # Render the same template as regular show
+    render :show
+  rescue ActiveRecord::RecordNotFound
+    redirect_to root_path, alert: "List not found or not publicly available."
   end
 
   # Show form for creating a new list
@@ -100,14 +117,22 @@ class ListsController < ApplicationController
   # Find list by ID, handling public access for public lists
   def set_list
     if current_user
+      # Authenticated user - use accessible lists
       @list = current_user.accessible_lists.find(params[:id])
     else
-      # Allow access to public lists for non-authenticated users
+      # Non-authenticated user - only allow access to public lists
       @list = List.find(params[:id])
-      redirect_to root_path, alert: "List not found." unless @list.is_public?
+      unless @list.is_public?
+        redirect_to new_session_path, alert: "Please sign in to access this list."
+        nil
+      end
     end
   rescue ActiveRecord::RecordNotFound
-    redirect_to lists_path, alert: "List not found."
+    if current_user
+      redirect_to lists_path, alert: "List not found."
+    else
+      redirect_to root_path, alert: "List not found."
+    end
   end
 
   # Check if user has permission to access the list
@@ -118,7 +143,19 @@ class ListsController < ApplicationController
     else :read
     end
 
+    # For public lists, allow read access even without authentication
+    if action == :read && @list.is_public?
+      return true
+    end
+
+    # For all other cases, use the standard authorization
     authorize_resource_access!(@list, action)
+  end
+
+  # Check if current user can collaborate on this list
+  def can_collaborate_on_list?
+    return false unless current_user
+    @list.collaboratable_by?(current_user)
   end
 
   # Strong parameters for list creation/update

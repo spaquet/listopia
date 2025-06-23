@@ -37,7 +37,10 @@ class ListSharingService < ApplicationService
       )
     end
 
-    success(data: { public_url: public_list_url })
+    success(data: {
+      public_url: public_list_url,
+      direct_url: list_url(@list)
+    })
   end
 
   # Revoke public access
@@ -85,6 +88,7 @@ class ListSharingService < ApplicationService
     {
       is_public: @list.is_public?,
       public_url: @list.is_public? ? public_list_url : nil,
+      direct_url: list_url(@list),
       collaborators_count: @list.list_collaborations.count,
       read_only_collaborators: @list.list_collaborations.permission_read.count,
       full_collaborators: @list.list_collaborations.permission_collaborate.count
@@ -154,8 +158,14 @@ class ListSharingService < ApplicationService
     end
   end
 
-  # Generate public list URL
+  # Generate public list URL using the pretty slug
   def public_list_url
+    return nil unless @list.public_slug.present?
     Rails.application.routes.url_helpers.public_list_url(@list.public_slug)
+  end
+
+  # Generate direct list URL using the ID
+  def list_url(list)
+    Rails.application.routes.url_helpers.list_url(list)
   end
 end

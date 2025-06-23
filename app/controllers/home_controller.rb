@@ -1,23 +1,10 @@
 # app/controllers/home_controller.rb
 class HomeController < ApplicationController
-  # No need to skip authenticate_user! since it's not defined globally anymore
-
-  # Main landing page - shows different content based on authentication status
+  # Main landing page - redirects authenticated users to dashboard
   def index
     if current_user
-      # If user is logged in, show a personalized dashboard preview
-      @recent_lists = current_user.lists.includes(:list_items)
-                                 .order(updated_at: :desc)
-                                 .limit(3)
-
-      @total_lists = current_user.accessible_lists.count
-      @total_items = ListItem.joins(:list)
-                            .where(list: current_user.accessible_lists)
-                            .count
-
-      # Render a different layout or redirect to dashboard
-      # You could redirect directly to dashboard if preferred:
-      # redirect_to dashboard_path
+      # Redirect authenticated users to their dashboard
+      redirect_to dashboard_path
     else
       # Show marketing content for non-authenticated users
       @features = [

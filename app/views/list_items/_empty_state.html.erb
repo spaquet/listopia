@@ -4,8 +4,8 @@
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
   </svg>
   <h3 class="text-lg font-medium text-gray-900 mb-2">No items yet</h3>
-  <p class="text-gray-600 mb-4">Start adding items to your list to get organized!</p>
-  <% if can_access_list?(list, current_user, :edit) %>
+  <% if current_user && can_access_list?(list, current_user, :edit) %>
+    <p class="text-gray-600 mb-4">Start adding items to your list to get organized!</p>
     <button class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
             onclick="document.querySelector('input[name=\"list_item[title]\"]').focus()">
       <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,5 +13,13 @@
       </svg>
       Add First Item
     </button>
+  <% elsif current_user %>
+    <p class="text-gray-600 mb-4">This list doesn't have any items yet.</p>
+  <% else %>
+    <p class="text-gray-600 mb-4">This public list doesn't have any items yet.</p>
+    <p class="text-sm text-gray-500">
+      <%= link_to "Sign in", new_session_path, class: "text-blue-600 hover:text-blue-800 underline" %>
+      to create your own lists and add items.
+    </p>
   <% end %>
 </div>

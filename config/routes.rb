@@ -1,96 +1,86 @@
 # config/routes.rb
-
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Can be used by uptime monitors and load balancers.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
+  # Render dynamic PWA files from app/views/pwa/*
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
 
-  # Defines the root path route ("/")
-  # root "posts#index"
-
-
-  # Root route
+  # Root path
   root "home#index"
 
-  # Static pages
-  get "/about", to: "home#about", as: :about
-  get "/pricing", to: "home#pricing", as: :pricing
-  get "/contact", to: "home#contact", as: :contact
+  # Home pages
+  get "about", to: "home#about"
+  get "pricing", to: "home#pricing"
+  get "contact", to: "home#contact"
 
-  # Authentication routes (using sessions controller)
-  get "/sign_in", to: "sessions#new", as: :new_session
-  post "/sign_in", to: "sessions#create", as: :session
-  delete "/sign_out", to: "sessions#destroy", as: :sign_out
+  # Authentication routes
+  # Registration
+  get "sign_up", to: "registrations#new", as: :new_registration
+  post "sign_up", to: "registrations#create", as: :registration
+  get "verify_email", to: "registrations#email_verification_pending"
+  get "verify_email/:token", to: "registrations#verify_email", as: :verify_email_token
+
+  # Sessions - Custom routes for sign in/out
+  get "sign_in", to: "sessions#new", as: :new_session
+  post "sign_in", to: "sessions#create", as: :session
+  delete "sign_out", to: "sessions#destroy", as: :destroy_session
 
   # Magic link authentication
-  post "/magic_link", to: "sessions#magic_link", as: :magic_link
-  get "/magic_link_sent", to: "sessions#magic_link_sent", as: :magic_link_sent
-  get "/authenticate/:token", to: "sessions#authenticate_magic_link", as: :authenticate_magic_link
+  post "magic_link", to: "sessions#magic_link"
+  get "magic_link_sent", to: "sessions#magic_link_sent"
+  get "authenticate/:token", to: "sessions#authenticate_magic_link", as: :authenticate_magic_link
 
-  # Registration routes
-  get "/sign_up", to: "registrations#new", as: :new_registration
-  post "/sign_up", to: "registrations#create", as: :registration
-  get "/verify_email", to: "registrations#email_verification_pending", as: :verify_email
-  get "/verify_email/:token", to: "registrations#verify_email", as: :verify_email_token
+  # User management
+  get "profile", to: "users#show", as: :user
+  get "profile/edit", to: "users#edit", as: :edit_user
+  patch "profile", to: "users#update"
+  get "settings", to: "users#settings", as: :settings_user
+  patch "settings/password", to: "users#update_password", as: :update_password_user
+  patch "settings/preferences", to: "users#update_preferences", as: :update_preferences_user
 
-  # User routes
-  resource :user, only: [ :show, :edit, :update ] do
-    member do
-      get :settings
-      patch :update_password
-      patch :update_preferences
-    end
-  end
+  # Main application routes (require authentication)
+  get "dashboard", to: "dashboard#index"
 
-  # Dashboard
-  get "/dashboard", to: "dashboard#index", as: :dashboard
-
-  # Lists routes
+  # Lists
   resources :lists do
     member do
       patch :toggle_status
+      post :duplicate
       get :analytics
       get :share
-      post :duplicate
     end
 
-    # List items nested under lists
-    resources :list_items, path: "items" do
+    # List items
+    resources :list_items, path: "items", except: [ :show, :new, :edit ] do
       member do
         patch :toggle_completion
-        patch :move
       end
-
       collection do
         patch :bulk_update
         patch :reorder
       end
     end
 
-    # Collaborations nested under lists
-    resources :collaborations, only: [ :index, :create, :update, :destroy ] do
+    # Collaborations
+    resources :collaborations, except: [ :show, :new, :edit ] do
       collection do
-        get :accept, path: "accept/:token"
+        get :accept, path: "accept/:token", as: :accept
       end
     end
   end
 
-  # Public list access
-  get "/public/:slug", to: "public_lists#show", as: :public_list
+  # Public lists - prettier URLs for sharing (optional, both routes work)
+  get "public/:slug", to: "lists#show_by_slug", as: :public_list
 
-  # API routes for mobile/external access (future)
-  namespace :api do
-    namespace :v1 do
-      resources :lists, only: [ :index, :show, :create, :update, :destroy ] do
-        resources :list_items, path: "items", only: [ :index, :create, :update, :destroy ]
-      end
-      resources :users, only: [ :show, :update ]
-    end
+  # Admin routes (future)
+  namespace :admin do
+    root "dashboard#index"
+    resources :users
+    resources :lists
   end
 end
