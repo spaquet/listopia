@@ -20,7 +20,7 @@ class CollaborationMailer < ApplicationMailer
     @list = list
     @inviter = inviter
     @signup_url = new_registration_url
-    @accept_url = accept_collaborations_url(token: token)
+    @accept_url = accept_invitation_url(token: token)  # Fixed route name
 
     mail(
       to: email,
@@ -36,6 +36,21 @@ class CollaborationMailer < ApplicationMailer
     mail(
       to: user.email,
       subject: "You've been removed from \"#{list.title}\""
+    )
+  end
+
+  # Send reminder for pending invitation
+  def invitation_reminder(email, list, inviter, token)
+    @email = email
+    @list = list
+    @inviter = inviter
+    @signup_url = new_registration_url
+    @accept_url = accept_invitation_url(token: token)
+    @is_reminder = true
+
+    mail(
+      to: email,
+      subject: "Reminder: #{inviter.name} invited you to collaborate on \"#{list.title}\""
     )
   end
 end

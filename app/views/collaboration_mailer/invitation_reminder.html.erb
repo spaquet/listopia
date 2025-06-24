@@ -1,0 +1,56 @@
+<!-- app/views/collaboration_mailer/invitation_reminder.html.erb -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { text-align: center; margin-bottom: 30px; }
+      .logo { background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; width: 60px; height: 60px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; }
+      .button { display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+      .list-info { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 20px 0; }
+      .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 14px; }
+      .reminder-notice { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin: 20px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">L</div>
+        <h1>Collaboration Reminder</h1>
+      </div>
+      <div class="reminder-notice">
+        <p style="margin: 0; color: #92400e; font-weight: bold;">📅 Friendly Reminder</p>
+        <p style="margin: 5px 0 0 0; color: #92400e;">This is a reminder about your pending collaboration invitation.</p>
+      </div>
+      <p>Hi there,</p>
+      <p>This is a friendly reminder that <strong><%= @inviter.name %></strong> has invited you to collaborate on their list in Listopia:</p>
+      <div class="list-info">
+        <h2 style="margin: 0 0 10px 0; color: #374151;"><%= @list.title %></h2>
+        <% if @list.description.present? %>
+          <p style="margin: 0; color: #6b7280;"><%= @list.description %></p>
+        <% end %>
+      </div>
+      <p>Haven't had a chance to check it out yet? No worries! Here's what you can do:</p>
+      <div style="text-align: center;">
+        <a href="<%= @signup_url %>" class="button">Sign Up & Join List</a>
+      </div>
+      <p style="font-size: 14px; color: #6b7280; text-align: center;">
+        Already have an account? <a href="<%= @accept_url %>" style="color: #3B82F6;">Click here to accept the invitation</a>
+      </p>
+      <p><strong>Why Listopia?</strong></p>
+      <ul>
+        <li>Collaborate with others in real-time</li>
+        <li>Stay organized with smart lists</li>
+        <li>Access your lists from anywhere</li>
+        <li>Track progress and completion</li>
+      </ul>
+      <div class="footer">
+        <p>If you're not interested in this collaboration, you can safely ignore this email.</p>
+        <p>Thanks,<br>
+          The Listopia Team</p>
+      </div>
+    </div>
+  </body>
+</html>

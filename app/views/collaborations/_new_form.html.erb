@@ -1,5 +1,8 @@
 <!-- app/views/collaborations/_new_form.html.erb -->
-<%= form_with model: [list, collaboration], local: false, class: "space-y-4" do |f| %>
+<%= form_with model: collaboration, 
+              url: list_collaborations_path(list), 
+              local: false, 
+              class: "space-y-4" do |f| %>
   <% if collaboration.errors.any? %>
     <div class="bg-red-50 border border-red-200 rounded-lg p-3">
       <div class="flex items-start space-x-2">

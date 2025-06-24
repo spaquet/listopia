@@ -22,17 +22,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_23_211535) do
 
   create_table "list_collaborations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "list_id", null: false
-    t.uuid "user_id", null: false
+    t.uuid "user_id"
     t.integer "permission", default: 0, null: false
+    t.string "email"
     t.string "invitation_token"
     t.datetime "invitation_sent_at"
     t.datetime "invitation_accepted_at"
     t.uuid "invited_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_list_collaborations_on_email"
     t.index ["invitation_token"], name: "index_list_collaborations_on_invitation_token", unique: true
     t.index ["invited_by_id"], name: "index_list_collaborations_on_invited_by_id"
-    t.index ["list_id", "user_id"], name: "index_list_collaborations_on_list_id_and_user_id", unique: true
+    t.index ["list_id", "email"], name: "index_list_collaborations_on_list_and_email", unique: true, where: "(email IS NOT NULL)"
+    t.index ["list_id", "user_id"], name: "index_list_collaborations_on_list_and_user", unique: true, where: "(user_id IS NOT NULL)"
     t.index ["list_id"], name: "index_list_collaborations_on_list_id"
     t.index ["permission"], name: "index_list_collaborations_on_permission"
     t.index ["user_id", "permission"], name: "index_list_collaborations_on_user_id_and_permission"

@@ -4,6 +4,40 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
+# == Schema Information
+#
+# Table name: list_collaborations
+#
+#  id                     :uuid             not null, primary key
+#  email                  :string
+#  invitation_accepted_at :datetime
+#  invitation_sent_at     :datetime
+#  invitation_token       :string
+#  permission             :integer          default("read"), not null
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  invited_by_id          :uuid
+#  list_id                :uuid             not null
+#  user_id                :uuid
+#
+# Indexes
+#
+#  index_list_collaborations_on_email                   (email)
+#  index_list_collaborations_on_invitation_token        (invitation_token) UNIQUE
+#  index_list_collaborations_on_invited_by_id           (invited_by_id)
+#  index_list_collaborations_on_list_and_email          (list_id,email) UNIQUE WHERE (email IS NOT NULL)
+#  index_list_collaborations_on_list_and_user           (list_id,user_id) UNIQUE WHERE (user_id IS NOT NULL)
+#  index_list_collaborations_on_list_id                 (list_id)
+#  index_list_collaborations_on_permission              (permission)
+#  index_list_collaborations_on_user_id                 (user_id)
+#  index_list_collaborations_on_user_id_and_permission  (user_id,permission)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (invited_by_id => users.id)
+#  fk_rails_...  (list_id => lists.id)
+#  fk_rails_...  (user_id => users.id)
+#
 one: {}
 # column: value
 #

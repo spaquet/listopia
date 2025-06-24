@@ -43,6 +43,9 @@ Rails.application.routes.draw do
   patch "settings/password", to: "users#update_password", as: :update_password_user
   patch "settings/preferences", to: "users#update_preferences", as: :update_preferences_user
 
+  # Collaboration invitation acceptance
+  get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
+
   # Main application routes (require authentication)
   get "dashboard", to: "dashboard#index"
 
@@ -69,6 +72,9 @@ Rails.application.routes.draw do
 
     # Collaborations
     resources :collaborations, except: [ :show, :new, :edit ] do
+      member do
+        patch :resend
+      end
       collection do
         get :accept, path: "accept/:token", as: :accept
       end

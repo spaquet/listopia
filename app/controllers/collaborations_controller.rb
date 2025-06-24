@@ -2,8 +2,8 @@
 class CollaborationsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list, except: [ :accept ]
-  before_action :ensure_list_owner, except: [ :index, :accept ]
-  before_action :set_collaboration, only: [ :update, :destroy ]
+  before_action :ensure_list_owner, except: [ :index, :accept, :resend ]
+  before_action :set_collaboration, only: [ :update, :destroy, :resend ]
 
   def index
     @collaborations = @list.list_collaborations.includes(:user)
@@ -95,6 +95,28 @@ class CollaborationsController < ApplicationController
         ]
       }
       format.html { redirect_to list_collaborations_path(@list), notice: "Collaborator removed successfully!" }
+    end
+  end
+
+  # Resend invitation to pending collaborator
+  def resend
+    # Only allow resending for pending invitations
+    unless @collaboration.pending?
+      redirect_to list_collaborations_path(@list), alert: "This invitation has already been accepted."
+      return
+    end
+
+    # Generate new invitation token
+    invitation_token = @collaboration.generate_invitation_token
+
+    # Send reminder email
+    CollaborationMailer.invitation_reminder(@collaboration.email, @list, current_user, invitation_token).deliver_later
+
+    respond_to do |format|
+      format.turbo_stream {
+        render turbo_stream: turbo_stream.replace("collaboration_#{@collaboration.id}", partial: "collaborations/collaboration", locals: { collaboration: @collaboration })
+      }
+      format.html { redirect_to list_collaborations_path(@list), notice: "Invitation reminder sent!" }
     end
   end
 

@@ -49,21 +49,38 @@
     </div>
     <!-- Actions -->
     <div class="flex items-center space-x-2 ml-3">
-      <!-- Permission Toggle -->
-      <%= form_with model: [@list, collaboration], method: :patch, local: false, class: "inline-block" do |f| %>
-        <%= f.select :permission, 
-              options_for_select([
-                ['Viewer', 'read'], 
-                ['Editor', 'collaborate']
-              ], collaboration.permission), 
-              {}, 
-              { 
-                class: "text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white",
-                onchange: "this.form.submit();"
-              } %>
+      <% if collaboration.pending? %>
+        <!-- Resend Invitation Button for pending invitations -->
+        <%= button_to resend_list_collaboration_path(@list, collaboration), 
+              method: :patch,
+              remote: true,
+              class: "text-blue-400 hover:text-blue-600 transition-colors duration-200 p-1 rounded hover:bg-blue-50",
+              title: "Resend invitation" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        <% end %>
+      <% else %>
+        <!-- Permission Toggle for accepted collaborations -->
+        <%= form_with model: collaboration, 
+                      url: list_collaboration_path(@list, collaboration), 
+                      method: :patch, 
+                      local: false, 
+                      class: "inline-block" do |f| %>
+          <%= f.select :permission, 
+                options_for_select([
+                  ['Viewer', 'read'], 
+                  ['Editor', 'collaborate']
+                ], collaboration.permission), 
+                {}, 
+                { 
+                  class: "text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white",
+                  onchange: "this.form.submit();"
+                } %>
+        <% end %>
       <% end %>
       <!-- Remove Button -->
-      <%= button_to [@list, collaboration], 
+      <%= button_to list_collaboration_path(@list, collaboration), 
             method: :delete, 
             remote: true,
             form: { data: { confirm: "Are you sure you want to remove this collaborator?" } },
