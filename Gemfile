@@ -33,6 +33,9 @@ gem "solid_cable"
 # Pagination
 gem "pagy"
 
+# Notification
+gem "noticed"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
