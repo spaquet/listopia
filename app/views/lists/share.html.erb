@@ -1,159 +1,42 @@
 <!-- app/views/lists/share.html.erb -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
-     data-controller="modal" 
-     data-modal-target="modal">
-  <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto border border-gray-200"
-       data-modal-target="backdrop"
-       data-action="click->modal#clickOutside">
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between p-6 border-b border-gray-200">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900">Share List</h3>
-          <p class="text-sm text-gray-600"><%= truncate(@list.title, length: 30) %></p>
-        </div>
-      </div>
-      <button data-action="click->modal#close" 
-        class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-    <!-- Modal Body -->
-    <div class="p-6">
-      <%= render "lists/share_modal_content", list: @list, sharing_summary: @sharing_summary %>
-    </div>
-     Public Access Toggle -->
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h4 class="text-sm font-medium text-gray-900">Public Access</h4>
-          <p class="text-xs text-gray-500">Allow anyone with the link to view this list</p>
-        </div>
-        <%= form_with url: toggle_public_access_list_path(@list), method: :patch, local: false, class: "inline-block" do |f| %>
-          <button type="submit" 
-                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 <%= @list.is_public? ? 'bg-blue-600' : 'bg-gray-200' %>">
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 <%= @list.is_public? ? 'translate-x-6' : 'translate-x-1' %>"></span>
-          </button>
-        <% end %>
-      </div>
-      <% if @list.is_public? %>
-        <!-- Pretty Public URL -->
-        <div class="space-y-3">
+<%= turbo_frame_tag "modal" do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+       data-controller="modal" 
+       data-modal-target="modal">
+    <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto border border-gray-200"
+         data-modal-target="backdrop"
+         data-action="click->modal#clickOutside">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+            </svg>
+          </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Pretty Share Link
-              <span class="text-xs text-gray-500 font-normal">(Recommended for sharing)</span>
-            </label>
-            <div class="flex">
-              <input type="text" 
-                       value="<%= @public_url %>" 
-                       readonly 
-                       class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-l-lg text-sm font-mono text-gray-600 focus:outline-none">
-              <button data-controller="clipboard"
-                        data-clipboard-text-value="<%= @public_url %>"
-                        data-clipboard-success-message-value="Pretty link copied!"
-                        data-action="click->clipboard#copy"
-                class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-r-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-                <span>Copy</span>
-              </button>
-            </div>
-          </div>
-          <!-- Direct URL -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Direct Link
-              <span class="text-xs text-gray-500 font-normal">(Alternative access)</span>
-            </label>
-            <div class="flex">
-              <input type="text" 
-                       value="<%= @direct_url %>" 
-                       readonly 
-                       class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-l-lg text-sm font-mono text-gray-600 focus:outline-none">
-              <button data-controller="clipboard"
-                        data-clipboard-text-value="<%= @direct_url %>"
-                        data-clipboard-success-message-value="Direct link copied!"
-                        data-action="click->clipboard#copy"
-                class="px-4 py-2 bg-gray-600 text-white rounded-r-lg hover:bg-gray-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                </svg>
-                <span>Copy</span>
-              </button>
-            </div>
-          </div>
-          <!-- Public Access Info -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div class="flex items-start space-x-2">
-              <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <div class="text-xs text-blue-800">
-                <p class="font-medium">Anyone with these links can view this list</p>
-                <p class="mt-1">They won't be able to edit or add items unless you invite them as collaborators.</p>
-              </div>
-            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Share List</h3>
+            <p class="text-sm text-gray-600"><%= truncate(@list.title, length: 30) %></p>
           </div>
         </div>
-      <% else %>
-        <!-- Public Access Disabled State -->
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-          <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        <button data-action="click->modal#close" 
+          class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-          <p class="text-sm text-gray-600 font-medium">This list is private</p>
-          <p class="text-xs text-gray-500 mt-1">Enable public access above to generate shareable links</p>
-        </div>
-      <% end %>
-    </div>
-    <!-- Collaboration Section -->
-    <div class="border-t border-gray-200 pt-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h4 class="text-sm font-medium text-gray-900">Collaborators</h4>
-          <p class="text-xs text-gray-500">Invite people to view or edit this list</p>
-        </div>
-        <%= link_to list_collaborations_path(@list), 
-                      class: "text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1" do %>
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          <span>Manage</span>
-        <% end %>
+        </button>
       </div>
-      <!-- Quick Collaborator Stats -->
-      <div class="flex items-center space-x-4 text-xs text-gray-600">
-        <div class="flex items-center space-x-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-          </svg>
-          <span><%= @sharing_summary[:read_only_collaborators] %> viewers</span>
-        </div>
-        <div class="flex items-center space-x-1">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-          </svg>
-          <span><%= @sharing_summary[:full_collaborators] %> editors</span>
-        </div>
+      <!-- Modal Body -->
+      <div class="p-6">
+        <%= render "lists/share_modal_content", list: @list, sharing_summary: @sharing_summary %>
+      </div>
+      <!-- Modal Footer -->
+      <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end">
+        <button data-action="click->modal#close"
+          class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">
+          Done
+        </button>
       </div>
     </div>
   </div>
-  <!-- Modal Footer -->
-  <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end">
-    <button data-action="click->modal#close"
-      class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">
-      Done
-    </button>
-  </div>
-</div>
-</div>
+<% end %>

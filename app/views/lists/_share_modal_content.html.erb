@@ -23,12 +23,13 @@
             <span class="text-xs text-gray-500 font-normal">(Recommended for sharing)</span>
           </label>
           <div class="flex">
+            <% public_url = list.public_slug.present? ? "#{request.base_url}/public/#{list.public_slug}" : sharing_summary[:public_url] %>
             <input type="text" 
-                   value="<%= sharing_summary[:public_url] %>" 
+                   value="<%= public_url %>" 
                    readonly 
                    class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-l-lg text-sm font-mono text-gray-600 focus:outline-none">
             <button data-controller="clipboard"
-                    data-clipboard-text-value="<%= sharing_summary[:public_url] %>"
+                    data-clipboard-text-value="<%= public_url %>"
                     data-clipboard-success-message-value="Pretty link copied!"
                     data-action="click->clipboard#copy"
               class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-r-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium flex items-center space-x-2">
@@ -46,12 +47,13 @@
             <span class="text-xs text-gray-500 font-normal">(Alternative access)</span>
           </label>
           <div class="flex">
+            <% direct_url = list_url(list) %>
             <input type="text" 
-                   value="<%= sharing_summary[:direct_url] %>" 
+                   value="<%= direct_url %>" 
                    readonly 
                    class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-l-lg text-sm font-mono text-gray-600 focus:outline-none">
             <button data-controller="clipboard"
-                    data-clipboard-text-value="<%= sharing_summary[:direct_url] %>"
+                    data-clipboard-text-value="<%= direct_url %>"
                     data-clipboard-success-message-value="Direct link copied!"
                     data-action="click->clipboard#copy"
               class="px-4 py-2 bg-gray-600 text-white rounded-r-lg hover:bg-gray-700 transition-colors duration-200 text-sm font-medium flex items-center space-x-2">

@@ -5,30 +5,41 @@ export default class extends Controller {
   static targets = ["modal", "backdrop"]
 
   connect() {
-    this.close = this.close.bind(this)
+    // Auto-open modal when it loads
+    this.open()
+  }
+
+  disconnect() {
+    this.cleanup()
   }
 
   open() {
-    this.modalTarget.classList.remove('hidden')
+    // Enable body scroll lock
     document.body.classList.add('overflow-hidden')
     
     // Focus trap
-    this.modalTarget.focus()
-    
-    // Close on backdrop click
-    this.backdropTarget.addEventListener('click', this.close)
+    if (this.hasModalTarget) {
+      this.modalTarget.focus()
+    }
     
     // Close on escape key
-    document.addEventListener('keydown', this.handleEscape.bind(this))
+    this.handleEscape = this.handleEscape.bind(this)
+    document.addEventListener('keydown', this.handleEscape)
   }
 
   close() {
-    this.modalTarget.classList.add('hidden')
+    // Remove the entire turbo frame, which will close the modal
+    this.element.remove()
+  }
+
+  cleanup() {
+    // Re-enable body scroll
     document.body.classList.remove('overflow-hidden')
     
     // Clean up event listeners
-    this.backdropTarget.removeEventListener('click', this.close)
-    document.removeEventListener('keydown', this.handleEscape.bind(this))
+    if (this.handleEscape) {
+      document.removeEventListener('keydown', this.handleEscape)
+    }
   }
 
   handleEscape(event) {
@@ -38,6 +49,7 @@ export default class extends Controller {
   }
 
   clickOutside(event) {
+    // Only close if clicking directly on the backdrop
     if (event.target === this.backdropTarget) {
       this.close()
     }
