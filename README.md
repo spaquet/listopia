@@ -1,6 +1,6 @@
 # Listopia
 
-![Listopia Screenshot](https://github.com/spaquet/listopia/raw/main/screenshot.png)
+![Listopia Screenshot](https://raw.githubusercontent.com/spaquet/listopia/main/images/screenshot.png)
 
 **Listopia** is a modern, collaborative list management application built with Ruby on Rails 8. It showcases cutting-edge Rails development practices, offering real-time collaboration, passwordless authentication, and a responsive, user-friendly interface powered by Tailwind CSS.
 
