@@ -2,8 +2,8 @@
 class CollaborationsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list, except: [ :accept ]
-  before_action :ensure_list_owner, except: [ :index, :show, :accept ]
-  before_action :set_collaboration, only: [ :show, :update, :destroy ]
+  before_action :ensure_list_owner, except: [ :index, :accept ]
+  before_action :set_collaboration, only: [ :update, :destroy ]
 
   def index
     @collaborations = @list.list_collaborations.includes(:user)
