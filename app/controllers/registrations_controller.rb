@@ -1,6 +1,5 @@
 # app/controllers/registrations_controller.rb
 class RegistrationsController < ApplicationController
-  # skip_before_action :authenticate_user!
   before_action :redirect_if_authenticated
 
   # Show registration form
@@ -16,6 +15,17 @@ class RegistrationsController < ApplicationController
       # Generate email verification token and send email
       token = @user.generate_email_verification_token
       AuthMailer.email_verification(@user, token).deliver_now
+
+      # Check for pending collaboration invitation
+      if session[:pending_collaboration_token]
+        collaboration = ListCollaboration.find_by_invitation_token(session[:pending_collaboration_token])
+        if collaboration && collaboration.email == @user.email
+          collaboration.update!(user: @user, email: nil)
+          session.delete(:pending_collaboration_token)
+          flash[:notice] = "Account created and collaboration invitation accepted! Please verify your email to get started."
+        end
+      end
+
       redirect_to verify_email_path, notice: "Please check your email to verify your account."
     else
       render :new, status: :unprocessable_entity
@@ -30,6 +40,17 @@ class RegistrationsController < ApplicationController
     if user
       user.verify_email!
       sign_in(user)
+
+      # If they just accepted a collaboration, redirect to the list
+      if session[:pending_collaboration_token]
+        collaboration = ListCollaboration.find_by_invitation_token(session[:pending_collaboration_token])
+        if collaboration && collaboration.user == user
+          session.delete(:pending_collaboration_token)
+          redirect_to collaboration.list, notice: "Email verified! Welcome to the collaboration!"
+          return
+        end
+      end
+
       redirect_to dashboard_path, notice: "Email verified! Welcome to Listopia!"
     else
       redirect_to root_path, alert: "Invalid or expired verification link."

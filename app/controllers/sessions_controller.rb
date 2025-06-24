@@ -1,6 +1,5 @@
 # app/controllers/sessions_controller.rb
 class SessionsController < ApplicationController
-  # skip_before_action :authenticate_user!
   before_action :redirect_if_authenticated, except: [ :destroy ]
 
   # Show login form
@@ -15,7 +14,10 @@ class SessionsController < ApplicationController
     if @user&.authenticate(params[:password])
       if @user.email_verified?
         sign_in(@user)
-        redirect_to after_sign_in_path, notice: "Welcome back!"
+
+        # Check for pending collaboration invitation
+        redirect_path = check_pending_collaboration || after_sign_in_path
+        redirect_to redirect_path, notice: "Welcome back!"
       else
         redirect_to verify_email_path, alert: "Please verify your email address first."
       end
@@ -62,7 +64,10 @@ class SessionsController < ApplicationController
 
       if user
         sign_in(user)
-        redirect_to after_sign_in_path, notice: "Successfully signed in!"
+
+        # Check for pending collaboration invitation
+        redirect_path = check_pending_collaboration || after_sign_in_path
+        redirect_to redirect_path, notice: "Successfully signed in!"
       else
         redirect_to new_session_path, alert: "Invalid or expired magic link."
       end
@@ -82,5 +87,19 @@ class SessionsController < ApplicationController
   # Redirect authenticated users away from auth pages
   def redirect_if_authenticated
     redirect_to dashboard_path if current_user
+  end
+
+  # Check for pending collaboration and accept it
+  def check_pending_collaboration
+    return nil unless session[:pending_collaboration_token]
+
+    collaboration = ListCollaboration.find_by_invitation_token(session[:pending_collaboration_token])
+    if collaboration && collaboration.email == current_user.email
+      collaboration.update!(user: current_user, email: nil)
+      session.delete(:pending_collaboration_token)
+      return collaboration.list # Redirect to the collaboration list
+    end
+
+    nil
   end
 end

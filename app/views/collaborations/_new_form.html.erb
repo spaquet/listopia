@@ -1,0 +1,68 @@
+<!-- app/views/collaborations/_new_form.html.erb -->
+<%= form_with model: [list, collaboration], local: false, class: "space-y-4" do |f| %>
+  <% if collaboration.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+      <div class="flex items-start space-x-2">
+        <svg class="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+          <h4 class="text-sm font-medium text-red-800">Please fix the following errors:</h4>
+          <ul class="mt-1 text-xs text-red-700 list-disc list-inside">
+            <% collaboration.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <!-- Email Input -->
+    <div class="sm:col-span-2">
+      <%= f.email_field :email, 
+            placeholder: "Enter email address...", 
+            class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm",
+            required: true %>
+    </div>
+    <!-- Permission Selection -->
+    <div class="flex">
+      <%= f.select :permission, 
+            options_for_select([
+              ['Viewer', 'read'], 
+              ['Editor', 'collaborate']
+            ], collaboration.permission || 'read'), 
+            {}, 
+            { class: "flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white" } %>
+      <%= f.submit "Invite", 
+            class: "px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-r-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 text-sm font-medium flex items-center space-x-1",
+            data: { disable_with: "Inviting..." } %>
+    </div>
+  </div>
+  <!-- Permission Explanation -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+    <div class="text-xs text-blue-800">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <p class="font-medium flex items-center space-x-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+            <span>Viewer</span>
+          </p>
+          <p class="mt-1 text-blue-700">Can view the list and items, but cannot make changes</p>
+        </div>
+        <div>
+          <p class="font-medium flex items-center space-x-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            <span>Editor</span>
+          </p>
+          <p class="mt-1 text-blue-700">Can view, add, edit, and delete items on the list</p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

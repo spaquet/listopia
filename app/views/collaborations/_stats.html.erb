@@ -1,0 +1,63 @@
+<!-- app/views/collaborations/_stats.html.erb -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <!-- Total Collaborators -->
+  <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-blue-600 uppercase tracking-wide">Total</p>
+        <p class="text-2xl font-bold text-blue-900"><%= list.list_collaborations.count %></p>
+        <p class="text-xs text-blue-700">Collaborators</p>
+      </div>
+      <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <!-- Editors -->
+  <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Editors</p>
+        <p class="text-2xl font-bold text-green-900"><%= list.list_collaborations.permission_collaborate.count %></p>
+        <p class="text-xs text-green-700">Can edit</p>
+      </div>
+      <div class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <!-- Viewers -->
+  <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs font-medium text-purple-600 uppercase tracking-wide">Viewers</p>
+        <p class="text-2xl font-bold text-purple-900"><%= list.list_collaborations.permission_read.count %></p>
+        <p class="text-xs text-purple-700">View only</p>
+      </div>
+      <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Additional Info -->
+<% if list.list_collaborations.where(user: nil).any? %>
+  <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+    <div class="flex items-start space-x-2">
+      <svg class="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <div class="text-xs text-yellow-800">
+        <p class="font-medium"><%= pluralize(list.list_collaborations.where(user: nil).count, 'invitation') %> pending</p>
+        <p class="mt-1">These people haven't accepted their invitations yet.</p>
+      </div>
+    </div>
+  </div>
+<% end %>
