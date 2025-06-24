@@ -57,6 +57,11 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec for testing
+  gem "rspec-rails", "~> 7.1" # Latest stable for Rails 8
+  gem "factory_bot_rails"
+  gem "faker"
 end
 
 group :development do
@@ -71,7 +76,11 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
-  gem "rspec-rails"
-  gem "factory_bot_rails"
-  gem "faker"
+
+  # Additional RSpec gems
+  gem "shoulda-matchers", "~> 6.0" # For better model validations testing
+  gem "database_cleaner-active_record" # For cleaning test database
+  gem "rails-controller-testing" # For testing controllers properly
+  gem "rspec-retry" # For flaky test retries
+  gem "timecop" # For time-based testing
 end
