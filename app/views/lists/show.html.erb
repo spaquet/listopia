@@ -36,6 +36,7 @@
             </svg>
           <% end %>
           <%= link_to share_list_path(@list),
+                      data: { turbo_frame: "modal" },
                       class: "text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200",
                       title: "Share list" do %>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,4 +175,6 @@
       <% end %>
     </div>
   </div>
+  <!-- Modal Frame -->
+  <%= turbo_frame_tag "modal" %>
 </div>

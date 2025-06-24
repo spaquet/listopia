@@ -1,8 +1,8 @@
 # app/controllers/lists_controller.rb
 class ListsController < ApplicationController
   before_action :authenticate_user!, except: [ :show, :show_by_slug ] # Allow public access to show methods
-  before_action :set_list, only: [ :show, :edit, :update, :destroy ]
-  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy ]
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access ]
+  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access ]
 
   # Display all lists accessible to the current user
   def index
@@ -74,6 +74,17 @@ class ListsController < ApplicationController
     # Form will be rendered
   end
 
+  # Show sharing modal/page
+  def share
+    @sharing_service = ListSharingService.new(@list, current_user)
+    @sharing_summary = @sharing_service.sharing_summary
+
+    respond_to do |format|
+      format.html # Will render share.html.erb
+      format.turbo_stream # For modal rendering
+    end
+  end
+
   # Update an existing list
   def update
     if @list.update(list_params)
@@ -109,6 +120,31 @@ class ListsController < ApplicationController
 
     respond_with_turbo_stream do
       render :toggle_status
+    end
+  end
+
+  # Toggle public access for the list
+  def toggle_public_access
+    authorize_resource_access!(@list, :edit)
+
+    if @list.is_public?
+      # Make private
+      @list.update!(is_public: false)
+    else
+      # Make public and generate slug if needed
+      @list.update!(
+        is_public: true,
+        public_slug: @list.public_slug.presence || SecureRandom.urlsafe_base64(8)
+      )
+    end
+
+    # Return updated sharing data
+    @sharing_service = ListSharingService.new(@list, current_user)
+    @sharing_summary = @sharing_service.sharing_summary
+
+    respond_to do |format|
+      format.turbo_stream { render :toggle_public_access }
+      format.json { render json: @sharing_summary }
     end
   end
 

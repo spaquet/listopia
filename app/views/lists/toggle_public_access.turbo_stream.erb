@@ -1,0 +1,4 @@
+<!-- app/views/lists/toggle_public_access.turbo_stream.erb -->
+<%= turbo_stream.replace "share_modal" do %>
+  <%= render "lists/share_modal_content", list: @list, sharing_summary: @sharing_summary %>
+<% end %>

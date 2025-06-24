@@ -50,6 +50,7 @@ Rails.application.routes.draw do
   resources :lists do
     member do
       patch :toggle_status
+      patch :toggle_public_access
       post :duplicate
       get :analytics
       get :share
