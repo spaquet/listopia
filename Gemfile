@@ -83,4 +83,7 @@ group :test do
   gem "rails-controller-testing" # For testing controllers properly
   gem "rspec-retry" # For flaky test retries
   gem "timecop" # For time-based testing
+
+  # SimpleCov for code coverage
+  gem "simplecov", require: false
 end
