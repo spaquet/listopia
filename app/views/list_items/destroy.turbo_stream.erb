@@ -1,35 +1,7 @@
 <!-- app/views/list_items/destroy.turbo_stream.erb -->
-<!-- Replace the entire list-items container to handle empty state -->
-<%= turbo_stream.replace "list-items" do %>
-  <% if @list.list_items.any? %>
-    <% @list.list_items.group_by(&:completed?).each do |completed, items| %>
-      <% unless completed && items.empty? %>
-        <div class="<%= 'border-t border-gray-200' if completed %>">
-          <% if completed %>
-            <div class="px-6 py-3 bg-gray-50">
-              <h3 class="text-sm font-medium text-gray-700 flex items-center">
-                <svg class="w-4 h-4 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                </svg>
-                Completed (<%= items.count %>)
-              </h3>
-            </div>
-          <% end %>
-          <div class="divide-y divide-gray-200">
-            <% items.each do |item| %>
-              <%= render "list_items/item", item: item, list: @list %>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-    <% end %>
-  <% else %>
-    <%= render "list_items/empty_state", list: @list %>
-  <% end %>
-<% end %>
-<%= turbo_stream.update "flash-messages" do %>
-  <%= render "shared/flash_messages" %>
-<% end %>
+<!-- Simply remove the item -->
+<%= turbo_stream.remove "list_item_#{@item_id}" %>
+
 <!-- Update list stats when item is removed -->
 <%= turbo_stream.replace "list-stats" do %>
   <% stats = list_completion_stats(@list) %>
@@ -43,4 +15,30 @@
     </div>
     <span class="font-medium"><%= stats[:percentage] %>%</span>
   </div>
+<% end %>
+
+<!-- Show success message -->
+<%= turbo_stream.update "flash-messages" do %>
+  <div class="fixed top-20 right-4 z-50 space-y-2">
+    <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-md flex items-center space-x-3 max-w-md" 
+         data-controller="flash" 
+         data-flash-auto-dismiss-value="true">
+      <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <span class="flex-1">Item deleted successfully!</span>
+      <button data-action="click->flash#dismiss" class="text-green-600 hover:text-green-800">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+<% end %>
+
+<!-- If this was the last item, show empty state -->
+<% if @list.list_items.count == 0 %>
+  <%= turbo_stream.replace "list-items" do %>
+    <%= render "list_items/empty_state", list: @list %>
+  <% end %>
 <% end %>

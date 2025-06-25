@@ -40,8 +40,10 @@ class ListItemsController < ApplicationController
 
   # Delete a list item
   def destroy
-    # Store title for notification before deletion
+    # Store reference before destruction for turbo stream
+    @item_id = @list_item.id
     item_title = @list_item.title
+
     @list_item.destroy
     @list.reload
 
