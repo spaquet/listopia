@@ -37,3 +37,6 @@
 !/app/assets/builds/.keep
 
 /node_modules
+
+# Ignore SimpleCov results.
+/coverage
