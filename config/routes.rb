@@ -81,6 +81,18 @@ Rails.application.routes.draw do
     end
   end
 
+  # Notifications
+  resources :notifications, only: [ :index, :show ] do
+    member do
+      patch :mark_as_read
+    end
+    collection do
+      patch :mark_all_as_read
+      patch :mark_all_as_seen
+      get :stats
+    end
+  end
+
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 

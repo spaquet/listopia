@@ -30,6 +30,10 @@
             </svg>
             New List
           <% end %>
+          <!-- Notification Bell -->
+          <div data-controller="notifications" data-notifications-auto-refresh-value="true">
+            <%= render "shared/notification_bell" %>
+          </div>
           <!-- User Menu -->
           <div class="relative" data-controller="dropdown">
             <button data-action="click->dropdown#toggle" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors duration-200">

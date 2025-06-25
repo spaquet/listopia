@@ -30,6 +30,12 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class List < ApplicationRecord
+  # Track status changes for notifications
+  attribute :previous_status_value
+
+  before_update :track_status_change
+  after_update :notify_status_change
+
   # Associations
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
   has_many :list_items, dependent: :destroy
@@ -104,5 +110,18 @@ class List < ApplicationRecord
 
   def generate_public_slug
     self.public_slug = SecureRandom.urlsafe_base64(8) if public_slug.blank?
+  end
+
+  def track_status_change
+    if status_changed?
+      self.previous_status_value = status_was
+    end
+  end
+
+  def notify_status_change
+    if saved_change_to_status? && Current.user
+      NotificationService.new(Current.user)
+                         .notify_list_status_changed(self, previous_status_value, status)
+    end
   end
 end

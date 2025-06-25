@@ -1,0 +1,54 @@
+<!-- app/views/shared/_notification_bell.html.erb -->
+<div class="relative">
+  <button data-action="click->notifications#toggleDropdown" 
+    data-notifications-target="bellIcon"
+    class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+    id="notification-bell">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+    </svg>
+    <!-- Notification Badge -->
+    <span data-notifications-target="badge" 
+          class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium <%= 'hidden' if current_user.unseen_notifications_count == 0 %>">
+      <%= current_user.unseen_notifications_count > 9 ? '9+' : current_user.unseen_notifications_count %>
+    </span>
+  </button>
+  <!-- Dropdown Menu -->
+  <div data-notifications-target="dropdown" 
+       class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+    <!-- Header -->
+    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+      <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+      <div class="flex items-center space-x-2">
+        <% if current_user.unread_notifications_count > 0 %>
+          <%= button_to mark_all_as_read_notifications_path, 
+                        method: :patch,
+                        remote: true,
+                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium" do %>
+            Mark all read
+          <% end %>
+        <% end %>
+        <%= link_to notifications_path, 
+                    class: "text-xs text-gray-600 hover:text-gray-800 font-medium" do %>
+          View all
+        <% end %>
+      </div>
+    </div>
+    <!-- Notifications List -->
+    <div class="divide-y divide-gray-100">
+      <% recent_notifications = current_user.notifications.includes(:event).limit(5).order(created_at: :desc) %>
+      <% if recent_notifications.any? %>
+        <% recent_notifications.each do |notification| %>
+          <%= render "notifications/notification_preview", notification: notification %>
+        <% end %>
+      <% else %>
+        <div class="px-4 py-6 text-center">
+          <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          <p class="text-sm text-gray-500">No notifications yet</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
