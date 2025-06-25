@@ -1,4 +1,4 @@
-# app/controllers/list_items_controller.rb to include notifications
+# app/controllers/list_items_controller.rb
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
@@ -10,10 +10,14 @@ class ListItemsController < ApplicationController
     @list_item = @list.list_items.build(list_item_params)
 
     if @list_item.save
+      # Reload the list to get the most current state
+      @list.reload
+
       respond_with_turbo_stream do
         render :create
       end
     else
+      # Keep the existing error handling but make sure we don't clear form data
       respond_with_turbo_stream do
         render :form_errors
       end
@@ -23,6 +27,7 @@ class ListItemsController < ApplicationController
   # Update an existing list item
   def update
     if @list_item.update(list_item_params)
+      @list.reload
       respond_with_turbo_stream do
         render :update
       end
@@ -38,6 +43,7 @@ class ListItemsController < ApplicationController
     # Store title for notification before deletion
     item_title = @list_item.title
     @list_item.destroy
+    @list.reload
 
     respond_with_turbo_stream do
       render :destroy
@@ -47,6 +53,7 @@ class ListItemsController < ApplicationController
   # Toggle completion status of a list item
   def toggle_completion
     @list_item.toggle_completion!
+    @list.reload
 
     respond_with_turbo_stream do
       render :toggle_completion
@@ -64,6 +71,7 @@ class ListItemsController < ApplicationController
       bulk_delete_items
     end
 
+    @list.reload
     respond_with_turbo_stream do
       render :bulk_update
     end

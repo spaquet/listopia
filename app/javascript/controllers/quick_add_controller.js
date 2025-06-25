@@ -2,7 +2,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["options", "optionsText", "optionsIcon"]
+  static targets = ["options", "optionsText", "optionsIcon", "titleInput", "submitButton", "submitText"]
 
   connect() {
     this.optionsVisible = false
@@ -32,15 +32,67 @@ export default class extends Controller {
     }
   }
 
+  // Clear errors when user starts typing or submitting
+  clearError() {
+    const errorContainer = this.element.querySelector('#form-errors')
+    if (errorContainer) {
+      errorContainer.innerHTML = ''
+    }
+    
+    // Remove error styling from title input
+    if (this.hasTitleInputTarget) {
+      this.titleInputTarget.classList.remove('border-red-300', 'focus:border-red-500', 'focus:ring-red-500')
+      this.titleInputTarget.classList.add('border-gray-300', 'focus:border-blue-500', 'focus:ring-blue-500')
+    }
+  }
+
   reset() {
     // Reset form and hide options after successful submission
-    this.element.querySelector('form').reset()
+    const form = this.element.querySelector('form')
+    if (form) {
+      form.reset()
+    }
+    
+    // Clear any error messages
+    this.clearError()
     
     if (this.optionsVisible) {
       this.toggleOptions({ preventDefault: () => {} })
     }
     
     // Focus back on title input
-    this.element.querySelector('input[name="list_item[title]"]').focus()
+    if (this.hasTitleInputTarget) {
+      // Small delay to ensure form is reset
+      setTimeout(() => {
+        this.titleInputTarget.focus()
+      }, 100)
+    }
+    
+    // Reset submit button text if it was changed
+    if (this.hasSubmitTextTarget) {
+      this.submitTextTarget.textContent = "Add"
+    }
+  }
+
+  // Provide visual feedback during submission
+  submitting() {
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.disabled = true
+    }
+    
+    if (this.hasSubmitTextTarget) {
+      this.submitTextTarget.textContent = "Adding..."
+    }
+  }
+
+  // Reset after submission (whether successful or not)
+  submitted() {
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.disabled = false
+    }
+    
+    if (this.hasSubmitTextTarget) {
+      this.submitTextTarget.textContent = "Add"
+    }
   }
 }
