@@ -100,12 +100,19 @@ class ListsController < ApplicationController
     if @list.update(list_params)
       respond_to do |format|
         format.html { redirect_to @list, notice: "List was successfully updated." }
-        format.turbo_stream { render :update }
+        format.turbo_stream do
+          # For successful updates, redirect to the list instead of trying to replace elements
+          redirect_to @list, notice: "List was successfully updated."
+        end
       end
     else
       respond_to do |format|
         format.html { render :edit, status: :unprocessable_entity }
-        format.turbo_stream { render :form_errors }
+        format.turbo_stream do
+          # For validation errors, re-render the edit form
+          flash.now[:alert] = "Please fix the errors below."
+          render :edit, status: :unprocessable_entity
+        end
       end
     end
   end
