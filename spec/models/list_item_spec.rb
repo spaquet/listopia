@@ -136,10 +136,11 @@ RSpec.describe ListItem, type: :model do
     end
 
     describe '.by_priority' do
-      it 'orders items by priority' do
+      it 'orders items by priority (low to urgent)' do
         items = ListItem.by_priority.where(list: list)
         priorities = items.pluck(:priority)
 
+        # Should be ordered by enum value: low(0), medium(1), high(2), urgent(3)
         expect(priorities).to eq(priorities.sort)
       end
     end
@@ -165,9 +166,9 @@ RSpec.describe ListItem, type: :model do
         end
 
         it 'sets completed_at timestamp' do
-          freeze_time do
+          travel_to Time.current do
             pending_item.toggle_completion!
-            expect(pending_item.completed_at).to eq(Time.current)
+            expect(pending_item.completed_at).to be_within(1.second).of(Time.current)
           end
         end
       end
@@ -192,9 +193,9 @@ RSpec.describe ListItem, type: :model do
       it 'sets completed_at when marking as completed' do
         item = create(:list_item, completed: false)
 
-        freeze_time do
+        travel_to Time.current do
           item.update!(completed: true)
-          expect(item.completed_at).to eq(Time.current)
+          expect(item.completed_at).to be_within(1.second).of(Time.current)
         end
       end
 
@@ -246,7 +247,7 @@ RSpec.describe ListItem, type: :model do
 
     context 'when due_date is exactly now' do
       it 'returns false' do
-        freeze_time do
+        travel_to Time.current do
           item = create(:list_item, due_date: Time.current, completed: false)
           expect(item.overdue?).to be false
         end

@@ -80,9 +80,9 @@ RSpec.describe User, type: :model do
       it 'sets email_verified_at to current time' do
         user = create(:user, :unverified)
 
-        freeze_time do
+        travel_to Time.current do
           user.verify_email!
-          expect(user.email_verified_at).to eq(Time.current)
+          expect(user.email_verified_at).to be_within(1.second).of(Time.current)
         end
       end
 

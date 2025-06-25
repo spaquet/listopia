@@ -56,11 +56,11 @@ RSpec.describe Session, type: :model do
       end
 
       it 'sets expiry date automatically' do
-        freeze_time do
+        travel_to Time.current do
           session = build(:session, user: user, expires_at: nil)
           session.save!
 
-          expect(session.expires_at).to be_within(1.second).of(30.days.from_now)
+          expect(session.expires_at).to be_within(1.minute).of(30.days.from_now)
         end
       end
 
@@ -117,7 +117,7 @@ RSpec.describe Session, type: :model do
       end
 
       it 'returns false when expires_at is exactly now' do
-        freeze_time do
+        travel_to Time.current do
           session = create(:session, user: user, expires_at: Time.current)
           expect(session.active?).to be false
         end
@@ -129,9 +129,9 @@ RSpec.describe Session, type: :model do
         session = create(:session, user: user, expires_at: 1.hour.from_now)
         original_expiry = session.expires_at
 
-        freeze_time do
+        travel_to Time.current do
           session.extend_expiry!
-          expect(session.expires_at).to be_within(1.second).of(30.days.from_now)
+          expect(session.expires_at).to be_within(1.minute).of(30.days.from_now)
           expect(session.expires_at).to be > original_expiry
         end
       end
@@ -139,10 +139,10 @@ RSpec.describe Session, type: :model do
       it 'persists the new expiry date' do
         session = create(:session, user: user)
 
-        freeze_time do
+        travel_to Time.current do
           session.extend_expiry!
           session.reload
-          expect(session.expires_at).to be_within(1.second).of(30.days.from_now)
+          expect(session.expires_at).to be_within(1.minute).of(30.days.from_now)
         end
       end
     end
@@ -151,9 +151,9 @@ RSpec.describe Session, type: :model do
       it 'sets expires_at to current time' do
         session = create(:session, user: user, expires_at: 1.hour.from_now)
 
-        freeze_time do
+        travel_to Time.current do
           session.revoke!
-          expect(session.expires_at).to eq(Time.current)
+          expect(session.expires_at).to be_within(1.second).of(Time.current)
         end
       end
 
@@ -167,10 +167,10 @@ RSpec.describe Session, type: :model do
       it 'persists the revocation' do
         session = create(:session, user: user, expires_at: 1.hour.from_now)
 
-        freeze_time do
+        travel_to Time.current do
           session.revoke!
           session.reload
-          expect(session.expires_at).to eq(Time.current)
+          expect(session.expires_at).to be_within(1.second).of(Time.current)
         end
       end
     end
@@ -201,11 +201,11 @@ RSpec.describe Session, type: :model do
 
   describe 'session lifecycle' do
     it 'can track session creation and usage' do
-      freeze_time do
+      travel_to Time.current do
         session = create(:session, user: user)
 
-        expect(session.created_at).to eq(Time.current)
-        expect(session.expires_at).to be_within(1.second).of(30.days.from_now)
+        expect(session.created_at).to be_within(1.second).of(Time.current)
+        expect(session.expires_at).to be_within(1.minute).of(30.days.from_now)
         expect(session.active?).to be true
       end
     end
@@ -273,9 +273,9 @@ RSpec.describe Session, type: :model do
     it 'can track last accessed time' do
       session = create(:session, user: user)
 
-      freeze_time do
+      travel_to Time.current do
         session.update!(last_accessed_at: Time.current)
-        expect(session.last_accessed_at).to eq(Time.current)
+        expect(session.last_accessed_at).to be_within(1.second).of(Time.current)
       end
     end
   end

@@ -108,17 +108,17 @@ RSpec.describe List, type: :model do
       let!(:collaboration) { create(:list_collaboration, list: active_list, user: collaborator) }
 
       it 'returns lists owned by user' do
-        accessible = List.accessible_by(user)
+        accessible = List.accessible_by(user).to_a
         expect(accessible).to include(active_list, draft_list, completed_list)
       end
 
       it 'returns lists where user is a collaborator' do
-        accessible = List.accessible_by(collaborator)
+        accessible = List.accessible_by(collaborator).to_a
         expect(accessible).to include(active_list)
       end
 
       it 'does not return lists where user has no access' do
-        accessible = List.accessible_by(collaborator)
+        accessible = List.accessible_by(collaborator).to_a
         expect(accessible).not_to include(draft_list, completed_list, other_user_list)
       end
     end
@@ -235,7 +235,8 @@ RSpec.describe List, type: :model do
         existing = create(:list_collaboration, list: list, user: collaborator, permission: 'read')
 
         expect {
-          list.add_collaborator(collaborator, permission: 'collaborate')
+          result = list.add_collaborator(collaborator, permission: 'collaborate')
+          expect(result).to eq(existing) # The method should return the updated existing collaboration
         }.not_to change { list.list_collaborations.count }
 
         expect(existing.reload.permission).to eq('collaborate')
@@ -292,11 +293,11 @@ RSpec.describe List, type: :model do
       it 'rounds to 2 decimal places' do
         # Create scenario where result is not a round number
         list.list_items.destroy_all
-        create_list(:list_item, 1, :completed, list: list)
+        create(:list_item, :completed, list: list)
         create_list(:list_item, 2, :pending, list: list)
 
         # 1 out of 3 = 33.333...%
-        expect(list.completion_percentage).to eq(33.33)
+        expect(list.reload.completion_percentage).to eq(33.33)
       end
     end
   end

@@ -10,6 +10,8 @@ require 'rspec/rails'
 require 'factory_bot_rails'
 require 'capybara/rails'
 require 'database_cleaner/active_record'
+require 'timecop'
+
 
 # Load shoulda-matchers if available
 begin
@@ -97,6 +99,21 @@ RSpec.configure do |config|
     DatabaseCleaner.cleaning do
       example.run
     end
+  end
+
+  # Timecop configuration
+  config.around(:each) do |example|
+    if example.metadata[:freeze_time]
+      Timecop.freeze(example.metadata[:freeze_time]) do
+        example.run
+      end
+    else
+      example.run
+    end
+  end
+
+  config.after(:each) do
+    Timecop.return
   end
 
   # Capybara configuration for system tests

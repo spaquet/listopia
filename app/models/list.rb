@@ -51,9 +51,9 @@ class List < ApplicationRecord
 
   # Scopes
   scope :active, -> { where(status: :active) }
-  scope :owned_by, ->(user) { where(user: user) }
+  scope :owned_by, ->(user) { where(user_id: user.id) }
   scope :accessible_by, ->(user) {
-    joins("LEFT JOIN list_collaborations ON lists.id = list_collaborations.list_id")
+    left_joins(:list_collaborations)
       .where("lists.user_id = ? OR list_collaborations.user_id = ?", user.id, user.id)
       .distinct
   }
@@ -82,8 +82,13 @@ class List < ApplicationRecord
 
   # Add collaborator with specific permission
   def add_collaborator(user, permission: "read")
-    list_collaborations.find_or_create_by(user: user) do |collaboration|
-      collaboration.permission = permission
+    collaboration = list_collaborations.find_by(user: user)
+
+    if collaboration
+      collaboration.update!(permission: permission)
+      collaboration
+    else
+      list_collaborations.create!(user: user, permission: permission)
     end
   end
 
