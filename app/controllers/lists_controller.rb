@@ -87,6 +87,9 @@ class ListsController < ApplicationController
 
   # Update an existing list
   def update
+    # Store previous status for notifications
+    previous_status = @list.status
+
     if @list.update(list_params)
       respond_to do |format|
         format.html { redirect_to @list, notice: "List was successfully updated." }
@@ -115,6 +118,7 @@ class ListsController < ApplicationController
     @list = current_user.accessible_lists.find(params[:id])
     authorize_resource_access!(@list, :edit)
 
+    previous_status = @list.status
     new_status = @list.status_completed? ? :active : :completed
     @list.update!(status: new_status)
 

@@ -31,6 +31,12 @@ application.register("list-management", ListManagementController)
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
 
+import NotificationFiltersController from "./notification_filters_controller"
+application.register("notification-filters", NotificationFiltersController)
+
+import NotificationsController from "./notifications_controller"
+application.register("notifications", NotificationsController)
+
 import ProgressAnimationController from "./progress_animation_controller"
 application.register("progress-animation", ProgressAnimationController)
 

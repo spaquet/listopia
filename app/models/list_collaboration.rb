@@ -37,9 +37,14 @@ class ListCollaboration < ApplicationRecord
   # Rails 8 token generation for invitations
   generates_token_for :invitation, expires_in: 24.hours
 
+  # Notifications
+  after_create :notify_collaboration_created
+
+  # Associations
   belongs_to :list
   belongs_to :user, optional: true  # Make user optional for pending invitations
 
+  # Validations
   validates :email, presence: true, unless: :user_id?
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
   validates :permission, presence: true
@@ -126,5 +131,13 @@ class ListCollaboration < ApplicationRecord
         errors.add(:email, "is already a collaborator on this list")
       end
     end
+  end
+
+  # Notify the owner when a new collaboration is created
+  def notify_collaboration_created
+    return unless user.present? && Current.user
+
+    NotificationService.new(Current.user)
+                      .notify_collaboration_joined(list, user)
   end
 end

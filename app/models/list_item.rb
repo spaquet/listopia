@@ -41,6 +41,15 @@
 #  fk_rails_...  (list_id => lists.id)
 #
 class ListItem < ApplicationRecord
+  # Track changes for notifications
+  attribute :previous_title_value
+  attribute :skip_notifications, :boolean, default: false
+
+  before_update :track_title_change
+  after_create :notify_item_created
+  after_update :notify_item_updated
+  after_destroy :notify_item_destroyed
+
   # Associations
   belongs_to :list
   belongs_to :assigned_user, class_name: "User", optional: true
@@ -96,6 +105,13 @@ class ListItem < ApplicationRecord
     list.collaboratable_by?(user) || assigned_user == user
   end
 
+  # Track completion change for notifications
+  def toggle_completion!(skip_notifications: false)
+    self.skip_notifications = skip_notifications
+    update!(completed: !completed)
+  end
+
+
   private
 
   # Set completed_at timestamp when item is marked as completed
@@ -103,5 +119,38 @@ class ListItem < ApplicationRecord
     if completed_changed?
       self.completed_at = completed? ? Time.current : nil
     end
+  end
+
+  def track_title_change
+    if title_changed?
+      self.previous_title_value = title_was
+    end
+  end
+
+  def notify_item_created
+    return if skip_notifications || !Current.user
+
+    NotificationService.new(Current.user)
+                      .notify_item_activity(self, "created")
+  end
+
+  def notify_item_updated
+    return if skip_notifications || !Current.user
+
+    if saved_change_to_completed?
+      action = completed? ? "completed" : "uncompleted"
+      NotificationService.new(Current.user)
+                        .notify_item_activity(self, action, previous_title_value)
+    elsif saved_changes.except("updated_at", "completed_at").any?
+      NotificationService.new(Current.user)
+                        .notify_item_activity(self, "updated", previous_title_value)
+    end
+  end
+
+  def notify_item_destroyed
+    return if skip_notifications || !Current.user
+
+    NotificationService.new(Current.user)
+                      .notify_item_activity(self, "deleted")
   end
 end

@@ -1,4 +1,4 @@
-# app/controllers/list_items_controller.rb
+# app/controllers/list_items_controller.rb to include notifications
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
@@ -35,6 +35,8 @@ class ListItemsController < ApplicationController
 
   # Delete a list item
   def destroy
+    # Store title for notification before deletion
+    item_title = @list_item.title
     @list_item.destroy
 
     respond_with_turbo_stream do
@@ -99,22 +101,40 @@ class ListItemsController < ApplicationController
   # Update positions for drag-and-drop reordering
   def update_positions
     params[:positions].each do |item_id, position|
-      @list.list_items.find(item_id).update!(position: position.to_i)
+      item = @list.list_items.find(item_id)
+      item.skip_notifications = true # Avoid spamming notifications for reordering
+      item.update!(position: position.to_i)
     end
   end
 
   # Mark multiple items as completed
   def bulk_complete_items
     item_ids = params[:item_ids] || []
-    @list.list_items.where(id: item_ids).update_all(
-      completed: true,
-      completed_at: Time.current
-    )
+    @list.list_items.where(id: item_ids).find_each do |item|
+      item.skip_notifications = true # We'll send one bulk notification instead
+      item.update!(completed: true, completed_at: Time.current)
+    end
+
+    # Send a single notification for bulk completion
+    if item_ids.any? && Current.user
+      NotificationService.new(Current.user)
+                        .notify_item_activity(@list.list_items.first, "bulk_completed")
+    end
   end
 
   # Delete multiple items
   def bulk_delete_items
     item_ids = params[:item_ids] || []
-    @list.list_items.where(id: item_ids).destroy_all
+    items = @list.list_items.where(id: item_ids)
+    items.find_each do |item|
+      item.skip_notifications = true
+    end
+    items.destroy_all
+
+    # Send a single notification for bulk deletion
+    if item_ids.any? && Current.user
+      NotificationService.new(Current.user)
+                        .notify_item_activity(@list.list_items.build(title: "#{item_ids.count} items"), "bulk_deleted")
+    end
   end
 end

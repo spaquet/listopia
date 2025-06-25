@@ -22,6 +22,7 @@
 #  index_users_on_email_verification_token  (email_verification_token) UNIQUE
 #  index_users_on_provider_and_uid          (provider,uid) UNIQUE
 #
+# Update app/models/user.rb - Add notification association and methods
 class User < ApplicationRecord
   has_secure_password
 
@@ -34,6 +35,9 @@ class User < ApplicationRecord
   has_many :list_collaborations, dependent: :destroy
   has_many :collaborated_lists, through: :list_collaborations, source: :list
   has_many :sessions, dependent: :destroy
+
+  # Add noticed notifications
+  has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
@@ -57,6 +61,15 @@ class User < ApplicationRecord
   # Get all accessible lists (owned + collaborated)
   def accessible_lists
     List.where(id: lists.pluck(:id) + collaborated_lists.pluck(:id))
+  end
+
+  # Notification convenience methods
+  def unread_notifications_count
+    notifications.where(read_at: nil).count
+  end
+
+  def unseen_notifications_count
+    notifications.where(seen_at: nil).count
   end
 
   # Generate magic link token (using Rails 8 generates_token_for)

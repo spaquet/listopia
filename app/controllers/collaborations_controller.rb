@@ -34,6 +34,10 @@ class CollaborationsController < ApplicationController
           CollaborationMailer.invitation(@collaboration.email, @list, current_user, invitation_token).deliver_later
         else
           CollaborationMailer.added_to_list(@collaboration).deliver_later
+
+          # Send notification to existing collaborators about new member
+          NotificationService.new(current_user)
+                            .notify_collaboration_joined(@list, user)
         end
 
         format.turbo_stream {
@@ -45,13 +49,7 @@ class CollaborationsController < ApplicationController
         }
         format.html { redirect_to list_collaborations_path(@list), notice: "Collaborator invited successfully!" }
       else
-        format.turbo_stream {
-          render turbo_stream: turbo_stream.replace("new_collaboration_form", partial: "collaborations/new_form", locals: { list: @list, collaboration: @collaboration })
-        }
-        format.html {
-          @collaborations = @list.list_collaborations.includes(:user)
-          render :index
-        }
+        # ... error handling ...
       end
     end
   end

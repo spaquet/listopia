@@ -1,0 +1,43 @@
+<!-- app/views/notifications/_notification_preview.html.erb -->
+<%= link_to notification_path(notification), 
+            class: "block px-4 py-3 hover:bg-gray-50 transition-colors duration-200 #{notification.read? ? 'opacity-60' : ''}" do %>
+  <div class="flex items-start space-x-3">
+    <!-- Icon -->
+    <div class="flex-shrink-0">
+      <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <% case notification.icon %>
+          <% when "user-plus" %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          <% when "check-circle" %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          <% when "edit" %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          <% when "plus-circle" %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          <% else %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          <% end %>
+        </svg>
+      </div>
+    </div>
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <p class="text-sm text-gray-900 font-medium truncate">
+        <%= notification.title %>
+      </p>
+      <p class="text-xs text-gray-600 mt-1 line-clamp-2">
+        <%= notification.message %>
+      </p>
+      <p class="text-xs text-gray-400 mt-1">
+        <%= time_ago_in_words(notification.created_at) %> ago
+      </p>
+    </div>
+    <!-- Unread indicator -->
+    <% unless notification.read? %>
+      <div class="flex-shrink-0">
+        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
