@@ -4,7 +4,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Welcome back, <%= current_user.name %>!</h1>
+        <h1 class="text-2xl font-bold text-gray-900">Welcome back, <%= current_user.name.split.first %>!</h1>
         <p class="text-gray-600 mt-1">Here's what's happening with your lists today.</p>
       </div>
       <%= link_to new_list_path, class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center" do %>
