@@ -116,7 +116,10 @@ class ListsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to lists_path, notice: "List was successfully deleted." }
-      format.turbo_stream { render :destroy }
+      format.turbo_stream do
+        # Always redirect to lists index after deletion
+        redirect_to lists_path, notice: "List was successfully deleted."
+      end
     end
   end
 

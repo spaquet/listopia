@@ -1,4 +1,5 @@
 <!-- app/views/lists/destroy.turbo_stream.erb -->
+<!-- Remove the list from any index page and show success message -->
 <%= turbo_stream.remove "list_<%= @list.id %>" %>
 <%= turbo_stream.update "flash-messages" do %>
   <%= render "shared/flash_messages" %>

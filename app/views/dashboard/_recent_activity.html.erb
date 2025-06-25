@@ -1,4 +1,4 @@
-<!-- app/views/dashboard/_recent_activity.html.erb -->
+<!-- app/views/dashboard/_recent_activity.html.erb - Fix list links -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
   <div class="px-6 py-4 border-b border-gray-200">
     <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
@@ -19,7 +19,9 @@
               <%= item.title %>
             </p>
             <p class="text-xs text-gray-500">
-              in <%= link_to item.list.title, item.list, class: "text-blue-600 hover:text-blue-800" %>
+              in <%= link_to item.list.title, item.list, 
+                             data: { turbo_frame: "_top" },
+                             class: "text-blue-600 hover:text-blue-800" %>
               • <%= time_ago_in_words_or_date(item.updated_at) %>
             </p>
           </div>

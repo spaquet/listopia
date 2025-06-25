@@ -1,9 +1,11 @@
-<!-- app/views/dashboard/_my_lists.html.erb -->
+<!-- app/views/dashboard/_my_lists.html.erb - Fix list links -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
   <div class="px-6 py-4 border-b border-gray-200">
     <div class="flex items-center justify-between">
       <h3 class="text-lg font-medium text-gray-900">My Lists</h3>
-      <%= link_to lists_path, class: "text-sm text-blue-600 hover:text-blue-800" do %>
+      <%= link_to lists_path, 
+                  data: { turbo_frame: "_top" },
+                  class: "text-sm text-blue-600 hover:text-blue-800" do %>
         View all
       <% end %>
     </div>
@@ -11,7 +13,22 @@
   <div class="divide-y divide-gray-200">
     <% if lists.any? %>
       <% lists.each do |list| %>
-        <%= render "shared/list_card", list: list %>
+        <div class="px-6 py-4 hover:bg-gray-50 transition-colors duration-200">
+          <div class="flex items-center justify-between">
+            <div class="flex-1 min-w-0">
+              <%= link_to list, 
+                          data: { turbo_frame: "_top" },
+                          class: "font-medium text-gray-900 hover:text-blue-600 truncate block" do %>
+                <%= list.title %>
+              <% end %>
+              <% if list.description.present? %>
+                <p class="text-sm text-gray-500 mt-1 truncate"><%= list.description %></p>
+              <% end %>
+              <p class="text-xs text-gray-400 mt-1">Updated <%= time_ago_in_words_or_date(list.updated_at) %></p>
+            </div>
+            <%= list_status_badge(list) %>
+          </div>
+        </div>
       <% end %>
     <% else %>
       <div class="p-6 text-center">
@@ -20,7 +37,9 @@
         </svg>
         <h4 class="text-lg font-medium text-gray-900 mb-2">No lists yet</h4>
         <p class="text-gray-600 mb-4">Create your first list to get started organizing your tasks and ideas.</p>
-        <%= link_to new_list_path, class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" do %>
+        <%= link_to new_list_path, 
+                    data: { turbo_frame: "_top" },
+                    class: "inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" do %>
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
