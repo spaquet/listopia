@@ -1,4 +1,6 @@
 <!-- app/views/lists/create.turbo_stream.erb -->
+<!-- This template is used for adding new lists to the index page via AJAX -->
+<!-- Currently not used since we redirect on successful creation -->
 <%= turbo_stream.prepend "lists-container" do %>
   <%= render "lists/list_card", list: @list %>
 <% end %>

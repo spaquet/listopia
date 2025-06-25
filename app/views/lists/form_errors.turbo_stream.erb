@@ -1,0 +1,5 @@
+<!-- app/views/lists/form_errors.turbo_stream.erb -->
+<!-- Update flash messages to show validation errors -->
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>

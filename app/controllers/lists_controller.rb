@@ -59,12 +59,19 @@ class ListsController < ApplicationController
     if @list.save
       respond_to do |format|
         format.html { redirect_to @list, notice: "List was successfully created." }
-        format.turbo_stream { render :create }
+        format.turbo_stream do
+          # For successful creation, always redirect to the new list
+          redirect_to @list, notice: "List was successfully created."
+        end
       end
     else
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
-        format.turbo_stream { render :form_errors }
+        format.turbo_stream do
+          # Only use Turbo Stream for validation errors
+          flash.now[:alert] = "Please fix the errors below."
+          render :new, status: :unprocessable_entity
+        end
       end
     end
   end
