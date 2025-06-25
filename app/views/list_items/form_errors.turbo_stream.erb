@@ -1,0 +1,7 @@
+<!-- app/views/list_items/form_errors.turbo_stream.erb -->
+<%= turbo_stream.replace "new_list_item" do %>
+  <%= render "list_items/quick_add_form", list: @list, list_item: @list_item %>
+<% end %>
+<%= turbo_stream.update "flash-messages" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>

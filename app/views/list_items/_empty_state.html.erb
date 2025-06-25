@@ -6,13 +6,6 @@
   <h3 class="text-lg font-medium text-gray-900 mb-2">No items yet</h3>
   <% if current_user && can_access_list?(list, current_user, :edit) %>
     <p class="text-gray-600 mb-4">Start adding items to your list to get organized!</p>
-    <button class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
-            onclick="document.querySelector('input[name=\"list_item[title]\"]').focus()">
-      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-      </svg>
-      Add First Item
-    </button>
   <% elsif current_user %>
     <p class="text-gray-600 mb-4">This list doesn't have any items yet.</p>
   <% else %>

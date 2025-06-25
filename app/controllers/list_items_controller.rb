@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion ]
+  before_action :set_list_item, only: [ :update, :destroy, :toggle_completion ]
   before_action :authorize_list_access!
 
   # Create a new list item
