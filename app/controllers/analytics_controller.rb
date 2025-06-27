@@ -139,7 +139,7 @@ class AnalyticsController < ApplicationController
 
     # Get counts for all item types, ensuring 0 for missing types
     type_counts = ListItem.item_types.keys.map do |type|
-      [type, items.where(item_type: type).count]
+      [ type, items.where(item_type: type).count ]
     end.to_h
 
     {
@@ -151,8 +151,8 @@ class AnalyticsController < ApplicationController
         personal: %w[habit health learning travel shopping home finance social entertainment].sum { |type| type_counts[type] || 0 }
       },
       avg_title_length: items.any? ? items.average("LENGTH(title)").to_f.round(1) : 0,
-      items_with_descriptions: items.where.not(description: [nil, ""]).count,
-      items_with_urls: items.where.not(url: [nil, ""]).count,
+      items_with_descriptions: items.where.not(description: [ nil, "" ]).count,
+      items_with_urls: items.where.not(url: [ nil, "" ]).count,
       items_with_reminders: items.where.not(reminder_at: nil).count,
       items_with_due_dates: items.where.not(due_date: nil).count
     }
@@ -163,12 +163,12 @@ class AnalyticsController < ApplicationController
 
     # Ensure all priorities have default values
     priority_distribution = ListItem.priorities.keys.map do |priority|
-      [priority, items.where(priority: priority).count]
+      [ priority, items.where(priority: priority).count ]
     end.to_h
 
     priority_completion = ListItem.priorities.keys.map do |priority|
       priority_items = items.where(priority: priority)
-      [priority, calculate_completion_rate(priority_items)]
+      [ priority, calculate_completion_rate(priority_items) ]
     end.to_h
 
     {
@@ -188,14 +188,14 @@ class AnalyticsController < ApplicationController
   def completion_by_priority
     ListItem.priorities.keys.map do |priority|
       items = @list.list_items.where(priority: priority)
-      [priority, calculate_completion_rate(items)]
+      [ priority, calculate_completion_rate(items) ]
     end.to_h
   end
 
   def completion_by_item_type
     ListItem.item_types.keys.map do |type|
       items = @list.list_items.where(item_type: type)
-      [type, calculate_completion_rate(items)]
+      [ type, calculate_completion_rate(items) ]
     end.to_h
   end
 
@@ -246,7 +246,7 @@ class AnalyticsController < ApplicationController
     # Last 7 days completion trend
     7.days.ago.to_date.upto(Date.current).map do |date|
       completed = @list.list_items.where(completed_at: date.all_day).count
-      [date.strftime("%a"), completed]
+      [ date.strftime("%a"), completed ]
     end.to_h
   end
 
@@ -269,7 +269,7 @@ class AnalyticsController < ApplicationController
       overdue = @list.list_items.where(priority: priority)
                      .where("due_date < ? AND completed = false", Time.current)
                      .count
-      [priority, overdue]
+      [ priority, overdue ]
     end.to_h
   end
 
