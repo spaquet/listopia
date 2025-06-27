@@ -25,6 +25,9 @@ application.register("filters", FiltersController)
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
 
+import InlineEditController from "./inline_edit_controller"
+application.register("inline-edit", InlineEditController)
+
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
 
