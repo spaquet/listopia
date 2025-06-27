@@ -1,7 +1,18 @@
 <!-- app/views/list_items/create.turbo_stream.erb -->
-<!-- Always prepend new items to the top of the list -->
-<%= turbo_stream.prepend "list-items" do %>
-  <%= render "list_items/item", item: @list_item, list: @list %>
+<!-- Always replace the entire list-items container to ensure correct state -->
+<!-- This ensures we transition properly regardless of the current UI state -->
+<%= turbo_stream.replace "list-items" do %>
+  <div id="list-items" 
+       class="divide-y divide-gray-200" 
+       <% if current_user && can_access_list?(@list, current_user, :edit) %>
+         data-controller="sortable" 
+         data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>"
+       <% end %>>
+    <!-- Render ALL current items, including the new one -->
+    <% @list.list_items.order(:position, :created_at).each do |item| %>
+      <%= render "list_items/item", item: item, list: @list %>
+    <% end %>
+  </div>
 <% end %>
 <!-- Replace the form with a fresh one (this clears any error messages) -->
 <%= turbo_stream.replace "new_list_item" do %>

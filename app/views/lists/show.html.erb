@@ -153,8 +153,13 @@
         <% end %>
       </div>
     </div>
-    <!-- Always render a container that can accept prepended items -->
-    <div id="list-items" class="divide-y divide-gray-200" <% if current_user && can_access_list?(@list, current_user, :edit) %>data-controller="sortable" data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>"<% end %>>
+    <!-- Items Container - ALWAYS present with consistent structure -->
+    <div id="list-items" 
+       <% if current_user && can_access_list?(@list, current_user, :edit) && @list_items.any? %>
+         class="divide-y divide-gray-200" 
+         data-controller="sortable" 
+         data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>"
+       <% end %>>
       <% if @list_items.any? %>
         <% @list_items.each do |item| %>
           <%= render "list_items/item", item: item, list: @list %>
