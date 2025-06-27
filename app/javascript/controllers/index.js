@@ -13,6 +13,9 @@ application.register("clipboard", ClipboardController)
 import CollaborationController from "./collaboration_controller"
 application.register("collaboration", CollaborationController)
 
+import CustomSelectController from "./custom_select_controller"
+application.register("custom-select", CustomSelectController)
+
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
 
@@ -21,6 +24,9 @@ application.register("filters", FiltersController)
 
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
+
+import InlineEditController from "./inline_edit_controller"
+application.register("inline-edit", InlineEditController)
 
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)

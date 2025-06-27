@@ -3,95 +3,46 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   editItem(event) {
+    event.preventDefault()
     const itemId = event.currentTarget.dataset.itemId
-    const itemElement = document.getElementById(`list_item_${itemId}`)
     
-    if (itemElement) {
-      // Create inline edit form
-      this.createInlineEditForm(itemElement, itemId)
+    if (!itemId) {
+      console.error('No item ID found')
+      return
+    }
+    
+    // Make a request to get the edit form
+    this.loadEditForm(itemId)
+  }
+
+  async loadEditForm(itemId) {
+    try {
+      const listId = this.getListId()
+      const response = await fetch(`/lists/${listId}/items/${itemId}/edit`, {
+        headers: {
+          'Accept': 'text/vnd.turbo-stream.html',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      })
+      
+      if (response.ok) {
+        const streamHtml = await response.text()
+        Turbo.renderStreamMessage(streamHtml)
+      } else {
+        console.error('Failed to load edit form')
+        this.showNotification('Failed to load edit form', 'error')
+      }
+    } catch (error) {
+      console.error('Error loading edit form:', error)
+      this.showNotification('Error loading edit form', 'error')
     }
   }
 
-  createInlineEditForm(itemElement, itemId) {
-    const titleElement = itemElement.querySelector('h3')
-    const descriptionElement = itemElement.querySelector('p')
-    
-    const currentTitle = titleElement.textContent.trim()
-    const currentDescription = descriptionElement ? descriptionElement.textContent.trim() : ''
-    
-    // Create edit form
-    const editForm = document.createElement('div')
-    editForm.className = 'space-y-3 p-4 bg-gray-50 rounded-lg'
-    editForm.innerHTML = `
-      <form data-action="submit->list-management#saveItem" data-item-id="${itemId}">
-        <div class="space-y-3">
-          <input type="text" 
-                 name="title" 
-                 value="${currentTitle}" 
-                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                 required>
-          <textarea name="description" 
-                    rows="2" 
-                    placeholder="Description..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">${currentDescription}</textarea>
-          <div class="flex space-x-2">
-            <button type="submit" 
-                    class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors duration-200">
-              Save
-            </button>
-            <button type="button" 
-                    data-action="click->list-management#cancelEdit"
-                    class="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400 transition-colors duration-200">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </form>
-    `
-    
-    // Replace item content with edit form
-    const contentDiv = itemElement.querySelector('.flex-1')
-    contentDiv.innerHTML = ''
-    contentDiv.appendChild(editForm)
-    
-    // Focus on title input
-    editForm.querySelector('input[name="title"]').focus()
-  }
-
-  saveItem(event) {
-    event.preventDefault()
-    
-    const form = event.target
-    const itemId = form.dataset.itemId
-    const formData = new FormData(form)
-    
-    // Make PATCH request to update item
-    fetch(`/lists/${this.data.get("listId")}/items/${itemId}`, {
-      method: 'PATCH',
-      headers: {
-        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-        'Accept': 'text/vnd.turbo-stream.html'
-      },
-      body: formData
-    })
-    .then(response => response.text())
-    .then(html => {
-      // Let Turbo handle the stream response
-      Turbo.renderStreamMessage(html)
-    })
-    .catch(error => {
-      console.error('Error updating item:', error)
-      // Show error message
-      this.showNotification('Error updating item', 'error')
-    })
-  }
-
-  cancelEdit(event) {
-    event.preventDefault()
-    
-    // Reload the page to restore original content
-    // In a more sophisticated app, you'd restore from cached content
-    location.reload()
+  getListId() {
+    // Extract list ID from the current URL
+    const pathParts = window.location.pathname.split('/')
+    const listsIndex = pathParts.indexOf('lists')
+    return listsIndex >= 0 ? pathParts[listsIndex + 1] : null
   }
 
   showNotification(message, type = 'info') {

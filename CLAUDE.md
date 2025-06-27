@@ -11,7 +11,7 @@ Create a powerful yet intuitive list management platform that demonstrates Rails
 
 ### Framework & Version
 - **Rails 8.0+** with latest features including Solid Queue
-- **Ruby 3.2+** 
+- **Ruby 3.4+** 
 - **PostgreSQL** with UUID primary keys throughout
 - **Tailwind CSS 4.1** for responsive design
 - **Bun** for JavaScript package management
@@ -220,19 +220,3 @@ Please consider this context:
 - **Form Enhancement**: Auto-save, keyboard shortcuts
 - **Drag and Drop**: List item reordering
 - **Real-time Updates**: WebSocket fallback patterns
-
-## Quick Start for Development
-
-```bash
-# Setup
-bundle install && bun install
-rails db:create db:migrate
-rails db:seed
-
-# Run
-rails server
-# Visit: http://localhost:3000
-# Login: admin@listopia.com / password123
-```
-
-This comprehensive context should help you understand Listopia's architecture, current state, and development philosophy for any future work on the application.

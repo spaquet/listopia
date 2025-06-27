@@ -60,7 +60,7 @@ Rails.application.routes.draw do
     end
 
     # List items
-    resources :list_items, path: "items", except: [ :show, :new, :edit ] do
+    resources :list_items, path: "items", except: [ :show, :new ] do
       member do
         patch :toggle_completion
       end

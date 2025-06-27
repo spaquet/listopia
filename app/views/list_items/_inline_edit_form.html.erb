@@ -1,0 +1,198 @@
+<!-- app/views/list_items/_inline_edit_form.html.erb -->
+<div data-controller="inline-edit" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+  <%= form_with model: [list, item], 
+                data: { 
+                  turbo_frame: "list_item_#{item.id}",
+                  action: "turbo:submit-end->inline-edit#handleSuccess turbo:submit-start->inline-edit#clearError" 
+                },
+                class: "space-y-4" do |f| %>
+    <!-- Error container -->
+    <div id="edit-form-errors-<%= item.id %>">
+      <% if item.errors.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <div class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+              <h4 class="text-sm font-medium text-red-800">Please fix the following errors:</h4>
+              <ul class="mt-1 text-xs text-red-700 list-disc list-inside">
+                <% item.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <!-- Title Field -->
+    <div>
+      <%= f.label :title, "Title", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <%= f.text_field :title, 
+                       placeholder: "Item title...", 
+                       class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 #{'border-red-300 focus:border-red-500 focus:ring-red-500' if item.errors[:title].any?}",
+                       data: { 
+                         action: "input->inline-edit#clearError",
+                         "inline-edit-target": "titleInput" 
+                       } %>
+    </div>
+    <!-- Description Field -->
+    <div>
+      <%= f.label :description, "Description (optional)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <%= f.text_area :description,
+                      rows: 2,
+                      placeholder: "Add more details...",
+                      class: "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+    </div>
+    <!-- Type, Priority, and Due Date Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Type Select -->
+      <div>
+        <%= f.label :item_type, "Type", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <div data-controller="custom-select" 
+             data-custom-select-name-value="<%= f.object_name %>[item_type]"
+             data-custom-select-value-value="<%= item.item_type %>">
+          <div class="relative">
+            <button type="button"
+                    data-action="click->custom-select#toggle"
+              data-custom-select-target="trigger"
+              class="w-full h-11 px-3 py-2 text-left bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between">
+              <div class="flex items-center space-x-2" data-custom-select-target="selectedDisplay">
+                <% current_type_icon = case item.item_type
+                   when "task" then "✓"
+                   when "note" then "📝"
+                   when "link" then "🔗"
+                   when "file" then "📎"
+                   when "reminder" then "⏰"
+                   else "✓"
+                   end %>
+                <span class="text-lg"><%= current_type_icon %></span>
+                <span><%= item.item_type.titleize %></span>
+              </div>
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div data-custom-select-target="dropdown" 
+                 class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div class="py-1">
+                <button type="button" data-action="click->custom-select#select" data-value="task" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <span class="text-lg">✓</span>
+                  <span>Task</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="note" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <span class="text-lg">📝</span>
+                  <span>Note</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="link" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <span class="text-lg">🔗</span>
+                  <span>Link</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="file" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <span class="text-lg">📎</span>
+                  <span>File</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="reminder" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <span class="text-lg">⏰</span>
+                  <span>Reminder</span>
+                </button>
+              </div>
+            </div>
+            <input type="hidden" 
+                   name="<%= f.object_name %>[item_type]" 
+                   data-custom-select-target="hiddenInput"
+                   value="<%= item.item_type %>">
+          </div>
+        </div>
+      </div>
+      <!-- Priority Select -->
+      <div>
+        <%= f.label :priority, "Priority", class: "block text-sm font-medium text-gray-700 mb-2" %>
+        <div data-controller="custom-select" 
+             data-custom-select-name-value="<%= f.object_name %>[priority]"
+             data-custom-select-value-value="<%= item.priority %>">
+          <div class="relative">
+            <button type="button"
+                    data-action="click->custom-select#toggle"
+              data-custom-select-target="trigger"
+              class="w-full h-11 px-3 py-2 text-left bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between">
+              <div class="flex items-center space-x-2" data-custom-select-target="selectedDisplay">
+                <% current_priority_color = case item.priority
+                   when "low" then "bg-gray-400"
+                   when "medium" then "bg-yellow-400"
+                   when "high" then "bg-orange-500"
+                   when "urgent" then "bg-red-500"
+                   else "bg-yellow-400"
+                   end %>
+                <div class="w-2 h-2 rounded-full <%= current_priority_color %>"></div>
+                <span><%= item.priority.titleize %></span>
+              </div>
+              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div data-custom-select-target="dropdown" 
+                 class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div class="py-1">
+                <button type="button" data-action="click->custom-select#select" data-value="low" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+                  <span>Low</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="medium" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <div class="w-2 h-2 rounded-full bg-yellow-400"></div>
+                  <span>Medium</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="high" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span>High</span>
+                </button>
+                <button type="button" data-action="click->custom-select#select" data-value="urgent" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
+                  <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span>Urgent</span>
+                </button>
+              </div>
+            </div>
+            <input type="hidden" 
+                   name="<%= f.object_name %>[priority]" 
+                   data-custom-select-target="hiddenInput"
+                   value="<%= item.priority %>">
+          </div>
+        </div>
+      </div>
+      <!-- Due Date -->
+      <div>
+        <%= f.label :due_date, class: "block text-sm font-medium text-gray-700 mb-2" do %>
+          Due Date 
+          <span class="text-xs text-gray-500 font-normal">(optional)</span>
+        <% end %>
+        <%= f.datetime_local_field :due_date,
+                                   value: (item.due_date&.strftime("%Y-%m-%dT%H:%M") if item.due_date),
+                                   class: "w-full h-11 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder:text-gray-400" %>
+      </div>
+    </div>
+    <!-- Action Buttons -->
+    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+      <button type="button" 
+              data-action="click->inline-edit#cancel"
+        class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200">
+        Cancel
+      </button>
+      <div class="flex space-x-3">
+        <%= button_to [list, item], 
+                      method: :delete,
+                      data: { 
+                        turbo_confirm: "Are you sure you want to delete this item?",
+                        turbo_method: :delete
+                      },
+                      form: { class: "inline-block" },
+                      class: "px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors duration-200 bg-transparent border-0 cursor-pointer" do %>
+          Delete
+        <% end %>
+        <%= f.submit "Save Changes",
+                     data: { "inline-edit-target": "submitButton" },
+                     class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium" %>
+      </div>
+    </div>
+  <% end %>
+</div>
