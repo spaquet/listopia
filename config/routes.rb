@@ -49,6 +49,11 @@ Rails.application.routes.draw do
   # Main application routes (require authentication)
   get "dashboard", to: "dashboard#index"
 
+  # Chat functionality
+  namespace :chat do
+    post "messages", to: "chat#create_message"
+  end
+
   # Lists
   resources :lists do
     member do
