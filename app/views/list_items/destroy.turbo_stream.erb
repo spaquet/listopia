@@ -1,7 +1,6 @@
 <!-- app/views/list_items/destroy.turbo_stream.erb -->
 <!-- Simply remove the item -->
 <%= turbo_stream.remove "list_item_#{@item_id}" %>
-
 <!-- Update list stats when item is removed -->
 <%= turbo_stream.replace "list-stats" do %>
   <% stats = list_completion_stats(@list) %>
@@ -16,7 +15,6 @@
     <span class="font-medium"><%= stats[:percentage] %>%</span>
   </div>
 <% end %>
-
 <!-- Show success message -->
 <%= turbo_stream.update "flash-messages" do %>
   <div class="fixed top-20 right-4 z-50 space-y-2">
@@ -35,10 +33,12 @@
     </div>
   </div>
 <% end %>
-
-<!-- If this was the last item, show empty state -->
+<!-- If this was the last item, replace the container content with empty state -->
+<!-- BUT keep the #list-items container structure intact -->
 <% if @list.list_items.count == 0 %>
   <%= turbo_stream.replace "list-items" do %>
-    <%= render "list_items/empty_state", list: @list %>
+    <div id="list-items">
+      <%= render "list_items/empty_state", list: @list %>
+    </div>
   <% end %>
 <% end %>
