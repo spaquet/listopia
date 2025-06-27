@@ -13,6 +13,9 @@ application.register("clipboard", ClipboardController)
 import CollaborationController from "./collaboration_controller"
 application.register("collaboration", CollaborationController)
 
+import CustomSelectController from "./custom_select_controller"
+application.register("custom-select", CustomSelectController)
+
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
 

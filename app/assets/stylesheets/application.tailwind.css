@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* Custom Select Style */
+.custom-select-dropdown {
+  @apply absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto;
+  transform: translateY(-4px);
+  opacity: 0;
+  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+
+.custom-select-dropdown:not(.hidden) {
+  transform: translateY(0);
+  opacity: 1;
+}
