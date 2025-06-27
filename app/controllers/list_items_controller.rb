@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :edit, :update, :destroy, :toggle_completion ]
+  before_action :set_list_item, only: [ :edit, :show, :update, :destroy, :toggle_completion ]
   before_action :authorize_list_access!
 
   # Create a new list item
@@ -83,6 +83,13 @@ class ListItemsController < ApplicationController
     @list.reload
     respond_with_turbo_stream do
       render :bulk_update
+    end
+  end
+
+  def show
+    respond_to do |format|
+      format.turbo_stream { render :show }
+      format.html { redirect_to @list }
     end
   end
 

@@ -1,0 +1,4 @@
+<!-- app/views/list_items/show.turbo_stream.erb -->
+<%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
+  <%= render "list_items/item", item: @list_item %>
+<% end %>

@@ -1,7 +1,18 @@
 <!-- app/views/list_items/update.turbo_stream.erb -->
-<%= turbo_stream.replace "list_item_<%= @list_item.id %>" do %>
-<%= render "list_items/item", item: @list_item, list: @list %>
+<%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
+  <%= render "list_items/item", item: @list_item %>
 <% end %>
-<%= turbo_stream.update "flash-messages" do %>
-  <%= render "shared/flash_messages" %>
+<!-- Update list stats after update -->
+<%= turbo_stream.replace "list-stats" do %>
+  <% stats = list_completion_stats(@list) %>
+  <div class="flex items-center space-x-6 text-sm text-gray-600">
+    <div class="flex items-center">
+      <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
+      <span class="ml-1">completed</span>
+    </div>
+    <div class="flex-1 max-w-xs">
+      <%= progress_bar(stats[:percentage]) %>
+    </div>
+    <span class="font-medium"><%= stats[:percentage] %>%</span>
+  </div>
 <% end %>
