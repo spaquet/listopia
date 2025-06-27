@@ -1,5 +1,8 @@
 <!-- app/views/list_items/_inline_edit_form.html.erb -->
-<div data-controller="inline-edit" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+<div data-controller="inline-edit" 
+     data-inline-edit-item-id-value="<%= item.id %>"
+     data-action="keydown->inline-edit#handleKeydown"
+  class="bg-gray-50 rounded-lg p-4 border border-gray-200">
   <%= form_with model: [list, item], 
                 data: { 
                   turbo_frame: "list_item_#{item.id}",

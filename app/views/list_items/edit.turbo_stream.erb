@@ -1,9 +1,12 @@
-<!-- app/views/list_items/edit.turbo_stream.erb -->
+<!-- Update app/views/list_items/edit.turbo_stream.erb -->
 <%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
-  <div id="list_item_<%= @list_item.id %>" 
-       class="px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
-       data-controller="inline-edit"
-       data-inline-edit-item-id-value="<%= @list_item.id %>">
-    <%= render "list_items/inline_edit_form", item: @list_item, list: @list %>
-  </div>
+  <%= turbo_frame_tag "list_item_#{@list_item.id}" do %>
+    <div id="list_item_<%= @list_item.id %>" 
+         class="px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
+         data-controller="inline-edit"
+         data-inline-edit-item-id-value="<%= @list_item.id %>"
+         data-action="keydown->inline-edit#handleKeydown">
+      <%= render "list_items/inline_edit_form", item: @list_item, list: @list %>
+    </div>
+  <% end %>
 <% end %>
