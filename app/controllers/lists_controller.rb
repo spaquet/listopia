@@ -1,9 +1,8 @@
 # app/controllers/lists_controller.rb
 class ListsController < ApplicationController
   before_action :authenticate_user!, except: [ :show, :show_by_slug ] # Allow public access to show methods
-  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access ]
-  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access ]
-
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
+before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
   # Display all lists accessible to the current user
   def index
     @lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items)
@@ -167,6 +166,48 @@ class ListsController < ApplicationController
       format.turbo_stream { render :toggle_public_access }
       format.json { render json: @sharing_summary }
     end
+  end
+
+  # Duplicate a list and its items
+  def duplicate
+    authorize_resource_access!(@list, :read) # Only need read access to duplicate
+
+    # Create a new list with similar attributes
+    new_list = current_user.lists.build(
+      title: "Copy of #{@list.title}",
+      description: @list.description,
+      color_theme: @list.color_theme,
+      status: :draft, # Always start as draft
+      metadata: @list.metadata&.deep_dup
+    )
+
+    if new_list.save
+      # Duplicate all list items
+      @list.list_items.find_each do |item|
+        new_list.list_items.create!(
+          title: item.title,
+          description: item.description,
+          item_type: item.item_type,
+          priority: item.priority,
+          url: item.url,
+          due_date: item.due_date, # Keep due dates as-is
+          position: item.position,
+          metadata: item.metadata&.deep_dup,
+          completed: false, # Reset completion status
+          completed_at: nil
+          # Note: assigned_user_id is intentionally omitted to reset assignments
+        )
+      end
+
+      # Simple redirect to the new list
+      redirect_to new_list
+    else
+      # If duplication fails, redirect back to original list
+      redirect_to @list, alert: "Failed to duplicate list. Please try again."
+    end
+  rescue => e
+    Rails.logger.error "List duplication failed: #{e.message}"
+    redirect_to @list, alert: "Failed to duplicate list. Please try again."
   end
 
   private
