@@ -1,0 +1,305 @@
+<%# app/views/analytics/index.html.erb %>
+<% content_for :title, "Analytics - #{@list.title}" %>
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">List Analytics</h1>
+          <p class="mt-2 text-lg text-gray-600"><%= @list.title %></p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <%= link_to @list, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to List
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <!-- Overview Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Total Items</p>
+            <p class="text-2xl font-semibold text-gray-900"><%= @analytics_data[:overview][:total_items] %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Completed</p>
+            <p class="text-2xl font-semibold text-gray-900"><%= @analytics_data[:overview][:completed_items] %></p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Completion Rate</p>
+            <p class="text-2xl font-semibold text-gray-900"><%= @analytics_data[:overview][:completion_rate] %>%</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.502 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Overdue Items</p>
+            <p class="text-2xl font-semibold text-gray-900"><%= @analytics_data[:overview][:overdue_items] %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Category Insights -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Category Performance</h3>
+        </div>
+        <div class="p-6">
+          <div class="space-y-6">
+            <% @analytics_data[:categories].each do |category, data| %>
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-sm font-medium text-gray-900 capitalize"><%= category %></h4>
+                  <span class="text-sm text-gray-500"><%= data[:total_items] %> items</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div class="bg-blue-600 h-2 rounded-full" style="width: <%= data[:completion_rate] %>%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-600">
+                  <span><%= data[:completion_rate] %>% complete</span>
+                  <span>Avg: <%= data[:avg_completion_time] %>h</span>
+                </div>
+                <% if data[:most_common_type] %>
+                  <p class="text-xs text-gray-500 mt-1">Most common: <%= data[:most_common_type].humanize %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      <!-- Priority Distribution -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Priority Distribution</h3>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <% @analytics_data[:priority][:distribution].each do |priority, count| %>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case priority
+                        when 'low' then 'bg-gray-100 text-gray-800'
+                        when 'medium' then 'bg-blue-100 text-blue-800'  
+                        when 'high' then 'bg-yellow-100 text-yellow-800'
+                        when 'urgent' then 'bg-red-100 text-red-800'
+                        end %>">
+                    <%= priority.capitalize %>
+                  </span>
+                  <span class="text-sm text-gray-900"><%= count %> items</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-sm text-gray-600">
+                    <%= (@analytics_data[:priority][:completion_by_priority][priority] || 0) %>% done
+                  </span>
+                  <% overdue_count = @analytics_data[:priority][:overdue_by_priority][priority] || 0 %>
+                  <% if overdue_count > 0 %>
+                    <span class="text-xs text-red-600">
+                      <%= overdue_count %> overdue
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Three Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Productivity Metrics -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Productivity</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <span class="text-sm text-gray-600">Most productive day</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:productivity][:most_productive_day] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Items created (30 days)</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:productivity][:items_created_last_30_days] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Items completed (30 days)</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:productivity][:items_completed_last_30_days] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Overdue rate</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:productivity][:overdue_rate] %>%</p>
+          </div>
+        </div>
+      </div>
+      <!-- Collaboration -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Collaboration</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <span class="text-sm text-gray-600">Total collaborators</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:collaboration][:total_collaborators] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Assigned items</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:overview][:assigned_items] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">Assignment completion</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:productivity][:assignment_completion_rate] %>%</p>
+          </div>
+          <div class="pt-2">
+            <div class="text-xs text-gray-600 space-y-1">
+              <div class="flex justify-between">
+                <span>Read only:</span>
+                <span><%= @analytics_data[:collaboration][:permission_breakdown][:read_only] %></span>
+              </div>
+              <div class="flex justify-between">
+                <span>Full access:</span>
+                <span><%= @analytics_data[:collaboration][:permission_breakdown][:full_access] %></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Content Insights -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">Content</h3>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <span class="text-sm text-gray-600">Avg title length</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:content][:avg_title_length] %> chars</p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">With descriptions</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:content][:items_with_descriptions] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">With URLs</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:content][:items_with_urls] %></p>
+          </div>
+          <div>
+            <span class="text-sm text-gray-600">With due dates</span>
+            <p class="text-lg font-semibold text-gray-900"><%= @analytics_data[:content][:items_with_due_dates] %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Item Types Distribution -->
+    <div class="bg-white rounded-lg shadow mb-8">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Item Types</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <% @analytics_data[:content][:by_type].each do |item_type, count| %>
+            <% next if count == 0 %>
+            <div class="text-center p-3 bg-gray-50 rounded-lg">
+              <div class="flex justify-center mb-2">
+                <%= item_type_icon_svg(item_type, css_class: "w-6 h-6") %>
+              </div>
+              <p class="text-xs font-medium text-gray-900"><%= item_type_label(item_type) %></p>
+              <p class="text-sm text-gray-600"><%= count %></p>
+              <p class="text-xs text-gray-500 mt-1"><%= item_type_category(item_type).to_s.capitalize %></p>
+            </div>
+          <% end %>
+        </div>
+        <% if @analytics_data[:content][:by_type].values.all?(&:zero?) %>
+          <div class="text-center py-8">
+            <p class="text-gray-500">No items in this list yet</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    <!-- Activity Timeline -->
+    <div class="bg-white rounded-lg shadow">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Activity Timeline (Last 30 Days)</h3>
+      </div>
+      <div class="p-6">
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+          <% active_days = @analytics_data[:timeline].select { |day| day[:items_created] > 0 || day[:items_completed] > 0 } %>
+          <% if active_days.any? %>
+            <% active_days.reverse.each do |day| %>
+              <div class="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center space-x-4">
+                  <span class="text-sm font-medium text-gray-900 min-w-[60px]"><%= day[:date].strftime("%m/%d") %></span>
+                  <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <% if day[:items_created] > 0 %>
+                      <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        +<%= day[:items_created] %>
+                      </span>
+                    <% end %>
+                    <% if day[:items_completed] > 0 %>
+                      <span class="flex items-center">
+                        <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        ✓<%= day[:items_completed] %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+                <div class="text-sm">
+                  <span class="<%= day[:net_progress] > 0 ? 'text-green-600' : day[:net_progress] < 0 ? 'text-blue-600' : 'text-gray-600' %>">
+                    Net: <%= day[:net_progress] > 0 ? '+' : '' %><%= day[:net_progress] %>
+                  </span>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <div class="text-center py-8">
+              <svg class="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+              <p class="mt-2 text-sm text-gray-500">No activity in the last 30 days</p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
