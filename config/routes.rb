@@ -55,9 +55,11 @@ Rails.application.routes.draw do
       patch :toggle_status
       patch :toggle_public_access
       post :duplicate
-      get :analytics
       get :share
     end
+
+    # Analytics routes
+    resources :analytics, only: [ :index ]
 
     # List items
     resources :list_items, path: "items", except: [ :new ] do
