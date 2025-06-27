@@ -62,12 +62,30 @@ class ListItem < ApplicationRecord
 
   # Enums
   enum :item_type, {
-    task: 0,
-    note: 1,
-    link: 2,
-    file: 3,
-    reminder: 4
-  }, prefix: true
+  # Core Planning Types
+  task: 0,          # Basic actionable item ✓
+  goal: 1,          # Objectives and targets 🎯
+  milestone: 2,     # Key deadlines and achievements 🏆
+  action_item: 3,   # Specific next actions ⚡
+  waiting_for: 4,   # Blocked items awaiting others ⏳
+  reminder: 5,      # Time-based notifications ⏰
+
+  # Knowledge & Ideas
+  idea: 6,          # Brainstorming and concepts 💡
+  note: 7,          # Information and documentation 📝
+  reference: 8,     # Links and resources 🔗
+
+  # Personal Life Management
+  habit: 9,         # Recurring personal development 🔄
+  health: 10,       # Fitness, medical, wellness 🏃‍♀️
+  learning: 11,     # Books, courses, skills 📚
+  travel: 12,       # Trips and vacation planning ✈️
+  shopping: 13,     # Purchases and errands 🛒
+  home: 14,         # Household tasks and improvements 🏠
+  finance: 15,      # Budget, bills, investments 💰
+  social: 16,       # Events, gatherings, relationships 👥
+  entertainment: 17 # Movies, shows, games, hobbies 🎬
+}, prefix: true
 
   enum :priority, {
     low: 0,

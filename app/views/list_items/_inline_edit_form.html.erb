@@ -53,61 +53,9 @@
       <!-- Type Select -->
       <div>
         <%= f.label :item_type, "Type", class: "block text-sm font-medium text-gray-700 mb-2" %>
-        <div data-controller="custom-select" 
-             data-custom-select-name-value="<%= f.object_name %>[item_type]"
-             data-custom-select-value-value="<%= item.item_type %>">
-          <div class="relative">
-            <button type="button"
-                    data-action="click->custom-select#toggle"
-              data-custom-select-target="trigger"
-              class="w-full h-11 px-3 py-2 text-left bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between">
-              <div class="flex items-center space-x-2" data-custom-select-target="selectedDisplay">
-                <% current_type_icon = case item.item_type
-                   when "task" then "✓"
-                   when "note" then "📝"
-                   when "link" then "🔗"
-                   when "file" then "📎"
-                   when "reminder" then "⏰"
-                   else "✓"
-                   end %>
-                <span class="text-lg"><%= current_type_icon %></span>
-                <span><%= item.item_type.titleize %></span>
-              </div>
-              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </button>
-            <div data-custom-select-target="dropdown" 
-                 class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <div class="py-1">
-                <button type="button" data-action="click->custom-select#select" data-value="task" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
-                  <span class="text-lg">✓</span>
-                  <span>Task</span>
-                </button>
-                <button type="button" data-action="click->custom-select#select" data-value="note" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
-                  <span class="text-lg">📝</span>
-                  <span>Note</span>
-                </button>
-                <button type="button" data-action="click->custom-select#select" data-value="link" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
-                  <span class="text-lg">🔗</span>
-                  <span>Link</span>
-                </button>
-                <button type="button" data-action="click->custom-select#select" data-value="file" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
-                  <span class="text-lg">📎</span>
-                  <span>File</span>
-                </button>
-                <button type="button" data-action="click->custom-select#select" data-value="reminder" class="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center space-x-2">
-                  <span class="text-lg">⏰</span>
-                  <span>Reminder</span>
-                </button>
-              </div>
-            </div>
-            <input type="hidden" 
-                   name="<%= f.object_name %>[item_type]" 
-                   data-custom-select-target="hiddenInput"
-                   value="<%= item.item_type %>">
-          </div>
-        </div>
+        <%= render 'shared/item_type_select', 
+                   form_object_name: f.object_name,
+                   current_value: item.item_type %>
       </div>
       <!-- Priority Select -->
       <div>
