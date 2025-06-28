@@ -29,9 +29,6 @@ class McpService
 
     begin
       # Use RubyLLM's Rails integration through the chat model
-      # The chat model has acts_as_chat which provides RubyLLM integration
-
-      # Set the model for this interaction if not already set
       model = Rails.application.config.mcp.model
       @chat.update!(model_id: model) if @chat.model_id.blank?
 
@@ -40,17 +37,15 @@ class McpService
         @chat.with_instructions(build_system_instructions, replace: true)
       end
 
-      # Configure tools if available
+      # Configure tools
       if @tools.available_tools.any?
         @tools.available_tools.each do |tool|
           @chat.with_tool(tool)
         end
       end
 
-      # Use RubyLLM's ask method which handles the full conversation flow
+      # Use RubyLLM's ask method
       response = @chat.ask(message_content)
-
-      # The response is a RubyLLM::Message object
       assistant_content = response.content
 
       # Increment rate limit counters after successful processing
@@ -61,10 +56,7 @@ class McpService
     rescue RubyLLM::Error => e
       Rails.logger.error "RubyLLM Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
-
-      error_message = "I apologize, but I encountered an error processing your request. Please try again."
-
-      error_message
+      "I apologize, but I encountered an error processing your request. Please try again."
     end
 
   rescue McpRateLimiter::RateLimitError => e
@@ -74,14 +66,12 @@ class McpService
   rescue => e
     Rails.logger.error "MCP Error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
-
     "I apologize, but I encountered an error processing your request. Please try again."
   end
 
   private
 
   def needs_system_instructions?
-    # Only add instructions if we have meaningful context or this is a new conversation
     @context.present? || @chat.messages.where(role: "system").empty?
   end
 
@@ -90,6 +80,44 @@ class McpService
 
     instructions << "You are an AI assistant integrated with Listopia, a collaborative list management application."
     instructions << "You can help users manage their lists, create items, update tasks, and collaborate with others."
+
+    # Enhanced planning context instructions
+    instructions << <<~PLANNING
+      IMPORTANT: Listopia is fundamentally a planning and organization tool. When users mention ANY of the following, you should immediately create a list with relevant items:
+
+      🎯 PLANNING CONTEXTS (always create lists):
+      - Vacation/Travel planning (flights, hotels, itinerary, packing)
+      - Project management (tasks, milestones, deliverables)
+      - Goal setting (objectives, steps, milestones)
+      - Event planning (weddings, parties, meetings)
+      - Shopping (grocery, retail, supplies)
+      - Moving/Relocation (packing, utilities, address changes)
+      - Job search (resume, applications, interviews)
+      - Learning/Education (courses, materials, schedule)
+      - Health/Fitness (workouts, diet, appointments)
+      - Financial planning (budgets, savings, investments)
+      - Home improvement (tasks, materials, contractors)
+      - Business strategy (initiatives, analysis, execution)
+
+      📋 AUTOMATIC LIST CREATION RULES:
+      1. When user mentions planning ANYTHING, create a list immediately using create_planning_list
+      2. Always include a descriptive title and helpful description
+      3. Auto-generate relevant planning items based on the context
+      4. Use appropriate item types (task, goal, milestone, reminder)
+      5. Set reasonable priorities (high for critical items, medium for important, low for nice-to-have)
+
+      💡 EXAMPLES:
+      - "Plan vacation to Argentina" → Create "Argentina Vacation Planning" list with flights, hotels, itinerary items
+      - "Organize sprint for Q1" → Create "Q1 Sprint Planning" list with scope, tasks, milestones
+      - "Need to quit smoking" → Create "Quit Smoking Plan" list with strategy steps, milestones, support items
+      - "Planning wedding" → Create "Wedding Planning" list with venue, catering, invitations, etc.
+
+      🚀 PROACTIVE PLANNING:
+      - Don't wait for the user to say "create a list"
+      - Recognize planning intent and act immediately
+      - Suggest additional items that might be helpful
+      - Ask follow-up questions to enhance the plan
+    PLANNING
 
     if @context.present?
       instructions << "Current context: #{build_context_message}"
@@ -100,10 +128,11 @@ class McpService
       @tools.available_tools.each do |tool|
         instructions << "- #{tool.class.name}: #{tool.class.description}"
       end
-      instructions << "Use these tools when appropriate to help the user accomplish their goals."
+      instructions << "Use these tools proactively when appropriate to help the user accomplish their goals."
     end
 
     instructions << "Always be helpful, accurate, and respect user permissions."
+    instructions << "Remember: When in doubt about whether something involves planning, CREATE A LIST!"
 
     instructions.join("\n\n")
   end
