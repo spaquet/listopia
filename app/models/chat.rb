@@ -63,8 +63,8 @@ class Chat < ApplicationRecord
     Rails.logger.error "Conversation integrity error for chat #{id}: #{e.message}"
 
     # Fallback: return basic conversation without problematic messages
-    safe_messages = messages.where(role: ['user', 'assistant'])
-                           .where('content IS NOT NULL AND content != ?', '')
+    safe_messages = messages.where(role: [ "user", "assistant" ])
+                           .where("content IS NOT NULL AND content != ?", "")
                            .order(created_at: :asc)
                            .map { |m| { role: m.role, content: m.content } }
 
@@ -90,10 +90,10 @@ class Chat < ApplicationRecord
   def conversation_stats
     {
       total_messages: messages.count,
-      user_messages: messages.where(role: 'user').count,
-      assistant_messages: messages.where(role: 'assistant').count,
-      tool_messages: messages.where(role: 'tool').count,
-      system_messages: messages.where(role: 'system').count,
+      user_messages: messages.where(role: "user").count,
+      assistant_messages: messages.where(role: "assistant").count,
+      tool_messages: messages.where(role: "tool").count,
+      system_messages: messages.where(role: "system").count,
       tool_calls: tool_calls.count,
       orphaned_tool_messages: orphaned_tool_messages.count,
       has_issues: has_conversation_issues?
@@ -110,7 +110,7 @@ class Chat < ApplicationRecord
 
   # Find messages that might be problematic
   def orphaned_tool_messages
-    messages.where(role: 'tool').select do |tool_msg|
+    messages.where(role: "tool").select do |tool_msg|
       tool_msg.tool_call_id.blank? ||
       !tool_calls.exists?(tool_call_id: tool_msg.tool_call_id)
     end

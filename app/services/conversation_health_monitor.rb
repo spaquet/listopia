@@ -118,10 +118,10 @@ class ConversationHealthMonitor
   def archive_broken_chat(chat, error)
     original_title = chat.title
     chat.update!(
-      status: 'archived',
+      status: "archived",
       title: "#{original_title} (Auto-archived: #{error.class.name.demodulize})",
       metadata: (chat.metadata || {}).merge({
-        archived_reason: 'conversation_integrity_failure',
+        archived_reason: "conversation_integrity_failure",
         archived_at: Time.current,
         original_error: error.message
       })
@@ -188,7 +188,7 @@ namespace :conversation do
   end
 
   desc "Check health of a specific chat"
-  task :check_chat, [:chat_id] => :environment do |t, args|
+  task :check_chat, [ :chat_id ] => :environment do |t, args|
     chat_id = args[:chat_id]
     raise "Chat ID required" unless chat_id
 
@@ -196,7 +196,7 @@ namespace :conversation do
   end
 
   desc "Repair a specific chat"
-  task :repair_chat, [:chat_id] => :environment do |t, args|
+  task :repair_chat, [ :chat_id ] => :environment do |t, args|
     chat_id = args[:chat_id]
     raise "Chat ID required" unless chat_id
 

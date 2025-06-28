@@ -62,16 +62,16 @@ class Admin::ConversationHealthController < ApplicationController
       healthy_chats: healthy_count,
       unhealthy_chats: total_chats - healthy_count,
       healthy_percentage: (healthy_count.to_f / total_chats * 100).round(2),
-      orphaned_tool_messages: Message.where(role: 'tool', tool_call_id: [nil, '']).count,
-      last_health_check: Rails.cache.read('last_conversation_health_check')
+      orphaned_tool_messages: Message.where(role: "tool", tool_call_id: [ nil, "" ]).count,
+      last_health_check: Rails.cache.read("last_conversation_health_check")
     }
   end
 
   def recent_conversation_issues
     # Get chats that were recently archived due to conversation issues
-    Chat.where(status: 'archived')
-        .where("metadata->>'archived_reason' = ?", 'conversation_integrity_failure')
-        .where('updated_at > ?', 24.hours.ago)
+    Chat.where(status: "archived")
+        .where("metadata->>'archived_reason' = ?", "conversation_integrity_failure")
+        .where("updated_at > ?", 24.hours.ago)
         .order(updated_at: :desc)
         .limit(10)
         .includes(:user)
@@ -79,9 +79,9 @@ class Admin::ConversationHealthController < ApplicationController
 
   def trending_problem_patterns
     # Analyze patterns in conversation issues
-    archived_chats = Chat.where(status: 'archived')
-                        .where("metadata->>'archived_reason' = ?", 'conversation_integrity_failure')
-                        .where('updated_at > ?', 7.days.ago)
+    archived_chats = Chat.where(status: "archived")
+                        .where("metadata->>'archived_reason' = ?", "conversation_integrity_failure")
+                        .where("updated_at > ?", 7.days.ago)
 
     patterns = archived_chats.group("metadata->>'original_error'").count
 

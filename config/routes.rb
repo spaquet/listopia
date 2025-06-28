@@ -113,7 +113,7 @@ Rails.application.routes.draw do
     resources :lists
 
     # Conversation health monitoring routes
-    resources :conversation_health, only: [:index, :show] do
+    resources :conversation_health, only: [ :index, :show ] do
       collection do
         post :check_all
       end
