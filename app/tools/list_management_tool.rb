@@ -86,20 +86,23 @@ class ListManagementTool < RubyLLM::Tool
     end
 
     item = list.list_items.create!(
-      content: title,
+      title: title,
       description: description,
-      user: @user,
-      status: :pending
+      assigned_user: @user,
+      item_type: :task,
+      priority: :medium
     )
 
     {
       success: true,
-      message: "Added item '#{item.content}' to list '#{list.title}'",
+      message: "Added item '#{item.title}' to list '#{list.title}'",
       item: {
         id: item.id,
-        content: item.content,
+        title: item.title,
         description: item.description,
-        status: item.status
+        item_type: item.item_type,
+        priority: item.priority,
+        completed: item.completed
       }
     }
   end
@@ -118,15 +121,16 @@ class ListManagementTool < RubyLLM::Tool
     item = list.list_items.find_by(id: item_id)
     return { error: "Item not found in this list" } unless item
 
-    item.update!(status: :completed)
+    item.update!(completed: true, completed_at: Time.current)
 
     {
       success: true,
-      message: "Completed item '#{item.content}'",
+      message: "Completed item '#{item.title}'",
       item: {
         id: item.id,
-        content: item.content,
-        status: item.status
+        title: item.title,
+        completed: item.completed,
+        completed_at: item.completed_at
       }
     }
   end
@@ -143,8 +147,8 @@ class ListManagementTool < RubyLLM::Tool
           description: list.description,
           status: list.status,
           items_count: list.list_items.count,
-          completed_count: list.list_items.completed.count,
-          is_owner: list.user == @user
+          completed_count: list.list_items.where(completed: true).count,
+          is_owner: list.owner == @user
         }
       end
     }
@@ -168,10 +172,11 @@ class ListManagementTool < RubyLLM::Tool
       items: items.map do |item|
         {
           id: item.id,
-          content: item.content,
+          title: item.title,
           description: item.description,
-          status: item.status,
+          item_type: item.item_type,
           priority: item.priority,
+          completed: item.completed,
           due_date: item.due_date,
           assigned_user: item.assigned_user&.name
         }
@@ -185,13 +190,13 @@ class ListManagementTool < RubyLLM::Tool
 
   def can_edit_list?(list)
     # User is owner
-    return true if list.user == @user
+    return true if list.owner == @user
 
     # User has collaborate permission
     collaboration = list.list_collaborations.find_by(user: @user)
     return false unless collaboration
 
     # Check if user has collaborate permission (assuming this allows editing)
-    collaboration.permission == "collaborate"
+    collaboration.permission_collaborate?
   end
 end
