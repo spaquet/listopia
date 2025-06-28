@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Chats", type: :request do
+RSpec.describe "Chat::Chats", type: :request do
   describe "GET /index" do
     pending "add some examples (or delete) #{__FILE__}"
   end

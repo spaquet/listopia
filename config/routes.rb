@@ -50,9 +50,7 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#index"
 
   # Chat functionality
-  namespace :chat do
-    post "messages", to: "chat#create_message"
-  end
+  post "/chat/messages", to: "chat/chat#create_message", as: :chat_messages
 
   # Lists
   resources :lists do

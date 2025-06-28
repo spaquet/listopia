@@ -25,7 +25,8 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Chat < ApplicationRecord
-  include RubyLlm::ActsAsChat
+  # Remove acts_as_chat for now since it's causing issues
+  # acts_as_chat
 
   belongs_to :user
   has_many :messages, dependent: :destroy
@@ -34,9 +35,9 @@ class Chat < ApplicationRecord
   validates :status, inclusion: { in: %w[active archived completed] }
 
   enum :status, {
-    active: "active",
-    archived: "archived",
-    completed: "completed"
+    active: 'active',
+    archived: 'archived',
+    completed: 'completed'
   }, prefix: true
 
   scope :recent, -> { order(last_message_at: :desc, created_at: :desc) }
@@ -50,28 +51,28 @@ class Chat < ApplicationRecord
   end
 
   def conversation_history
-    messages.where(role: [ "user", "assistant" ])
+    messages.where(role: ['user', 'assistant'])
            .order(created_at: :asc)
            .map(&:to_llm_format)
   end
 
   def add_user_message(content, context: {})
     messages.create!(
-      role: "user",
+      role: 'user',
       content: content,
       user: user,
       context_snapshot: context,
-      message_type: "text"
+      message_type: 'text'
     )
   end
 
   def add_assistant_message(content, tool_calls: [], tool_results: [], metadata: {})
     messages.create!(
-      role: "assistant",
+      role: 'assistant',
       content: content,
       tool_calls: tool_calls,
       tool_call_results: tool_results,
-      message_type: tool_calls.any? ? "tool_call" : "text",
+      message_type: tool_calls.any? ? 'tool_call' : 'text',
       metadata: metadata
     )
   end

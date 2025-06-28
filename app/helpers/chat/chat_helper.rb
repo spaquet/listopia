@@ -1,5 +1,5 @@
-# app/helpers/chat_helper.rb
-module ChatHelper
+# app/helpers/chat/chat_helper.rb
+module Chat::ChatHelper
   # Generate contextual data for the chat component based on current page
   def chat_context
     context = {
@@ -43,12 +43,14 @@ module ChatHelper
         })
       end
     when "index"
-      context.merge!({
-        total_lists: current_user.accessible_lists.count,
-        my_lists_count: current_user.lists.count,
-        collaborated_lists_count: current_user.collaborated_lists.count,
-        suggestions: list_index_suggestions
-      })
+      if current_user
+        context.merge!({
+          total_lists: current_user.accessible_lists.count,
+          my_lists_count: current_user.lists.count,
+          collaborated_lists_count: current_user.collaborated_lists.count,
+          suggestions: list_index_suggestions
+        })
+      end
     when "new", "create"
       context.merge!({
         suggestions: list_creation_suggestions
@@ -96,7 +98,7 @@ module ChatHelper
   def list_page_suggestions
     suggestions = []
 
-    if defined?(@list) && @list
+    if defined?(@list) && @list && current_user
       suggestions << "Add items to this list" if @list.collaboratable_by?(current_user)
       suggestions << "Mark items as completed" if @list.list_items.pending.any?
       suggestions << "Set due dates for items" if @list.list_items.where(due_date: nil).any?

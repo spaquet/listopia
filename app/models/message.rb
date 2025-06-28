@@ -36,29 +36,30 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Message < ApplicationRecord
-  include RubyLlm::ActsAsMessage
+  # Remove acts_as_message for now since it's causing ToolCall model issues
+  # acts_as_message
 
   belongs_to :chat
-  belongs_to :user, optional: true # Assistant messages don"t have a user
+  belongs_to :user, optional: true # Assistant messages don't have a user
 
   validates :role, inclusion: { in: %w[user assistant system tool] }
   validates :message_type, inclusion: { in: %w[text tool_call tool_result] }
   validates :content, presence: true, unless: -> { tool_calls.any? }
 
   enum :role, {
-    user: "user",
-    assistant: "assistant",
-    system: "system",
-    tool: "tool"
+    user: 'user',
+    assistant: 'assistant',
+    system: 'system',
+    tool: 'tool'
   }, prefix: true
 
   enum :message_type, {
-    text: "text",
-    tool_call: "tool_call",
-    tool_result: "tool_result"
+    text: 'text',
+    tool_call: 'tool_call',
+    tool_result: 'tool_result'
   }, prefix: true
 
-  scope :conversation, -> { where(role: [ "user", "assistant" ]) }
+  scope :conversation, -> { where(role: ['user', 'assistant']) }
   scope :recent, -> { order(created_at: :desc) }
   scope :for_chat, ->(chat) { where(chat: chat) }
 
@@ -67,7 +68,7 @@ class Message < ApplicationRecord
 
   def to_llm_format
     case role
-    when "user", "assistant", "system"
+    when 'user', 'assistant', 'system'
       base_format = { role: role, content: content }
 
       # Add tool calls if present
@@ -76,10 +77,10 @@ class Message < ApplicationRecord
       end
 
       base_format
-    when "tool"
+    when 'tool'
       {
-        role: "tool",
-        tool_call_id: metadata["tool_call_id"],
+        role: 'tool',
+        tool_call_id: metadata['tool_call_id'],
         content: content
       }
     end
@@ -98,11 +99,11 @@ class Message < ApplicationRecord
   end
 
   def successful_tool_calls
-    tool_call_results.select { |result| result["success"] == true }
+    tool_call_results.select { |result| result['success'] == true }
   end
 
   def failed_tool_calls
-    tool_call_results.select { |result| result["success"] == false }
+    tool_call_results.select { |result| result['success'] == false }
   end
 
   def processing_summary

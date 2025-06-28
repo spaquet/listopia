@@ -1,5 +1,5 @@
-# app/controllers/chat_controller.rb
-class ChatController < ApplicationController
+# app/controllers/chat/chat_controller.rb
+class Chat::ChatController < ApplicationController
   before_action :authenticate_user!
 
   def create_message
