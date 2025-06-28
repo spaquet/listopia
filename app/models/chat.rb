@@ -11,11 +11,13 @@
 #  title           :string(255)
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
+#  model_id        :string
 #  user_id         :uuid             not null
 #
 # Indexes
 #
 #  index_chats_on_last_message_at         (last_message_at)
+#  index_chats_on_model_id                (model_id)
 #  index_chats_on_user_id                 (user_id)
 #  index_chats_on_user_id_and_created_at  (user_id,created_at)
 #  index_chats_on_user_id_and_status      (user_id,status)
@@ -25,19 +27,20 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Chat < ApplicationRecord
-  # Remove acts_as_chat for now since it's causing issues
-  # acts_as_chat
+  # Use RubyLLM's Rails integration
+  acts_as_chat
 
   belongs_to :user
   has_many :messages, dependent: :destroy
+  has_many :tool_calls, through: :messages
 
   validates :user, presence: true
   validates :status, inclusion: { in: %w[active archived completed] }
 
   enum :status, {
-    active: 'active',
-    archived: 'archived',
-    completed: 'completed'
+    active: "active",
+    archived: "archived",
+    completed: "completed"
   }, prefix: true
 
   scope :recent, -> { order(last_message_at: :desc, created_at: :desc) }
@@ -51,34 +54,16 @@ class Chat < ApplicationRecord
   end
 
   def conversation_history
-    messages.where(role: ['user', 'assistant'])
+    messages.where(role: [ "user", "assistant" ])
            .order(created_at: :asc)
            .map(&:to_llm_format)
   end
 
-  def add_user_message(content, context: {})
-    messages.create!(
-      role: 'user',
-      content: content,
-      user: user,
-      context_snapshot: context,
-      message_type: 'text'
-    )
-  end
-
-  def add_assistant_message(content, tool_calls: [], tool_results: [], metadata: {})
-    messages.create!(
-      role: 'assistant',
-      content: content,
-      tool_calls: tool_calls,
-      tool_call_results: tool_results,
-      message_type: tool_calls.any? ? 'tool_call' : 'text',
-      metadata: metadata
-    )
-  end
+  # Remove custom add_user_message and add_assistant_message methods
+  # RubyLLM's acts_as_chat will provide these automatically
 
   def total_tokens
-    messages.sum(:token_count)
+    messages.sum { |m| (m.input_tokens || 0) + (m.output_tokens || 0) }
   end
 
   def total_processing_time

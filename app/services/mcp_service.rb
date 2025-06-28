@@ -1,5 +1,8 @@
 # app/services/mcp_service.rb
 class McpService
+  include ActiveModel::Model
+  include ActiveModel::Attributes
+
   attr_accessor :user, :context, :chat
 
   def initialize(user:, context: {}, chat: nil)
@@ -20,42 +23,49 @@ class McpService
     rate_limiter.check_rate_limit!
 
     # Validate message length
-    max_length = Rails.application.config.mcp&.max_message_length || 2000
-    if message_content.length > max_length
-      raise ValidationError, "Message is too long (max #{max_length} characters)"
+    if message_content.length > Rails.application.config.mcp.max_message_length
+      raise ValidationError, "Message is too long (max #{Rails.application.config.mcp.max_message_length} characters)"
     end
 
-    # Save user message to database
-    user_message = @chat.add_user_message(message_content, context: @context)
+    begin
+      # Use RubyLLM's Rails integration through the chat model
+      # The chat model has acts_as_chat which provides RubyLLM integration
 
-    # Use RubyLLM with correct syntax - create a chat instance first
-    chat = RubyLLM.chat(
-      model: Rails.application.config.mcp&.model || "gpt-4-turbo-preview"
-    )
+      # Set the model for this interaction if not already set
+      model = Rails.application.config.mcp.model
+      @chat.update!(model_id: model) if @chat.model_id.blank?
 
-    # Ask the question and get response
-    response = chat.ask(message_content)
-    response_content = response.content
+      # Add system instructions if context requires it
+      if needs_system_instructions?
+        @chat.with_instructions(build_system_instructions, replace: true)
+      end
 
-    # Save assistant message to database
-    processing_time = Time.current - start_time
-    @chat.add_assistant_message(
-      response_content,
-      tool_calls: [],
-      tool_results: [],
-      metadata: {
-        llm_provider: "openai",
-        llm_model: Rails.application.config.mcp&.model || "gpt-4-turbo-preview",
-        processing_time: processing_time,
-        context_snapshot: @context
-      }
-    )
+      # Configure tools if available
+      if @tools.available_tools.any?
+        @tools.available_tools.each do |tool|
+          @chat.with_tool(tool)
+        end
+      end
 
-    # Increment rate limit counters after successful processing
-    rate_limiter.increment_counters!
+      # Use RubyLLM's ask method which handles the full conversation flow
+      response = @chat.ask(message_content)
 
-    # Return the response content
-    response_content
+      # The response is a RubyLLM::Message object
+      assistant_content = response.content
+
+      # Increment rate limit counters after successful processing
+      rate_limiter.increment_counters!
+
+      assistant_content
+
+    rescue RubyLLM::Error => e
+      Rails.logger.error "RubyLLM Error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      error_message = "I apologize, but I encountered an error processing your request. Please try again."
+
+      error_message
+    end
 
   rescue McpRateLimiter::RateLimitError => e
     e.message
@@ -70,55 +80,32 @@ class McpService
 
   private
 
-  def build_conversation_history
-    messages = [
-      { role: "system", content: build_system_prompt }
-    ]
-
-    # Add recent messages from chat history
-    recent_messages = @chat.latest_messages(10)
-    messages += recent_messages.map(&:to_llm_format)
-
-    # Add current user message with context
-    messages << {
-      role: "user",
-      content: "Current context: #{build_context_message}"
-    }
-
-    messages
+  def needs_system_instructions?
+    # Only add instructions if we have meaningful context or this is a new conversation
+    @context.present? || @chat.messages.where(role: "system").empty?
   end
 
-  def build_system_prompt
-    prompt = <<~PROMPT
-      You are Listopia Assistant, an AI helper for the Listopia list management application.
+  def build_system_instructions
+    instructions = []
 
-      You can help users:
-      - Create and manage lists
-      - Add, update, and complete items
-      - Share lists with collaborators
-      - Analyze list progress and productivity
-      - Set priorities and due dates
+    instructions << "You are an AI assistant integrated with Listopia, a collaborative list management application."
+    instructions << "You can help users manage their lists, create items, update tasks, and collaborate with others."
 
-      CRITICAL AUTHORIZATION RULES:
-      - Users can only access lists they own or have been invited to collaborate on
-      - Read permission allows viewing lists and items
-      - Collaborate permission allows editing lists and items
-      - Only list owners can delete lists or manage collaborations
-      - Always verify permissions before taking any action
+    if @context.present?
+      instructions << "Current context: #{build_context_message}"
+    end
 
-      When using tools:
-      1. Always check user permissions first
-      2. Provide helpful, context-aware responses
-      3. If you cannot perform an action due to permissions, explain why
-      4. Suggest alternatives when possible
-      5. Use the available tools to perform requested actions
+    if @tools.available_tools.any?
+      instructions << "You have access to tools that can help you:"
+      @tools.available_tools.each do |tool|
+        instructions << "- #{tool.class.name}: #{tool.class.description}"
+      end
+      instructions << "Use these tools when appropriate to help the user accomplish their goals."
+    end
 
-      Current context: #{build_context_message}
+    instructions << "Always be helpful, accurate, and respect user permissions."
 
-      Respond naturally and conversationally. Use the provided tools to perform actions when requested.
-    PROMPT
-
-    prompt
+    instructions.join("\n\n")
   end
 
   def build_context_message
@@ -142,53 +129,6 @@ class McpService
     end
 
     context_parts.join(". ")
-  end
-
-  def process_tool_calls(llm_response)
-    tool_calls = extract_tool_calls(llm_response)
-    return [] unless tool_calls.any?
-
-    tool_calls.map do |tool_call|
-      begin
-        function_name = tool_call["function"]["name"]
-        arguments = JSON.parse(tool_call["function"]["arguments"])
-
-        # Execute the tool
-        result = @tools.call_tool(function_name, arguments)
-
-        {
-          tool_call_id: tool_call["id"],
-          function_name: function_name,
-          arguments: arguments,
-          result: result,
-          success: true
-        }
-      rescue => e
-        Rails.logger.error "Tool call error: #{e.message}"
-        {
-          tool_call_id: tool_call["id"],
-          function_name: function_name,
-          arguments: arguments,
-          result: { error: e.message },
-          success: false
-        }
-      end
-    end
-  end
-
-  def extract_tool_calls(llm_response)
-    llm_response.dig("choices", 0, "message", "tool_calls") || []
-  end
-
-  def extract_response_content(llm_response)
-    content = llm_response.dig("choices", 0, "message", "content")
-
-    # If no content but there were tool calls, provide a default response
-    if content.blank? && extract_tool_calls(llm_response).any?
-      "I've processed your request. Please check for any updates."
-    else
-      content || "I've received your message and processed it."
-    end
   end
 
   class AuthorizationError < StandardError; end

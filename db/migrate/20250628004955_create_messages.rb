@@ -13,7 +13,14 @@ class CreateMessages < ActiveRecord::Migration[8.0]
       t.json :metadata, default: {}
       t.string :llm_provider
       t.string :llm_model
+      # Add model_id for RubyLLM integration
+      t.string :model_id
+      # Add tool_call_id for linking tool result messages to tool calls
+      t.string :tool_call_id
       t.integer :token_count
+      # Add RubyLLM-specific token tracking
+      t.integer :input_tokens
+      t.integer :output_tokens
       t.decimal :processing_time, precision: 8, scale: 3
 
       t.timestamps
@@ -24,5 +31,10 @@ class CreateMessages < ActiveRecord::Migration[8.0]
     add_index :messages, [ :user_id, :created_at ]
     add_index :messages, :role
     add_index :messages, :message_type
+    # Add indexes for RubyLLM performance
+    add_index :messages, [:chat_id, :role, :created_at]
+    add_index :messages, [:llm_provider, :llm_model]
+    add_index :messages, :model_id
+    add_index :messages, :tool_call_id
   end
 end

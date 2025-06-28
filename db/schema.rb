@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_28_043943) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -22,9 +22,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
     t.string "status", default: "active"
     t.datetime "last_message_at"
     t.json "metadata", default: {}
+    t.string "model_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
+    t.index ["model_id"], name: "index_chats_on_model_id"
     t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
     t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"
     t.index ["user_id"], name: "index_chats_on_user_id"
@@ -85,8 +87,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
     t.index ["list_id"], name: "index_list_items_on_list_id"
     t.index ["position"], name: "index_list_items_on_position"
     t.index ["priority"], name: "index_list_items_on_priority"
-    t.index ["reminder_at"], name: "index_list_items_on_reminder_at"
-    t.index ["url"], name: "index_list_items_on_url"
   end
 
   create_table "lists", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -121,15 +121,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
     t.json "metadata", default: {}
     t.string "llm_provider"
     t.string "llm_model"
+    t.string "model_id"
+    t.string "tool_call_id"
     t.integer "token_count"
+    t.integer "input_tokens"
+    t.integer "output_tokens"
     t.decimal "processing_time", precision: 8, scale: 3
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["chat_id", "created_at"], name: "index_messages_on_chat_id_and_created_at"
+    t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
     t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
     t.index ["chat_id"], name: "index_messages_on_chat_id"
+    t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
     t.index ["message_type"], name: "index_messages_on_message_type"
+    t.index ["model_id"], name: "index_messages_on_model_id"
     t.index ["role"], name: "index_messages_on_role"
+    t.index ["tool_call_id"], name: "index_messages_on_tool_call_id"
     t.index ["user_id", "created_at"], name: "index_messages_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_messages_on_user_id"
   end
@@ -173,6 +181,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "tool_calls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "message_id", null: false
+    t.string "tool_call_id", null: false
+    t.string "name", null: false
+    t.jsonb "arguments", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["message_id", "created_at"], name: "index_tool_calls_on_message_id_and_created_at"
+    t.index ["message_id"], name: "index_tool_calls_on_message_id"
+    t.index ["name"], name: "index_tool_calls_on_name"
+    t.index ["tool_call_id"], name: "index_tool_calls_on_tool_call_id", unique: true
+  end
+
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "email", null: false
     t.string "name", null: false
@@ -200,4 +221,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_004955) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "tool_calls", "messages"
 end

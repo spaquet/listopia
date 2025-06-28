@@ -6,10 +6,12 @@
 #  id                :uuid             not null, primary key
 #  content           :text
 #  context_snapshot  :json
+#  input_tokens      :integer
 #  llm_model         :string
 #  llm_provider      :string
 #  message_type      :string           default("text")
 #  metadata          :json
+#  output_tokens     :integer
 #  processing_time   :decimal(8, 3)
 #  role              :string           not null
 #  token_count       :integer
@@ -18,17 +20,23 @@
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  chat_id           :uuid             not null
+#  model_id          :string
+#  tool_call_id      :string
 #  user_id           :uuid
 #
 # Indexes
 #
-#  index_messages_on_chat_id                 (chat_id)
-#  index_messages_on_chat_id_and_created_at  (chat_id,created_at)
-#  index_messages_on_chat_id_and_role        (chat_id,role)
-#  index_messages_on_message_type            (message_type)
-#  index_messages_on_role                    (role)
-#  index_messages_on_user_id                 (user_id)
-#  index_messages_on_user_id_and_created_at  (user_id,created_at)
+#  index_messages_on_chat_id                          (chat_id)
+#  index_messages_on_chat_id_and_created_at           (chat_id,created_at)
+#  index_messages_on_chat_id_and_role                 (chat_id,role)
+#  index_messages_on_chat_id_and_role_and_created_at  (chat_id,role,created_at)
+#  index_messages_on_llm_provider_and_llm_model       (llm_provider,llm_model)
+#  index_messages_on_message_type                     (message_type)
+#  index_messages_on_model_id                         (model_id)
+#  index_messages_on_role                             (role)
+#  index_messages_on_tool_call_id                     (tool_call_id)
+#  index_messages_on_user_id                          (user_id)
+#  index_messages_on_user_id_and_created_at           (user_id,created_at)
 #
 # Foreign Keys
 #
@@ -36,30 +44,32 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Message < ApplicationRecord
-  # Remove acts_as_message for now since it's causing ToolCall model issues
-  # acts_as_message
+  # Use RubyLLM's Rails integration
+  acts_as_message
 
   belongs_to :chat
   belongs_to :user, optional: true # Assistant messages don't have a user
+  has_many :tool_calls, dependent: :destroy
 
   validates :role, inclusion: { in: %w[user assistant system tool] }
   validates :message_type, inclusion: { in: %w[text tool_call tool_result] }
-  validates :content, presence: true, unless: -> { tool_calls.any? }
+  # Note: Don't validate content presence due to RubyLLM's two-phase creation
+  # validates :content, presence: true, unless: -> { tool_calls.any? }
 
   enum :role, {
-    user: 'user',
-    assistant: 'assistant',
-    system: 'system',
-    tool: 'tool'
+    user: "user",
+    assistant: "assistant",
+    system: "system",
+    tool: "tool"
   }, prefix: true
 
   enum :message_type, {
-    text: 'text',
-    tool_call: 'tool_call',
-    tool_result: 'tool_result'
+    text: "text",
+    tool_call: "tool_call",
+    tool_result: "tool_result"
   }, prefix: true
 
-  scope :conversation, -> { where(role: ['user', 'assistant']) }
+  scope :conversation, -> { where(role: [ "user", "assistant" ]) }
   scope :recent, -> { order(created_at: :desc) }
   scope :for_chat, ->(chat) { where(chat: chat) }
 
@@ -68,7 +78,7 @@ class Message < ApplicationRecord
 
   def to_llm_format
     case role
-    when 'user', 'assistant', 'system'
+    when "user", "assistant", "system"
       base_format = { role: role, content: content }
 
       # Add tool calls if present
@@ -77,10 +87,10 @@ class Message < ApplicationRecord
       end
 
       base_format
-    when 'tool'
+    when "tool"
       {
-        role: 'tool',
-        tool_call_id: metadata['tool_call_id'],
+        role: "tool",
+        tool_call_id: metadata["tool_call_id"],
         content: content
       }
     end
@@ -95,37 +105,38 @@ class Message < ApplicationRecord
   end
 
   def has_tool_calls?
-    tool_calls.any?
+    tool_calls.any? || (tool_calls_json.present? && tool_calls_json.any?)
   end
 
-  def successful_tool_calls
-    tool_call_results.select { |result| result['success'] == true }
+  def has_tool_results?
+    tool_call_results.any?
   end
 
-  def failed_tool_calls
-    tool_call_results.select { |result| result['success'] == false }
+  def processing_time_ms
+    (processing_time * 1000).to_i if processing_time
   end
 
-  def processing_summary
-    {
-      token_count: token_count,
-      processing_time: processing_time,
-      tool_calls_count: tool_calls.count,
-      successful_tools: successful_tool_calls.count,
-      failed_tools: failed_tool_calls.count,
-      llm_provider: llm_provider,
-      llm_model: llm_model
-    }
+  # Helper method to access tool_calls JSON as array
+  def tool_calls_json
+    read_attribute(:tool_calls) || []
+  end
+
+  # Helper method to access tool_call_results JSON as array
+  def tool_call_results_json
+    read_attribute(:tool_call_results) || []
   end
 
   private
 
   def calculate_token_count
-    # Simple token estimation - you might want to use a proper tokenizer
-    self.token_count = content.to_s.split.count * 1.3 # Rough approximation
+    # Simple token estimation - you might want to use a more sophisticated method
+    if content.present?
+      # Rough estimation: ~4 characters per token for English text
+      self.token_count = (content.length / 4.0).ceil
+    end
   end
 
   def update_chat_timestamp
-    chat.touch(:last_message_at)
+    chat.update_column(:last_message_at, created_at)
   end
 end
