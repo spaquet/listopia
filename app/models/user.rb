@@ -50,6 +50,18 @@ class User < ApplicationRecord
 
   # Methods
 
+  # Used to reset the current chat
+  def reset_current_chat!
+    # Archive the current chat
+    current_chat&.update!(status: "archived")
+
+    # Create a fresh chat
+    chats.create!(
+      status: "active",
+      title: "Chat #{Time.current.strftime('%m/%d %H:%M')}"
+    )
+  end
+
   # Check if user's email is verified
   def email_verified?
     email_verified_at.present?

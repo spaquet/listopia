@@ -48,6 +48,7 @@ class ListManagementTool < RubyLLM::Tool
     end
   rescue => e
     Rails.logger.error "ListManagementTool error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
     { error: "Failed to #{action}: #{e.message}" }
   end
 
@@ -196,7 +197,7 @@ class ListManagementTool < RubyLLM::Tool
     collaboration = list.list_collaborations.find_by(user: @user)
     return false unless collaboration
 
-    # Check if user has collaborate permission (assuming this allows editing)
+    # Check if user has collaborate permission (allows editing)
     collaboration.permission_collaborate?
   end
 end

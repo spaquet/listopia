@@ -35,9 +35,9 @@ class McpTools
 
   def find_tool_by_function_name(function_name)
     # RubyLLM converts class names to snake_case for function names
-    # e.g., ListManagementTool becomes "list_management_tool"
+    # Handle both possible naming conventions
     case function_name
-    when "list_management_tool"
+    when "list_management_tool", "list_management"
       ListManagementTool.new(@user, @context)
     else
       nil
