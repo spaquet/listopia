@@ -4,7 +4,9 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static values = { 
     userId: String, 
-    expanded: Boolean 
+    expanded: Boolean,
+    context: Object,
+    currentPage: String
   }
   
   static targets = [
@@ -21,6 +23,8 @@ export default class extends Controller {
   connect() {
     this.restoreState()
     this.setupMessageContainer()
+    this.logContextInfo() // Debug context information
+    
     // Focus input when window is expanded
     if (this.expandedValue) {
       this.focusInput()
@@ -71,14 +75,18 @@ export default class extends Controller {
     this.showTypingIndicator()
 
     try {
-      // Send message to backend
+      // Send message to backend with context
       const response = await fetch('/chat/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
         },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({ 
+          message: message,
+          context: this.contextValue,
+          current_page: this.currentPageValue
+        })
       })
 
       if (response.ok) {
@@ -263,5 +271,34 @@ export default class extends Controller {
   // Cleanup when controller disconnects
   disconnect() {
     this.saveState()
+  }
+
+  // Debug method to log context information
+  logContextInfo() {
+    if (this.hasContextValue) {
+      console.log('Chat Context:', {
+        page: this.currentPageValue,
+        context: this.contextValue,
+        userId: this.userIdValue
+      })
+    }
+  }
+
+  // Method to get current context for sending with messages
+  getCurrentContext() {
+    return {
+      page: this.currentPageValue,
+      context: this.contextValue,
+      userId: this.userIdValue,
+      timestamp: new Date().toISOString()
+    }
+  }
+
+  // Method to show context-aware suggestions (future enhancement)
+  showContextSuggestions() {
+    if (this.hasContextValue && this.contextValue.suggestions) {
+      return this.contextValue.suggestions
+    }
+    return []
   }
 }
