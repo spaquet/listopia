@@ -21,6 +21,17 @@ class McpRateLimiter
     MINUTE_LIMIT - minute_count
   end
 
+  # This method needs to be public so it can be called from McpService
+  def increment_counters!
+    # Increment hourly counter
+    hourly_key = "mcp_hourly_#{@user.id}_#{current_hour}"
+    Rails.cache.write(hourly_key, hourly_count + 1, expires_in: 1.hour)
+
+    # Increment minute counter
+    minute_key = "mcp_minute_#{@user.id}_#{current_minute}"
+    Rails.cache.write(minute_key, minute_count + 1, expires_in: 1.minute)
+  end
+
   private
 
   def check_hourly_limit!
@@ -45,16 +56,6 @@ class McpRateLimiter
     key = "mcp_minute_#{@user.id}_#{current_minute}"
     count = Rails.cache.read(key) || 0
     count.to_i
-  end
-
-  def increment_counters!
-    # Increment hourly counter
-    hourly_key = "mcp_hourly_#{@user.id}_#{current_hour}"
-    Rails.cache.write(hourly_key, hourly_count + 1, expires_in: 1.hour)
-
-    # Increment minute counter
-    minute_key = "mcp_minute_#{@user.id}_#{current_minute}"
-    Rails.cache.write(minute_key, minute_count + 1, expires_in: 1.minute)
   end
 
   def current_hour

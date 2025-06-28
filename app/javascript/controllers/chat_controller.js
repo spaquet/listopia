@@ -14,7 +14,6 @@ export default class extends Controller {
     "chatWindow", 
     "messagesContainer",
     "messageInput",
-    "messageForm",
     "sendButton",
     "typingIndicator",
     "notificationDot"
@@ -22,12 +21,54 @@ export default class extends Controller {
 
   connect() {
     this.restoreState()
-    this.setupMessageContainer()
+    this.initializeWithRetry()
     this.logContextInfo() // Debug context information
+  }
+
+  initializeWithRetry() {
+    // Attempt to set up message container with retry mechanism
+    const attemptSetup = (attempts = 3, delay = 100) => {
+      if (this.hasMessagesContainerTarget) {
+        this.setupMessageContainer()
+        this.loadChatHistory()
+        if (this.expandedValue) {
+          this.focusInput()
+        }
+      } else if (attempts > 0) {
+        console.warn(`MessagesContainer target not found, retrying... (${attempts} attempts left)`);
+        setTimeout(() => attemptSetup(attempts - 1, delay * 2), delay);
+      } else {
+        console.error("Failed to find messagesContainer target after retries");
+      }
+    };
     
-    // Focus input when window is expanded
-    if (this.expandedValue) {
-      this.focusInput()
+    attemptSetup();
+  }
+
+  async loadChatHistory() {
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot load chat history: messagesContainer target missing");
+      return;
+    }
+    
+    try {
+      const response = await fetch('/chat/history', {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/vnd.turbo-stream.html',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        }
+      })
+      
+      if (response.ok) {
+        const responseText = await response.text()
+        if (responseText.trim()) {
+          Turbo.renderStreamMessage(responseText)
+          this.scrollToBottom()
+        }
+      }
+    } catch (error) {
+      console.warn('Could not load chat history:', error)
     }
   }
 
@@ -57,42 +98,52 @@ export default class extends Controller {
   }
 
   async sendMessage(event) {
-    event.preventDefault()
+    event?.preventDefault()
     
     const message = this.messageInputTarget.value.trim()
     if (!message) return
 
-    // Disable input and button while sending
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot send message: messagesContainer target missing");
+      return;
+    }
+
     this.setInputState(false)
-    
-    // Add user message to chat immediately
     this.addUserMessage(message)
-    
-    // Clear input
     this.messageInputTarget.value = ""
-    
-    // Show typing indicator
     this.showTypingIndicator()
 
     try {
-      // Send message to backend with context
+      const formData = new FormData()
+      formData.append('message', message)
+      formData.append('current_page', this.currentPageValue)
+      
+      if (this.contextValue) {
+        Object.keys(this.contextValue).forEach(key => {
+          if (typeof this.contextValue[key] === 'object') {
+            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]))
+          } else {
+            formData.append(`context[${key}]`, this.contextValue[key])
+          }
+        })
+      }
+
       const response = await fetch('/chat/messages', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'text/vnd.turbo-stream.html'
         },
-        body: JSON.stringify({ 
-          message: message,
-          context: this.contextValue,
-          current_page: this.currentPageValue
-        })
+        body: formData
       })
 
       if (response.ok) {
-        // Response will be handled via Turbo Stream
-        // The server will send back a turbo stream to add assistant message
+        const responseText = await response.text()
+        if (responseText.trim()) {
+          Turbo.renderStreamMessage(responseText)
+        }
       } else {
+        console.error('Response not ok:', response.status)
         this.addErrorMessage("Sorry, I couldn't process your message. Please try again.")
       }
     } catch (error) {
@@ -106,18 +157,30 @@ export default class extends Controller {
   }
 
   addUserMessage(message) {
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot add user message: messagesContainer target missing");
+      return;
+    }
     const messageElement = this.createMessageElement(message, 'user')
     this.messagesContainerTarget.appendChild(messageElement)
     this.scrollToBottom()
   }
 
   addAssistantMessage(message) {
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot add assistant message: messagesContainer target missing");
+      return;
+    }
     const messageElement = this.createMessageElement(message, 'assistant')
     this.messagesContainerTarget.appendChild(messageElement)
     this.scrollToBottom()
   }
 
   addErrorMessage(message) {
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot add error message: messagesContainer target missing");
+      return;
+    }
     const messageElement = this.createMessageElement(message, 'error')
     this.messagesContainerTarget.appendChild(messageElement)
     this.scrollToBottom()
@@ -125,7 +188,7 @@ export default class extends Controller {
 
   createMessageElement(message, type) {
     const messageDiv = document.createElement('div')
-    messageDiv.className = 'flex items-start space-x-2'
+    messageDiv.className = 'flex items-start space-x-3 mb-4'
     
     const isUser = type === 'user'
     const isError = type === 'error'
@@ -161,18 +224,12 @@ export default class extends Controller {
     }
 
     const messageContentDiv = document.createElement('div')
-    messageContentDiv.className = `rounded-lg px-3 py-2 max-w-xs shadow-sm ${isUser ? 'order-1' : ''}`
-    
-    if (isUser) {
-      messageContentDiv.className += ' bg-blue-600 text-white'
-    } else if (isError) {
-      messageContentDiv.className += ' bg-red-100 border border-red-200'
-    } else {
-      messageContentDiv.className += ' bg-white border'
-    }
+    messageContentDiv.className = `rounded-lg px-4 py-2.5 max-w-[75%] shadow-sm ${isUser ? 
+      'bg-blue-600 text-white order-1' : 
+      isError ? 'bg-red-100 border border-red-200' : 'bg-gray-50 border'}`
 
     const messageText = document.createElement('p')
-    messageText.className = `text-sm ${isUser ? 'text-white' : isError ? 'text-red-700' : 'text-gray-700'}`
+    messageText.className = `text-sm leading-relaxed ${isUser ? 'text-white' : isError ? 'text-red-700' : 'text-gray-700'}`
     messageText.textContent = message
 
     messageContentDiv.appendChild(messageText)
@@ -183,25 +240,33 @@ export default class extends Controller {
   }
 
   showTypingIndicator() {
-    this.typingIndicatorTarget.classList.remove('hidden')
-    this.scrollToBottom()
+    if (this.hasTypingIndicatorTarget) {
+      this.typingIndicatorTarget.classList.remove('hidden')
+      this.scrollToBottom()
+    }
   }
 
   hideTypingIndicator() {
-    this.typingIndicatorTarget.classList.add('hidden')
+    if (this.hasTypingIndicatorTarget) {
+      this.typingIndicatorTarget.classList.add('hidden')
+    }
   }
 
   showNotificationDot() {
-    if (!this.expandedValue) {
+    if (!this.expandedValue && this.hasNotificationDotTarget) {
       this.notificationDotTarget.classList.remove('hidden')
     }
   }
 
   hideNotificationDot() {
-    this.notificationDotTarget.classList.add('hidden')
+    if (this.hasNotificationDotTarget) {
+      this.notificationDotTarget.classList.add('hidden')
+    }
   }
 
   setInputState(enabled) {
+    if (!this.hasMessageInputTarget || !this.hasSendButtonTarget) return;
+    
     this.messageInputTarget.disabled = !enabled
     this.sendButtonTarget.disabled = !enabled
     
@@ -213,17 +278,27 @@ export default class extends Controller {
   }
 
   updateDisplay() {
-    if (this.expandedValue) {
-      this.toggleButtonTarget.classList.add('hidden')
-      this.chatWindowTarget.classList.remove('hidden')
-    } else {
-      this.toggleButtonTarget.classList.remove('hidden')
-      this.chatWindowTarget.classList.add('hidden')
+    if (this.hasToggleButtonTarget && this.hasChatWindowTarget) {
+      if (this.expandedValue) {
+        this.toggleButtonTarget.style.display = 'none'
+        this.chatWindowTarget.style.display = 'flex'
+      } else {
+        this.toggleButtonTarget.style.display = 'block'
+        this.chatWindowTarget.style.display = 'none'
+      }
     }
   }
 
   setupMessageContainer() {
-    // Auto-scroll behavior for messages container using modern MutationObserver
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot setup message container: messagesContainer target missing");
+      return;
+    }
+    
+    if (this.messageObserver) {
+      this.messageObserver.disconnect()
+    }
+    
     this.messageObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -239,7 +314,8 @@ export default class extends Controller {
   }
 
   scrollToBottom() {
-    // Small delay to ensure DOM has updated
+    if (!this.hasMessagesContainerTarget) return;
+    
     setTimeout(() => {
       this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight
     }, 50)
@@ -265,29 +341,24 @@ export default class extends Controller {
     }
   }
 
-  // Method to be called when new messages arrive via Turbo Stream
   handleNewMessage(message, type = 'assistant') {
     if (type === 'assistant') {
       this.addAssistantMessage(message)
     }
     
-    // Show notification if chat is closed
     if (!this.expandedValue) {
       this.showNotificationDot()
     }
   }
 
-  // Cleanup when controller disconnects
   disconnect() {
     this.saveState()
     
-    // Clean up MutationObserver
     if (this.messageObserver) {
       this.messageObserver.disconnect()
     }
   }
 
-  // Debug method to log context information
   logContextInfo() {
     if (this.hasContextValue) {
       console.log('Chat Context:', {
@@ -298,7 +369,6 @@ export default class extends Controller {
     }
   }
 
-  // Method to get current context for sending with messages
   getCurrentContext() {
     return {
       page: this.currentPageValue,
@@ -308,7 +378,6 @@ export default class extends Controller {
     }
   }
 
-  // Method to show context-aware suggestions (future enhancement)
   showContextSuggestions() {
     if (this.hasContextValue && this.contextValue.suggestions) {
       return this.contextValue.suggestions

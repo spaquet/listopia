@@ -27,38 +27,35 @@ class Chat::ChatController < ApplicationController
       chat.add_assistant_message(response_message, metadata: { error_type: "system", error: e.message })
     end
 
-    respond_with_turbo_stream do |format|
+    respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.append(
-            "chat-messages",
-            partial: "chat/assistant_message",
-            locals: { message: response_message }
-          ),
-          # Refresh lists if they might have been modified
-          refresh_lists_if_needed(context)
-        ].compact
+        render turbo_stream: turbo_stream.append(
+          "chat-messages",
+          partial: "chat/assistant_message",
+          locals: { message: response_message }
+        ), content_type: "text/vnd.turbo-stream.html"
       end
+      format.html { redirect_back(fallback_location: root_path) }
+      format.json { render json: { message: response_message } }
     end
+  end
+
+  # Load chat history for a user
+  def load_history
+    chat = current_user.current_chat
+    messages = chat.latest_messages(50) # Get last 50 messages
+
+    render turbo_stream: turbo_stream.replace(
+      "chat-messages",
+      partial: "chat/messages_history",
+      locals: { messages: messages }
+    ), content_type: "text/vnd.turbo-stream.html"
   end
 
   private
 
   def chat_params
-    params.permit(:message, :current_page, context: {})
-  end
-
-  def refresh_lists_if_needed(context)
-    # If user is on a list page, refresh the list content
-    if context["page"]&.starts_with?("lists#") && context["list_id"]
-      turbo_stream.replace(
-        "list-content",
-        partial: "lists/list_content",
-        locals: { list: current_user.accessible_lists.find_by(id: context["list_id"]) }
-      )
-    end
-  rescue
-    # Silently fail if list refresh isn't possible
-    nil
+    # Allow all the parameters that the frontend sends, including nested chat parameter
+    params.permit(:message, :current_page, context: {}, chat: { context: {} })
   end
 end
