@@ -26,6 +26,8 @@
 #
 #  fk_rails_...  (user_id => users.id)
 #
+# app/models/chat.rb
+# app/models/chat.rb
 class Chat < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_chat
@@ -53,14 +55,50 @@ class Chat < ApplicationRecord
     messages.order(created_at: :desc).limit(limit).reverse
   end
 
+  # Enhanced conversation history with integrity checking
   def conversation_history
-    messages.where(role: [ "user", "assistant" ])
-           .order(created_at: :asc)
-           .map(&:to_llm_format)
+    conversation_manager = ConversationStateManager.new(self)
+    conversation_manager.clean_conversation_history
+  rescue ConversationStateManager::ConversationError => e
+    Rails.logger.error "Conversation integrity error for chat #{id}: #{e.message}"
+
+    # Fallback: return basic conversation without problematic messages
+    safe_messages = messages.where(role: ['user', 'assistant'])
+                           .where('content IS NOT NULL AND content != ?', '')
+                           .order(created_at: :asc)
+                           .map { |m| { role: m.role, content: m.content } }
+
+    safe_messages
   end
 
-  # Remove custom add_user_message and add_assistant_message methods
-  # RubyLLM's acts_as_chat will provide these automatically
+  # Check if this chat has conversation integrity issues
+  def has_conversation_issues?
+    conversation_manager = ConversationStateManager.new(self)
+    conversation_manager.ensure_conversation_integrity!
+    false
+  rescue ConversationStateManager::ConversationError
+    true
+  end
+
+  # Repair conversation integrity
+  def repair_conversation!
+    conversation_manager = ConversationStateManager.new(self)
+    conversation_manager.ensure_conversation_integrity!
+  end
+
+  # Get conversation statistics
+  def conversation_stats
+    {
+      total_messages: messages.count,
+      user_messages: messages.where(role: 'user').count,
+      assistant_messages: messages.where(role: 'assistant').count,
+      tool_messages: messages.where(role: 'tool').count,
+      system_messages: messages.where(role: 'system').count,
+      tool_calls: tool_calls.count,
+      orphaned_tool_messages: orphaned_tool_messages.count,
+      has_issues: has_conversation_issues?
+    }
+  end
 
   def total_tokens
     messages.sum { |m| (m.input_tokens || 0) + (m.output_tokens || 0) }
@@ -68,6 +106,39 @@ class Chat < ApplicationRecord
 
   def total_processing_time
     messages.sum(:processing_time)
+  end
+
+  # Find messages that might be problematic
+  def orphaned_tool_messages
+    messages.where(role: 'tool').select do |tool_msg|
+      tool_msg.tool_call_id.blank? ||
+      !tool_calls.exists?(tool_call_id: tool_msg.tool_call_id)
+    end
+  end
+
+  # Clean up any orphaned or problematic messages
+  def cleanup_orphaned_messages!
+    orphaned_count = orphaned_tool_messages.count
+    orphaned_tool_messages.each(&:destroy!)
+
+    Rails.logger.info "Cleaned up #{orphaned_count} orphaned tool messages from chat #{id}" if orphaned_count > 0
+
+    orphaned_count
+  end
+
+  # Override RubyLLM's ask method to ensure conversation integrity
+  def ask(message_content, **options)
+    # Ensure conversation integrity before making the API call
+    begin
+      conversation_manager = ConversationStateManager.new(self)
+      conversation_manager.ensure_conversation_integrity!
+    rescue ConversationStateManager::ConversationError => e
+      Rails.logger.warn "Conversation integrity issue detected before API call: #{e.message}"
+      # Let the conversation manager attempt repair
+    end
+
+    # Call the original RubyLLM ask method
+    super(message_content, **options)
   end
 
   private

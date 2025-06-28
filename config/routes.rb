@@ -111,5 +111,17 @@ Rails.application.routes.draw do
     root "dashboard#index"
     resources :users
     resources :lists
+
+    # Conversation health monitoring routes
+    resources :conversation_health, only: [:index, :show] do
+      collection do
+        post :check_all
+      end
+
+      member do
+        get :show_chat_details
+        post :repair_chat
+      end
+    end
   end
 end
