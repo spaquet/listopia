@@ -148,7 +148,7 @@ vacation_items.each_with_index do |item_attrs, index|
   vacation_list.list_items.create!(
     item_attrs.merge(
       position: index,
-      completed: [true, false, false, true, false, false, false, false, false, false][index]
+      completed: [ true, false, false, true, false, false, false, false, false, false ][index]
     )
   )
 end
@@ -287,7 +287,7 @@ grocery_items.each_with_index do |item_attrs, index|
   grocery_list.list_items.create!(
     item_attrs.merge(
       position: index,
-      completed: [true, true, false, false, true, false, true, false, false, false][index]
+      completed: [ true, true, false, false, true, false, true, false, false, false ][index]
     )
   )
 end

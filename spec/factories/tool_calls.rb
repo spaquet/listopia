@@ -23,6 +23,5 @@
 #
 FactoryBot.define do
   factory :tool_call do
-    
   end
 end

@@ -11,7 +11,7 @@ class CreateToolCalls < ActiveRecord::Migration[8.0]
     end
 
     add_index :tool_calls, :tool_call_id, unique: true
-    add_index :tool_calls, [:message_id, :created_at]
+    add_index :tool_calls, [ :message_id, :created_at ]
     add_index :tool_calls, :name
   end
 end

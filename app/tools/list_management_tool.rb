@@ -109,8 +109,8 @@ class ListManagementTool < RubyLLM::Tool
         created_item = list.list_items.create!(
           title: item_data[:title],
           description: item_data[:description],
-          item_type: item_data[:type] || 'task',
-          priority: item_data[:priority] || 'medium'
+          item_type: item_data[:type] || "task",
+          priority: item_data[:priority] || "medium"
         )
         added_items << created_item
       end
@@ -301,17 +301,17 @@ class ListManagementTool < RubyLLM::Tool
 
   def generate_planning_description(title, context)
     case context&.downcase
-    when 'vacation', 'travel', 'trip'
+    when "vacation", "travel", "trip"
       "Complete travel planning including flights, accommodations, activities, and logistics"
-    when 'project', 'sprint', 'development'
+    when "project", "sprint", "development"
       "Project breakdown with tasks, milestones, and deliverables"
-    when 'goals', 'objectives', 'resolutions'
+    when "goals", "objectives", "resolutions"
       "Goal setting with actionable steps and progress tracking"
-    when 'shopping', 'grocery'
+    when "shopping", "grocery"
       "Shopping list with items organized by category or store section"
-    when 'meeting', 'agenda'
+    when "meeting", "agenda"
       "Meeting preparation with agenda items and follow-up actions"
-    when 'event', 'party', 'celebration'
+    when "event", "party", "celebration"
       "Event planning with tasks, timeline, and vendor coordination"
     else
       generate_auto_description(title)
@@ -320,7 +320,7 @@ class ListManagementTool < RubyLLM::Tool
 
   def generate_planning_items(context, title)
     case context.downcase
-    when 'vacation', 'travel', 'trip'
+    when "vacation", "travel", "trip"
       [
         { title: "Book flights", description: "Research and book round-trip flights", type: "task", priority: "high" },
         { title: "Reserve accommodations", description: "Book hotels or vacation rentals", type: "task", priority: "high" },
@@ -329,7 +329,7 @@ class ListManagementTool < RubyLLM::Tool
         { title: "Purchase travel insurance", description: "Get coverage for trip protection", type: "task", priority: "medium" },
         { title: "Create packing list", description: "Plan what to pack based on weather and activities", type: "task", priority: "low" }
       ]
-    when 'project', 'sprint'
+    when "project", "sprint"
       [
         { title: "Define project scope", description: "Clearly outline project boundaries and objectives", type: "task", priority: "high" },
         { title: "Create project timeline", description: "Set milestones and deadlines", type: "task", priority: "high" },
@@ -337,7 +337,7 @@ class ListManagementTool < RubyLLM::Tool
         { title: "Set up project tools", description: "Configure necessary software and platforms", type: "task", priority: "medium" },
         { title: "Schedule regular check-ins", description: "Plan team meetings and progress reviews", type: "task", priority: "low" }
       ]
-    when 'goals', 'objectives'
+    when "goals", "objectives"
       [
         { title: "Define SMART goals", description: "Make goals Specific, Measurable, Achievable, Relevant, Time-bound", type: "task", priority: "high" },
         { title: "Break down into steps", description: "Create actionable sub-tasks", type: "task", priority: "high" },
@@ -355,7 +355,7 @@ class ListManagementTool < RubyLLM::Tool
     context_lower = context&.downcase || ""
 
     # Default to 'task' for compatibility
-    return "task"
+    "task"
   end
 
   def generate_item_description(title, list)

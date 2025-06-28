@@ -32,8 +32,8 @@ class CreateMessages < ActiveRecord::Migration[8.0]
     add_index :messages, :role
     add_index :messages, :message_type
     # Add indexes for RubyLLM performance
-    add_index :messages, [:chat_id, :role, :created_at]
-    add_index :messages, [:llm_provider, :llm_model]
+    add_index :messages, [ :chat_id, :role, :created_at ]
+    add_index :messages, [ :llm_provider, :llm_model ]
     add_index :messages, :model_id
     add_index :messages, :tool_call_id
   end
