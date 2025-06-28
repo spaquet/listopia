@@ -35,6 +35,8 @@ class User < ApplicationRecord
   has_many :list_collaborations, dependent: :destroy
   has_many :collaborated_lists, through: :list_collaborations, source: :list
   has_many :sessions, dependent: :destroy
+  has_many :chats, dependent: :destroy
+  has_many :messages, dependent: :destroy
 
   # Add noticed notifications
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
@@ -101,5 +103,20 @@ class User < ApplicationRecord
     nil
   rescue ActiveSupport::MessageEncryptor::InvalidMessage
     nil
+  end
+
+  # Get or create the active chat for this user
+  def current_chat
+    chats.status_active.recent.first || chats.create!(status: "active")
+  end
+
+  # Get chat history summary
+  def chat_summary
+    {
+      total_chats: chats.count,
+      total_messages: messages.count,
+      total_tokens: chats.sum { |chat| chat.total_tokens },
+      last_chat_at: chats.maximum(:last_message_at)
+    }
   end
 end

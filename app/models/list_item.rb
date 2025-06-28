@@ -34,6 +34,8 @@
 #  index_list_items_on_list_id_and_priority            (list_id,priority)
 #  index_list_items_on_position                        (position)
 #  index_list_items_on_priority                        (priority)
+#  index_list_items_on_reminder_at                     (reminder_at)
+#  index_list_items_on_url                             (url)
 #
 # Foreign Keys
 #

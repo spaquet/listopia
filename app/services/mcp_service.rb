@@ -3,15 +3,18 @@ class McpService
   include ActiveModel::Model
   include ActiveModel::Attributes
 
-  attr_accessor :user, :context
+  attr_accessor :user, :context, :chat
 
-  def initialize(user:, context: {})
+  def initialize(user:, context: {}, chat: nil)
     @user = user
     @context = context
-    @llm_client = build_llm_client
+    @chat = chat || user.current_chat
+    @tools = McpTools.new(user, context)
   end
 
-  def process_message(message)
+  def process_message(message_content)
+    start_time = Time.current
+
     # Ensure user is authenticated
     raise AuthorizationError, "User must be authenticated" unless @user
 
@@ -20,28 +23,56 @@ class McpService
     rate_limiter.check_rate_limit!
 
     # Validate message length
-    if message.length > Rails.application.config.mcp.max_message_length
+    if message_content.length > Rails.application.config.mcp.max_message_length
       raise ValidationError, "Message is too long (max #{Rails.application.config.mcp.max_message_length} characters)"
     end
 
-    # Build the MCP prompt with context and available tools
-    prompt = build_mcp_prompt(message)
+    # Save user message to database
+    user_message = @chat.add_user_message(message_content, context: @context)
 
-    # Get LLM response with function calling
-    llm_response = @llm_client.chat(
-      messages: prompt,
-      tools: available_tools,
-      tool_choice: "auto"
+    # Build conversation history
+    conversation = build_conversation_history
+
+    # Get LLM response with tools
+    llm_response = RubyLlm.chat(
+      messages: conversation,
+      tools: @tools.available_tools,
+      tool_choice: "auto",
+      model: Rails.application.config.mcp.model,
+      provider: Rails.application.config.mcp.provider
     )
 
-    # Process any tool calls with authorization
-    process_tool_calls(llm_response)
+    # Process tool calls if any
+    tool_results = process_tool_calls(llm_response)
+
+    # Extract assistant response
+    assistant_content = extract_assistant_content(llm_response)
+
+    # Save assistant message to database
+    processing_time = Time.current - start_time
+    assistant_message = @chat.add_assistant_message(
+      assistant_content,
+      tool_calls: extract_tool_calls(llm_response),
+      tool_results: tool_results,
+      metadata: {
+        llm_provider: Rails.application.config.mcp.provider,
+        llm_model: Rails.application.config.mcp.model,
+        processing_time: processing_time,
+        context_snapshot: @context
+      }
+    )
+
+    # Update message metadata
+    assistant_message.update!(
+      llm_provider: Rails.application.config.mcp.provider,
+      llm_model: Rails.application.config.mcp.model,
+      processing_time: processing_time
+    )
 
     # Increment rate limit counters after successful processing
     rate_limiter.increment_counters!
 
-    # Return the assistant's response
-    extract_assistant_message(llm_response)
+    assistant_content
 
   rescue McpRateLimiter::RateLimitError => e
     e.message
@@ -50,29 +81,38 @@ class McpService
   rescue => e
     Rails.logger.error "MCP Error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
+
+    # Save error message to chat
+    @chat.add_assistant_message(
+      "I apologize, but I encountered an error processing your request. Please try again.",
+      metadata: { error: e.message, error_class: e.class.name }
+    )
+
     "I apologize, but I encountered an error processing your request. Please try again."
   end
 
   private
 
-  def build_llm_client
-    RubyLlm.new(
-      provider: ENV.fetch('LLM_PROVIDER', 'openai'),
-      api_key: ENV.fetch('OPENAI_API_KEY'),
-      model: ENV.fetch('LLM_MODEL', 'gpt-4-turbo-preview'),
-      temperature: 0.7
-    )
-  end
+  def build_conversation_history
+    # Start with system message
+    messages = [{
+      role: "system",
+      content: build_system_prompt
+    }]
 
-  def build_mcp_prompt(user_message)
-    system_message = build_system_prompt
-    context_message = build_context_message
+    # Add recent conversation history
+    recent_messages = @chat.latest_messages(20) # Last 20 messages
+    messages += recent_messages.map(&:to_llm_format)
 
-    [
-      { role: "system", content: system_message },
-      { role: "user", content: context_message },
-      { role: "user", content: user_message }
-    ]
+    # Add current context
+    if @context.present?
+      messages << {
+        role: "user",
+        content: "Current context: #{build_context_message}"
+      }
+    end
+
+    messages
   end
 
   def build_system_prompt
@@ -91,6 +131,94 @@ class McpService
       - Read permission allows viewing lists and items
       - Collaborate permission allows editing lists and items
       - Only list owners can delete lists or manage collaborations
+      - Always verify permissions before taking any action
+
+      When using tools:
+      1. Always check user permissions first
+      2. Provide helpful, context-aware responses
+      3. If you cannot perform an action due to permissions, explain why
+      4. Suggest alternatives when possible
+      5. Use the available tools to perform requested actions
+
+      Current user context: #{@context['page'] || 'general'}
+
+      Respond naturally and conversationally. Use the provided tools to perform actions when requested.
+    PROMPT
+  end
+
+  def build_context_message
+    return "No additional context available." if @context.blank?
+
+    context_parts = []
+
+    if @context['page']
+      context_parts << "User is currently on page: #{@context['page']}"
+    end
+
+    if @context['list_id']
+      context_parts << "User is viewing list: #{@context['list_title']} (ID: #{@context['list_id']})"
+      context_parts << "List has #{@context['items_count']} items, #{@context['completed_count']} completed"
+      context_parts << "User #{@context['is_owner'] ? 'owns' : 'collaborates on'} this list"
+      context_parts << "User #{@context['can_collaborate'] ? 'can edit' : 'can only view'} this list"
+    end
+
+    if @context['total_lists']
+      context_parts << "User has access to #{@context['total_lists']} total lists"
+    end
+
+    context_parts.join('. ')
+  end
+
+  def process_tool_calls(llm_response)
+    tool_calls = extract_tool_calls(llm_response)
+    return [] unless tool_calls.any?
+
+    tool_calls.map do |tool_call|
+      begin
+        function_name = tool_call['function']['name']
+        arguments = JSON.parse(tool_call['function']['arguments'])
+
+        # Execute the tool via ruby_llm tools
+        result = @tools.call_tool(function_name, arguments)
+
+        {
+          tool_call_id: tool_call['id'],
+          function_name: function_name,
+          arguments: arguments,
+          result: result,
+          success: true
+        }
+      rescue => e
+        Rails.logger.error "Tool call error: #{e.message}"
+        {
+          tool_call_id: tool_call['id'],
+          function_name: function_name,
+          arguments: arguments,
+          result: { error: e.message },
+          success: false
+        }
+      end
+    end
+  end
+
+  def extract_tool_calls(llm_response)
+    llm_response.dig('choices', 0, 'message', 'tool_calls') || []
+  end
+
+  def extract_assistant_content(llm_response)
+    content = llm_response.dig('choices', 0, 'message', 'content')
+
+    # If no content but there were tool calls, provide a default response
+    if content.blank? && extract_tool_calls(llm_response).any?
+      "I've processed your request. Please check for any updates."
+    else
+      content || "I've received your message and processed it."
+    end
+  end
+
+  class AuthorizationError < StandardError; end
+  class ValidationError < StandardError; end
+end manage collaborations
       - Always verify permissions before taking any action
 
       When using tools:

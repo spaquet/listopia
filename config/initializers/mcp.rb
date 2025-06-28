@@ -6,15 +6,15 @@ Rails.application.configure do
   # LLM Provider settings
   config.mcp.provider = ENV.fetch("LLM_PROVIDER", "openai")
   config.mcp.api_key = case config.mcp.provider
-                      when "openai"
-                        ENV["OPENAI_API_KEY"]
-                      when "anthropic"
-                        ENV["ANTHROPIC_API_KEY"]
-                      when "google"
-                        ENV["GOOGLE_API_KEY"]
-                      else
-                        nil
-                      end
+  when "openai"
+    ENV["OPENAI_API_KEY"]
+  when "anthropic"
+    ENV["ANTHROPIC_API_KEY"]
+  when "google"
+    ENV["GOOGLE_API_KEY"]
+  else
+    nil
+  end
 
   config.mcp.model = ENV.fetch("LLM_MODEL", "gpt-4-turbo-preview")
 
