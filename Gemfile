@@ -36,6 +36,12 @@ gem "pagy"
 # Notification
 gem "noticed"
 
+# AI/LLM Integration
+gem "ruby_llm"
+
+# JSON processing for MCP responses
+gem "multi_json"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
@@ -59,7 +65,7 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 
   # RSpec for testing
-  gem "rspec-rails", "~> 7.1" # Latest stable for Rails 8
+  gem "rspec-rails"
   gem "factory_bot_rails"
   gem "faker"
 end
