@@ -16,6 +16,7 @@ Listopia aims to provide a powerful yet intuitive platform for organizing tasks,
 - **Responsive Design**: Mobile-first interface built with Tailwind CSS for accessibility and performance.
 - **Progress Tracking**: Visualize completion percentages and track collaborator activity.
 - **Secure Sharing**: Granular permissions and public sharing options with unique URLs.
+- **AI-Powered Chat**: Control Listopia with natural language commands. See [AI_DISCLAIMER.md](AI_DISCLAIMER.md) for important information on limitations and risks.
 
 ## Getting Started
 
