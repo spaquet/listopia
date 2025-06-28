@@ -138,7 +138,7 @@ vacation_items = [
   {
     title: "Travel insurance confirmation",
     description: "Verify coverage for activities and rental car",
-    item_type: :file,
+    item_type: :reference,
     priority: :medium,
     url: "https://www.worldnomads.com"
   }
@@ -148,7 +148,7 @@ vacation_items.each_with_index do |item_attrs, index|
   vacation_list.list_items.create!(
     item_attrs.merge(
       position: index,
-      completed: [ true, false, false, true, false, false, false, false, false, false ][index]
+      completed: [true, false, false, true, false, false, false, false, false, false][index]
     )
   )
 end
@@ -287,7 +287,7 @@ grocery_items.each_with_index do |item_attrs, index|
   grocery_list.list_items.create!(
     item_attrs.merge(
       position: index,
-      completed: [ true, true, false, false, true, false, true, false, false, false ][index]
+      completed: [true, true, false, false, true, false, true, false, false, false][index]
     )
   )
 end
@@ -340,7 +340,7 @@ project_items = [
   {
     title: "Competitive analysis report",
     description: "Analyze top 5 competitors' mobile apps and document best practices",
-    item_type: :file,
+    item_type: :reference,
     priority: :high,
     due_date: 1.week.from_now,
     url: "https://docs.google.com/document/d/competitive-analysis",
@@ -415,7 +415,7 @@ project_items = [
   {
     title: "Development handoff documentation",
     description: "Detailed specs, assets, and interaction documentation for developers",
-    item_type: :file,
+    item_type: :reference,
     priority: :medium,
     due_date: 6.weeks.from_now,
     url: "https://www.notion.so/dev-handoff-specs",
