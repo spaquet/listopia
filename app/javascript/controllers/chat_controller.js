@@ -223,9 +223,18 @@ export default class extends Controller {
   }
 
   setupMessageContainer() {
-    // Auto-scroll behavior for messages container
-    this.messagesContainerTarget.addEventListener('DOMNodeInserted', () => {
-      this.scrollToBottom()
+    // Auto-scroll behavior for messages container using modern MutationObserver
+    this.messageObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          this.scrollToBottom()
+        }
+      })
+    })
+    
+    this.messageObserver.observe(this.messagesContainerTarget, {
+      childList: true,
+      subtree: true
     })
   }
 
@@ -271,6 +280,11 @@ export default class extends Controller {
   // Cleanup when controller disconnects
   disconnect() {
     this.saveState()
+    
+    // Clean up MutationObserver
+    if (this.messageObserver) {
+      this.messageObserver.disconnect()
+    }
   }
 
   // Debug method to log context information
