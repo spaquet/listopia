@@ -5,11 +5,17 @@ class McpService
 
   attr_accessor :user, :context, :chat
 
+  # Custom exceptions for better error handling
+  class AuthorizationError < StandardError; end
+  class ValidationError < StandardError; end
+  class ConversationStateError < StandardError; end
+
   def initialize(user:, context: {}, chat: nil)
     @user = user
     @context = context
     @chat = chat || user.current_chat
     @tools = McpTools.new(user, context)
+    @conversation_manager = ConversationStateManager.new(@chat)
   end
 
   def process_message(message_content)
@@ -27,36 +33,70 @@ class McpService
       raise ValidationError, "Message is too long (max #{Rails.application.config.mcp.max_message_length} characters)"
     end
 
+    # Ensure conversation integrity BEFORE making API call
     begin
-      # Use RubyLLM's Rails integration through the chat model
-      model = Rails.application.config.mcp.model
-      @chat.update!(model_id: model) if @chat.model_id.blank?
-
-      # Add system instructions if context requires it
-      if needs_system_instructions?
-        @chat.with_instructions(build_system_instructions, replace: true)
+      @conversation_manager.ensure_conversation_integrity!
+    rescue ConversationStateManager::ConversationError => e
+      Rails.logger.error "Conversation state error: #{e.message}"
+      # Try to recover by creating a fresh chat if conversation is too broken
+      if should_create_fresh_chat?(e)
+        @chat = create_fresh_chat!
+        @conversation_manager = ConversationStateManager.new(@chat)
+      else
+        raise ConversationStateError, "Unable to ensure conversation integrity: #{e.message}"
       end
+    end
 
-      # Configure tools
-      if @tools.available_tools.any?
-        @tools.available_tools.each do |tool|
-          @chat.with_tool(tool)
+    begin
+      # Use a transaction to ensure atomicity
+      result = nil
+
+      ActiveRecord::Base.transaction do
+        # Set the model for this interaction if not already set
+        model = Rails.application.config.mcp.model
+        @chat.update!(model_id: model) if @chat.model_id.blank?
+
+        # Add system instructions if context requires it
+        if needs_system_instructions?
+          @chat.with_instructions(build_system_instructions, replace: true)
         end
-      end
 
-      # Use RubyLLM's ask method
-      response = @chat.ask(message_content)
-      assistant_content = response.content
+        # Configure tools if available
+        if @tools.available_tools.any?
+          @tools.available_tools.each do |tool|
+            @chat.with_tool(tool)
+          end
+        end
+
+        # Use RubyLLM's ask method which handles the full conversation flow
+        response = @chat.ask(message_content)
+
+        # Verify conversation state after the interaction
+        @conversation_manager.ensure_conversation_integrity!
+
+        result = response.content
+      end
 
       # Increment rate limit counters after successful processing
       rate_limiter.increment_counters!
 
-      assistant_content
+      result
 
+    rescue RubyLLM::BadRequestError => e
+      handle_api_error(e, message_content)
     rescue RubyLLM::Error => e
       Rails.logger.error "RubyLLM Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
+
+      # If it's a conversation-related error, try with a fresh chat
+      if conversation_related_error?(e)
+        return retry_with_fresh_chat(message_content)
+      end
+
       "I apologize, but I encountered an error processing your request. Please try again."
+    rescue ConversationStateError => e
+      Rails.logger.error "Conversation state error: #{e.message}"
+      retry_with_fresh_chat(message_content)
     end
 
   rescue McpRateLimiter::RateLimitError => e
@@ -66,12 +106,96 @@ class McpService
   rescue => e
     Rails.logger.error "MCP Error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
+
     "I apologize, but I encountered an error processing your request. Please try again."
   end
 
   private
 
+  def handle_api_error(error, message_content)
+    Rails.logger.error "OpenAI API Error: #{error.message}"
+
+    # Check if it's the specific tool/conversation error
+    if error.message.include?("messages with role 'tool' must be a response to a preceeding message with 'tool_calls'")
+      Rails.logger.warn "Detected tool conversation structure error, attempting recovery"
+      return retry_with_fresh_chat(message_content)
+    end
+
+    # Check if it's an invalid parameter error related to conversation structure
+    if error.message.include?("Invalid parameter") && error.message.include?("messages")
+      Rails.logger.warn "Detected conversation parameter error, attempting recovery"
+      return retry_with_fresh_chat(message_content)
+    end
+
+    "I apologize, but there was an issue with the conversation format. I've started a fresh conversation to resolve this."
+  end
+
+  def conversation_related_error?(error)
+    error_patterns = [
+      /tool.*must be.*response.*tool_calls/i,
+      /invalid.*parameter.*messages/i,
+      /malformed.*conversation/i,
+      /tool_call.*missing/i
+    ]
+
+    error_patterns.any? { |pattern| error.message.match?(pattern) }
+  end
+
+  def should_create_fresh_chat?(error)
+    # Create fresh chat for certain types of severe errors
+    severe_error_patterns = [
+      ConversationStateManager::OrphanedToolCallError,
+      ConversationStateManager::MalformedToolResponseError
+    ]
+
+    severe_error_patterns.any? { |pattern| error.is_a?(pattern) }
+  end
+
+  def retry_with_fresh_chat(message_content)
+    Rails.logger.info "Retrying with fresh chat for user #{@user.id}"
+
+    # Archive the problematic chat
+    @chat.update!(status: "archived", title: "#{@chat.title} (Archived - Conversation Error)")
+
+    # Create a fresh chat
+    @chat = create_fresh_chat!
+    @conversation_manager = ConversationStateManager.new(@chat)
+
+    # Retry the message processing with the fresh chat
+    begin
+      # Set the model
+      model = Rails.application.config.mcp.model
+      @chat.update!(model_id: model)
+
+      # Add system instructions
+      @chat.with_instructions(build_system_instructions, replace: true)
+
+      # Configure tools
+      if @tools.available_tools.any?
+        @tools.available_tools.each do |tool|
+          @chat.with_tool(tool)
+        end
+      end
+
+      # Process the message
+      response = @chat.ask(message_content)
+      response.content
+
+    rescue => e
+      Rails.logger.error "Failed to process message even with fresh chat: #{e.message}"
+      "I encountered a technical issue and had to start a fresh conversation. Please try your request again."
+    end
+  end
+
+  def create_fresh_chat!
+    @user.chats.create!(
+      status: "active",
+      title: "Chat #{Time.current.strftime('%m/%d %H:%M')}"
+    )
+  end
+
   def needs_system_instructions?
+    # Only add instructions if we have meaningful context or this is a new conversation
     @context.present? || @chat.messages.where(role: "system").empty?
   end
 
@@ -159,7 +283,4 @@ class McpService
 
     context_parts.join(". ")
   end
-
-  class AuthorizationError < StandardError; end
-  class ValidationError < StandardError; end
 end
