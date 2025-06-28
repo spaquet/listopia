@@ -10,10 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_24_223654) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_28_043943) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+
+  create_table "chats", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.string "title", limit: 255
+    t.json "context", default: {}
+    t.string "status", default: "active"
+    t.datetime "last_message_at"
+    t.json "metadata", default: {}
+    t.string "model_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["last_message_at"], name: "index_chats_on_last_message_at"
+    t.index ["model_id"], name: "index_chats_on_model_id"
+    t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
+    t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"
+    t.index ["user_id"], name: "index_chats_on_user_id"
+  end
 
   create_table "currents", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -92,6 +109,39 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_223654) do
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 
+  create_table "messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "chat_id", null: false
+    t.uuid "user_id"
+    t.string "role", null: false
+    t.text "content"
+    t.json "tool_calls", default: []
+    t.json "tool_call_results", default: []
+    t.json "context_snapshot", default: {}
+    t.string "message_type", default: "text"
+    t.json "metadata", default: {}
+    t.string "llm_provider"
+    t.string "llm_model"
+    t.string "model_id"
+    t.string "tool_call_id"
+    t.integer "token_count"
+    t.integer "input_tokens"
+    t.integer "output_tokens"
+    t.decimal "processing_time", precision: 8, scale: 3
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "created_at"], name: "index_messages_on_chat_id_and_created_at"
+    t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
+    t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
+    t.index ["chat_id"], name: "index_messages_on_chat_id"
+    t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
+    t.index ["message_type"], name: "index_messages_on_message_type"
+    t.index ["model_id"], name: "index_messages_on_model_id"
+    t.index ["role"], name: "index_messages_on_role"
+    t.index ["tool_call_id"], name: "index_messages_on_tool_call_id"
+    t.index ["user_id", "created_at"], name: "index_messages_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_messages_on_user_id"
+  end
+
   create_table "noticed_events", force: :cascade do |t|
     t.string "type"
     t.string "record_type"
@@ -131,6 +181,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_223654) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "tool_calls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "message_id", null: false
+    t.string "tool_call_id", null: false
+    t.string "name", null: false
+    t.jsonb "arguments", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["message_id", "created_at"], name: "index_tool_calls_on_message_id_and_created_at"
+    t.index ["message_id"], name: "index_tool_calls_on_message_id"
+    t.index ["name"], name: "index_tool_calls_on_name"
+    t.index ["tool_call_id"], name: "index_tool_calls_on_tool_call_id", unique: true
+  end
+
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "email", null: false
     t.string "name", null: false
@@ -148,11 +211,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_24_223654) do
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
   end
 
+  add_foreign_key "chats", "users"
   add_foreign_key "list_collaborations", "lists"
   add_foreign_key "list_collaborations", "users"
   add_foreign_key "list_collaborations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"
   add_foreign_key "lists", "users"
+  add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "tool_calls", "messages"
 end

@@ -7,6 +7,9 @@ import { application } from "./application"
 import AutoSaveController from "./auto_save_controller"
 application.register("auto-save", AutoSaveController)
 
+import ChatController from "./chat_controller"
+application.register("chat", ChatController)
+
 import ClipboardController from "./clipboard_controller"
 application.register("clipboard", ClipboardController)
 

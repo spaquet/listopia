@@ -1,0 +1,48 @@
+<%# app/views/chat/_messages_history.html.erb %>
+<div id="chat-messages" data-chat-target="messagesContainer" class="flex-1 px-6 py-4 overflow-y-auto space-y-4 bg-gray-50">
+  <!-- Welcome Message -->
+  <div class="flex items-start space-x-3 mb-4">
+    <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+      </svg>
+    </div>
+    <div class="bg-white rounded-lg px-4 py-2.5 shadow-sm border max-w-[75%]">
+      <p class="text-sm text-gray-700 leading-relaxed">Hi! I'm your Listopia assistant. I can help you create lists, add items, and manage your tasks.</p>
+    </div>
+  </div>
+  <!-- Chat History -->
+  <% messages.each do |message| %>
+    <% if message.is_from_user? %>
+      <!-- User Message -->
+      <div class="flex items-start space-x-3 mb-4 justify-end">
+        <div class="bg-blue-600 text-white rounded-lg px-4 py-2.5 max-w-[75%] shadow-sm order-1">
+          <p class="text-sm leading-relaxed"><%= simple_format(message.content) %></p>
+        </div>
+        <div class="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center order-2">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </div>
+      </div>
+    <% elsif message.is_from_assistant? %>
+      <!-- Assistant Message -->
+      <div class="flex items-start space-x-3 mb-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+          <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+          </svg>
+        </div>
+        <div class="bg-gray-50 rounded-lg px-4 py-2.5 max-w-[75%] shadow-sm">
+          <div class="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+            <%= simple_format(message.content) %>
+          </div>
+          <div class="mt-2 text-xs text-gray-500 font-medium">
+            <%= time_ago_in_words(message.created_at) %> ago
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
