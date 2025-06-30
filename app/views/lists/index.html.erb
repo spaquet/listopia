@@ -12,15 +12,9 @@
   <!-- Lists Grid - Wrapped in Turbo Frame -->
   <%= turbo_frame_tag "lists-grid-only" do %>
     <div id="lists-container">
-      <% if @lists.any? %>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <% @lists.each do |list| %>
-            <%= render "lists/list_card", list: list %>
-          <% end %>
-        </div>
-      <% else %>
-        <%= render "lists/empty_state" %>
-      <% end %>
+      <%= render "lists/lists_grid", lists: @lists %>
     </div>
   <% end %>
 </div>
+<!-- Subscribe to real-time updates for this user's lists -->
+<%= turbo_stream_from "user_lists_#{current_user.id}" %>

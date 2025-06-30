@@ -1,7 +1,6 @@
 <!-- app/views/lists/_form.html.erb -->
-<%= form_with model: list, 
-              data: { turbo: true },
-              class: "space-y-6" do |f| %>
+<%= form_with model: list, local: false, data: { turbo_frame: "_top" }, class: "space-y-6" do |f| %>
+  <!-- Error Messages -->
   <% if list.errors.any? %>
     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
       <h3 class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h3>
@@ -12,14 +11,52 @@
       </ul>
     </div>
   <% end %>
-  
+  <!-- List Type Toggle -->
+  <div>
+    <%= f.label :list_type, "List Type", class: "block text-sm font-medium text-gray-700 mb-3" %>
+    <div class="relative" data-controller="toggle" data-toggle-value-value="<%= list.list_type || 'personal' %>">
+      <!-- Toggle Background -->
+      <div class="flex items-center justify-between bg-gray-100 rounded-lg p-1">
+        <!-- Personal Option -->
+        <button type="button" 
+                data-action="click->toggle#selectOption"
+          data-toggle-option="personal"
+          data-toggle-target="personalButton"
+          class="<%= (list.list_type.nil? || list.list_type == 'personal') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' %> relative w-1/2 rounded-md py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+          <div class="flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            <span>Personal</span>
+          </div>
+        </button>
+        <!-- Professional Option -->
+        <button type="button" 
+                data-action="click->toggle#selectOption"
+          data-toggle-option="professional"
+          data-toggle-target="professionalButton"
+          class="<%= list.list_type == 'professional' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' %> relative w-1/2 rounded-md py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+          <div class="flex items-center justify-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
+            </svg>
+            <span>Professional</span>
+          </div>
+        </button>
+      </div>
+      <!-- Hidden input for form submission -->
+      <%= f.hidden_field :list_type, data: { toggle_target: "hiddenInput" }, value: list.list_type || "personal" %>
+    </div>
+    <p class="mt-1 text-sm text-gray-500">Choose whether this is for personal organization or professional work.</p>
+  </div>
+  <!-- Title Field -->
   <div>
     <%= f.label :title, "Title", class: "block text-sm font-medium text-gray-700 mb-2" %>
     <%= f.text_field :title, 
                      placeholder: "My awesome list...",
                      class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
   </div>
-  
+  <!-- Description Field -->
   <div>
     <%= f.label :description, "Description (optional)", class: "block text-sm font-medium text-gray-700 mb-2" %>
     <%= f.text_area :description,
@@ -27,8 +64,9 @@
                     placeholder: "Describe what this list is for...",
                     class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
   </div>
-  
+  <!-- Status and Color Theme Row -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Status Field -->
     <div>
       <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
       <%= f.select :status,
@@ -41,6 +79,7 @@
                    {},
                    { class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" } %>
     </div>
+    <!-- Color Theme Field -->
     <div>
       <%= f.label :color_theme, "Color Theme", class: "block text-sm font-medium text-gray-700 mb-2" %>
       <%= f.select :color_theme,
@@ -56,23 +95,21 @@
                    { class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" } %>
     </div>
   </div>
-  
+  <!-- Public Access Checkbox -->
   <div class="flex items-center">
     <%= f.check_box :is_public, 
                     class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
     <%= f.label :is_public, "Make this list publicly viewable", 
                 class: "ml-2 block text-sm text-gray-700" %>
   </div>
-  
+  <!-- Form Actions -->
   <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-    <%= link_to list.persisted? ? list : lists_path, 
-                class: "text-gray-600 hover:text-gray-900 font-medium" do %>
+    <%= link_to list.persisted? ? list : lists_path,
+                data: { turbo_frame: "_top" },
+                class: "px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" do %>
       Cancel
     <% end %>
-    <div class="flex space-x-3">
-      <%= f.submit list.persisted? ? "Update List" : "Create List",
-                   data: { turbo_frame: list.persisted? ? nil : "_top" },
-                   class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium" %>
-    </div>
+    <%= f.submit list.persisted? ? "Update List" : "Create List",
+                 class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" %>
   </div>
 <% end %>

@@ -96,16 +96,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.integer "status", default: 0, null: false
     t.boolean "is_public", default: false
     t.string "public_slug"
+    t.integer "list_type", default: 0, null: false
     t.json "metadata", default: {}
     t.string "color_theme", default: "blue"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_lists_on_created_at"
     t.index ["is_public"], name: "index_lists_on_is_public"
+    t.index ["list_type"], name: "index_lists_on_list_type"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"
     t.index ["user_id", "created_at"], name: "index_lists_on_user_id_and_created_at"
+    t.index ["user_id", "is_public"], name: "index_lists_on_user_is_public"
+    t.index ["user_id", "list_type"], name: "index_lists_on_user_list_type"
+    t.index ["user_id", "status", "list_type"], name: "index_lists_on_user_status_list_type"
     t.index ["user_id", "status"], name: "index_lists_on_user_id_and_status"
+    t.index ["user_id", "status"], name: "index_lists_on_user_status"
     t.index ["user_id"], name: "index_lists_on_user_id"
   end
 

@@ -57,3 +57,6 @@ application.register("realtime", RealtimeController)
 
 import SortableController from "./sortable_controller"
 application.register("sortable", SortableController)
+
+import ToggleController from "./toggle_controller"
+application.register("toggle", ToggleController)

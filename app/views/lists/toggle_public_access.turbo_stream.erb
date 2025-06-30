@@ -1,4 +1,45 @@
 <!-- app/views/lists/toggle_public_access.turbo_stream.erb -->
-<%= turbo_stream.replace "share_modal" do %>
-  <%= render "lists/share_modal_content", list: @list, sharing_summary: @sharing_summary %>
+<!-- Update the specific list card if it exists on the page -->
+<%= turbo_stream.replace "list_#{@list.id}" do %>
+  <%= render "lists/list_card", list: @list %>
+<% end %>
+<!-- Update dashboard stats -->
+<% dashboard_data = dashboard_data_for_user(current_user) %>
+<%= turbo_stream.replace "dashboard-stats" do %>
+  <%= render "dashboard/stats_overview", stats: dashboard_data[:stats] %>
+<% end %>
+<!-- Update my lists section on dashboard -->
+<%= turbo_stream.replace "dashboard-my-lists" do %>
+  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists] %>
+<% end %>
+<!-- Update collaborated lists section on dashboard -->
+<%= turbo_stream.replace "dashboard-collaborated-lists" do %>
+  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists] %>
+<% end %>
+<!-- Update recent activity on dashboard -->
+<%= turbo_stream.replace "dashboard-recent-activity" do %>
+  <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
+<% end %>
+<!-- Update lists container on lists index page -->
+<% lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items).order(updated_at: :desc) %>
+<%= turbo_stream.replace "lists-container" do %>
+  <%= render "lists/lists_grid", lists: lists %>
+<% end %>
+<!-- Show success message -->
+<%= turbo_stream.update "flash-messages" do %>
+  <div class="fixed top-20 right-4 z-50 space-y-2">
+    <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-md flex items-center space-x-3 max-w-md" 
+         data-controller="flash" 
+         data-flash-auto-dismiss-value="true">
+      <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      <span class="flex-1">List visibility updated to <%= @list.is_public? ? 'public' : 'private' %>!</span>
+      <button data-action="click->flash#dismiss" class="text-green-600 hover:text-green-800">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
 <% end %>

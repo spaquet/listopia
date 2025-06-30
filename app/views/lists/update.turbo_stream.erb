@@ -23,15 +23,7 @@
 <!-- Update lists container on lists index page -->
 <% lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items).order(updated_at: :desc) %>
 <%= turbo_stream.replace "lists-container" do %>
-  <% if lists.any? %>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% lists.each do |list| %>
-        <%= render "lists/list_card", list: list %>
-      <% end %>
-    </div>
-  <% else %>
-    <%= render "lists/empty_state" %>
-  <% end %>
+  <%= render "lists/lists_grid", lists: lists %>
 <% end %>
 <!-- Show success message -->
 <%= turbo_stream.update "flash-messages" do %>
