@@ -21,6 +21,8 @@ class UsersController < ApplicationController
 
   def settings
     @user = current_user
+    # Ensure notification settings exist - this is the key fix!
+    @user.notification_preferences
   end
 
   def update_password

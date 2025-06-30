@@ -42,7 +42,7 @@ class User < ApplicationRecord
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
 
   # Notification settings
-  has_one :notification_settings, dependent: :destroy
+  has_one :notification_settings, class_name: "NotificationSetting", dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

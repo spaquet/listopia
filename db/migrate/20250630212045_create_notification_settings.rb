@@ -1,4 +1,4 @@
-# db/migrate/20250630185021_create_notification_settings.rb
+# db/migrate/20250630212045_create_notification_settings.rb
 class CreateNotificationSettings < ActiveRecord::Migration[8.0]
   def change
     create_table :notification_settings, id: :uuid do |t|

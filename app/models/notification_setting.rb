@@ -1,5 +1,5 @@
-# app/models/notification_settings.rb
-class NotificationSettings < ApplicationRecord
+# app/models/notification_setting.rb
+class NotificationSetting < ApplicationRecord
   belongs_to :user
 
   # Validation for frequency options

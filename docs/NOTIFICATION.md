@@ -32,7 +32,7 @@ Listopia uses the **Noticed gem** with custom notification preferences to provid
 ### Core Components
 
 1. **Noticed Gem** - Handles notification delivery and storage
-2. **NotificationSettings Model** - Stores user preferences
+2. **NotificationSetting Model** - Stores user preferences
 3. **ApplicationNotifier** - Base class for all notifications
 4. **Model Callbacks** - Automatic notification triggers
 5. **Controller Actions** - Manual notification triggers for user actions
@@ -465,7 +465,7 @@ Noticed::DeliveryJob.queue_adapter.enqueued_jobs
 
 ### Extensibility Points
 
-- Add new notification types in `NotificationSettings`
+- Add new notification types in `NotificationSetting`
 - Create new delivery methods in `ApplicationNotifier`
 - Add custom notifier classes for specific use cases
 - Extend user preferences with custom rules
