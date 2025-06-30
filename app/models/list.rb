@@ -33,8 +33,13 @@ class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
 
+  # Callbacks
   before_update :track_status_change
   after_update :notify_status_change
+
+  # Notification Callbacks
+  after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
+  after_commit :notify_status_change, on: :update, if: :saved_change_to_status?
 
   # Associations
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
@@ -123,5 +128,24 @@ class List < ApplicationRecord
       NotificationService.new(Current.user)
                          .notify_list_status_changed(self, previous_status_value, status)
     end
+  end
+
+  # Notify collaborators of title change
+  def notify_title_change
+    return unless Current.user
+    recipients = collaborators.where.not(id: Current.user.id)
+    ListTitleChangedNotifier.with(actor_id: Current.user.id, list_id: id)
+                           .deliver_to_enabled_users(recipients)
+  end
+
+  # Notify collaborators of status change
+  def notify_status_change
+    return unless Current.user
+    recipients = collaborators.where.not(id: Current.user.id)
+    ListStatusChangedNotifier.with(
+      actor_id: Current.user.id,
+      list_id: id,
+      new_status: status
+    ).deliver_to_enabled_users(recipients)
   end
 end

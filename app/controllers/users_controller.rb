@@ -48,6 +48,19 @@ class UsersController < ApplicationController
     end
   end
 
+  # Update the user's notification settings
+  def update_notification_settings
+    @user = current_user
+    notification_settings = @user.notification_preferences
+
+    if notification_settings.update(notification_settings_params)
+      redirect_to settings_user_path, notice: "Notification preferences updated successfully."
+    else
+      flash.now[:alert] = "Failed to update notification preferences."
+      render :settings, status: :unprocessable_entity
+    end
+  end
+
   private
 
   def user_params
@@ -60,5 +73,18 @@ class UsersController < ApplicationController
 
   def preference_params
     params.require(:user).permit(:email_notifications, :theme_preference)
+  end
+
+  def notification_settings_params
+    params.require(:notification_settings).permit(
+      :email_notifications,
+      :sms_notifications,
+      :push_notifications,
+      :collaboration_notifications,
+      :list_activity_notifications,
+      :item_activity_notifications,
+      :status_change_notifications,
+      :notification_frequency
+    )
   end
 end
