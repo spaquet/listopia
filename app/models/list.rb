@@ -140,18 +140,22 @@ class List < ApplicationRecord
   def notify_title_change
     return unless Current.user
     recipients = collaborators.where.not(id: Current.user.id)
-    ListTitleChangedNotifier.with(actor_id: Current.user.id, list_id: id)
-                           .deliver_to_enabled_users(recipients)
+    return if recipients.empty?
+
+    ListTitleChangedNotifier.deliver_to_enabled_users(recipients, actor_id: Current.user.id, list_id: id)
   end
 
   # Notify collaborators of status change
   def notify_status_change
     return unless Current.user
     recipients = collaborators.where.not(id: Current.user.id)
-    ListStatusChangedNotifier.with(
+    return if recipients.empty?
+
+    ListStatusChangedNotifier.deliver_to_enabled_users(
+      recipients,
       actor_id: Current.user.id,
       list_id: id,
       new_status: status
-    ).deliver_to_enabled_users(recipients)
+    )
   end
 end
