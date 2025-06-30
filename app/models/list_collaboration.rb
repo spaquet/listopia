@@ -139,6 +139,6 @@ class ListCollaboration < ApplicationRecord
     ListCollaborationInviteNotifier.with(
       actor_id: Current.user.id,
       list_id: list.id
-    ).deliver_to_enabled_users([user])
+    ).deliver_to_enabled_users([ user ])
   end
 end
