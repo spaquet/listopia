@@ -60,6 +60,12 @@ class List < ApplicationRecord
     archived: 3
   }, prefix: true
 
+  # Define enum for list_type
+  enum :list_type, {
+    personal: 0,
+    professional: 1
+  }, prefix: true
+
   # Scopes
   scope :active, -> { where(status: :active) }
   scope :owned_by, ->(user) { where(user: user) }
