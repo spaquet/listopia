@@ -41,14 +41,53 @@ class User < ApplicationRecord
   # Add noticed notifications
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
 
+  # Notification settings
+  has_one :notification_settings, class_name: "NotificationSetting", dependent: :destroy
+
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true
+
+  # Callbacks
+  after_create :create_default_notification_settings
 
   # Scopes
   scope :verified, -> { where.not(email_verified_at: nil) }
 
   # Methods
+
+  # Get notification settings (with fallback)
+  def notification_preferences
+    notification_settings || create_default_notification_settings
+  end
+
+  # Check if user wants notifications for a specific type and channel
+  def wants_notification?(notification_type, channel = :email)
+    settings = notification_preferences
+
+    # Check if notifications are disabled entirely
+    return false if settings.notifications_disabled?
+
+    # Check if this notification type is enabled
+    return false unless settings.notifications_enabled_for?(notification_type)
+
+    # Check if this channel is enabled
+    case channel.to_sym
+    when :email
+      settings.email_notifications?
+    when :sms
+      settings.sms_notifications?
+    when :push
+      settings.push_notifications?
+    else
+      false
+    end
+  end
+
+  # Check if user wants immediate notifications
+  def wants_immediate_notifications?
+    notification_preferences.immediate_notifications?
+  end
 
   # Used to reset the current chat
   def reset_current_chat!
@@ -130,5 +169,13 @@ class User < ApplicationRecord
       total_tokens: chats.sum { |chat| chat.total_tokens },
       last_chat_at: chats.maximum(:last_message_at)
     }
+  end
+
+  # Private methods
+  private
+
+  def create_default_notification_settings
+    build_notification_settings.save! unless notification_settings
+    notification_settings
   end
 end

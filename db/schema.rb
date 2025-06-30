@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_28_043943) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -166,6 +166,25 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_043943) do
     t.index ["recipient_type", "recipient_id"], name: "index_noticed_notifications_on_recipient"
   end
 
+  create_table "notification_settings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.boolean "email_notifications", default: true, null: false
+    t.boolean "sms_notifications", default: false, null: false
+    t.boolean "push_notifications", default: true, null: false
+    t.boolean "collaboration_notifications", default: true, null: false
+    t.boolean "list_activity_notifications", default: true, null: false
+    t.boolean "item_activity_notifications", default: true, null: false
+    t.boolean "status_change_notifications", default: true, null: false
+    t.string "notification_frequency", default: "immediate", null: false
+    t.time "quiet_hours_start"
+    t.time "quiet_hours_end"
+    t.string "timezone", default: "UTC"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["notification_frequency"], name: "index_notification_settings_on_notification_frequency"
+    t.index ["user_id"], name: "index_notification_settings_on_user_id"
+  end
+
   create_table "sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "user_id", null: false
     t.string "session_token", null: false
@@ -220,6 +239,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_28_043943) do
   add_foreign_key "lists", "users"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "users"
+  add_foreign_key "notification_settings", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "tool_calls", "messages"
 end

@@ -38,7 +38,7 @@ class ListCollaboration < ApplicationRecord
   generates_token_for :invitation, expires_in: 24.hours
 
   # Notifications
-  after_create :notify_collaboration_created
+  after_create :notify_collaboration_added
 
   # Associations
   belongs_to :list
@@ -134,10 +134,11 @@ class ListCollaboration < ApplicationRecord
   end
 
   # Notify the owner when a new collaboration is created
-  def notify_collaboration_created
-    return unless user.present? && Current.user
-
-    NotificationService.new(Current.user)
-                      .notify_collaboration_joined(list, user)
+  def notify_collaboration_added
+    return unless Current.user
+    ListCollaborationInviteNotifier.with(
+      actor_id: Current.user.id,
+      list_id: list.id
+    ).deliver_to_enabled_users([ user ])
   end
 end

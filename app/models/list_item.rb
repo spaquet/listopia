@@ -45,10 +45,16 @@ class ListItem < ApplicationRecord
   attribute :previous_title_value
   attribute :skip_notifications, :boolean, default: false
 
+  # Callbacks
   before_update :track_title_change
   after_create :notify_item_created
   after_update :notify_item_updated
   after_destroy :notify_item_destroyed
+
+  # Notification Callbacks
+  after_commit :notify_item_created, on: :create
+  after_commit :notify_item_updated, on: :update
+  before_destroy :notify_item_deleted
 
   # Associations
   belongs_to :list
@@ -165,10 +171,38 @@ class ListItem < ApplicationRecord
     end
   end
 
+  # Notify when item is destroyed
   def notify_item_destroyed
     return if skip_notifications || !Current.user
 
     NotificationService.new(Current.user)
                       .notify_item_activity(self, "deleted")
+  end
+
+  # Notify collaborators of item activity
+  def notify_item_created
+    notify_item_activity("created")
+  end
+
+  # Notify collaborators of item update
+  def notify_item_updated
+    notify_item_activity("updated")
+  end
+
+  # Notify collaborators of item deletion
+  def notify_item_deleted
+    notify_item_activity("deleted")
+  end
+
+  # Notify collaborators of item activity
+  def notify_item_activity(action)
+    return unless Current.user
+    recipients = list.collaborators.where.not(id: Current.user.id)
+    ListItemActivityNotifier.with(
+      actor_id: Current.user.id,
+      list_id: list.id,
+      item_title: title,
+      action: action
+    ).deliver_to_enabled_users(recipients)
   end
 end

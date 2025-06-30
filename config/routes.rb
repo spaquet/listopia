@@ -42,6 +42,8 @@ Rails.application.routes.draw do
   get "settings", to: "users#settings", as: :settings_user
   patch "settings/password", to: "users#update_password", as: :update_password_user
   patch "settings/preferences", to: "users#update_preferences", as: :update_preferences_user
+  patch "settings/notifications", to: "users#update_notification_settings", as: :update_notification_settings_user  # ADD this line
+
 
   # Collaboration invitation acceptance
   get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
