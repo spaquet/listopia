@@ -147,6 +147,9 @@ class ListsController < ApplicationController
     list_for_broadcast.owner = @list.owner
     list_for_broadcast.collaborators = @list.collaborators.to_a
 
+    # Skip notifications for all list items when deleting the entire list
+    @list.list_items.update_all(skip_notifications: true) if @list.list_items.any?
+
     @list.destroy
 
     # Broadcast updates to other users after successful deletion

@@ -4,35 +4,10 @@ module ListBroadcasting
 
   private
 
-  # Helper method to get updated dashboard data
-  def dashboard_data_for_user(user)
-    {
-      my_lists: user.lists.includes(:list_items, :collaborators).order(updated_at: :desc).limit(10),
-      collaborated_lists: user.collaborated_lists.includes(:owner, :list_items).order(updated_at: :desc).limit(10),
-      recent_items: ListItem.joins(:list).where(list: user.accessible_lists).order(updated_at: :desc).limit(20),
-      stats: calculate_dashboard_stats_for_user(user)
-    }
-  end
-
-  # Calculate statistics for dashboard display
-  def calculate_dashboard_stats_for_user(user)
-    accessible_lists = user.accessible_lists
-
-    {
-      total_lists: accessible_lists.count,
-      active_lists: accessible_lists.status_active.count,
-      completed_lists: accessible_lists.status_completed.count,
-      total_items: ListItem.joins(:list).where(list: accessible_lists).count,
-      completed_items: ListItem.joins(:list).where(list: accessible_lists, completed: true).count,
-      overdue_items: ListItem.joins(:list).where(list: accessible_lists)
-                            .where("due_date < ? AND completed = false", Time.current).count
-    }
-  end
-
   # Update dashboard for all affected users
   def broadcast_dashboard_updates(list = @list)
     # Update dashboard for list owner
-    owner_data = dashboard_data_for_user(list.owner)
+    owner_data = view_context.dashboard_data_for_user(list.owner)
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "user_dashboard_#{list.owner.id}",
@@ -57,7 +32,7 @@ module ListBroadcasting
 
     # Update dashboard for collaborators
     list.collaborators.each do |collaborator|
-      collaborator_data = dashboard_data_for_user(collaborator)
+      collaborator_data = view_context.dashboard_data_for_user(collaborator)
 
       Turbo::StreamsChannel.broadcast_replace_to(
         "user_dashboard_#{collaborator.id}",

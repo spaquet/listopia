@@ -29,6 +29,7 @@
       <% if current_user && can_access_list?(@list, current_user, :edit) %>
         <div class="flex items-center space-x-3">
           <%= link_to edit_list_path(@list), 
+                      data: { turbo_frame: "modal" },
                       class: "text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200",
                       title: "Edit list" do %>
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

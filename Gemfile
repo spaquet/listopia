@@ -36,6 +36,9 @@ gem "pagy"
 # Notification
 gem "noticed"
 
+# Positioning, ordering of the lists and list items
+gem "positioning"
+
 # AI/LLM Integration
 gem "ruby_llm"
 

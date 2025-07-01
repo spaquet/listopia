@@ -1,10 +1,35 @@
 <!-- app/views/lists/edit.html.erb -->
-<div class="max-w-2xl mx-auto">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Edit List</h1>
-      <p class="text-gray-600 mt-1">Update your list details and settings.</p>
+<%= turbo_frame_tag "modal" do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+       data-controller="modal" 
+       data-modal-target="modal">
+    <div class="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-auto border border-gray-200 max-h-[90vh] overflow-hidden"
+         data-modal-target="backdrop"
+         data-action="click->modal#clickOutside">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Edit List</h3>
+            <p class="text-sm text-gray-600">Update your list details and settings</p>
+          </div>
+        </div>
+        <button data-action="click->modal#close" 
+          class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <!-- Modal Body -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <%= render "lists/form", list: @list %>
+      </div>
     </div>
-    <%= render "lists/form", list: @list %>
   </div>
-</div>
+<% end %>
