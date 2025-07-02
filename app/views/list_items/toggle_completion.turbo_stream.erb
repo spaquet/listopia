@@ -1,6 +1,6 @@
 <!-- app/views/list_items/toggle_completion.turbo_stream.erb -->
 <!-- Simply replace the item with updated state -->
-<%= turbo_stream.replace "list_item_<%= @list_item.id %>" do %>
+<%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
   <%= render "list_items/item", item: @list_item, list: @list %>
 <% end %>
 

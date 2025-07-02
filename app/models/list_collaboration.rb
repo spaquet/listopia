@@ -136,9 +136,7 @@ class ListCollaboration < ApplicationRecord
   # Notify the owner when a new collaboration is created
   def notify_collaboration_added
     return unless Current.user
-    ListCollaborationInviteNotifier.with(
-      actor_id: Current.user.id,
-      list_id: list.id
-    ).deliver_to_enabled_users([ user ])
+
+    ListCollaborationInviteNotifier.deliver_to_enabled_users([ user ], actor_id: Current.user.id, list_id: list.id)
   end
 end
