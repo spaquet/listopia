@@ -34,9 +34,6 @@ application.register("inline-edit", InlineEditController)
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
 
-import ListManagementController from "./list_management_controller"
-application.register("list-management", ListManagementController)
-
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
 

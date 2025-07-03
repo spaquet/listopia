@@ -1,0 +1,4 @@
+<!-- app/views/list_items/inline_edit_form.html.erb -->
+<%= turbo_frame_tag "list_item_#{@list_item.id}" do %>
+  <%= render "list_items/inline_edit_form", item: @list_item, list: @list %>
+<% end %>

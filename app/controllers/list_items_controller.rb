@@ -37,8 +37,13 @@ class ListItemsController < ApplicationController
 
   def edit
     respond_to do |format|
-      format.turbo_stream { render :edit }
-      format.html { redirect_to @list } # Fallback
+      format.html {
+        if turbo_frame_request?
+          render "inline_edit_form", layout: false
+        else
+          redirect_to @list
+        end
+      }
     end
   end
 
@@ -46,27 +51,59 @@ class ListItemsController < ApplicationController
   def update
     if @list_item.update(list_item_params)
       @list.reload
-      respond_with_turbo_stream do
-        render :update
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            # Create a simple view file instead of inline rendering
+            render "item_display", layout: false
+          else
+            redirect_to @list, notice: "Item updated successfully!"
+          end
+        }
       end
     else
-      respond_with_turbo_stream do
-        render :form_errors
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            render "inline_edit_form", layout: false, status: :unprocessable_entity
+          else
+            redirect_to @list, alert: "Could not update item."
+          end
+        }
       end
+    end
+  end
+
+  def destroy
+    @item_id = @list_item.id
+    @list_item.destroy
+    @list.reload
+
+    respond_to do |format|
+      format.html {
+        if turbo_frame_request?
+          render "item_destroyed", layout: false
+        else
+          redirect_to @list, notice: "Item deleted successfully!"
+        end
+      }
     end
   end
 
   # Delete a list item
   def destroy
-    # Store reference before destruction for turbo stream
     @item_id = @list_item.id
-    item_title = @list_item.title
-
     @list_item.destroy
     @list.reload
 
-    respond_with_turbo_stream do
-      render :destroy
+    respond_to do |format|
+      format.html {
+        if turbo_frame_request?
+          render "item_destroyed", layout: false
+        else
+          redirect_to @list, notice: "Item deleted successfully!"
+        end
+      }
     end
   end
 
