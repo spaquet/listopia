@@ -49,8 +49,9 @@ class ListItem < ApplicationRecord
   attribute :skip_notifications, :boolean, default: false
 
   # Associations
-  belongs_to :list
+  belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true
+
 
   # Validations
   validates :title, presence: true, length: { maximum: 255 }

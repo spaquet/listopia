@@ -4,18 +4,20 @@ class DashboardController < ApplicationController
 
   # Main dashboard view showing user's lists and recent activity
   def index
-    @my_lists = current_user.lists.includes(:list_items, :collaborators)
-                           .order(updated_at: :desc)
-                           .limit(10)
+    # Remove unnecessary includes - use counter caches instead
+    @my_lists = current_user.lists
+                          .order(updated_at: :desc)
+                          .limit(10)
 
-    @collaborated_lists = current_user.collaborated_lists.includes(:owner, :list_items)
+    @collaborated_lists = current_user.collaborated_lists.includes(:owner)
                                     .order(updated_at: :desc)
                                     .limit(10)
 
     @recent_items = ListItem.joins(:list)
-                           .where(list: current_user.accessible_lists)
-                           .order(updated_at: :desc)
-                           .limit(20)
+                          .where(list: current_user.accessible_lists)
+                          .includes(:list) # Only include what we need
+                          .order(updated_at: :desc)
+                          .limit(20)
 
     @stats = calculate_dashboard_stats
   end
