@@ -21,7 +21,7 @@
   <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
 <% end %>
 <!-- Update lists container on lists index page -->
-<% lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items).order(updated_at: :desc) %>
+<% lists = current_user.accessible_lists.order(updated_at: :desc) %>
 <%= turbo_stream.replace "lists-container" do %>
   <%= render "lists/lists_grid", lists: lists %>
 <% end %>

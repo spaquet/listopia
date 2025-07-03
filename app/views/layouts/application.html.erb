@@ -24,6 +24,8 @@
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <%= yield %>
     </main>
+    <!-- Modal Container -->
+    <%= turbo_frame_tag "modal" %>
     <!-- Persistent Chat Component (only for authenticated users) -->
     <% if user_signed_in? %>
       <%= render "shared/persistent_chat" %>

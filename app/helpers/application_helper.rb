@@ -185,9 +185,9 @@ module ApplicationHelper
   # This is used in turbo stream templates to update dashboard sections
   def dashboard_data_for_user(user)
     {
-      my_lists: user.lists.includes(:list_items, :collaborators).order(updated_at: :desc).limit(10),
-      collaborated_lists: user.collaborated_lists.includes(:owner, :list_items).order(updated_at: :desc).limit(10),
-      recent_items: ListItem.joins(:list).where(list: user.accessible_lists).order(updated_at: :desc).limit(20),
+      my_lists: user.lists.order(updated_at: :desc).limit(10),
+      collaborated_lists: user.collaborated_lists.includes(:owner).order(updated_at: :desc).limit(10),
+      recent_items: ListItem.joins(:list).where(list: user.accessible_lists).includes(:list).order(updated_at: :desc).limit(20),
       stats: calculate_dashboard_stats_for_user(user)
     }
   end

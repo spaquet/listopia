@@ -2,7 +2,8 @@
 module ListsHelper
   # Calculate and display list completion statistics
   def list_completion_stats(list)
-    total = list.list_items.count
+    # Use counter cache for total, only query for completed count
+    total = list.list_items_count
     completed = list.list_items.completed.count
     percentage = total > 0 ? (completed.to_f / total * 100).round : 0
 
@@ -12,6 +13,11 @@ module ListsHelper
       pending: total - completed,
       percentage: percentage
     }
+  end
+
+  # Add efficient collaboration check
+  def list_has_collaborations?(list)
+    list.list_collaborations_count > 0
   end
 
   # Generate sharing permissions options for select
@@ -26,12 +32,18 @@ module ListsHelper
   def list_sharing_status(list)
     if list.is_public?
       content_tag :span, "Public", class: "text-green-600 font-medium"
-    elsif list.list_collaborations.any?
-      count = list.list_collaborations.count
+    elsif list.list_collaborations_count > 0
+      count = list.list_collaborations_count
       content_tag :span, "Shared with #{count} #{'person'.pluralize(count)}", class: "text-blue-600"
     else
       content_tag :span, "Private", class: "text-gray-600"
     end
+  end
+
+  # Get the name of the list owner, using association if available
+  def list_owner_name(list)
+    # Use the included owner association if available, otherwise query
+    list.association(:owner).loaded? ? list.owner.name : list.owner&.name
   end
 
   # Generate item type icon

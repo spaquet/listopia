@@ -9,6 +9,16 @@ class ListItemsController < ApplicationController
   def create
     @list_item = @list.list_items.build(list_item_params)
 
+    Rails.logger.info "Creating ListItem with params: #{list_item_params.inspect}"
+    Rails.logger.info "Initial position value: #{@list_item.position.inspect}"
+
+    # Always set position for new items (don't check for nil)
+    max_position = @list.list_items.maximum(:position) || -1
+    @list_item.position = max_position + 1
+
+    Rails.logger.info "Max position for list items: #{max_position}"
+    Rails.logger.info "Setting position to: #{@list_item.position}"
+
     if @list_item.save
       # Reload the list to get the most current state
       @list.reload
@@ -17,6 +27,7 @@ class ListItemsController < ApplicationController
         render :create
       end
     else
+      Rails.logger.error "Failed to save ListItem: #{@list_item.errors.full_messages}"
       # Keep the existing error handling but make sure we don't clear form data
       respond_with_turbo_stream do
         render :form_errors
@@ -26,8 +37,13 @@ class ListItemsController < ApplicationController
 
   def edit
     respond_to do |format|
-      format.turbo_stream { render :edit }
-      format.html { redirect_to @list } # Fallback
+      format.html {
+        if turbo_frame_request?
+          render "inline_edit_form", layout: false
+        else
+          redirect_to @list
+        end
+      }
     end
   end
 
@@ -35,27 +51,59 @@ class ListItemsController < ApplicationController
   def update
     if @list_item.update(list_item_params)
       @list.reload
-      respond_with_turbo_stream do
-        render :update
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            # Create a simple view file instead of inline rendering
+            render "item_display", layout: false
+          else
+            redirect_to @list, notice: "Item updated successfully!"
+          end
+        }
       end
     else
-      respond_with_turbo_stream do
-        render :form_errors
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            render "inline_edit_form", layout: false, status: :unprocessable_entity
+          else
+            redirect_to @list, alert: "Could not update item."
+          end
+        }
       end
+    end
+  end
+
+  def destroy
+    @item_id = @list_item.id
+    @list_item.destroy
+    @list.reload
+
+    respond_to do |format|
+      format.html {
+        if turbo_frame_request?
+          render "item_destroyed", layout: false
+        else
+          redirect_to @list, notice: "Item deleted successfully!"
+        end
+      }
     end
   end
 
   # Delete a list item
   def destroy
-    # Store reference before destruction for turbo stream
     @item_id = @list_item.id
-    item_title = @list_item.title
-
     @list_item.destroy
     @list.reload
 
-    respond_with_turbo_stream do
-      render :destroy
+    respond_to do |format|
+      format.html {
+        if turbo_frame_request?
+          render "item_destroyed", layout: false
+        else
+          redirect_to @list, notice: "Item deleted successfully!"
+        end
+      }
     end
   end
 

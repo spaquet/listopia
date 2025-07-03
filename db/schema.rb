@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -70,6 +70,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.datetime "completed_at"
     t.datetime "due_date"
     t.datetime "reminder_at"
+    t.boolean "skip_notifications", default: false, null: false
     t.integer "position", default: 0
     t.string "url"
     t.json "metadata", default: {}
@@ -83,10 +84,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.index ["due_date"], name: "index_list_items_on_due_date"
     t.index ["item_type"], name: "index_list_items_on_item_type"
     t.index ["list_id", "completed"], name: "index_list_items_on_list_id_and_completed"
+    t.index ["list_id", "position"], name: "index_list_items_on_list_id_and_position", unique: true
     t.index ["list_id", "priority"], name: "index_list_items_on_list_id_and_priority"
     t.index ["list_id"], name: "index_list_items_on_list_id"
     t.index ["position"], name: "index_list_items_on_position"
     t.index ["priority"], name: "index_list_items_on_priority"
+    t.index ["skip_notifications"], name: "index_list_items_on_skip_notifications"
   end
 
   create_table "lists", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -101,8 +104,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.string "color_theme", default: "blue"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "list_items_count", default: 0, null: false
+    t.integer "list_collaborations_count", default: 0, null: false
     t.index ["created_at"], name: "index_lists_on_created_at"
     t.index ["is_public"], name: "index_lists_on_is_public"
+    t.index ["list_collaborations_count"], name: "index_lists_on_list_collaborations_count"
+    t.index ["list_items_count"], name: "index_lists_on_list_items_count"
     t.index ["list_type"], name: "index_lists_on_list_type"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"

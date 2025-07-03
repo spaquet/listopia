@@ -41,7 +41,7 @@ class ListCollaboration < ApplicationRecord
   after_create :notify_collaboration_added
 
   # Associations
-  belongs_to :list
+  belongs_to :list, counter_cache: true
   belongs_to :user, optional: true  # Make user optional for pending invitations
 
   # Validations

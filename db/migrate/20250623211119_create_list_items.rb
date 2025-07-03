@@ -18,6 +18,9 @@ class CreateListItems < ActiveRecord::Migration[8.0]
       t.datetime :due_date
       t.datetime :reminder_at
 
+      # Notifications
+      t.boolean :skip_notifications, default: false, null: false
+
       # Ordering
       t.integer :position, default: 0
 
@@ -34,6 +37,8 @@ class CreateListItems < ActiveRecord::Migration[8.0]
     add_index :list_items, :completed
     add_index :list_items, :due_date
     add_index :list_items, :position
+    add_index :list_items, :skip_notifications
     add_index :list_items, :created_at
+    add_index :list_items, [ :list_id, :position ], unique: true, name: 'index_list_items_on_list_id_and_position'
   end
 end

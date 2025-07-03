@@ -8,7 +8,8 @@ class ListsController < ApplicationController
 
   # Display all lists accessible to the current user
   def index
-    @lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items)
+    # Remove unnecessary includes - use counter caches instead
+    @lists = current_user.accessible_lists
                         .order(updated_at: :desc)
 
     # Filter by status if provided
@@ -17,7 +18,7 @@ class ListsController < ApplicationController
     # Search functionality
     if params[:search].present?
       @lists = @lists.where("title ILIKE ? OR description ILIKE ?",
-                           "%#{params[:search]}%", "%#{params[:search]}%")
+                          "%#{params[:search]}%", "%#{params[:search]}%")
     end
   end
 
@@ -52,6 +53,11 @@ class ListsController < ApplicationController
   # Show form for creating a new list
   def new
     @list = current_user.lists.build
+
+    respond_to do |format|
+      format.html # Regular page (lists/new.html.erb)
+      format.turbo_stream # Modal (lists/new.turbo_stream.erb)
+    end
   end
 
   # Create a new list
@@ -63,7 +69,7 @@ class ListsController < ApplicationController
       broadcast_all_updates(@list)
 
       respond_to do |format|
-        format.html { redirect_to @list, notice: "List was successfully created." }
+        format.html { redirect_to lists_path, notice: "List was successfully created." }
         format.turbo_stream do
           # Use turbo streams to update multiple parts of the page
           render :create
@@ -99,7 +105,10 @@ class ListsController < ApplicationController
 
   # Show form for editing an existing list
   def edit
-    # Form will be rendered
+    respond_to do |format|
+      format.html # Regular page
+      format.turbo_stream # For modal rendering
+    end
   end
 
   # Show sharing modal/page

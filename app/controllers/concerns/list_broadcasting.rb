@@ -60,7 +60,7 @@ module ListBroadcasting
   # Update lists index for all affected users
   def broadcast_lists_index_updates(list = @list)
     # Update lists index for list owner
-    owner_lists = list.owner.accessible_lists.includes(:owner, :collaborators, :list_items).order(updated_at: :desc)
+    owner_lists = list.owner.accessible_lists.order(updated_at: :desc)
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "user_lists_#{list.owner.id}",
@@ -71,7 +71,7 @@ module ListBroadcasting
 
     # Update lists index for collaborators
     list.collaborators.each do |collaborator|
-      collaborator_lists = collaborator.accessible_lists.includes(:owner, :collaborators, :list_items).order(updated_at: :desc)
+      collaborator_lists = collaborator.accessible_lists.order(updated_at: :desc)
 
       Turbo::StreamsChannel.broadcast_replace_to(
         "user_lists_#{collaborator.id}",

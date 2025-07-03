@@ -3,69 +3,38 @@
   <!-- Error Messages -->
   <% if list.errors.any? %>
     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-      <h3 class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h3>
-      <ul class="text-sm text-red-700 space-y-1">
-        <% list.errors.full_messages.each do |message| %>
-          <li>• <%= message %></li>
-        <% end %>
-      </ul>
+      <div class="flex">
+        <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
+          <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+            <% list.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
     </div>
   <% end %>
-  <!-- List Type Toggle -->
-  <div>
-    <%= f.label :list_type, "List Type", class: "block text-sm font-medium text-gray-700 mb-3" %>
-    <div class="relative" data-controller="toggle" data-toggle-value-value="<%= list.list_type || 'personal' %>">
-      <!-- Toggle Background -->
-      <div class="flex items-center justify-between bg-gray-100 rounded-lg p-1">
-        <!-- Personal Option -->
-        <button type="button" 
-                data-action="click->toggle#selectOption"
-          data-toggle-option="personal"
-          data-toggle-target="personalButton"
-          class="<%= (list.list_type.nil? || list.list_type == 'personal') ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' %> relative w-1/2 rounded-md py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-          <div class="flex items-center justify-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-            </svg>
-            <span>Personal</span>
-          </div>
-        </button>
-        <!-- Professional Option -->
-        <button type="button" 
-                data-action="click->toggle#selectOption"
-          data-toggle-option="professional"
-          data-toggle-target="professionalButton"
-          class="<%= list.list_type == 'professional' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700' %> relative w-1/2 rounded-md py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-          <div class="flex items-center justify-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"></path>
-            </svg>
-            <span>Professional</span>
-          </div>
-        </button>
-      </div>
-      <!-- Hidden input for form submission -->
-      <%= f.hidden_field :list_type, data: { toggle_target: "hiddenInput" }, value: list.list_type || "personal" %>
-    </div>
-    <p class="mt-1 text-sm text-gray-500">Choose whether this is for personal organization or professional work.</p>
-  </div>
   <!-- Title Field -->
   <div>
     <%= f.label :title, "Title", class: "block text-sm font-medium text-gray-700 mb-2" %>
     <%= f.text_field :title, 
-                     placeholder: "My awesome list...",
+                     placeholder: "Enter a descriptive title for your list",
                      class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
   </div>
   <!-- Description Field -->
   <div>
     <%= f.label :description, "Description (optional)", class: "block text-sm font-medium text-gray-700 mb-2" %>
-    <%= f.text_area :description,
+    <%= f.text_area :description, 
                     rows: 3,
-                    placeholder: "Describe what this list is for...",
+                    placeholder: "Add a brief description of what this list is for",
                     class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
   </div>
-  <!-- Status and Color Theme Row -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Status and Color Theme Fields -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Status Field -->
     <div>
       <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
@@ -75,7 +44,7 @@
                      ['Active', 'active'],
                      ['Completed', 'completed'],
                      ['Archived', 'archived']
-                   ], list.status),
+                   ], list.status || 'active'),
                    {},
                    { class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" } %>
     </div>
@@ -104,6 +73,7 @@
   </div>
   <!-- Form Actions -->
   <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+    <!-- Check if this is a turbo frame request (modal) -->
     <% if turbo_frame_request? %>
       <!-- Modal context: close button -->
       <button type="button" 
@@ -113,7 +83,7 @@
       </button>
     <% else %>
       <!-- Regular page context: back link -->
-      <%= link_to list.persisted? ? list : lists_path,
+      <%= link_to lists_path,
                   class: "px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" do %>
         Cancel
       <% end %>
