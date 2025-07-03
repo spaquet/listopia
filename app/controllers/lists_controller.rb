@@ -52,6 +52,11 @@ class ListsController < ApplicationController
   # Show form for creating a new list
   def new
     @list = current_user.lists.build
+
+    respond_to do |format|
+      format.html # Regular page (lists/new.html.erb)
+      format.turbo_stream # Modal (lists/new.turbo_stream.erb)
+    end
   end
 
   # Create a new list
@@ -63,7 +68,7 @@ class ListsController < ApplicationController
       broadcast_all_updates(@list)
 
       respond_to do |format|
-        format.html { redirect_to @list, notice: "List was successfully created." }
+        format.html { redirect_to lists_path, notice: "List was successfully created." }
         format.turbo_stream do
           # Use turbo streams to update multiple parts of the page
           render :create
@@ -99,7 +104,10 @@ class ListsController < ApplicationController
 
   # Show form for editing an existing list
   def edit
-    # Form will be rendered
+    respond_to do |format|
+      format.html # Regular page
+      format.turbo_stream # For modal rendering
+    end
   end
 
   # Show sharing modal/page
