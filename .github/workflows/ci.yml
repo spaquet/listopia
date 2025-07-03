@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config curl xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth google-chrome-stable
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config curl xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2t64 libxtst6 xauth google-chrome-stable
 
       - name: Checkout code
         uses: actions/checkout@v4
