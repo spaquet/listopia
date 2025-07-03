@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config unzip google-chrome-stable
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config curl xvfb libgtk-3-0 libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth google-chrome-stable
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,17 +75,49 @@ jobs:
         with:
           bun-version: 1.2.17
 
-      - name: Run tests
+      - name: Install JS dependencies and build assets
+        run: |
+          bun install
+          bun run build
+          bun run build:css
+
+      - name: Prepare database
+        env:
+          RAILS_ENV: test
+        run: bin/rails db:test:prepare
+
+      - name: Run Rails tests
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test test:system
+        run: bin/rails test test:system
 
-      - name: Keep screenshots from failed system tests
+      - name: Start Rails server
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: |
+          bin/rails server -p 3000 -e test &
+          npx wait-on http://localhost:3000
+
+      - name: Install Cypress
+        run: npx cypress install
+
+      - name: Run Cypress tests
+        run: npx cypress run --headless --browser chrome
+
+      - name: Upload Cypress screenshots on failure
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: screenshots
-          path: ${{ github.workspace }}/tmp/screenshots
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload Cypress videos on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-videos
+          path: cypress/videos
           if-no-files-found: ignore

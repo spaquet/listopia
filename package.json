@@ -11,5 +11,8 @@
     "@tailwindcss/cli": "^4.1.10",
     "sortablejs": "^1.15.6",
     "tailwindcss": "^4.1.10"
+  },
+  "devDependencies": {
+    "cypress": "^14.5.1"
   }
 }
