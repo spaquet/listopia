@@ -315,7 +315,8 @@ end
 We use a combination of test frameworks:
 
 - **Minitest** for unit and integration tests
-- **RSpec** for behavior-driven testing (optional)
+- **RSpec** (optional) for unit, model, and request specs using BDD-style syntax
+- **Cypress** for modern end-to-end browser testing
 - **Capybara** for system/feature tests
 - **Factory Bot** for test data creation
 
@@ -334,6 +335,12 @@ bundle exec rails test:system
 
 # Run with coverage (if configured)
 COVERAGE=true bundle exec rails test
+
+# Run Cypress end-to-end tests (headless)
+npx cypress run
+
+# Run Cypress tests in interactive mode
+npx cypress open
 ```
 
 ### Writing Tests
