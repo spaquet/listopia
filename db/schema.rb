@@ -70,6 +70,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.datetime "completed_at"
     t.datetime "due_date"
     t.datetime "reminder_at"
+    t.boolean "skip_notifications", default: false, null: false
     t.integer "position", default: 0
     t.string "url"
     t.json "metadata", default: {}
@@ -83,10 +84,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_30_212045) do
     t.index ["due_date"], name: "index_list_items_on_due_date"
     t.index ["item_type"], name: "index_list_items_on_item_type"
     t.index ["list_id", "completed"], name: "index_list_items_on_list_id_and_completed"
+    t.index ["list_id", "position"], name: "index_list_items_on_list_id_and_position", unique: true
     t.index ["list_id", "priority"], name: "index_list_items_on_list_id_and_priority"
     t.index ["list_id"], name: "index_list_items_on_list_id"
     t.index ["position"], name: "index_list_items_on_position"
     t.index ["priority"], name: "index_list_items_on_priority"
+    t.index ["skip_notifications"], name: "index_list_items_on_skip_notifications"
   end
 
   create_table "lists", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

@@ -3,22 +3,23 @@
 #
 # Table name: list_items
 #
-#  id               :uuid             not null, primary key
-#  completed        :boolean          default(FALSE)
-#  completed_at     :datetime
-#  description      :text
-#  due_date         :datetime
-#  item_type        :integer          default("task"), not null
-#  metadata         :json
-#  position         :integer          default(0)
-#  priority         :integer          default("medium"), not null
-#  reminder_at      :datetime
-#  title            :string           not null
-#  url              :string
-#  created_at       :datetime         not null
-#  updated_at       :datetime         not null
-#  assigned_user_id :uuid
-#  list_id          :uuid             not null
+#  id                 :uuid             not null, primary key
+#  completed          :boolean          default(FALSE)
+#  completed_at       :datetime
+#  description        :text
+#  due_date           :datetime
+#  item_type          :integer          default("task"), not null
+#  metadata           :json
+#  position           :integer          default(0)
+#  priority           :integer          default("medium"), not null
+#  reminder_at        :datetime
+#  skip_notifications :boolean          default(FALSE), not null
+#  title              :string           not null
+#  url                :string
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  assigned_user_id   :uuid
+#  list_id            :uuid             not null
 #
 # Indexes
 #
@@ -31,9 +32,11 @@
 #  index_list_items_on_item_type                       (item_type)
 #  index_list_items_on_list_id                         (list_id)
 #  index_list_items_on_list_id_and_completed           (list_id,completed)
+#  index_list_items_on_list_id_and_position            (list_id,position) UNIQUE
 #  index_list_items_on_list_id_and_priority            (list_id,priority)
 #  index_list_items_on_position                        (position)
 #  index_list_items_on_priority                        (priority)
+#  index_list_items_on_skip_notifications              (skip_notifications)
 #
 # Foreign Keys
 #

@@ -1,13 +1,15 @@
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
+  # Bullet configuration
   config.after_initialize do
-    Bullet.enable        = true
-    Bullet.alert         = true
-    Bullet.bullet_logger = true
-    Bullet.console       = true
-    Bullet.rails_logger  = true
-    Bullet.add_footer    = true
+    Bullet.enable = true
+    Bullet.bullet_logger = true # Logs to log/bullet.log
+    Bullet.rails_logger = true  # Logs to Rails log
+    Bullet.add_footer = true   # Displays messages in the footer
+    Bullet.alert = false       # Disables browser alerts
+    Bullet.console = false     # Disables console warnings
+    Bullet.skip_html_injection = false # Ensures footer works
   end
 
   # Settings specified here will take precedence over those in config/application.rb.
