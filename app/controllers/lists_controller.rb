@@ -8,7 +8,8 @@ class ListsController < ApplicationController
 
   # Display all lists accessible to the current user
   def index
-    @lists = current_user.accessible_lists.includes(:owner, :collaborators, :list_items)
+    # Remove unnecessary includes - use counter caches instead
+    @lists = current_user.accessible_lists
                         .order(updated_at: :desc)
 
     # Filter by status if provided
@@ -17,7 +18,7 @@ class ListsController < ApplicationController
     # Search functionality
     if params[:search].present?
       @lists = @lists.where("title ILIKE ? OR description ILIKE ?",
-                           "%#{params[:search]}%", "%#{params[:search]}%")
+                          "%#{params[:search]}%", "%#{params[:search]}%")
     end
   end
 

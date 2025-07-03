@@ -40,6 +40,12 @@ module ListsHelper
     end
   end
 
+  # Get the name of the list owner, using association if available
+  def list_owner_name(list)
+    # Use the included owner association if available, otherwise query
+    list.association(:owner).loaded? ? list.owner.name : list.owner&.name
+  end
+
   # Generate item type icon
   def item_type_icon(item_type)
     icons = {
