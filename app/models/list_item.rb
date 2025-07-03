@@ -100,11 +100,12 @@ class ListItem < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
 
   # Callbacks - Use after_commit to avoid issues during transactions
+  before_destroy :notify_item_destroyed
   before_save :set_completed_at
   before_update :track_title_change
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
-  before_destroy :notify_item_destroyed
+
 
   # Methods
 

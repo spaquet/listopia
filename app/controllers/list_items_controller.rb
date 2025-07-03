@@ -9,6 +9,16 @@ class ListItemsController < ApplicationController
   def create
     @list_item = @list.list_items.build(list_item_params)
 
+    Rails.logger.info "Creating ListItem with params: #{list_item_params.inspect}"
+    Rails.logger.info "Initial position value: #{@list_item.position.inspect}"
+
+    # Always set position for new items (don't check for nil)
+    max_position = @list.list_items.maximum(:position) || -1
+    @list_item.position = max_position + 1
+
+    Rails.logger.info "Max position for list items: #{max_position}"
+    Rails.logger.info "Setting position to: #{@list_item.position}"
+
     if @list_item.save
       # Reload the list to get the most current state
       @list.reload
@@ -17,6 +27,7 @@ class ListItemsController < ApplicationController
         render :create
       end
     else
+      Rails.logger.error "Failed to save ListItem: #{@list_item.errors.full_messages}"
       # Keep the existing error handling but make sure we don't clear form data
       respond_with_turbo_stream do
         render :form_errors
