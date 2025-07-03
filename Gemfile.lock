@@ -89,6 +89,9 @@ GEM
     brakeman (7.0.2)
       racc
     builder (3.3.0)
+    bullet (8.0.8)
+      activesupport (>= 3.0.0)
+      uniform_notifier (~> 1.11)
     capybara (3.40.0)
       addressable
       matrix
@@ -130,7 +133,7 @@ GEM
     factory_bot_rails (6.5.0)
       factory_bot (~> 6.5)
       railties (>= 6.1.0)
-    faker (3.5.1)
+    faker (3.5.2)
       i18n (>= 1.8.11, < 2)
     faraday (2.13.1)
       faraday-net_http (>= 2.0, < 3.5)
@@ -142,6 +145,8 @@ GEM
       net-http (>= 0.5.0)
     faraday-retry (2.3.2)
       faraday (~> 2.0)
+    friendly_id (5.5.1)
+      activerecord (>= 4.0.0)
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
@@ -226,7 +231,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.8-x86_64-linux-musl)
       racc (~> 1.4)
-    noticed (2.7.0)
+    noticed (2.7.1)
       rails (>= 6.1.0)
     ostruct (0.6.2)
     pagy (9.3.4)
@@ -235,6 +240,9 @@ GEM
       ast (~> 2.4.1)
       racc
     pg (1.5.9)
+    positioning (0.4.6)
+      activerecord (>= 6.1)
+      activesupport (>= 6.1)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -361,7 +369,7 @@ GEM
       zeitwerk (~> 2)
     rubyzip (2.4.1)
     securerandom (0.4.1)
-    selenium-webdriver (4.33.0)
+    selenium-webdriver (4.34.0)
       base64 (~> 0.2)
       logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
@@ -410,6 +418,7 @@ GEM
     unicode-display_width (3.1.4)
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
+    uniform_notifier (1.17.0)
     uri (1.0.3)
     useragent (0.16.11)
     web-console (4.2.1)
@@ -442,6 +451,7 @@ DEPENDENCIES
   bcrypt (~> 3.1.7)
   bootsnap
   brakeman
+  bullet
   capybara
   cssbundling-rails
   database_cleaner-active_record
@@ -449,6 +459,7 @@ DEPENDENCIES
   dotenv-rails
   factory_bot_rails
   faker
+  friendly_id
   jbuilder
   jsbundling-rails
   kamal
@@ -457,6 +468,7 @@ DEPENDENCIES
   noticed
   pagy
   pg (~> 1.1)
+  positioning
   propshaft
   puma (>= 5.0)
   rails (~> 8.0.2)

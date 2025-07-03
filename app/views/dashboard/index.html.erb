@@ -16,17 +16,27 @@
     </div>
   </div>
   <!-- Stats Overview -->
-  <%= render "dashboard/stats_overview", stats: @stats %>
+  <div id="dashboard-stats">
+    <%= render "dashboard/stats_overview", stats: @stats %>
+  </div>
   <!-- Recent Activity and Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- My Lists -->
     <div class="lg:col-span-2">
-      <%= render "dashboard/my_lists", lists: @my_lists %>
+      <div id="dashboard-my-lists">
+        <%= render "dashboard/my_lists", lists: @my_lists %>
+      </div>
     </div>
     <!-- Sidebar -->
     <div class="space-y-6">
-      <%= render "dashboard/collaborated_lists", lists: @collaborated_lists %>
-      <%= render "dashboard/recent_activity", items: @recent_items %>
+      <div id="dashboard-collaborated-lists">
+        <%= render "dashboard/collaborated_lists", lists: @collaborated_lists %>
+      </div>
+      <div id="dashboard-recent-activity">
+        <%= render "dashboard/recent_activity", items: @recent_items %>
+      </div>
     </div>
   </div>
 </div>
+<!-- Subscribe to real-time updates for this user's dashboard -->
+<%= turbo_stream_from "user_dashboard_#{current_user.id}" %>

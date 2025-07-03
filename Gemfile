@@ -36,6 +36,9 @@ gem "pagy"
 # Notification
 gem "noticed"
 
+# Positioning, ordering of the lists and list items
+gem "positioning"
+
 # AI/LLM Integration
 gem "ruby_llm"
 
@@ -50,6 +53,11 @@ gem "kamal", require: false
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
+
+# Add support to friendly URLs for Active Record models [https://github.com/norman/friendly_id]
+# This gem allows you to create human-readable URLs for your models, which is useful for SEO and user experience.
+# It provides a way to generate slugs based on model attributes, making URLs more descriptive.
+gem "friendly_id"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
@@ -76,6 +84,9 @@ group :development do
   gem "letter_opener"
   gem "dotenv-rails"
   gem "annotaterb"
+
+  # Track N+1 queries and unused eager loading [https://github.com/flyerhzm/bullet]
+  gem "bullet"
 end
 
 group :test do
