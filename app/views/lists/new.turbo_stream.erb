@@ -1,4 +1,4 @@
-<!-- app/views/lists/edit.turbo_stream.erb -->
+<!-- app/views/lists/new.turbo_stream.erb -->
 <%= turbo_stream.update "modal" do %>
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
        data-controller="modal" 
@@ -11,12 +11,12 @@
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">Edit List</h3>
-            <p class="text-sm text-gray-600">Update your list details and settings</p>
+            <h3 class="text-lg font-semibold text-gray-900">Create New List</h3>
+            <p class="text-sm text-gray-600">Start organizing your thoughts, tasks, and ideas</p>
           </div>
         </div>
         <button data-action="click->modal#close" 

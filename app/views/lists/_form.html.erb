@@ -104,11 +104,20 @@
   </div>
   <!-- Form Actions -->
   <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-    <button type="button" 
-            data-action="click->modal#close"
-      class="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200">
-      Cancel
-    </button>
+    <% if turbo_frame_request? %>
+      <!-- Modal context: close button -->
+      <button type="button" 
+              data-action="click->modal#close"
+        class="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200">
+        Cancel
+      </button>
+    <% else %>
+      <!-- Regular page context: back link -->
+      <%= link_to list.persisted? ? list : lists_path,
+                  class: "px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" do %>
+        Cancel
+      <% end %>
+    <% end %>
     <%= f.submit list.persisted? ? "Update List" : "Create List",
                  class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200" %>
   </div>
