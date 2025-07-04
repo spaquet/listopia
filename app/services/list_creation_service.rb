@@ -64,7 +64,7 @@ class ListCreationService
       Result.success(@list)
     end
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 
@@ -106,7 +106,7 @@ class ListCreationService
       Result.success(@list)
     end
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 

@@ -5,8 +5,8 @@
 # Handles item creation, updates, completion, deletion, and bulk operations
 # Also includes broadcasting updates to the list show page and dashboard
 
-require 'active_record'
-require 'turbo-rails'
+require "active_record"
+require "turbo-rails"
 
 module ListBroadcasting
   def broadcast_all_updates(list)
@@ -79,10 +79,10 @@ class ListItemService
 
       Result.success(item)
     else
-      Result.failure(@errors.presence || ["Failed to create item"])
+      Result.failure(@errors.presence || [ "Failed to create item" ])
     end
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 
@@ -138,7 +138,7 @@ class ListItemService
       broadcast_item_deletion(item)
       Result.success(item)
     else
-      @errors = ["Failed to delete item"]
+      @errors = [ "Failed to delete item" ]
       Result.failure(@errors)
     end
   end
@@ -161,7 +161,7 @@ class ListItemService
     broadcast_all_updates(@list)
     Result.success(@list)
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 
@@ -187,7 +187,7 @@ class ListItemService
     broadcast_all_updates(@list)
     Result.success({ updated_count: updated_count, total_count: items.count })
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 
@@ -210,7 +210,7 @@ class ListItemService
     broadcast_all_updates(@list)
     Result.success({ deleted_count: deleted_count })
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 
