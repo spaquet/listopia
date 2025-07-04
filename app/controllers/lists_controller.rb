@@ -62,24 +62,21 @@ class ListsController < ApplicationController
 
   # Create a new list
   def create
-    @list = current_user.lists.build(list_params)
+    service = ListCreationService.new(current_user)
+    result = service.create_list(**list_params.to_h.symbolize_keys)
 
-    if @list.save
-      # Broadcast updates to other users after successful creation
-      broadcast_all_updates(@list)
-
+    if result.success?
+      @list = result.data
       respond_to do |format|
         format.html { redirect_to lists_path, notice: "List was successfully created." }
-        format.turbo_stream do
-          # Use turbo streams to update multiple parts of the page
-          render :create
-        end
+        format.turbo_stream { render :create }
       end
     else
+      @list = service.list # Get the unsaved list with errors for form redisplay
       respond_to do |format|
         format.html { render :new, status: :unprocessable_entity }
         format.turbo_stream do
-          flash.now[:alert] = "Please fix the errors below."
+          flash.now[:alert] = result.errors.join(", ")
           render :new, status: :unprocessable_entity
         end
       end
@@ -221,25 +218,23 @@ class ListsController < ApplicationController
   def duplicate
     authorize_resource_access!(@list, :read)
 
-    @new_list = @list.duplicate_for_user(current_user)
+    service = ListCreationService.new(current_user)
+    result = service.duplicate_list(@list)
 
-    if @new_list.persisted?
-      # Broadcast updates to other users after successful duplication
-      broadcast_all_updates(@new_list)
-
+    if result.success?
+      @new_list = result.data
       respond_to do |format|
         format.html { redirect_to @new_list, notice: "List was successfully duplicated." }
         format.turbo_stream do
-          # Use turbo streams to update multiple parts of the page
           @list = @new_list # Set @list to the new list for the turbo stream template
           render :create # Use the same template as create
         end
       end
     else
       respond_to do |format|
-        format.html { redirect_to @list, alert: "Could not duplicate list." }
+        format.html { redirect_to @list, alert: result.errors.join(", ") }
         format.turbo_stream do
-          flash.now[:alert] = "Could not duplicate list."
+          flash.now[:alert] = result.errors.join(", ")
           render :error
         end
       end
