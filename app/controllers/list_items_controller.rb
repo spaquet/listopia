@@ -7,31 +7,17 @@ class ListItemsController < ApplicationController
 
   # Create a new list item
   def create
-    @list_item = @list.list_items.build(list_item_params)
+    service = ListItemService.new(@list, current_user)
+    result = service.create_item(**list_item_params.to_h.symbolize_keys)
 
-    Rails.logger.info "Creating ListItem with params: #{list_item_params.inspect}"
-    Rails.logger.info "Initial position value: #{@list_item.position.inspect}"
-
-    # Always set position for new items (don't check for nil)
-    max_position = @list.list_items.maximum(:position) || -1
-    @list_item.position = max_position + 1
-
-    Rails.logger.info "Max position for list items: #{max_position}"
-    Rails.logger.info "Setting position to: #{@list_item.position}"
-
-    if @list_item.save
-      # Reload the list to get the most current state
+    if result.success?
+      @list_item = result.data
       @list.reload
-
-      respond_with_turbo_stream do
-        render :create
-      end
+      respond_with_turbo_stream { render :create }
     else
-      Rails.logger.error "Failed to save ListItem: #{@list_item.errors.full_messages}"
-      # Keep the existing error handling but make sure we don't clear form data
-      respond_with_turbo_stream do
-        render :form_errors
-      end
+      @list_item = @list.list_items.build(list_item_params)
+      @list_item.errors.add(:base, result.errors.join(", "))
+      respond_with_turbo_stream { render :form_errors }
     end
   end
 
@@ -49,12 +35,15 @@ class ListItemsController < ApplicationController
 
   # Update an existing list item
   def update
-    if @list_item.update(list_item_params)
+    service = ListItemService.new(@list, current_user)
+    result = service.update_item(@list_item.id, **list_item_params.to_h.symbolize_keys)
+
+    if result.success?
+      @list_item = result.data
       @list.reload
       respond_to do |format|
         format.html {
           if turbo_frame_request?
-            # Create a simple view file instead of inline rendering
             render "item_display", layout: false
           else
             redirect_to @list, notice: "Item updated successfully!"
@@ -65,72 +54,95 @@ class ListItemsController < ApplicationController
       respond_to do |format|
         format.html {
           if turbo_frame_request?
+            @list_item.errors.add(:base, result.errors.join(", "))
             render "inline_edit_form", layout: false, status: :unprocessable_entity
           else
-            redirect_to @list, alert: "Could not update item."
+            redirect_to @list, alert: result.errors.join(", ")
           end
         }
       end
     end
   end
 
-  def destroy
-    @item_id = @list_item.id
-    @list_item.destroy
-    @list.reload
-
-    respond_to do |format|
-      format.html {
-        if turbo_frame_request?
-          render "item_destroyed", layout: false
-        else
-          redirect_to @list, notice: "Item deleted successfully!"
-        end
-      }
-    end
-  end
-
   # Delete a list item
   def destroy
-    @item_id = @list_item.id
-    @list_item.destroy
-    @list.reload
+    service = ListItemService.new(@list, current_user)
+    result = service.delete_item(@list_item.id)
 
-    respond_to do |format|
-      format.html {
-        if turbo_frame_request?
-          render "item_destroyed", layout: false
-        else
-          redirect_to @list, notice: "Item deleted successfully!"
-        end
-      }
+    if result.success?
+      @item_id = @list_item.id
+      @list.reload
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            render "item_destroyed", layout: false
+          else
+            redirect_to @list, notice: "Item deleted successfully!"
+          end
+        }
+      end
+    else
+      respond_to do |format|
+        format.html {
+          if turbo_frame_request?
+            render plain: "Error: #{result.errors.join(', ')}", status: :unprocessable_entity
+          else
+            redirect_to @list, alert: result.errors.join(", ")
+          end
+        }
+      end
     end
   end
 
   # Toggle completion status of a list item
   def toggle_completion
-    @list_item.toggle_completion!
-    @list.reload
+    service = ListItemService.new(@list, current_user)
 
-    respond_with_turbo_stream do
-      render :toggle_completion
+    # Toggle the completion status
+    new_completed = !@list_item.completed
+    result = service.update_item(@list_item.id, completed: new_completed, completed_at: new_completed ? Time.current : nil)
+
+    if result.success?
+      @list_item = result.data
+      @list.reload
+      respond_with_turbo_stream { render :toggle_completion }
+    else
+      respond_with_turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "list_item_#{@list_item.id}",
+          partial: "shared/error_message",
+          locals: { message: result.errors.join(", ") }
+        )
+      end
     end
   end
 
   # Bulk update list items (for reordering, bulk completion, etc.)
   def bulk_update
+    service = ListItemService.new(@list, current_user)
+
     case params[:action_type]
     when "reorder"
-      update_positions
+      result = service.reorder_items(params[:positions] || {})
     when "bulk_complete"
-      bulk_complete_items
+      result = service.bulk_complete_items(params[:item_ids] || [])
     when "bulk_delete"
-      bulk_delete_items
+      result = service.bulk_delete_items(params[:item_ids] || [])
+    else
+      result = ListItemService::Result.failure("Unknown bulk action")
     end
 
-    @list.reload
-    respond_with_turbo_stream do
-      render :bulk_update
+    if result.success?
+      @list.reload
+      respond_with_turbo_stream { render :bulk_update }
+    else
+      respond_with_turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "flash-messages",
+          partial: "shared/error_message",
+          locals: { message: result.errors.join(", ") }
+        )
+      end
     end
   end
 

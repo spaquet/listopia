@@ -69,7 +69,22 @@ class McpService
         end
 
         # Use RubyLLM's ask method which handles the full conversation flow
-        response = @chat.ask(message_content)
+        begin
+          response = @chat.ask(message_content)
+        rescue PG::UniqueViolation => e
+          if e.message.include?("list_id_and_position")
+            retry_count = (@retry_count ||= 0) + 1
+            if retry_count <= 2
+              @retry_count = retry_count
+              sleep(0.1)
+              retry
+            else
+              raise StandardError, "Unable to add item due to position conflict after multiple retries"
+            end
+          else
+            raise e
+          end
+        end
 
         # Verify conversation state after the interaction
         @conversation_manager.ensure_conversation_integrity!
@@ -178,7 +193,22 @@ class McpService
       end
 
       # Process the message
-      response = @chat.ask(message_content)
+      begin
+        response = @chat.ask(message_content)
+      rescue PG::UniqueViolation => e
+        if e.message.include?("list_id_and_position")
+          retry_count = (@fresh_chat_retry_count ||= 0) + 1
+          if retry_count <= 2
+            @fresh_chat_retry_count = retry_count
+            sleep(0.1)
+            retry
+          else
+            raise StandardError, "Unable to add item due to position conflict even with fresh chat"
+          end
+        else
+          raise e
+        end
+      end
       response.content
 
     rescue => e
