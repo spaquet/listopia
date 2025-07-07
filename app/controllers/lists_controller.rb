@@ -8,18 +8,67 @@ class ListsController < ApplicationController
 
   # Display all lists accessible to the current user
   def index
-    # Use policy_scope with Pundit for consistent authorization
-    @lists = policy_scope(List).includes(:owner, :collaborators)
-                              .order(updated_at: :desc)
+    # Start with base scope from policy
+    base_scope = policy_scope(List)
 
-    # Filter by status if provided
-    @lists = @lists.where(status: params[:status]) if params[:status].present?
+    # Build the query step by step to avoid GROUP BY conflicts
+    @lists = base_scope
 
-    # Search functionality
-    if params[:search].present?
-      @lists = @lists.where("title ILIKE ? OR description ILIKE ?",
-                          "%#{params[:search]}%", "%#{params[:search]}%")
+    # Apply status filter (existing functionality)
+    if params[:status].present?
+      @lists = @lists.where(status: params[:status])
     end
+
+    # NEW: Apply visibility filter (public/private)
+    if params[:visibility].present?
+      case params[:visibility]
+      when "public"
+        @lists = @lists.where(is_public: true)
+      when "private"
+        @lists = @lists.where(is_public: false)
+      end
+    end
+
+    # NEW: Apply collaboration filter
+    if params[:collaboration].present?
+      case params[:collaboration]
+      when "owned"
+        # Only lists owned by current user
+        @lists = @lists.where(user_id: current_user.id)
+      when "shared_with_me"
+        # Only lists where current user is a collaborator (not owner)
+        # Use subquery to avoid GROUP BY issues
+        collaborated_list_ids = Collaborator.where(
+          collaboratable_type: "List",
+          user_id: current_user.id
+        ).pluck(:collaboratable_id)
+
+        @lists = @lists.where(id: collaborated_list_ids)
+                      .where.not(user_id: current_user.id)
+      when "shared_by_me"
+        # Only lists owned by current user that have collaborators
+        # Use subquery to find lists with collaborators
+        lists_with_collaborators = Collaborator.where(
+          collaboratable_type: "List"
+        ).select(:collaboratable_id).distinct
+
+        @lists = @lists.where(user_id: current_user.id)
+                      .where(id: lists_with_collaborators)
+      end
+    end
+
+    # Apply search filter (enhanced version)
+    if params[:search].present?
+      search_term = "%#{params[:search].strip}%"
+      @lists = @lists.where(
+        "title ILIKE ? OR description ILIKE ?",
+        search_term, search_term
+      )
+    end
+
+    # Apply includes and ordering at the end
+    @lists = @lists.includes(:owner, :collaborators)
+                  .order(updated_at: :desc)
   end
 
   # Display a specific list with its items

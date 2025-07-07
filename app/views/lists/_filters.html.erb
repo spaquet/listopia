@@ -1,39 +1,135 @@
 <!-- app/views/lists/_filters.html.erb -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4" data-controller="filters">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+  <div class="flex flex-col space-y-4">
     <!-- Search -->
-    <div class="flex-1 max-w-md">
-      <%= form_with url: lists_path, method: :get, local: true, class: "flex", data: { turbo_frame: "lists-grid-only" } do |f| %>
-        <div class="relative flex-1">
-          <%= f.text_field :search, value: params[:search], 
+    <div class="w-full">
+      <%= form_with url: lists_path, method: :get, local: true, class: "w-full", 
+                    data: { 
+                      turbo_frame: "lists-grid-only",
+                      filters_target: "searchForm" 
+                    } do |f| %>
+        <div class="relative">
+          <%= f.text_field :search, 
+                           value: params[:search], 
                            placeholder: "Search lists...", 
-                           class: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                           class: "w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm",
                            data: { 
-                             action: "input->filters#search",
+                             action: "input->filters#handleSearchInput keydown->filters#handleSearchKeydown",
                              filters_target: "searchInput"
                            } %>
+          <!-- Search Icon -->
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </div>
+          <!-- Clear Button -->
+          <button type="button" 
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center <%= params[:search].present? ? '' : 'hidden' %>"
+                  data-action="click->filters#clearSearch"
+            data-filters-target="clearButton">
+            <svg class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
         </div>
-        <!-- Hidden field to preserve status filter -->
-        <%= f.hidden_field :status, value: params[:status] %>
+        <!-- Hidden fields to preserve other filters -->
+        <%= f.hidden_field :status, value: params[:status], data: { filters_target: "statusField" } %>
+        <%= f.hidden_field :visibility, value: params[:visibility], data: { filters_target: "visibilityField" } %>
+        <%= f.hidden_field :collaboration, value: params[:collaboration], data: { filters_target: "collaborationField" } %>
       <% end %>
     </div>
-    <!-- Status Filter -->
-    <div class="flex space-x-2">
-      <%= link_to lists_path, 
-                  class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status].blank? ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}" do %>
-        All
-      <% end %>
-      <% %w[active completed archived].each do |status| %>
-        <%= link_to lists_path(status: status, search: params[:search]), 
-                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status] == status ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}" do %>
-          <%= status.titleize %>
+    <!-- Filter Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+      <!-- Status Filters -->
+      <div class="flex flex-wrap gap-2">
+        <span class="text-sm font-medium text-gray-700 mr-2 flex items-center">Status:</span>
+        <%= link_to lists_path(search: params[:search], visibility: params[:visibility], collaboration: params[:collaboration]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status].blank? ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "statusFilter" } do %>
+          All
         <% end %>
-      <% end %>
+        <% %w[active completed archived].each do |status| %>
+          <%= link_to lists_path(status: status, search: params[:search], visibility: params[:visibility], collaboration: params[:collaboration]), 
+                      class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:status] == status ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                      data: { filters_target: "statusFilter" } do %>
+            <%= status.titleize %>
+          <% end %>
+        <% end %>
+      </div>
+      <!-- Visibility Filters -->
+      <div class="flex flex-wrap gap-2">
+        <span class="text-sm font-medium text-gray-700 mr-2 flex items-center">Visibility:</span>
+        <%= link_to lists_path(status: params[:status], search: params[:search], collaboration: params[:collaboration]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:visibility].blank? ? 'bg-green-100 text-green-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "visibilityFilter" } do %>
+          All
+        <% end %>
+        <%= link_to lists_path(visibility: 'public', status: params[:status], search: params[:search], collaboration: params[:collaboration]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:visibility] == 'public' ? 'bg-green-100 text-green-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "visibilityFilter" } do %>
+          Public
+        <% end %>
+        <%= link_to lists_path(visibility: 'private', status: params[:status], search: params[:search], collaboration: params[:collaboration]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:visibility] == 'private' ? 'bg-green-100 text-green-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "visibilityFilter" } do %>
+          Private
+        <% end %>
+      </div>
+      <!-- Collaboration Filters -->
+      <div class="flex flex-wrap gap-2">
+        <span class="text-sm font-medium text-gray-700 mr-2 flex items-center">Access:</span>
+        <%= link_to lists_path(status: params[:status], search: params[:search], visibility: params[:visibility]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:collaboration].blank? ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "collaborationFilter" } do %>
+          All
+        <% end %>
+        <%= link_to lists_path(collaboration: 'owned', status: params[:status], search: params[:search], visibility: params[:visibility]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:collaboration] == 'owned' ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "collaborationFilter" } do %>
+          My Lists
+        <% end %>
+        <%= link_to lists_path(collaboration: 'shared_with_me', status: params[:status], search: params[:search], visibility: params[:visibility]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:collaboration] == 'shared_with_me' ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "collaborationFilter" } do %>
+          Shared with Me
+        <% end %>
+        <%= link_to lists_path(collaboration: 'shared_by_me', status: params[:status], search: params[:search], visibility: params[:visibility]), 
+                    class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{params[:collaboration] == 'shared_by_me' ? 'bg-purple-100 text-purple-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                    data: { filters_target: "collaborationFilter" } do %>
+          Shared by Me
+        <% end %>
+      </div>
     </div>
+    <!-- Active Filters Summary (when multiple filters are applied) -->
+    <% if params[:search].present? || params[:status].present? || params[:visibility].present? || params[:collaboration].present? %>
+      <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+        <div class="flex items-center space-x-2 text-sm text-gray-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+          </svg>
+          <span>Active filters:</span>
+          <% if params[:search].present? %>
+            <span class="bg-white px-2 py-1 rounded text-xs border">Search: "<%= params[:search] %>"</span>
+          <% end %>
+          <% if params[:status].present? %>
+            <span class="bg-white px-2 py-1 rounded text-xs border">Status: <%= params[:status].titleize %></span>
+          <% end %>
+          <% if params[:visibility].present? %>
+            <span class="bg-white px-2 py-1 rounded text-xs border">Visibility: <%= params[:visibility].titleize %></span>
+          <% end %>
+          <% if params[:collaboration].present? %>
+            <span class="bg-white px-2 py-1 rounded text-xs border">
+              Access: <%= params[:collaboration].humanize.titleize %>
+            </span>
+          <% end %>
+        </div>
+        <%= link_to lists_path, 
+                    class: "text-sm text-blue-600 hover:text-blue-800 font-medium",
+                    data: { filters_target: "clearAllButton" } do %>
+          Clear all filters
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </div>
