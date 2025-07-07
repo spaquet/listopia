@@ -10,10 +10,48 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+
+  create_table "active_storage_attachments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name", null: false
+    t.string "record_type", null: false
+    t.uuid "record_id", null: false
+    t.uuid "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "key", null: false
+    t.string "filename", null: false
+    t.string "content_type"
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.datetime "created_at", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "board_columns", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "list_id", null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["list_id"], name: "index_board_columns_on_list_id"
+  end
 
   create_table "chats", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "user_id", null: false
@@ -32,9 +70,54 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
     t.index ["user_id"], name: "index_chats_on_user_id"
   end
 
+  create_table "collaborators", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "collaboratable_type", null: false
+    t.uuid "collaboratable_id", null: false
+    t.uuid "user_id", null: false
+    t.integer "permission", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["collaboratable_id", "collaboratable_type", "user_id"], name: "index_collaborators_on_collaboratable_and_user", unique: true
+    t.index ["collaboratable_type", "collaboratable_id"], name: "index_collaborators_on_collaboratable"
+    t.index ["user_id"], name: "index_collaborators_on_user_id"
+  end
+
+  create_table "comments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "commentable_type", null: false
+    t.uuid "commentable_id", null: false
+    t.uuid "user_id", null: false
+    t.text "content", null: false
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
+    t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
   create_table "currents", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "invitations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "invitable_type", null: false
+    t.uuid "invitable_id", null: false
+    t.uuid "user_id"
+    t.string "email"
+    t.string "invitation_token"
+    t.datetime "invitation_sent_at"
+    t.datetime "invitation_accepted_at"
+    t.uuid "invited_by_id"
+    t.integer "permission", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_invitations_on_email"
+    t.index ["invitable_id", "invitable_type", "email"], name: "index_invitations_on_invitable_and_email", unique: true, where: "(email IS NOT NULL)"
+    t.index ["invitable_id", "invitable_type", "user_id"], name: "index_invitations_on_invitable_and_user", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["invitable_type", "invitable_id"], name: "index_invitations_on_invitable"
+    t.index ["invitation_token"], name: "index_invitations_on_invitation_token", unique: true
+    t.index ["invited_by_id"], name: "index_invitations_on_invited_by_id"
+    t.index ["user_id"], name: "index_invitations_on_user_id"
   end
 
   create_table "list_collaborations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -72,12 +155,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
     t.datetime "reminder_at"
     t.boolean "skip_notifications", default: false, null: false
     t.integer "position", default: 0
+    t.decimal "estimated_duration", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "total_tracked_time", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "start_date", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.integer "duration_days", default: 0, null: false
     t.string "url"
     t.json "metadata", default: {}
+    t.string "recurrence_rule", default: "none", null: false
+    t.datetime "recurrence_end_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.uuid "board_column_id"
     t.index ["assigned_user_id", "completed"], name: "index_list_items_on_assigned_user_id_and_completed"
     t.index ["assigned_user_id"], name: "index_list_items_on_assigned_user_id"
+    t.index ["board_column_id"], name: "index_list_items_on_board_column_id"
     t.index ["completed"], name: "index_list_items_on_completed"
     t.index ["created_at"], name: "index_list_items_on_created_at"
     t.index ["due_date", "completed"], name: "index_list_items_on_due_date_and_completed"
@@ -198,6 +289,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
     t.index ["user_id"], name: "index_notification_settings_on_user_id"
   end
 
+  create_table "relationships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "parent_type", null: false
+    t.uuid "parent_id", null: false
+    t.string "child_type", null: false
+    t.uuid "child_id", null: false
+    t.integer "relationship_type", default: 0, null: false
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["child_type", "child_id"], name: "index_relationships_on_child"
+    t.index ["parent_id", "parent_type", "child_id", "child_type"], name: "index_relationships_on_parent_and_child", unique: true
+    t.index ["parent_type", "parent_id"], name: "index_relationships_on_parent"
+  end
+
   create_table "sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "user_id", null: false
     t.string "session_token", null: false
@@ -211,6 +316,49 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
     t.index ["session_token"], name: "index_sessions_on_session_token", unique: true
     t.index ["user_id", "expires_at"], name: "index_sessions_on_user_id_and_expires_at"
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "taggings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "tag_id"
+    t.string "taggable_type"
+    t.uuid "taggable_id"
+    t.string "tagger_type"
+    t.uuid "tagger_id"
+    t.string "context", limit: 128
+    t.datetime "created_at", precision: nil
+    t.string "tenant", limit: 128
+    t.index ["context"], name: "index_taggings_on_context"
+    t.index ["tag_id", "taggable_id", "taggable_type", "context", "tagger_id", "tagger_type"], name: "taggings_idx", unique: true
+    t.index ["tag_id"], name: "index_taggings_on_tag_id"
+    t.index ["taggable_id", "taggable_type", "context"], name: "taggings_taggable_context_idx"
+    t.index ["taggable_id", "taggable_type", "tagger_id", "context"], name: "taggings_idy"
+    t.index ["taggable_id"], name: "index_taggings_on_taggable_id"
+    t.index ["taggable_type", "taggable_id"], name: "index_taggings_on_taggable_type_and_taggable_id"
+    t.index ["taggable_type"], name: "index_taggings_on_taggable_type"
+    t.index ["tagger_id", "tagger_type"], name: "index_taggings_on_tagger_id_and_tagger_type"
+    t.index ["tagger_id"], name: "index_taggings_on_tagger_id"
+    t.index ["tagger_type", "tagger_id"], name: "index_taggings_on_tagger_type_and_tagger_id"
+    t.index ["tenant"], name: "index_taggings_on_tenant"
+  end
+
+  create_table "tags", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "taggings_count", default: 0
+    t.index ["name"], name: "index_tags_on_name", unique: true
+  end
+
+  create_table "time_entries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "list_item_id", null: false
+    t.uuid "user_id", null: false
+    t.decimal "duration", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "started_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "ended_at"
+    t.text "notes"
+    t.json "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "tool_calls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -243,10 +391,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "board_columns", "lists"
   add_foreign_key "chats", "users"
+  add_foreign_key "collaborators", "users"
+  add_foreign_key "comments", "users"
+  add_foreign_key "invitations", "users"
+  add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "list_collaborations", "lists"
   add_foreign_key "list_collaborations", "users"
   add_foreign_key "list_collaborations", "users", column: "invited_by_id"
+  add_foreign_key "list_items", "board_columns"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"
   add_foreign_key "lists", "users"
@@ -254,5 +410,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_03_034216) do
   add_foreign_key "messages", "users"
   add_foreign_key "notification_settings", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "taggings", "tags"
   add_foreign_key "tool_calls", "messages"
 end

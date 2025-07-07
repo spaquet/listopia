@@ -46,6 +46,7 @@ class List < ApplicationRecord
   # Callbacks
   before_update :track_status_change
   after_update :notify_status_change
+  after_create :create_default_board_columns
 
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
@@ -56,6 +57,16 @@ class List < ApplicationRecord
   has_many :list_items, dependent: :destroy
   has_many :list_collaborations, dependent: :destroy
   has_many :collaborators, through: :list_collaborations, source: :user
+
+  has_many :board_columns, dependent: :destroy
+  has_many :collaborators, as: :collaboratable, dependent: :destroy
+  has_many :collaborator_users, through: :collaborators, source: :user
+  has_many :invitations, as: :invitable, dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
+  has_many :parent_relationships, as: :parent, class_name: "Relationship", dependent: :destroy
+  has_many :child_relationships, as: :child, class_name: "Relationship", dependent: :destroy
+  has_many :children, through: :parent_relationships, source: :child, source_type: ["ListItem", "List"]
+  has_many :parents, through: :child_relationships, source: :parent, source_type: ["ListItem", "List"]
 
   # Validations
   validates :title, presence: true, length: { maximum: 255 }
@@ -167,5 +178,14 @@ class List < ApplicationRecord
       list_id: id,
       new_status: status
     )
+  end
+
+  # Create default board columns after list creation
+  def create_default_board_columns
+    board_columns.create([
+      { name: "To Do", position: 0 },
+      { name: "In Progress", position: 1 },
+      { name: "Done", position: 2 }
+    ])
   end
 end

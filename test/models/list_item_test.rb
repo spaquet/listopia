@@ -18,12 +18,14 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  assigned_user_id   :uuid
+#  board_column_id    :uuid
 #  list_id            :uuid             not null
 #
 # Indexes
 #
 #  index_list_items_on_assigned_user_id                (assigned_user_id)
 #  index_list_items_on_assigned_user_id_and_completed  (assigned_user_id,completed)
+#  index_list_items_on_board_column_id                 (board_column_id)
 #  index_list_items_on_completed                       (completed)
 #  index_list_items_on_created_at                      (created_at)
 #  index_list_items_on_due_date                        (due_date)
@@ -40,6 +42,7 @@
 # Foreign Keys
 #
 #  fk_rails_...  (assigned_user_id => users.id)
+#  fk_rails_...  (board_column_id => board_columns.id)
 #  fk_rails_...  (list_id => lists.id)
 #
 require "test_helper"

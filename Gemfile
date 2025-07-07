@@ -59,8 +59,11 @@ gem "thruster", require: false
 # It provides a way to generate slugs based on model attributes, making URLs more descriptive.
 gem "friendly_id"
 
+# Add tag support to Active Record models [https://github.com/mbleigh/acts-as-taggable-on]
+gem "acts-as-taggable-on"
+
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-# gem "image_processing", "~> 1.2"
+gem "image_processing", "~> 1.2"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

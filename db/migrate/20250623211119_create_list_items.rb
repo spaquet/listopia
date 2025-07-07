@@ -24,9 +24,21 @@ class CreateListItems < ActiveRecord::Migration[8.0]
       # Ordering
       t.integer :position, default: 0
 
+      # Time tracking
+      t.decimal :estimated_duration, precision: 10, scale: 2, default: 0.0, null: false
+      t.decimal :total_tracked_time, precision: 10, scale: 2, default: 0.0, null: false
+
+      # Timeline management
+      t.datetime :start_date, default: -> { "CURRENT_TIMESTAMP" }, null: false
+      t.integer :duration_days, default: 0, null: false
+
       # Additional data
       t.string :url # for link type items
       t.json :metadata, default: {}
+
+      # Recurring items
+      t.string :recurrence_rule, default: "none", null: false
+      t.datetime :recurrence_end_date
 
       t.timestamps
     end

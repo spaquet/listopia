@@ -28,6 +28,8 @@
 #
 # app/models/chat.rb
 # app/models/chat.rb
+
+# Thiis file defines the Chat model for managing conversations with LLM
 class Chat < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_chat
