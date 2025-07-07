@@ -43,6 +43,8 @@
 #  fk_rails_...  (chat_id => chats.id)
 #  fk_rails_...  (user_id => users.id)
 #
+
+# This is the AI message sent to the LLM or received from it.
 class Message < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_message

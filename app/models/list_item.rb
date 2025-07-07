@@ -19,12 +19,14 @@
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  assigned_user_id   :uuid
+#  board_column_id    :uuid
 #  list_id            :uuid             not null
 #
 # Indexes
 #
 #  index_list_items_on_assigned_user_id                (assigned_user_id)
 #  index_list_items_on_assigned_user_id_and_completed  (assigned_user_id,completed)
+#  index_list_items_on_board_column_id                 (board_column_id)
 #  index_list_items_on_completed                       (completed)
 #  index_list_items_on_created_at                      (created_at)
 #  index_list_items_on_due_date                        (due_date)
@@ -41,6 +43,7 @@
 # Foreign Keys
 #
 #  fk_rails_...  (assigned_user_id => users.id)
+#  fk_rails_...  (board_column_id => board_columns.id)
 #  fk_rails_...  (list_id => lists.id)
 #
 class ListItem < ApplicationRecord
@@ -51,6 +54,19 @@ class ListItem < ApplicationRecord
   # Associations
   belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true
+
+  has_many :time_entries, dependent: :destroy
+  has_many :collaborators, as: :collaboratable, dependent: :destroy
+  has_many :collaborator_users, through: :collaborators, source: :user
+  has_many :invitations, as: :invitable, dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
+  belongs_to :board_column, optional: true
+  has_many :parent_relationships, as: :parent, class_name: "Relationship", dependent: :destroy
+  has_many :child_relationships, as: :child, class_name: "Relationship", dependent: :destroy
+  has_many :children, through: :parent_relationships, source: :child, source_type: [ "ListItem", "List" ]
+  has_many :parents, through: :child_relationships, source: :parent, source_type: [ "ListItem", "List" ]
+  has_many :dependencies, -> { where(relationship_type: :dependency_finish_to_start) }, as: :child, class_name: "Relationship", dependent: :destroy
+  has_many :dependents, -> { where(relationship_type: :dependency_finish_to_start) }, as: :parent, class_name: "Relationship", dependent: :destroy
 
 
   # Validations
@@ -106,6 +122,7 @@ class ListItem < ApplicationRecord
   before_update :track_title_change
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
+  after_create :assign_default_board_column
 
 
   # Methods
@@ -179,5 +196,10 @@ class ListItem < ApplicationRecord
 
     NotificationService.new(Current.user)
                       .notify_item_activity(self, "deleted")
+  end
+
+  # Assign default board column after creation
+  def assign_default_board_column
+    update(board_column: list.board_columns.find_by(name: "To Do"))
   end
 end

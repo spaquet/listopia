@@ -38,6 +38,14 @@ class User < ApplicationRecord
   has_many :chats, dependent: :destroy
   has_many :messages, dependent: :destroy
 
+  has_many :time_entries, dependent: :destroy
+  has_many :collaborators, dependent: :destroy
+  has_many :collaborated_lists, through: :collaborators, source: :collaboratable, source_type: "List"
+  has_many :collaborated_list_items, through: :collaborators, source: :collaboratable, source_type: "ListItem"
+  has_many :invitations, dependent: :destroy
+  has_many :sent_invitations, class_name: "Invitation", foreign_key: :invited_by_id, dependent: :destroy
+  has_many :comments, dependent: :destroy
+
   # Add noticed notifications
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
 
