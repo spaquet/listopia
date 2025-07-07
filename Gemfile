@@ -25,11 +25,9 @@ gem "bcrypt", "~> 3.1.7"
 gem "pundit" # Authorization library for Rails applications
 gem "rolify" # Role management library for Rails applications
 
-# Use Active Storage variant [https://guides.rubyonrails.org/active_storage_overview.html]
-gem "image_processing", "~> 1.2"
 
 # Use Redis as a cache store [https://guides.rubyonrails.org/caching_with_rails.html#redis-cache-store]
-gem "redis", "~> 4.0"
+# gem "redis", "~> 4.0"
 
 # Use Sidekiq for background jobs [
 
