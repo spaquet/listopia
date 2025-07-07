@@ -20,6 +20,5 @@
 #
 FactoryBot.define do
   factory :board_column do
-    
   end
 end

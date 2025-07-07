@@ -65,8 +65,8 @@ class List < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   has_many :parent_relationships, as: :parent, class_name: "Relationship", dependent: :destroy
   has_many :child_relationships, as: :child, class_name: "Relationship", dependent: :destroy
-  has_many :children, through: :parent_relationships, source: :child, source_type: ["ListItem", "List"]
-  has_many :parents, through: :child_relationships, source: :parent, source_type: ["ListItem", "List"]
+  has_many :children, through: :parent_relationships, source: :child, source_type: [ "ListItem", "List" ]
+  has_many :parents, through: :child_relationships, source: :parent, source_type: [ "ListItem", "List" ]
 
   # Validations
   validates :title, presence: true, length: { maximum: 255 }

@@ -63,8 +63,8 @@ class ListItem < ApplicationRecord
   belongs_to :board_column, optional: true
   has_many :parent_relationships, as: :parent, class_name: "Relationship", dependent: :destroy
   has_many :child_relationships, as: :child, class_name: "Relationship", dependent: :destroy
-  has_many :children, through: :parent_relationships, source: :child, source_type: ["ListItem", "List"]
-  has_many :parents, through: :child_relationships, source: :parent, source_type: ["ListItem", "List"]
+  has_many :children, through: :parent_relationships, source: :child, source_type: [ "ListItem", "List" ]
+  has_many :parents, through: :child_relationships, source: :parent, source_type: [ "ListItem", "List" ]
   has_many :dependencies, -> { where(relationship_type: :dependency_finish_to_start) }, as: :child, class_name: "Relationship", dependent: :destroy
   has_many :dependents, -> { where(relationship_type: :dependency_finish_to_start) }, as: :parent, class_name: "Relationship", dependent: :destroy
 
