@@ -24,6 +24,7 @@
 #
 # Update app/models/user.rb - Add notification association and methods
 class User < ApplicationRecord
+  rolify
   has_secure_password
 
   # Rails 8 token generation for magic links and email verification

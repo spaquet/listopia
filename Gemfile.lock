@@ -274,6 +274,8 @@ GEM
     public_suffix (6.0.2)
     puma (6.6.0)
       nio4r (~> 2.0)
+    pundit (2.5.0)
+      activesupport (>= 3.0.0)
     raabro (1.4.0)
     racc (1.8.1)
     rack (3.1.16)
@@ -322,10 +324,12 @@ GEM
     rdoc (6.14.2)
       erb
       psych (>= 4.0.0)
+    redis (4.8.1)
     regexp_parser (2.10.0)
     reline (0.6.1)
       io-console (~> 0.5)
     rexml (3.4.1)
+    rolify (6.0.1)
     rspec-core (3.13.5)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.5)
@@ -492,8 +496,11 @@ DEPENDENCIES
   positioning
   propshaft
   puma (>= 5.0)
+  pundit
   rails (~> 8.0.2)
   rails-controller-testing
+  redis (~> 4.0)
+  rolify
   rspec-rails
   rspec-retry
   rubocop-rails-omakase
