@@ -39,6 +39,8 @@
 #
 #  fk_rails_...  (user_id => users.id)
 #
+
+# app/models/list.rb
 class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
@@ -55,8 +57,6 @@ class List < ApplicationRecord
   # Associations
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
   has_many :list_items, dependent: :destroy
-  has_many :list_collaborations, dependent: :destroy
-  has_many :collaborators, through: :list_collaborations, source: :user
 
   has_many :board_columns, dependent: :destroy
   has_many :collaborators, as: :collaboratable, dependent: :destroy
@@ -87,6 +87,16 @@ class List < ApplicationRecord
     professional: 1
   }, prefix: true
 
+  # Define enum for public_permission
+  # This is used to control public access permissions
+  # 0 - public_read: Public can read the list
+  # 1 - public_write: Public can write to the list (e.g., add items)
+  # Note: This is not a PostgreSQL enum, but a Rails enum for application logic
+  enum :public_permission, {
+  public_read: 0,
+  public_write: 1
+}, prefix: true
+
   # Scopes
   scope :active, -> { where(status: :active) }
   scope :owned_by, ->(user) { where(user: user) }
@@ -104,10 +114,18 @@ class List < ApplicationRecord
   # Check if user can read this list
   def readable_by?(user)
     return false unless user
+    return true if owner == user
+    return true if is_public?
 
-    owner == user ||
-    list_collaborations.exists?(user: user, permission: [ "read", "collaborate" ]) ||
-    is_public?
+    collaborators.exists?(user: user)
+  end
+
+  def writable_by?(user)
+    return false unless user
+    return true if owner == user
+    return true if is_public? && public_permission_write?
+
+    collaborators.permission_write.exists?(user: user)
   end
 
   # Check if user can collaborate on this list
@@ -119,15 +137,23 @@ class List < ApplicationRecord
   end
 
   # Add collaborator with specific permission
-  def add_collaborator(user, permission: "read")
-    list_collaborations.find_or_create_by(user: user) do |collaboration|
+  def add_collaborator(user, permission: :read)
+    collaborators.find_or_create_by(user: user) do |collaboration|
       collaboration.permission = permission
     end
   end
 
   # Remove collaborator
   def remove_collaborator(user)
-    list_collaborations.find_by(user: user)&.destroy
+    collaborators.find_by(user: user)&.destroy
+  end
+
+  def has_collaborator?(user)
+    collaborators.exists?(user: user)
+  end
+
+  def collaborator_permission(user)
+    collaborators.find_by(user: user)&.permission
   end
 
   # Get completion percentage

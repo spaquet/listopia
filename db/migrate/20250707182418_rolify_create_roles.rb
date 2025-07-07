@@ -1,6 +1,6 @@
 class RolifyCreateRoles < ActiveRecord::Migration[8.0]
   def change
-    create_table :roles , id: :uuid do |t|
+    create_table :roles, id: :uuid do |t|
       t.string :name
       t.references :resource, polymorphic: true, type: :uuid
 

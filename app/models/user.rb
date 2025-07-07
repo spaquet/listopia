@@ -33,8 +33,6 @@ class User < ApplicationRecord
 
   # Associations
   has_many :lists, dependent: :destroy
-  has_many :list_collaborations, dependent: :destroy
-  has_many :collaborated_lists, through: :list_collaborations, source: :list
   has_many :sessions, dependent: :destroy
   has_many :chats, dependent: :destroy
   has_many :messages, dependent: :destroy
@@ -44,7 +42,8 @@ class User < ApplicationRecord
   has_many :collaborated_lists, through: :collaborators, source: :collaboratable, source_type: "List"
   has_many :collaborated_list_items, through: :collaborators, source: :collaboratable, source_type: "ListItem"
   has_many :invitations, dependent: :destroy
-  has_many :sent_invitations, class_name: "Invitation", foreign_key: :invited_by_id, dependent: :destroy
+  has_many :sent_invitations, class_name: "Invitation", foreign_key: "invited_by_id"
+  has_many :received_invitations, class_name: "Invitation", foreign_key: "user_id"
   has_many :comments, dependent: :destroy
 
   # Add noticed notifications

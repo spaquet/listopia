@@ -8,7 +8,8 @@ class CreateLists < ActiveRecord::Migration[8.0]
       t.integer :status, default: 0, null: false
 
       # Sharing settings
-      t.boolean :is_public, default: false
+      t.boolean :is_public, null: false, default: false
+      t.integer :public_permission, null: false, default: 0
       t.string :public_slug
 
       # List type (personal, professional)
@@ -25,6 +26,7 @@ class CreateLists < ActiveRecord::Migration[8.0]
     add_index :lists, :status
     add_index :lists, :public_slug, unique: true
     add_index :lists, :is_public
+    add_index :lists, :public_permission
     add_index :lists, :created_at
     add_index :lists, :list_type
     add_index :lists, [ :user_id, :status, :list_type ], name: "index_lists_on_user_status_list_type"

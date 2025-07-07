@@ -20,7 +20,37 @@
 #
 #  fk_rails_...  (user_id => users.id)
 #
+
+# app/models/collaborator.rb
 class Collaborator < ApplicationRecord
   belongs_to :collaboratable, polymorphic: true
   belongs_to :user
+
+  # Add role support
+  resourcify
+
+  enum :permission, {
+    read: 0,
+    write: 1
+  }, prefix: true
+
+  validates :user_id, uniqueness: { scope: [ :collaboratable_type, :collaboratable_id ] }
+  validates :permission, presence: true
+
+  # Scopes
+  scope :readers, -> { where(permission: :read) }
+  scope :writers, -> { where(permission: :write) }
+
+  # Helper methods
+  def can_edit?
+    permission_write?
+  end
+
+  def can_view?
+    true # All collaborators can view
+  end
+
+  def display_name
+    user.name || user.email
+  end
 end

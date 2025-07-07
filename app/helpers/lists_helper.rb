@@ -2,7 +2,6 @@
 module ListsHelper
   # Calculate and display list completion statistics
   def list_completion_stats(list)
-    # Use counter cache for total, only query for completed count
     total = list.list_items_count
     completed = list.list_items.completed.count
     percentage = total > 0 ? (completed.to_f / total * 100).round : 0
@@ -16,8 +15,8 @@ module ListsHelper
   end
 
   # Add efficient collaboration check
-  def list_has_collaborations?(list)
-    list.list_collaborations_count > 0
+  def list_has_collaborators?(list)
+    list.collaborators.any?
   end
 
   # Generate sharing permissions options for select
@@ -29,21 +28,30 @@ module ListsHelper
   end
 
   # Format list sharing status
-  def list_sharing_status(list)
-    if list.is_public?
-      content_tag :span, "Public", class: "text-green-600 font-medium"
-    elsif list.list_collaborations_count > 0
-      count = list.list_collaborations_count
-      content_tag :span, "Shared with #{count} #{'person'.pluralize(count)}", class: "text-blue-600"
-    else
-      content_tag :span, "Private", class: "text-gray-600"
-    end
+  def sharing_permission_options
+    [
+      [ "Read Only", "read" ],
+      [ "Read & Write", "write" ]
+    ]
   end
 
-  # Get the name of the list owner, using association if available
-  def list_owner_name(list)
-    # Use the included owner association if available, otherwise query
-    list.association(:owner).loaded? ? list.owner.name : list.owner&.name
+  def list_permission_for_user(list, user)
+    return :owner if list.owner == user
+    return :public_write if list.is_public? && list.public_permission_write?
+    return :public_read if list.is_public?
+
+    collaborator = list.collaborators.find_by(user: user)
+    collaborator&.permission&.to_sym || :none
+  end
+
+  def can_edit_list?(list, user)
+    permission = list_permission_for_user(list, user)
+    [ :owner, :write, :public_write ].include?(permission)
+  end
+
+  def can_view_list?(list, user)
+    permission = list_permission_for_user(list, user)
+    permission != :none
   end
 
   # Generate item type icon

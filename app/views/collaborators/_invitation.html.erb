@@ -1,0 +1,41 @@
+<!-- app/views/collaborators/_invitation.html.erb -->
+<div id="<%= dom_id(invitation) %>" class="flex items-center justify-between py-2">
+  <div class="flex items-center space-x-3">
+    <div class="flex-shrink-0">
+      <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900"><%= invitation.email %></p>
+      <p class="text-xs text-gray-500">
+        Invited <%= time_ago_in_words(invitation.invitation_sent_at) %> ago • 
+        <span class="capitalize"><%= invitation.permission %></span> access
+      </p>
+    </div>
+  </div>
+  <div class="flex items-center space-x-2">
+    <!-- Resend Button -->
+    <%= button_to resend_invitation_path(invitation),
+          method: :patch,
+          remote: true,
+          class: "text-blue-400 hover:text-blue-600 transition-colors duration-200 p-1 rounded hover:bg-blue-50",
+          title: "Resend invitation" do %>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+    <% end %>
+    <!-- Cancel Button -->
+    <%= button_to invitation_path(invitation),
+          method: :delete,
+          remote: true,
+          form: { data: { confirm: "Are you sure you want to cancel this invitation?" } },
+          class: "text-gray-400 hover:text-red-600 transition-colors duration-200 p-1 rounded hover:bg-red-50" do %>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    <% end %>
+  </div>
+</div>
