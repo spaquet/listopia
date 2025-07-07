@@ -1,5 +1,12 @@
 # app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
+  include Pundit::Authorization
+
+  # Prevent outdated browsers from accessing the application
+  # This is a security measure to ensure users are on modern browsers.
+  # Associated resource: public/406-unsupported-browser.html
+  allow_browser versions: :modern
+
   # Prevent CSRF attacks by raising an exception.
   protect_from_forgery with: :exception
 
@@ -68,6 +75,9 @@ class ApplicationController < ActionController::Base
       false
     end
   end
+
+  # Pundit authorization
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
 
   protected
 
@@ -150,5 +160,13 @@ class ApplicationController < ActionController::Base
       reset_session
       nil
     end
+  end
+
+  # Handle unauthorized access
+  # This method is called by Pundit when a user tries to access a resource they
+  # are not authorized to access.
+  def user_not_authorized
+    flash[:alert] = "You are not authorized to perform this action."
+    redirect_back(fallback_location: lists_path)
   end
 end
