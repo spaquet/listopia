@@ -4,7 +4,7 @@
 #
 #  id                  :uuid             not null, primary key
 #  collaboratable_type :string           not null
-#  permission          :integer          default(0), not null
+#  permission          :integer          default("read"), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
 #  collaboratable_id   :uuid             not null

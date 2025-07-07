@@ -10,8 +10,5 @@ class AddIndexesForPerformance < ActiveRecord::Migration[8.0]
     # Indexes for list queries
     add_index :lists, [ :user_id, :status ]
     add_index :lists, [ :user_id, :created_at ]
-
-    # Indexes for collaboration queries
-    add_index :list_collaborations, [ :user_id, :permission ]
   end
 end

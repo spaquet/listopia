@@ -120,28 +120,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.index ["user_id"], name: "index_invitations_on_user_id"
   end
 
-  create_table "list_collaborations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "list_id", null: false
-    t.uuid "user_id"
-    t.integer "permission", default: 0, null: false
-    t.string "email"
-    t.string "invitation_token"
-    t.datetime "invitation_sent_at"
-    t.datetime "invitation_accepted_at"
-    t.uuid "invited_by_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_list_collaborations_on_email"
-    t.index ["invitation_token"], name: "index_list_collaborations_on_invitation_token", unique: true
-    t.index ["invited_by_id"], name: "index_list_collaborations_on_invited_by_id"
-    t.index ["list_id", "email"], name: "index_list_collaborations_on_list_and_email", unique: true, where: "(email IS NOT NULL)"
-    t.index ["list_id", "user_id"], name: "index_list_collaborations_on_list_and_user", unique: true, where: "(user_id IS NOT NULL)"
-    t.index ["list_id"], name: "index_list_collaborations_on_list_id"
-    t.index ["permission"], name: "index_list_collaborations_on_permission"
-    t.index ["user_id", "permission"], name: "index_list_collaborations_on_user_id_and_permission"
-    t.index ["user_id"], name: "index_list_collaborations_on_user_id"
-  end
-
   create_table "list_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "list_id", null: false
     t.uuid "assigned_user_id"
@@ -188,7 +166,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.string "title", null: false
     t.text "description"
     t.integer "status", default: 0, null: false
-    t.boolean "is_public", default: false
+    t.boolean "is_public", default: false, null: false
+    t.integer "public_permission", default: 0, null: false
     t.string "public_slug"
     t.integer "list_type", default: 0, null: false
     t.json "metadata", default: {}
@@ -202,6 +181,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.index ["list_collaborations_count"], name: "index_lists_on_list_collaborations_count"
     t.index ["list_items_count"], name: "index_lists_on_list_items_count"
     t.index ["list_type"], name: "index_lists_on_list_type"
+    t.index ["public_permission"], name: "index_lists_on_public_permission"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"
     t.index ["user_id", "created_at"], name: "index_lists_on_user_id_and_created_at"
@@ -417,9 +397,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
   add_foreign_key "comments", "users"
   add_foreign_key "invitations", "users"
   add_foreign_key "invitations", "users", column: "invited_by_id"
-  add_foreign_key "list_collaborations", "lists"
-  add_foreign_key "list_collaborations", "users"
-  add_foreign_key "list_collaborations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "board_columns"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"

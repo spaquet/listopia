@@ -8,7 +8,7 @@
 #  invitation_accepted_at :datetime
 #  invitation_sent_at     :datetime
 #  invitation_token       :string
-#  permission             :integer          default(0), not null
+#  permission             :integer          default("read"), not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
 #  invitable_id           :uuid             not null
