@@ -35,9 +35,23 @@ module ListsHelper
     ]
   end
 
+  def list_sharing_status(list)
+    if list.is_public?
+      content_tag :span, "Public",
+                  class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-2"
+    elsif list.collaborators.any?
+      collaborator_count = list.collaborators.count
+      content_tag :span, "#{collaborator_count} #{'collaborator'.pluralize(collaborator_count)}",
+                  class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2"
+    else
+      content_tag :span, "Private",
+                  class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-2"
+    end
+  end
+
   def list_permission_for_user(list, user)
     return :owner if list.owner == user
-    return :public_write if list.is_public? && list.public_permission_write?
+    return :public_write if list.is_public? && list.public_permission_public_write?  # ← Fix this line
     return :public_read if list.is_public?
 
     collaborator = list.collaborators.find_by(user: user)

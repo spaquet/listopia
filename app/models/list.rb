@@ -125,7 +125,7 @@ class List < ApplicationRecord
   def writable_by?(user)
     return false unless user
     return true if owner == user
-    return true if is_public? && public_permission_write?
+    return true if is_public? && public_permission_public_write?  # ← Use correct method name
 
     collaborators.permission_write.exists?(user: user)
   end

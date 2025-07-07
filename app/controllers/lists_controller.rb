@@ -212,7 +212,8 @@ class ListsController < ApplicationController
   def track_list_view
     # Implementation for analytics tracking
     # Could store in a separate analytics table
-    ListAnalyticsService.new(@list, current_user).track_view
+    # ListAnalyticsService.new(@list, current_user).track_view
+    @list.touch if @list && current_user
   end
 
   # Strong parameters for list creation/updates
