@@ -142,7 +142,7 @@ emma_travel_list = emma.lists.create!(
   list_type: :personal,
   color_theme: "orange",
   is_public: true,
-  public_permission: :read,
+  public_permission: :public_read,  # ← Use the correct enum value
   public_slug: SecureRandom.urlsafe_base64(8)
 )
 

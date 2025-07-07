@@ -103,10 +103,10 @@ class List < ApplicationRecord
   scope :active, -> { where(status: :active) }
   scope :owned_by, ->(user) { where(user: user) }
   scope :accessible_by, ->(user) {
-    joins("LEFT JOIN list_collaborations ON lists.id = list_collaborations.list_id")
-      .where("lists.user_id = ? OR list_collaborations.user_id = ?", user.id, user.id)
-      .distinct
-  }
+  joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
+    .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
+    .group("lists.id")  # Use GROUP BY instead of DISTINCT
+}
 
   # Callbacks
   before_create :generate_public_slug, if: :is_public?
@@ -135,7 +135,7 @@ class List < ApplicationRecord
     return false unless user
 
     owner == user ||
-    list_collaborations.exists?(user: user, permission: "collaborate")
+    collaborators.exists?(user: user, permission: "collaborate")  # Change from list_collaborations
   end
 
   # Add collaborator with specific permission

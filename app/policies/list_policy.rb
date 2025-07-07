@@ -37,9 +37,9 @@ class ListPolicy < ApplicationPolicy
     def resolve
       if user
         scope.joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
-             .where("lists.user_id = ? OR collaborators.user_id = ? OR lists.is_public = ?",
+            .where("lists.user_id = ? OR collaborators.user_id = ? OR lists.is_public = ?",
                     user.id, user.id, true)
-             .distinct
+            .group("lists.id")  # Use GROUP BY instead of DISTINCT
       else
         scope.where(is_public: true)
       end

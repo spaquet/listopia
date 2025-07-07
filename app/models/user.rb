@@ -121,7 +121,13 @@ class User < ApplicationRecord
 
   # Get all accessible lists (owned + collaborated)
   def accessible_lists
-    List.where(id: lists.pluck(:id) + collaborated_lists.pluck(:id))
+    owned_list_ids = lists.pluck(:id)
+    collaborated_list_ids = collaborated_lists.pluck(:id)
+    public_list_ids = List.where(is_public: true).pluck(:id)
+
+    all_accessible_ids = (owned_list_ids + collaborated_list_ids + public_list_ids).uniq
+
+    List.where(id: all_accessible_ids)
   end
 
   # Notification convenience methods
