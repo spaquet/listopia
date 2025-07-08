@@ -160,9 +160,37 @@ class ListsController < ApplicationController
     end
   end
 
+  # Show sharing options for a list
+  def share
+    authorize @list, :share?
+
+    @collaborators = @list.collaborators.includes(:user)
+    @invitations = @list.invitations.pending.includes(:invited_by)
+    @sharing_service = ListSharingService.new(@list, current_user)
+    @sharing_summary = @sharing_service.sharing_summary
+
+    respond_to do |format|
+      format.html { render :share }
+      format.turbo_stream { render :share }
+    end
+  end
+
   # Delete a list
   def destroy
-    authorize @list
+    # Ensure only the owner can delete the list
+    unless @list.owner == current_user
+      respond_to do |format|
+        format.html { redirect_to @list, alert: "Only the list owner can delete this list." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Only the list owner can delete this list.", type: "alert" }
+          )
+        }
+      end
+      return
+    end
 
     @list.destroy
     respond_to do |format|
