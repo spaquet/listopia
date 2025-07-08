@@ -8,19 +8,8 @@
 require "active_record"
 require "turbo-rails"
 
-module ListBroadcasting
-  def broadcast_all_updates(list)
-    # Broadcast updates to all users viewing the list
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "list_#{list.id}",
-      target: "list-header",
-      partial: "lists/list_header",
-      locals: { list: list }
-    )
-  end
-end
 class ListItemService
-  include ListBroadcasting
+  include ServiceBroadcasting  # Use service-safe broadcasting instead
 
   attr_reader :list, :user, :errors
 
@@ -171,44 +160,21 @@ class ListItemService
       return Result.failure("You don't have permission to modify items in this list")
     end
 
-    items = @list.list_items.where(id: item_ids)
-    updated_count = 0
-
+    completed_items = []
     ActiveRecord::Base.transaction do
-      items.find_each do |item|
-        item.skip_notifications = true # We'll send one bulk notification instead
+      item_ids.each do |item_id|
+        item = find_item(item_id)
+        next unless item
+
         if item.update(completed: true, completed_at: Time.current)
-          updated_count += 1
+          completed_items << item
         end
       end
     end
 
     @list.reload
     broadcast_all_updates(@list)
-    Result.success({ updated_count: updated_count, total_count: items.count })
-  rescue => e
-    @errors = [ e.message ]
-    Result.failure(@errors)
-  end
-
-  def bulk_delete_items(item_ids)
-    unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
-    end
-
-    items = @list.list_items.where(id: item_ids)
-    deleted_count = items.count
-
-    ActiveRecord::Base.transaction do
-      items.find_each do |item|
-        item.skip_notifications = true
-      end
-      items.destroy_all
-    end
-
-    @list.reload
-    broadcast_all_updates(@list)
-    Result.success({ deleted_count: deleted_count })
+    Result.success(completed_items)
   rescue => e
     @errors = [ e.message ]
     Result.failure(@errors)
@@ -291,7 +257,7 @@ class ListItemService
     Turbo::StreamsChannel.broadcast_replace_to(
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
-      partial: "list_items/qitem",
+      partial: "list_items/item",
       locals: { list_item: item, list: @list }
     )
 
@@ -335,10 +301,6 @@ class ListItemService
 
     def success?
       @success
-    end
-
-    def failure?
-      !@success
     end
 
     def self.success(data)

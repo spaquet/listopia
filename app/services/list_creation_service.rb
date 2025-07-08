@@ -4,8 +4,12 @@
 # Used by ListController and ListPlanningController
 # handles list creation, planning item generation, and duplication
 # Also includes broadcasting updates to the list show page and dashboard
+
+require "active_record"
+require "turbo-rails"
+
 class ListCreationService
-  include ListBroadcasting
+  include ServiceBroadcasting  # Use service-safe broadcasting instead
 
   attr_reader :user, :list, :errors
 
@@ -84,17 +88,18 @@ class ListCreationService
 
       return result unless result.success?
 
-      # Copy all items
-      items_service = ListItemService.new(@list, @user)
-      source_list.list_items.order(:position).each do |source_item|
+      # Copy all items from source list
+      source_list.list_items.order(:position).each_with_index do |source_item, index|
+        items_service = ListItemService.new(@list, @user)
         item_result = items_service.create_item(
           title: source_item.title,
           description: source_item.description,
           item_type: source_item.item_type,
           priority: source_item.priority,
+          position: index,
           due_date: source_item.due_date,
-          position: source_item.position,
-          completed: false # Reset completion status for duplicates
+          url: source_item.url,
+          metadata: source_item.metadata
         )
 
         unless item_result.success?
@@ -102,6 +107,7 @@ class ListCreationService
         end
       end
 
+      # Broadcast final state
       broadcast_all_updates(@list)
       Result.success(@list)
     end
@@ -112,54 +118,116 @@ class ListCreationService
 
   private
 
-  # Generate planning items based on context
+  # Conference planning items
   def generate_planning_items(context, title)
     case context.downcase
-    when "vacation"
-      [
-        { title: "Research destination", description: "Look up attractions, weather, and local customs", type: "research", priority: "high" },
-        { title: "Book accommodations", description: "Find and reserve hotel or rental", type: "booking", priority: "high" },
-        { title: "Plan transportation", description: "Book flights or arrange travel", type: "booking", priority: "high" },
-        { title: "Create packing list", description: "List essential items to bring", type: "task", priority: "medium" },
-        { title: "Check travel documents", description: "Verify passport, visa, and ID requirements", type: "task", priority: "high" }
-      ]
+    when "conference"
+      generate_conference_items(title)
+    when "vacation", "travel"
+      generate_vacation_items(title)
     when "project"
-      [
-        { title: "Define project scope", description: "Clarify objectives and deliverables", type: "goal", priority: "high" },
-        { title: "Identify key stakeholders", description: "List people involved and their roles", type: "task", priority: "medium" },
-        { title: "Create project timeline", description: "Set milestones and deadlines", type: "milestone", priority: "high" },
-        { title: "Allocate resources", description: "Determine budget and team needs", type: "task", priority: "medium" }
-      ]
-    when "shopping"
-      [
-        { title: "Set budget", description: "Determine spending limit", type: "goal", priority: "high" },
-        { title: "Compare prices", description: "Research costs at different stores", type: "research", priority: "medium" },
-        { title: "Check for deals", description: "Look for coupons and discounts", type: "task", priority: "low" }
-      ]
+      generate_project_items(title)
     when "goals"
-      [
-        { title: "Define success metrics", description: "How will you measure progress?", type: "goal", priority: "high" },
-        { title: "Break into smaller steps", description: "Create actionable milestones", type: "milestone", priority: "high" },
-        { title: "Set review schedule", description: "Plan regular progress check-ins", type: "reminder", priority: "medium" }
-      ]
-    when "event", "conference"
-      [
-        { title: "Define event scope and goals", description: "Clarify purpose, audience, and success metrics", type: "goal", priority: "high" },
-        { title: "Secure venue", description: "Book location and confirm dates", type: "booking", priority: "high" },
-        { title: "Create budget", description: "Estimate costs for all aspects", type: "task", priority: "high" },
-        { title: "Invite speakers", description: "Contact and confirm keynote and session speakers", type: "task", priority: "high" },
-        { title: "Plan agenda", description: "Create detailed schedule of sessions and activities", type: "task", priority: "medium" },
-        { title: "Marketing and promotion", description: "Create marketing materials and promotion strategy", type: "task", priority: "medium" },
-        { title: "Registration system", description: "Set up attendee registration and payment", type: "task", priority: "medium" },
-        { title: "Catering arrangements", description: "Plan meals, snacks, and refreshments", type: "booking", priority: "medium" },
-        { title: "Technical requirements", description: "Audio/visual equipment, internet, tech support", type: "task", priority: "medium" },
-        { title: "Accommodation coordination", description: "Help speakers and attendees with lodging", type: "task", priority: "low" },
-        { title: "Event materials", description: "Badges, swag, programs, signage", type: "task", priority: "low" },
-        { title: "Post-event follow-up", description: "Thank you messages, feedback collection, next steps", type: "reminder", priority: "low" }
-      ]
+      generate_goals_items(title)
+    when "shopping"
+      generate_shopping_items(title)
+    when "wedding"
+      generate_wedding_items(title)
+    when "moving", "relocation"
+      generate_moving_items(title)
     else
-      []
+      generate_generic_planning_items(title, context)
     end
+  end
+
+  def generate_conference_items(title)
+    [
+      { title: "Set conference dates and duration", description: "Choose dates avoiding conflicts with holidays and other major events", type: "milestone", priority: "high" },
+      { title: "Research and book venue", description: "Find venue with adequate capacity, AV equipment, and catering facilities", type: "task", priority: "high" },
+      { title: "Create speaker lineup and invite keynotes", description: "Identify and reach out to industry experts and thought leaders", type: "task", priority: "high" },
+      { title: "Set up registration system", description: "Configure online registration with payment processing and attendee management", type: "task", priority: "medium" },
+      { title: "Plan conference schedule and sessions", description: "Create detailed agenda with session tracks and break times", type: "task", priority: "medium" },
+      { title: "Arrange catering and refreshments", description: "Coordinate meals, coffee breaks, and dietary requirements", type: "task", priority: "medium" },
+      { title: "Design marketing materials and website", description: "Create branding, promotional content, and conference website", type: "task", priority: "medium" },
+      { title: "Coordinate accommodation for speakers", description: "Book hotels and arrange transportation for out-of-town speakers", type: "task", priority: "low" },
+      { title: "Prepare conference swag and materials", description: "Order badges, lanyards, welcome bags, and branded items", type: "task", priority: "low" },
+      { title: "Set up live streaming and recording", description: "Arrange technical setup for remote attendees and session recordings", type: "task", priority: "medium" },
+      { title: "Plan networking activities", description: "Organize evening events, mixers, and networking opportunities", type: "task", priority: "low" },
+      { title: "Finalize sponsorship packages", description: "Secure sponsors and prepare sponsor recognition materials", type: "task", priority: "medium" }
+    ]
+  end
+
+  def generate_vacation_items(title)
+    [
+      { title: "Research destination and attractions", description: "Explore must-see places and local experiences", type: "research", priority: "high" },
+      { title: "Book flights", description: "Compare prices and book airline tickets", type: "booking", priority: "high" },
+      { title: "Reserve accommodation", description: "Book hotel, vacation rental, or other lodging", type: "booking", priority: "high" },
+      { title: "Plan daily itinerary", description: "Create day-by-day schedule of activities", type: "task", priority: "medium" },
+      { title: "Check passport and visa requirements", description: "Ensure documents are valid and apply for visa if needed", type: "task", priority: "high" },
+      { title: "Purchase travel insurance", description: "Get coverage for trip cancellation and medical emergencies", type: "task", priority: "medium" },
+      { title: "Pack luggage", description: "Prepare clothes and essentials for the trip", type: "task", priority: "low" },
+      { title: "Arrange transportation to airport", description: "Book taxi, parking, or ask someone for a ride", type: "task", priority: "low" }
+    ]
+  end
+
+  def generate_project_items(title)
+    [
+      { title: "Define project scope and objectives", description: "Clearly outline what the project will accomplish", type: "milestone", priority: "high" },
+      { title: "Identify stakeholders and team members", description: "Determine who will be involved and their roles", type: "task", priority: "high" },
+      { title: "Create project timeline", description: "Develop schedule with milestones and deadlines", type: "task", priority: "high" },
+      { title: "Conduct kickoff meeting", description: "Align team on goals, expectations, and next steps", type: "milestone", priority: "medium" },
+      { title: "Set up project management tools", description: "Configure tracking systems and communication channels", type: "task", priority: "medium" },
+      { title: "Plan resource allocation", description: "Determine budget, tools, and personnel needs", type: "task", priority: "medium" },
+      { title: "Establish communication protocols", description: "Define how and when team will communicate updates", type: "task", priority: "low" }
+    ]
+  end
+
+  def generate_goals_items(title)
+    [
+      { title: "Define specific, measurable outcomes", description: "Set clear success criteria for the goal", type: "goal", priority: "high" },
+      { title: "Break down into smaller milestones", description: "Create achievable steps toward the main goal", type: "milestone", priority: "high" },
+      { title: "Set target completion date", description: "Establish realistic timeline for achievement", type: "milestone", priority: "medium" },
+      { title: "Identify required resources", description: "Determine what you need to succeed", type: "task", priority: "medium" },
+      { title: "Create accountability system", description: "Set up tracking and progress review process", type: "task", priority: "medium" },
+      { title: "Plan celebration for achievement", description: "Decide how to reward yourself when goal is met", type: "reminder", priority: "low" }
+    ]
+  end
+
+  def generate_shopping_items(title)
+    [
+      { title: "Create shopping list", description: "List all items needed", type: "task", priority: "high" },
+      { title: "Set budget", description: "Determine spending limit", type: "task", priority: "medium" },
+      { title: "Research prices and stores", description: "Compare prices and find best deals", type: "research", priority: "medium" },
+      { title: "Check for coupons and discounts", description: "Look for savings opportunities", type: "task", priority: "low" }
+    ]
+  end
+
+  def generate_wedding_items(title)
+    [
+      { title: "Set wedding date", description: "Choose date and check venue availability", type: "milestone", priority: "high" },
+      { title: "Book venue", description: "Reserve ceremony and reception locations", type: "booking", priority: "high" },
+      { title: "Create guest list", description: "Compile list of invitees", type: "task", priority: "high" },
+      { title: "Send save the dates", description: "Give guests advance notice", type: "task", priority: "medium" },
+      { title: "Choose wedding party", description: "Select bridesmaids, groomsmen, and officiant", type: "task", priority: "medium" }
+    ]
+  end
+
+  def generate_moving_items(title)
+    [
+      { title: "Research moving companies", description: "Get quotes and book movers", type: "research", priority: "high" },
+      { title: "Start packing non-essentials", description: "Pack items not needed daily", type: "task", priority: "medium" },
+      { title: "Change address with utilities", description: "Update address for utilities, mail, subscriptions", type: "task", priority: "medium" },
+      { title: "Pack essential box for first day", description: "Prepare items needed immediately in new home", type: "task", priority: "low" }
+    ]
+  end
+
+  def generate_generic_planning_items(title, context)
+    [
+      { title: "Research and gather information", description: "Collect relevant information about #{context}", type: "research", priority: "high" },
+      { title: "Create detailed plan", description: "Develop step-by-step approach", type: "task", priority: "high" },
+      { title: "Set timeline and milestones", description: "Establish important dates and checkpoints", type: "milestone", priority: "medium" },
+      { title: "Identify required resources", description: "Determine what you'll need to succeed", type: "task", priority: "medium" }
+    ]
   end
 
   # Result class for consistent return values
@@ -174,10 +242,6 @@ class ListCreationService
 
     def success?
       @success
-    end
-
-    def failure?
-      !@success
     end
 
     def self.success(data)
