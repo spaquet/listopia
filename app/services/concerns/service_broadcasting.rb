@@ -24,42 +24,48 @@ module ServiceBroadcasting
     end
 
     affected_users.uniq.each do |user|
-      user_data = dashboard_data_for_user(user)
+      begin
+        user_data = dashboard_data_for_user(user)
 
-      # Broadcast stats update
-      Turbo::StreamsChannel.broadcast_replace_to(
-        "user_dashboard_#{user.id}",
-        target: "dashboard-stats",
-        partial: "dashboard/stats_overview",
-        locals: { stats: user_data[:stats] }
-      )
-
-      # Broadcast appropriate lists section based on relationship to list
-      if user.id == list.owner.id
-        # Update owner's "my lists" section
+        # Broadcast stats update
         Turbo::StreamsChannel.broadcast_replace_to(
           "user_dashboard_#{user.id}",
-          target: "dashboard-my-lists",
-          partial: "dashboard/my_lists",
-          locals: { lists: user_data[:my_lists] }
+          target: "dashboard-stats",
+          partial: "dashboard/stats_overview",
+          locals: { stats: user_data[:stats] }
         )
-      else
-        # Update collaborator's "collaborated lists" section
+
+        # Broadcast appropriate lists section based on relationship to list
+        if user.id == list.owner.id
+          # Update owner's "my lists" section
+          Turbo::StreamsChannel.broadcast_replace_to(
+            "user_dashboard_#{user.id}",
+            target: "dashboard-my-lists",
+            partial: "dashboard/my_lists",
+            locals: { lists: user_data[:my_lists] }
+          )
+        else
+          # Update collaborator's "collaborated lists" section
+          Turbo::StreamsChannel.broadcast_replace_to(
+            "user_dashboard_#{user.id}",
+            target: "dashboard-collaborated-lists",
+            partial: "dashboard/collaborated_lists",
+            locals: { lists: user_data[:collaborated_lists] }
+          )
+        end
+
+        # Update recent activity for all affected users
         Turbo::StreamsChannel.broadcast_replace_to(
           "user_dashboard_#{user.id}",
-          target: "dashboard-collaborated-lists",
-          partial: "dashboard/collaborated_lists",
-          locals: { lists: user_data[:collaborated_lists] }
+          target: "dashboard-recent-activity",
+          partial: "dashboard/recent_activity",
+          locals: { items: user_data[:recent_items] }
         )
+      rescue => e
+        # Log error but don't fail the entire operation
+        Rails.logger.error "Failed to broadcast dashboard update for user #{user.id}: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
       end
-
-      # Update recent activity for all affected users
-      Turbo::StreamsChannel.broadcast_replace_to(
-        "user_dashboard_#{user.id}",
-        target: "dashboard-recent-activity",
-        partial: "dashboard/recent_activity",
-        locals: { items: user_data[:recent_items] }
-      )
     end
   end
 
@@ -74,14 +80,43 @@ module ServiceBroadcasting
     end
 
     affected_users.uniq.each do |user|
-      user_lists = user.accessible_lists.includes(:owner, :collaborators).order(updated_at: :desc)
+      begin
+        # For newly created lists, use prepend to add to the top
+        if list.created_at > 1.minute.ago
+          # New list - prepend to top (matches controller behavior)
+          Turbo::StreamsChannel.broadcast_prepend_to(
+            "user_lists_#{user.id}",
+            target: "lists-container",
+            partial: "lists/list_card",
+            locals: { list: list }
+          )
+        else
+          # Updated list - replace entire container
+          user_lists = user.accessible_lists.includes(:owner, :collaborators).order(updated_at: :desc)
 
-      Turbo::StreamsChannel.broadcast_replace_to(
-        "user_lists_#{user.id}",
-        target: "lists-container",
-        partial: "lists/lists_grid",
-        locals: { lists: user_lists }
-      )
+          Turbo::StreamsChannel.broadcast_replace_to(
+            "user_lists_#{user.id}",
+            target: "lists-container",
+            partial: "lists/lists_grid",
+            locals: { lists: user_lists }
+          )
+        end
+      rescue => e
+        # Log error but don't fail the entire operation
+        Rails.logger.error "Failed to broadcast lists update for user #{user.id}: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
+
+        # Fallback: try a simple replace without complex partials
+        begin
+          Turbo::StreamsChannel.broadcast_action_to(
+            "user_lists_#{user.id}",
+            action: :refresh,
+            target: "lists-container"
+          )
+        rescue => fallback_error
+          Rails.logger.error "Fallback broadcast also failed: #{fallback_error.message}"
+        end
+      end
     end
   end
 
