@@ -20,7 +20,7 @@ class ListItemService
   end
 
   # Create a new list item
-  def create_item(title:, description: nil, **options)
+  def create_item(title:, description: nil, skip_broadcasts: false, **options)
     # Validate permissions
     unless can_edit_list?
       return Result.failure("You don't have permission to add items to this list")
@@ -63,15 +63,17 @@ class ListItemService
       # Reload list to get updated counts
       @list.reload
 
-      # Broadcast the creation
-      broadcast_item_creation(item)
+      # Only broadcast if not explicitly skipped
+      unless skip_broadcasts
+        broadcast_item_creation(item)
+      end
 
       Result.success(item)
     else
-      Result.failure(@errors.presence || [ "Failed to create item" ])
+      Result.failure(@errors.presence || ["Failed to create item"])
     end
   rescue => e
-    @errors = [ e.message ]
+    @errors = [e.message]
     Result.failure(@errors)
   end
 

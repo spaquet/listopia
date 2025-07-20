@@ -39,9 +39,18 @@ class ListCreationService
   # Create a planning list with auto-generated items
   def create_planning_list(title:, description: nil, planning_context: nil, **options)
     ActiveRecord::Base.transaction do
-      # Create the list first
-      result = create_list(title: title, description: description, **options)
-      return result unless result.success?
+      # Create the list first WITHOUT any broadcasting (prevent duplicates)
+      @list = @user.lists.build(
+        title: title,
+        description: description,
+        status: options[:status] || :active,
+        **options.slice(:is_public, :list_type, :color_theme)
+      )
+
+      unless @list.save
+        @errors = @list.errors.full_messages
+        return Result.failure(@errors)
+      end
 
       # Add planning items if context provided
       if planning_context.present?
@@ -49,12 +58,14 @@ class ListCreationService
         suggested_items = generate_planning_items(planning_context, title)
 
         suggested_items.each_with_index do |item_data, index|
+          # Create items without individual broadcasts
           item_result = items_service.create_item(
             title: item_data[:title],
             description: item_data[:description],
             item_type: item_data[:type] || "task",
             priority: item_data[:priority] || "medium",
-            position: index
+            position: index,
+            skip_broadcasts: true  # Prevent individual item broadcasts
           )
 
           unless item_result.success?
@@ -63,12 +74,17 @@ class ListCreationService
         end
       end
 
-      # Broadcast final state after all items are created
-      broadcast_all_updates(@list)
+      # Reload the list to get proper counts and associations
+      @list.reload
+
+      # Single broadcast AFTER everything is complete
+      # Only broadcast to lists index, not dashboard (to prevent duplication)
+      broadcast_lists_index_updates(@list)
+
       Result.success(@list)
     end
   rescue => e
-    @errors = [ e.message ]
+    @errors = [e.message]
     Result.failure(@errors)
   end
 

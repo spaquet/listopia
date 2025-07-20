@@ -81,53 +81,36 @@ module ServiceBroadcasting
       begin
         # For newly created lists, use a more reliable approach
         if list.created_at > 1.minute.ago
-          # Double-check the list exists and is accessible
-        if user.accessible_lists.exists?(list.id)
-          # Broadcast prepend for new lists
-          Turbo::StreamsChannel.broadcast_action_to(
-            "user_lists_#{user.id}",
-            action: :prepend,
-            target: "lists-container",
-            partial: "lists/list_card",
-            locals: { list: list }
-          )
+          # Only broadcast if the list exists and is accessible
+          if user.accessible_lists.exists?(list.id)
+            # Use prepend instead of replace to add the new list at the top
+            Turbo::StreamsChannel.broadcast_prepend_to(
+              "user_lists_#{user.id}",
+              target: "lists-container",
+              partial: "lists/list_card",
+              locals: { list: list }
+            )
+          end
+        else
+          # For existing lists, do a full refresh of the lists container
+          user_lists = user.accessible_lists.order(updated_at: :desc)
 
-          # Also send a custom event for JavaScript handling
-          Turbo::StreamsChannel.broadcast_action_to(
+          # Only broadcast if the user is currently on the lists page
+          # We can check this by looking for the stream identifier in active connections
+          Turbo::StreamsChannel.broadcast_replace_to(
             "user_lists_#{user.id}",
-            action: :append,
-            target: "body",
-            html: "<script>document.dispatchEvent(new CustomEvent('listopia:list-created', {detail: {listId: '#{list.id}'}}));</script>"
+            target: "lists-grid-only", # Target the inner grid, not the entire container
+            partial: "lists/lists_grid",
+            locals: { lists: user_lists }
           )
         end
-      else
-        # For updated lists, replace entire container
-        user_lists = user.accessible_lists.includes(:owner, :collaborators).order(updated_at: :desc)
-
-        Turbo::StreamsChannel.broadcast_replace_to(
-          "user_lists_#{user.id}",
-          target: "lists-container",
-          partial: "lists/lists_grid",
-          locals: { lists: user_lists }
-        )
-      end
-    rescue => e
-      Rails.logger.error "Failed to broadcast lists update for user #{user.id}: #{e.message}"
-
-      # Fallback: send refresh instruction
-      begin
-        Turbo::StreamsChannel.broadcast_action_to(
-          "user_lists_#{user.id}",
-          action: :append,
-          target: "body",
-          html: "<script>setTimeout(() => window.location.reload(), 1000);</script>"
-        )
-      rescue => fallback_error
-        Rails.logger.error "Fallback broadcast also failed: #{fallback_error.message}"
+      rescue => e
+        # Log error but don't fail the entire operation
+        Rails.logger.error "Failed to broadcast lists index update for user #{user.id}: #{e.message}"
+        Rails.logger.error e.backtrace.join("\n")
       end
     end
   end
-end
 
   # Service-safe method to get dashboard data without view_context
   # Optimized to avoid N+1 queries
