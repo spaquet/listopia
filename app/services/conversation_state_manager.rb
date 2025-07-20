@@ -11,20 +11,18 @@ class ConversationStateManager
 
   # Main method to ensure conversation integrity before sending to OpenAI
   def ensure_conversation_integrity!
-    begin
+    # Only do minimal validation during active conversations
+    if @chat.messages.where(role: "user").where("created_at > ?", 5.minutes.ago).exists?
+      # Active conversation - only do basic validation
+      validate_basic_structure!
+    else
+      # Inactive conversation - full cleanup
       validate_conversation_structure!
       cleanup_orphaned_messages!
       validate_tool_call_response_pairing!
-    rescue ConversationError => e
-      @logger.error "Conversation integrity error for chat #{@chat.id}: #{e.message}"
-
-      # Try to fix the conversation automatically
-      attempt_conversation_repair!
-
-      # Re-validate after repair
-      validate_conversation_structure!
     end
   end
+
 
   # Get a clean conversation history safe for OpenAI API
   def clean_conversation_history
@@ -42,6 +40,17 @@ class ConversationStateManager
   end
 
   private
+
+  def validate_basic_structure!
+    # Only check for obvious structural issues, don't remove messages
+    recent_messages = @chat.messages.where("created_at > ?", 5.minutes.ago).order(:created_at)
+
+    recent_messages.each do |msg|
+      if msg.role == "tool" && msg.tool_call_id.blank?
+        @logger.warn "Tool message #{msg.id} missing tool_call_id"
+      end
+    end
+  end
 
   def validate_conversation_structure!
     messages = @chat.messages.order(:created_at)

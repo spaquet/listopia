@@ -99,6 +99,43 @@ export default class extends Controller {
     }
   }
 
+  // Method to force UI refresh after AI creates lists
+  notifyListCreated(listId) {
+    // Dispatch custom event to notify other controllers
+    document.dispatchEvent(new CustomEvent('listopia:list-created', {
+      detail: { listId: listId }
+    }));
+    
+    // Force refresh of lists if user is on lists page
+    if (this.currentPageValue === 'lists#index') {
+      this.refreshListsPage();
+    }
+  }
+
+  async refreshListsPage() {
+    try {
+      const response = await fetch(window.location.pathname, {
+        headers: { 'Accept': 'text/html' }
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContainer = doc.getElementById('lists-container');
+        
+        if (newContainer) {
+          const currentContainer = document.getElementById('lists-container');
+          if (currentContainer) {
+            currentContainer.innerHTML = newContainer.innerHTML;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh lists:', error);
+    }
+  }
+
   async sendMessage(event) {
     event?.preventDefault();
     

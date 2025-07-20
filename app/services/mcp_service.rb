@@ -41,7 +41,7 @@ class McpService
       # Try to recover by creating a fresh chat if conversation is too broken
       if should_create_fresh_chat?(e)
         @chat = create_fresh_chat!
-        @conversation_manager = ConversationStateManager.new(@chat)
+        @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
       else
         raise ConversationStateError, "Unable to ensure conversation integrity: #{e.message}"
       end
@@ -85,6 +85,9 @@ class McpService
             raise e
           end
         end
+
+        # After successful processing, mark the conversation as stable
+        @chat.update_column(:last_stable_at, Time.current)
 
         # Verify conversation state after the interaction
         @conversation_manager.ensure_conversation_integrity!

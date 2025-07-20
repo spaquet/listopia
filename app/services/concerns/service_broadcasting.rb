@@ -71,54 +71,63 @@ module ServiceBroadcasting
 
   # Update lists index for all affected users (service-safe version)
   def broadcast_lists_index_updates(list)
-    # Get all affected users efficiently
     affected_users = [list.owner]
 
-    # Only load collaborators if list has any (avoid N+1)
     if list.list_collaborations_count > 0
       affected_users.concat(list.collaborators.to_a)
     end
 
     affected_users.uniq.each do |user|
       begin
-        # For newly created lists, use prepend to add to the top
+        # For newly created lists, use a more reliable approach
         if list.created_at > 1.minute.ago
-          # New list - prepend to top (matches controller behavior)
-          Turbo::StreamsChannel.broadcast_prepend_to(
+          # Double-check the list exists and is accessible
+        if user.accessible_lists.exists?(list.id)
+          # Broadcast prepend for new lists
+          Turbo::StreamsChannel.broadcast_action_to(
             "user_lists_#{user.id}",
+            action: :prepend,
             target: "lists-container",
             partial: "lists/list_card",
             locals: { list: list }
           )
-        else
-          # Updated list - replace entire container
-          user_lists = user.accessible_lists.includes(:owner, :collaborators).order(updated_at: :desc)
 
-          Turbo::StreamsChannel.broadcast_replace_to(
-            "user_lists_#{user.id}",
-            target: "lists-container",
-            partial: "lists/lists_grid",
-            locals: { lists: user_lists }
-          )
-        end
-      rescue => e
-        # Log error but don't fail the entire operation
-        Rails.logger.error "Failed to broadcast lists update for user #{user.id}: #{e.message}"
-        Rails.logger.error e.backtrace.join("\n")
-
-        # Fallback: try a simple replace without complex partials
-        begin
+          # Also send a custom event for JavaScript handling
           Turbo::StreamsChannel.broadcast_action_to(
             "user_lists_#{user.id}",
-            action: :refresh,
-            target: "lists-container"
+            action: :append,
+            target: "body",
+            html: "<script>document.dispatchEvent(new CustomEvent('listopia:list-created', {detail: {listId: '#{list.id}'}}));</script>"
           )
-        rescue => fallback_error
-          Rails.logger.error "Fallback broadcast also failed: #{fallback_error.message}"
         end
+      else
+        # For updated lists, replace entire container
+        user_lists = user.accessible_lists.includes(:owner, :collaborators).order(updated_at: :desc)
+
+        Turbo::StreamsChannel.broadcast_replace_to(
+          "user_lists_#{user.id}",
+          target: "lists-container",
+          partial: "lists/lists_grid",
+          locals: { lists: user_lists }
+        )
+      end
+    rescue => e
+      Rails.logger.error "Failed to broadcast lists update for user #{user.id}: #{e.message}"
+
+      # Fallback: send refresh instruction
+      begin
+        Turbo::StreamsChannel.broadcast_action_to(
+          "user_lists_#{user.id}",
+          action: :append,
+          target: "body",
+          html: "<script>setTimeout(() => window.location.reload(), 1000);</script>"
+        )
+      rescue => fallback_error
+        Rails.logger.error "Fallback broadcast also failed: #{fallback_error.message}"
       end
     end
   end
+end
 
   # Service-safe method to get dashboard data without view_context
   # Optimized to avoid N+1 queries

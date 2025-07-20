@@ -6,6 +6,7 @@
 #  id              :uuid             not null, primary key
 #  context         :json
 #  last_message_at :datetime
+#  last_stable_at  :datetime
 #  metadata        :json
 #  status          :string           default("active")
 #  title           :string(255)
@@ -17,6 +18,7 @@
 # Indexes
 #
 #  index_chats_on_last_message_at         (last_message_at)
+#  index_chats_on_last_stable_at          (last_stable_at)
 #  index_chats_on_model_id                (model_id)
 #  index_chats_on_user_id                 (user_id)
 #  index_chats_on_user_id_and_created_at  (user_id,created_at)
@@ -130,17 +132,36 @@ class Chat < ApplicationRecord
 
   # Override RubyLLM's ask method to ensure conversation integrity
   def ask(message_content, **options)
-    # Ensure conversation integrity before making the API call
-    begin
-      conversation_manager = ConversationStateManager.new(self)
-      conversation_manager.ensure_conversation_integrity!
-    rescue ConversationStateManager::ConversationError => e
-      Rails.logger.warn "Conversation integrity issue detected before API call: #{e.message}"
-      # Let the conversation manager attempt repair
-    end
+    # Store tool call mapping before making API call
+    pre_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
 
-    # Call the original RubyLLM ask method
-    super(message_content, **options)
+    begin
+      response = super(message_content, **options)
+
+      # After API call, verify tool call/response pairing
+      post_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
+      new_tool_ids = post_call_tool_ids - pre_call_tool_ids
+
+      # Ensure tool responses have correct tool_call_ids
+      if new_tool_ids.any?
+        validate_new_tool_responses(new_tool_ids)
+      end
+
+      response
+    rescue ConversationStateManager::ConversationError => e
+      Rails.logger.warn "Conversation integrity issue: #{e.message}"
+      # Don't cleanup aggressively during active conversation
+      response = super(message_content, **options)
+    end
+  end
+
+  # Only allow aggressive cleanup on conversations that haven't been active recently
+  def safe_for_aggressive_cleanup?
+    return false if last_stable_at.nil?
+    return false if last_stable_at > 1.hour.ago
+    return false if messages.where("created_at > ?", 10.minutes.ago).exists?
+
+    true
   end
 
   private

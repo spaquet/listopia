@@ -61,9 +61,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.datetime "last_message_at"
     t.json "metadata", default: {}
     t.string "model_id"
+    t.datetime "last_stable_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
+    t.index ["last_stable_at"], name: "index_chats_on_last_stable_at"
     t.index ["model_id"], name: "index_chats_on_model_id"
     t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
     t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"

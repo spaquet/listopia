@@ -10,6 +10,7 @@ class CreateChats < ActiveRecord::Migration[8.0]
       t.json :metadata, default: {}
       # Add model_id for RubyLLM integration
       t.string :model_id
+      t.datetime:last_stable_at
 
       t.timestamps
     end
@@ -19,5 +20,6 @@ class CreateChats < ActiveRecord::Migration[8.0]
     add_index :chats, :last_message_at
     # Add index for model queries
     add_index :chats, :model_id
+    add_index :chats, :last_stable_at
   end
 end
