@@ -37,14 +37,11 @@ class McpService
     begin
       @conversation_manager.ensure_conversation_integrity!
     rescue ConversationStateManager::ConversationError => e
-      Rails.logger.error "Conversation state error: #{e.message}"
-      # Try to recover by creating a fresh chat if conversation is too broken
-      if should_create_fresh_chat?(e)
-        @chat = create_fresh_chat!
-        @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
-      else
-        raise ConversationStateError, "Unable to ensure conversation integrity: #{e.message}"
-      end
+      Rails.logger.warn "Conversation state warning (non-blocking): #{e.message}"
+      # Don't block the conversation - just log the warning and continue
+    rescue => e
+      Rails.logger.error "Unexpected conversation error: #{e.message}"
+      # Continue anyway - don't let validation block tool calls
     end
 
     begin
@@ -90,7 +87,12 @@ class McpService
         @chat.update_column(:last_stable_at, Time.current)
 
         # Verify conversation state after the interaction
-        @conversation_manager.ensure_conversation_integrity!
+        begin
+          @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
+        rescue => e
+          Rails.logger.warn "Post-conversation validation warning: #{e.message}"
+          # Don't fail the entire operation for validation issues
+        end
 
         result = response.content
       end

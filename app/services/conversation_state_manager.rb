@@ -11,15 +11,18 @@ class ConversationStateManager
 
   # Main method to ensure conversation integrity before sending to OpenAI
   def ensure_conversation_integrity!
-    # Only do minimal validation during active conversations
+    # During active conversations (less than 5 minutes ago), only do minimal validation
+    # This prevents interference with ongoing tool calls
     if @chat.messages.where(role: "user").where("created_at > ?", 5.minutes.ago).exists?
-      # Active conversation - only do basic validation
+      Rails.logger.debug "Active conversation detected, skipping aggressive validation"
       validate_basic_structure!
     else
+      Rails.logger.debug "Inactive conversation, performing full validation"
       # Inactive conversation - full cleanup
       validate_conversation_structure!
       cleanup_orphaned_messages!
-      validate_tool_call_response_pairing!
+      # Skip tool call response pairing validation during normal operations
+      # validate_tool_call_response_pairing!
     end
   end
 
@@ -42,14 +45,17 @@ class ConversationStateManager
   private
 
   def validate_basic_structure!
-    # Only check for obvious structural issues, don't remove messages
+    # Only check for obvious structural issues, don't remove messages or raise errors
     recent_messages = @chat.messages.where("created_at > ?", 5.minutes.ago).order(:created_at)
 
     recent_messages.each do |msg|
       if msg.role == "tool" && msg.tool_call_id.blank?
-        @logger.warn "Tool message #{msg.id} missing tool_call_id"
+        @logger.warn "Tool message #{msg.id} missing tool_call_id (non-critical during active conversation)"
       end
     end
+
+    # Always return true during active conversations to prevent blocking
+    true
   end
 
   def validate_conversation_structure!

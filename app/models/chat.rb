@@ -132,36 +132,28 @@ class Chat < ApplicationRecord
 
   # Override RubyLLM's ask method to ensure conversation integrity
   def ask(message_content, **options)
-    # Store tool call mapping before making API call
     pre_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
 
     begin
       response = super(message_content, **options)
 
-      # After API call, verify tool call/response pairing (but don't fail)
       post_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
       new_tool_ids = post_call_tool_ids - pre_call_tool_ids
 
-      # Ensure tool responses have correct tool_call_ids
       if new_tool_ids.any?
         begin
           validate_new_tool_responses(new_tool_ids)
         rescue => e
           Rails.logger.warn "Tool validation error (non-critical): #{e.message}"
-          # Don't fail the conversation for validation errors
         end
       end
 
       response
     rescue ConversationStateManager::ConversationError => e
       Rails.logger.warn "Conversation integrity issue: #{e.message}"
-      # Don't cleanup aggressively during active conversation
       response = super(message_content, **options)
     rescue => e
       Rails.logger.error "Error in Chat#ask: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
-
-      # Re-raise the error to be handled by the calling service
       raise e
     end
   end
@@ -190,21 +182,17 @@ class Chat < ApplicationRecord
     Rails.logger.debug "Validating new tool responses for tool_call_ids: #{new_tool_ids.to_a}"
 
     new_tool_ids.each do |tool_call_id|
-      # Find the tool response message for this tool call
       tool_response = messages.find_by(role: "tool", tool_call_id: tool_call_id)
 
       if tool_response.nil?
         Rails.logger.warn "Missing tool response for tool_call_id: #{tool_call_id}"
-        # Don't raise an error during active conversation - just log it
         next
       end
 
-      # Validate the tool response has the correct structure
       if tool_response.tool_call_id.blank?
         Rails.logger.warn "Tool response #{tool_response.id} missing tool_call_id"
       end
 
-      # Find the corresponding tool call
       tool_call = tool_calls.find_by(tool_call_id: tool_call_id)
       if tool_call.nil?
         Rails.logger.warn "Tool response #{tool_response.id} has no corresponding tool call"
@@ -214,7 +202,6 @@ class Chat < ApplicationRecord
     true
   rescue => e
     Rails.logger.error "Error validating tool responses: #{e.message}"
-    # Don't fail the conversation for validation errors
     true
   end
 end

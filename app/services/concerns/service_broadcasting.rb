@@ -79,35 +79,17 @@ module ServiceBroadcasting
 
     affected_users.uniq.each do |user|
       begin
-        # For newly created lists, use a more reliable approach
-        if list.created_at > 1.minute.ago
-          # Only broadcast if the list exists and is accessible
-          if user.accessible_lists.exists?(list.id)
-            # Use prepend instead of replace to add the new list at the top
-            Turbo::StreamsChannel.broadcast_prepend_to(
-              "user_lists_#{user.id}",
-              target: "lists-container",
-              partial: "lists/list_card",
-              locals: { list: list }
-            )
-          end
-        else
-          # For existing lists, do a full refresh of the lists container
-          user_lists = user.accessible_lists.order(updated_at: :desc)
+        user_lists = user.accessible_lists.order(updated_at: :desc)
 
-          # Only broadcast if the user is currently on the lists page
-          # We can check this by looking for the stream identifier in active connections
-          Turbo::StreamsChannel.broadcast_replace_to(
-            "user_lists_#{user.id}",
-            target: "lists-grid-only", # Target the inner grid, not the entire container
-            partial: "lists/lists_grid",
-            locals: { lists: user_lists }
-          )
-        end
+        Turbo::StreamsChannel.broadcast_replace_to(
+          "user_lists_#{user.id}",
+          target: "lists-container",
+          partial: "lists/lists_grid",
+          locals: { lists: user_lists }
+        )
+
       rescue => e
-        # Log error but don't fail the entire operation
         Rails.logger.error "Failed to broadcast lists index update for user #{user.id}: #{e.message}"
-        Rails.logger.error e.backtrace.join("\n")
       end
     end
   end
