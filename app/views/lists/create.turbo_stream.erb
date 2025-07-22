@@ -1,22 +1,5 @@
 <!-- app/views/lists/create.turbo_stream.erb -->
-<!-- Always update lists and dashboard content (these will just do nothing if elements don't exist) -->
-<!-- Add new list to lists index if present -->
-<%= turbo_stream.prepend "lists-container" do %>
-  <%= render "lists/list_card", list: @list %>
-<% end %>
-<!-- Update dashboard stats if present -->
-<% dashboard_data = dashboard_data_for_user(current_user) %>
-<%= turbo_stream.replace "dashboard-stats" do %>
-  <%= render "dashboard/stats_overview", stats: dashboard_data[:stats] %>
-<% end %>
-<!-- Update my lists section on dashboard if present -->
-<%= turbo_stream.replace "dashboard-my-lists" do %>
-  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists] %>
-<% end %>
-<!-- Update recent activity on dashboard if present -->
-<%= turbo_stream.replace "dashboard-recent-activity" do %>
-  <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
-<% end %>
+<!-- SIMPLIFIED VERSION - Let the service handle all dashboard/lists updates to prevent duplicates -->
 <!-- Close any modals -->
 <%= turbo_stream.update "modal" do %>
 <% end %>
@@ -44,3 +27,9 @@
     </div>
   </div>
 <% end %>
+<!-- 
+NOTE: We removed the manual dashboard and lists updates because:
+1. The ListCreationService with ServiceBroadcasting already handles these updates
+2. Having both causes duplicate lists to appear
+3. The service broadcasts are more reliable and consistent across the app
+-->

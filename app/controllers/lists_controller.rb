@@ -124,7 +124,10 @@ class ListsController < ApplicationController
       @list = result.data
       respond_to do |format|
         format.html { redirect_to lists_path, notice: "List was successfully created." }
-        format.turbo_stream { render :create }
+        format.turbo_stream {
+          # Don't trigger additional broadcasts here since service already handled it
+          render :create
+        }
       end
     else
       @list = service.list # Get the unsaved list with errors for form redisplay

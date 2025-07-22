@@ -97,6 +97,8 @@ class ListManagementTool < RubyLLM::Tool
       description = generate_planning_description(title, planning_context)
     end
 
+    Rails.logger.info "Creating planning list: #{title} with context: #{planning_context}"
+
     service = ListCreationService.new(@user)
     result = service.create_planning_list(
       title: title,
@@ -104,11 +106,22 @@ class ListManagementTool < RubyLLM::Tool
       planning_context: planning_context
     )
 
+    # Check if result is nil (service failed to return result)
+    if result.nil?
+      Rails.logger.error "ListCreationService returned nil result"
+      return { error: "Failed to create planning list - service returned no result" }
+    end
+
     if result.success?
       list = result.data
+      # Reload to ensure we have the latest count
+      list.reload
       items_count = list.list_items.count
 
-      {
+      Rails.logger.info "Successfully created planning list #{list.id} with #{items_count} items"
+
+      # Prepare detailed response with all created items
+      response = {
         success: true,
         message: "Created planning list '#{list.title}' with #{items_count} initial items",
         list: {
@@ -116,21 +129,36 @@ class ListManagementTool < RubyLLM::Tool
           title: list.title,
           description: list.description,
           status: list.status,
-          items_count: items_count
-        },
-        items: list.list_items.map do |item|
+          items_count: items_count,
+          created_at: list.created_at,
+          updated_at: list.updated_at
+        }
+      }
+
+      # Include detailed items information if items were created
+      if items_count > 0
+        response[:items] = list.list_items.order(:position).map do |item|
           {
             id: item.id,
             title: item.title,
             description: item.description,
             type: item.item_type,
-            priority: item.priority
+            priority: item.priority,
+            position: item.position,
+            completed: item.completed
           }
         end
-      }
+      end
+
+      response
     else
+      Rails.logger.error "Failed to create planning list: #{result.errors.join(', ')}"
       { error: result.errors.join(", ") }
     end
+  rescue => e
+    Rails.logger.error "Exception in create_planning_list: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    { error: "Failed to create planning list: #{e.message}" }
   end
 
   def add_item(list_id, title, description = nil)
@@ -175,11 +203,11 @@ class ListManagementTool < RubyLLM::Tool
       item = result.data
       {
         success: true,
-        message: "Completed item '#{item.title}'",
+        message: "Marked '#{item.title}' as completed",
         item: {
           id: item.id,
           title: item.title,
-          completed: true,
+          completed: item.completed,
           completed_at: item.completed_at
         }
       }
@@ -189,22 +217,20 @@ class ListManagementTool < RubyLLM::Tool
   end
 
   def get_lists
-    lists = @user.accessible_lists.includes(:list_items)
+    lists = @user.accessible_lists.order(updated_at: :desc).limit(20)
 
     {
       success: true,
       lists: lists.map do |list|
-        stats = calculate_list_stats(list)
         {
           id: list.id,
           title: list.title,
           description: list.description,
           status: list.status,
-          items_count: stats[:total],
-          completed_count: stats[:completed],
-          completion_percentage: stats[:percentage],
-          is_owner: list.user_id == @user.id,
-          can_edit: can_edit_list?(list)
+          items_count: list.list_items.count,
+          completed_items: list.list_items.where(completed: true).count,
+          is_owner: list.owner == @user,
+          updated_at: list.updated_at
         }
       end
     }
@@ -214,7 +240,7 @@ class ListManagementTool < RubyLLM::Tool
     return { error: "List ID is required" } if list_id.blank?
 
     list = find_accessible_list(list_id)
-    return { error: "List not found or you don't have access" } unless list
+    return { error: "List not found or you don't have permission to view it" } unless list
 
     items = list.list_items.order(:position, :created_at)
 
@@ -233,10 +259,10 @@ class ListManagementTool < RubyLLM::Tool
           item_type: item.item_type,
           priority: item.priority,
           completed: item.completed,
-          completed_at: item.completed_at,
           due_date: item.due_date,
           position: item.position,
-          assigned_user: item.assigned_user&.email
+          created_at: item.created_at,
+          updated_at: item.updated_at
         }
       end
     }
@@ -248,56 +274,40 @@ class ListManagementTool < RubyLLM::Tool
     @user.accessible_lists.find_by(id: list_id)
   end
 
-  def can_edit_list?(list)
-    return true if list.user_id == @user.id
-
-    collaboration = list.list_collaborations.find_by(user: @user)
-    collaboration&.permission_collaborate?
-  end
-
-  def calculate_list_stats(list)
-    total = list.list_items_count
-    completed = list.list_items.where(completed: true).count
-    percentage = total > 0 ? (completed.to_f / total * 100).round : 0
-
-    {
-      total: total,
-      completed: completed,
-      percentage: percentage
-    }
-  end
-
   def generate_auto_description(title)
-    case title.downcase
-    when /vacation|trip|travel/
-      "Plan and organize your upcoming travel experience"
-    when /project|work/
-      "Track progress and manage tasks for this project"
-    when /shopping|grocery|store/
-      "Keep track of items you need to purchase"
-    when /goals|resolution/
-      "Set and achieve your personal or professional goals"
-    when /meeting|agenda/
-      "Organize topics and action items for your meeting"
-    when /event|conference|convention/
-      "Plan and organize all aspects of this event"
-    else
-      "Organize and track items for #{title.downcase}"
-    end
+    context_hints = {
+      /grocery|shopping|store/i => "Keep track of items to buy during your shopping trip",
+      /vacation|travel|trip/i => "Plan and organize your travel experience",
+      /project|work|task/i => "Manage project tasks and deliverables",
+      /goals?|resolution/i => "Track progress toward your personal objectives",
+      /meeting|agenda/i => "Organize discussion points and action items",
+      /packing|move|moving/i => "Organize items for packing or moving",
+      /wedding|party|event/i => "Plan and coordinate your special event",
+      /learning|study|course/i => "Track your educational progress and materials",
+      /fitness|workout|exercise/i => "Monitor your health and fitness activities",
+      /budget|finance|money/i => "Manage your financial planning and expenses"
+    }
+
+    description = context_hints.find { |pattern, _| title.match?(pattern) }&.last
+    description || "A organized list to help you stay on track with your goals"
   end
 
   def generate_planning_description(title, context)
     case context&.downcase
-    when "vacation"
-      "Complete travel planning checklist for #{title}"
+    when "conference"
+      "Comprehensive planning checklist for organizing a successful conference event"
+    when "vacation", "travel"
+      "Complete travel planning guide to ensure a smooth and enjoyable trip"
     when "project"
-      "Project management and task tracking for #{title}"
+      "Structured project management approach to deliver successful outcomes"
     when "goals"
-      "Goal setting and milestone tracking for #{title}"
+      "Strategic goal-setting framework to achieve your personal objectives"
     when "shopping"
-      "Shopping list and purchase planning for #{title}"
-    when "event", "conference"
-      "Event planning and organization for #{title}"
+      "Organized shopping approach to stay on budget and get everything you need"
+    when "wedding"
+      "Complete wedding planning timeline to create your perfect day"
+    when "moving", "relocation"
+      "Comprehensive moving checklist to ensure a smooth transition"
     else
       generate_auto_description(title)
     end
