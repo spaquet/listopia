@@ -9,12 +9,10 @@
   </div>
   <!-- Filters and Search -->
   <%= render "lists/filters" %>
-  <!-- Lists Grid - Wrapped in Turbo Frame -->
-  <%= turbo_frame_tag "lists-grid-only" do %>
-    <div id="lists-container">
-      <%= render "lists/lists_grid", lists: @lists %>
-    </div>
-  <% end %>
+  <!-- Lists Grid - NO TURBO FRAME (so Turbo Streams can target it) -->
+  <div id="lists-container">
+    <%= render "lists/lists_grid", lists: @lists %>
+  </div>
 </div>
 <!-- Subscribe to real-time updates for this user's lists -->
 <%= turbo_stream_from "user_lists_#{current_user.id}" %>
