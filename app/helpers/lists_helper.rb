@@ -102,6 +102,7 @@ module ListsHelper
 
     actions << :edit if can_edit_list?(list, user)
     actions << :share if can_share_list?(list, user)
+    actions << :duplicate if can_view_list?(list, user)
     actions << :delete if can_delete_list?(list, user)
 
     actions
@@ -113,6 +114,12 @@ module ListsHelper
     return can_edit_list?(list, user) if permission == :edit
 
     # Default to view permission
+    can_view_list?(list, user)
+  end
+
+  # Duplicate list permission check
+  def can_duplicate_list?(list, user)
+    # Anyone who can view the list can duplicate it
     can_view_list?(list, user)
   end
 
