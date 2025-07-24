@@ -120,6 +120,37 @@ class ApplicationController < ActionController::Base
 
   private
 
+  def chat_context
+    @chat_context ||= build_chat_context
+  end
+  helper_method :chat_context
+
+  def build_chat_context
+    context = {
+      page: "#{controller_name}##{action_name}",
+      current_page: "#{controller_name}##{action_name}"
+    }
+
+    # Add list-specific context if we're on a list page
+    if defined?(@list) && @list.present?
+      context.merge!(
+        list_id: @list.id,
+        list_title: @list.title,
+        items_count: @list.list_items.count,
+        completed_count: @list.list_items.where(completed: true).count,
+        is_owner: @list.user_id == current_user&.id,
+        can_collaborate: @list.user_id == current_user&.id || @list.can_collaborate?(current_user)
+      )
+    end
+
+    # Add user's total lists count
+    if current_user.present?
+      context[:total_lists] = current_user.accessible_lists.count
+    end
+
+    context
+  end
+
   # Store location for redirect after authentication
   def store_location
     session[:stored_location] = request.fullpath if request.get? && !request.xhr?

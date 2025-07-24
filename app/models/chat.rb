@@ -1,37 +1,4 @@
 # app/models/chat.rb
-# == Schema Information
-#
-# Table name: chats
-#
-#  id              :uuid             not null, primary key
-#  context         :json
-#  last_message_at :datetime
-#  last_stable_at  :datetime
-#  metadata        :json
-#  status          :string           default("active")
-#  title           :string(255)
-#  created_at      :datetime         not null
-#  updated_at      :datetime         not null
-#  model_id        :string
-#  user_id         :uuid             not null
-#
-# Indexes
-#
-#  index_chats_on_last_message_at         (last_message_at)
-#  index_chats_on_last_stable_at          (last_stable_at)
-#  index_chats_on_model_id                (model_id)
-#  index_chats_on_user_id                 (user_id)
-#  index_chats_on_user_id_and_created_at  (user_id,created_at)
-#  index_chats_on_user_id_and_status      (user_id,status)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (user_id => users.id)
-#
-# app/models/chat.rb
-# app/models/chat.rb
-
-# Thiis file defines the Chat model for managing conversations with LLM
 class Chat < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_chat
@@ -43,11 +10,19 @@ class Chat < ApplicationRecord
   validates :user, presence: true
   validates :status, inclusion: { in: %w[active archived completed] }
 
+  # Define chat status with enum for better readability and management
   enum :status, {
     active: "active",
     archived: "archived",
     completed: "completed"
   }, prefix: true
+
+  # Define conversation states for integrity management
+  enum :conversation_state, {
+    stable: "stable",
+    needs_cleanup: "needs_cleanup",
+    error: "error"
+  }, prefix: true, default: "stable"
 
   scope :recent, -> { order(last_message_at: :desc, created_at: :desc) }
   scope :for_user, ->(user) { where(user: user) }
@@ -125,7 +100,11 @@ class Chat < ApplicationRecord
     orphaned_count = orphaned_tool_messages.count
     orphaned_tool_messages.each(&:destroy!)
 
-    Rails.logger.info "Cleaned up #{orphaned_count} orphaned tool messages from chat #{id}" if orphaned_count > 0
+    if orphaned_count > 0
+      Rails.logger.info "Cleaned up #{orphaned_count} orphaned tool messages from chat #{id}"
+      update_column(:last_cleanup_at, Time.current)
+      update_column(:conversation_state, "stable")
+    end
 
     orphaned_count
   end
@@ -135,6 +114,9 @@ class Chat < ApplicationRecord
     pre_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
 
     begin
+      # Clean conversation before making the API call
+      clean_conversation_for_api_call!
+
       response = super(message_content, **options)
 
       post_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
@@ -149,6 +131,20 @@ class Chat < ApplicationRecord
       end
 
       response
+    rescue RubyLLM::BadRequestError => e
+      # If it's a conversation structure error, clean up and try again
+      if conversation_structure_error?(e)
+        Rails.logger.warn "Conversation structure error detected, cleaning and retrying: #{e.message}"
+        update_column(:conversation_state, "needs_cleanup")  # ADD THIS LINE
+        cleanup_conversation_for_retry!
+
+        # Try one more time with cleaned conversation
+        response = super(message_content, **options)
+        update_column(:conversation_state, "stable")  # ADD THIS LINE
+        response
+      else
+        raise e
+      end
     rescue ConversationStateManager::ConversationError => e
       Rails.logger.warn "Conversation integrity issue: #{e.message}"
       response = super(message_content, **options)
@@ -177,31 +173,67 @@ class Chat < ApplicationRecord
     self.update_column(:last_message_at, Time.current) if messages.any?
   end
 
-  # Validate that new tool calls have proper corresponding tool responses
   def validate_new_tool_responses(new_tool_ids)
-    Rails.logger.debug "Validating new tool responses for tool_call_ids: #{new_tool_ids.to_a}"
-
+    # Validate that all new tool calls have corresponding responses
     new_tool_ids.each do |tool_call_id|
-      tool_response = messages.find_by(role: "tool", tool_call_id: tool_call_id)
-
-      if tool_response.nil?
-        Rails.logger.warn "Missing tool response for tool_call_id: #{tool_call_id}"
-        next
-      end
-
-      if tool_response.tool_call_id.blank?
-        Rails.logger.warn "Tool response #{tool_response.id} missing tool_call_id"
-      end
-
-      tool_call = tool_calls.find_by(tool_call_id: tool_call_id)
-      if tool_call.nil?
-        Rails.logger.warn "Tool response #{tool_response.id} has no corresponding tool call"
+      unless messages.exists?(role: "tool", tool_call_id: tool_call_id)
+        Rails.logger.warn "Tool call #{tool_call_id} missing response message"
       end
     end
+  end
 
-    true
-  rescue => e
-    Rails.logger.error "Error validating tool responses: #{e.message}"
-    true
+  def conversation_structure_error?(error)
+    error_patterns = [
+      /tool_calls.*must be followed by tool messages/i,
+      /tool_call_id.*did not have response messages/i,
+      /assistant message.*tool_calls.*must be followed/i,
+      /invalid.*parameter.*messages/i
+    ]
+
+    error_patterns.any? { |pattern| error.message.match?(pattern) }
+  end
+
+  def clean_conversation_for_api_call!
+    # Remove any incomplete tool call sequences before making API call
+    conversation_manager = ConversationStateManager.new(self)
+
+    begin
+      conversation_manager.ensure_conversation_integrity!
+    rescue ConversationStateManager::ConversationError => e
+      Rails.logger.warn "Cleaning conversation issues before API call: #{e.message}"
+      cleanup_orphaned_messages!
+    end
+  end
+
+  def cleanup_conversation_for_retry!
+    Rails.logger.info "Cleaning up conversation for retry on chat #{id}"
+
+    # Remove orphaned tool messages
+    cleanup_orphaned_messages!
+
+    # Remove assistant messages with tool calls that don't have responses
+    assistant_messages_with_orphaned_calls = messages.where(role: "assistant")
+                                                    .includes(:tool_calls)
+                                                    .select do |msg|
+      msg.tool_calls.any? && !all_tool_calls_have_responses?(msg)
+    end
+
+    if assistant_messages_with_orphaned_calls.any?
+      Rails.logger.warn "Removing #{assistant_messages_with_orphaned_calls.count} assistant messages with orphaned tool calls"
+      assistant_messages_with_orphaned_calls.each(&:destroy!)
+    end
+
+    # Mark conversation as cleaned
+    update_column(:last_stable_at, Time.current)
+    update_column(:conversation_state, "stable")
+  end
+
+  def all_tool_calls_have_responses?(assistant_message)
+    tool_call_ids = assistant_message.tool_calls.pluck(:tool_call_id)
+    return true if tool_call_ids.empty?
+
+    tool_call_ids.all? do |tool_call_id|
+      messages.exists?(role: "tool", tool_call_id: tool_call_id)
+    end
   end
 end

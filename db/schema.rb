@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -64,6 +64,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.datetime "last_stable_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "conversation_state", default: "stable"
+    t.datetime "last_cleanup_at"
+    t.index ["conversation_state"], name: "index_chats_on_conversation_state"
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
     t.index ["last_stable_at"], name: "index_chats_on_last_stable_at"
     t.index ["model_id"], name: "index_chats_on_model_id"
@@ -218,6 +221,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_182418) do
     t.index ["chat_id", "created_at"], name: "index_messages_on_chat_id_and_created_at"
     t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
     t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
+    t.index ["chat_id", "tool_call_id"], name: "index_messages_on_chat_and_tool_call_id", where: "(tool_call_id IS NOT NULL)"
     t.index ["chat_id"], name: "index_messages_on_chat_id"
     t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
     t.index ["message_type"], name: "index_messages_on_message_type"

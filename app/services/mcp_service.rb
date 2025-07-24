@@ -135,15 +135,20 @@ class McpService
   def handle_api_error(error, message_content)
     Rails.logger.error "OpenAI API Error: #{error.message}"
 
-    # Check if it's the specific tool/conversation error
-    if error.message.include?("messages with role 'tool' must be a response to a preceeding message with 'tool_calls'")
-      Rails.logger.warn "Detected tool conversation structure error, attempting recovery"
+    # Check for the specific tool call mismatch error
+    if error.message.include?("tool_calls") && error.message.include?("must be followed by tool messages")
+      Rails.logger.warn "Detected tool call/response mismatch error, attempting recovery"
       return retry_with_fresh_chat(message_content)
     end
 
-    # Check if it's an invalid parameter error related to conversation structure
+    # Check for invalid parameter errors related to conversation structure
     if error.message.include?("Invalid parameter") && error.message.include?("messages")
       Rails.logger.warn "Detected conversation parameter error, attempting recovery"
+      return retry_with_fresh_chat(message_content)
+    end
+
+    # Check for other conversation structure issues
+    if conversation_related_error?(error)
       return retry_with_fresh_chat(message_content)
     end
 
@@ -153,9 +158,11 @@ class McpService
   def conversation_related_error?(error)
     error_patterns = [
       /tool.*must be.*response.*tool_calls/i,
+      /tool_call_id.*did not have response messages/i,
       /invalid.*parameter.*messages/i,
       /malformed.*conversation/i,
-      /tool_call.*missing/i
+      /tool_call.*missing/i,
+      /assistant message.*tool_calls.*must be followed/i
     ]
 
     error_patterns.any? { |pattern| error.message.match?(pattern) }
@@ -175,7 +182,11 @@ class McpService
     Rails.logger.info "Retrying with fresh chat for user #{@user.id}"
 
     # Archive the problematic chat
-    @chat.update!(status: "archived", title: "#{@chat.title} (Archived - Conversation Error)")
+    original_title = @chat.title
+    @chat.update!(
+      status: "archived",
+      title: "#{original_title} (Archived - Conversation Error at #{Time.current.strftime('%H:%M')})"
+    )
 
     # Create a fresh chat
     @chat = create_fresh_chat!
@@ -214,6 +225,7 @@ class McpService
           raise e
         end
       end
+
       response.content
 
     rescue => e
@@ -248,7 +260,7 @@ class McpService
       - Vacation/Travel planning (flights, hotels, itinerary, packing)
       - Project management (tasks, milestones, deliverables)
       - Goal setting (objectives, steps, milestones)
-      - Event planning (weddings, parties, meetings)
+      - Event planning (weddings, parties, meetings, roadshows, conferences)
       - Shopping (grocery, retail, supplies)
       - Moving/Relocation (packing, utilities, address changes)
       - Job search (resume, applications, interviews)
@@ -270,6 +282,7 @@ class McpService
       - "Organize sprint for Q1" → Create "Q1 Sprint Planning" list with scope, tasks, milestones
       - "Need to quit smoking" → Create "Quit Smoking Plan" list with strategy steps, milestones, support items
       - "Planning wedding" → Create "Wedding Planning" list with venue, catering, invitations, etc.
+      - "Organize roadshow" → Create "Multi-City Roadshow Planning" list with venue, logistics, marketing items
 
       🚀 PROACTIVE PLANNING:
       - Don't wait for the user to say "create a list"

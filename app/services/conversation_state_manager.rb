@@ -26,7 +26,6 @@ class ConversationStateManager
     end
   end
 
-
   # Get a clean conversation history safe for OpenAI API
   def clean_conversation_history
     ensure_conversation_integrity!
@@ -92,7 +91,11 @@ class ConversationStateManager
 
     if orphaned_assistant_messages.any?
       @logger.warn "Found #{orphaned_assistant_messages.count} assistant messages with tool calls but no responses"
-      # Don't auto-delete these, but log them for investigation
+      # Instead of keeping these, clean them up to prevent the exact error we're seeing
+      orphaned_assistant_messages.each do |msg|
+        @logger.warn "Removing assistant message #{msg.id} with orphaned tool calls"
+        msg.destroy!
+      end
     end
   end
 
