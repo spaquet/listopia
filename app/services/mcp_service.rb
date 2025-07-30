@@ -16,6 +16,21 @@ class McpService
     @chat = chat || user.current_chat
     @tools = McpTools.new(user, context)
     @conversation_manager = ConversationStateManager.new(@chat)
+
+    # NEW: Add enhanced services only if error recovery is enabled AND chat exists
+    if Rails.application.config.mcp.error_recovery&.enabled && @chat
+      begin
+        @chat_state_manager = ChatStateManager.new(@chat)
+        @resilient_llm = ResilientRubyLlmService.new
+        @error_recovery = ErrorRecoveryService.new(user: @user, chat: @chat, context: @context)
+      rescue => e
+        Rails.logger.error "Failed to initialize enhanced error recovery services: #{e.message}"
+        # Fall back to basic services
+        @chat_state_manager = nil
+        @resilient_llm = nil
+        @error_recovery = nil
+      end
+    end
   end
 
   def process_message(message_content)
@@ -24,113 +39,194 @@ class McpService
     # Ensure user is authenticated
     raise AuthorizationError, "User must be authenticated" unless @user
 
-    # Check rate limits
+    # Check rate limits using existing rate limiter
     rate_limiter = McpRateLimiter.new(@user)
     rate_limiter.check_rate_limit!
 
-    # Validate message length
+    # Validate message length using existing config
     if message_content.length > Rails.application.config.mcp.max_message_length
       raise ValidationError, "Message is too long (max #{Rails.application.config.mcp.max_message_length} characters)"
     end
 
-    # Ensure conversation integrity BEFORE making API call
     begin
-      @conversation_manager.ensure_conversation_integrity!
-    rescue ConversationStateManager::ConversationError => e
-      Rails.logger.warn "Conversation state warning (non-blocking): #{e.message}"
-      # Don't block the conversation - just log the warning and continue
-    rescue => e
-      Rails.logger.error "Unexpected conversation error: #{e.message}"
-      # Continue anyway - don't let validation block tool calls
-    end
+      # NEW: Enhanced error recovery if enabled
+      if @chat_state_manager && Rails.application.config.mcp.state_management&.auto_checkpoint
+        # Create checkpoint before processing
+        checkpoint_name = @chat_state_manager.create_checkpoint!("pre_message_#{Time.current.to_i}")
 
-    begin
-      # Use a transaction to ensure atomicity
-      result = nil
+        # Validate and heal state proactively
+        health_result = @chat_state_manager.validate_and_heal_state!
 
-      ActiveRecord::Base.transaction do
-        # Set the model for this interaction if not already set
-        model = Rails.application.config.mcp.model
-        @chat.update!(model_id: model) if @chat.model_id.blank?
-
-        # Add system instructions if context requires it
-        if needs_system_instructions?
-          @chat.with_instructions(build_system_instructions, replace: true)
+        case health_result[:status]
+        when :recovery_branch_created
+          # Switch to recovery branch if needed
+          @chat = health_result[:recovery_chat]
+          @chat_state_manager = ChatStateManager.new(@chat)
+          @error_recovery = ErrorRecoveryService.new(user: @user, chat: @chat, context: @context)
         end
-
-        # Configure tools if available
-        if @tools.available_tools.any?
-          @tools.available_tools.each do |tool|
-            @chat.with_tool(tool)
-          end
-        end
-
-        # Use RubyLLM's ask method which handles the full conversation flow
+      else
+        # Fallback to existing conversation integrity check
         begin
-          response = @chat.ask(message_content)
-        rescue PG::UniqueViolation => e
-          if e.message.include?("list_id_and_position")
-            retry_count = (@retry_count ||= 0) + 1
-            if retry_count <= 2
-              @retry_count = retry_count
-              sleep(0.1)
-              retry
-            else
-              raise StandardError, "Unable to add item due to position conflict after multiple retries"
-            end
-          else
-            raise e
-          end
-        end
-
-        # After successful processing, mark the conversation as stable
-        @chat.update_column(:last_stable_at, Time.current)
-
-        # Verify conversation state after the interaction
-        begin
-          @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
+          @conversation_manager.ensure_conversation_integrity!
+        rescue ConversationStateManager::ConversationError => e
+          Rails.logger.warn "Conversation state warning (non-blocking): #{e.message}"
         rescue => e
-          Rails.logger.warn "Post-conversation validation warning: #{e.message}"
-          # Don't fail the entire operation for validation issues
+          Rails.logger.error "Unexpected conversation error: #{e.message}"
         end
-
-        result = response.content
       end
+
+      # Process message with enhanced resilience if available, otherwise use existing method
+      result = if @resilient_llm
+        process_with_resilient_llm(message_content)
+      else
+        process_with_standard_llm(message_content)
+      end
+
+      # Mark successful processing
+      @chat.update_columns(
+        last_stable_at: Time.current,
+        conversation_state: "stable"
+      )
 
       # Increment rate limit counters after successful processing
       rate_limiter.increment_counters!
 
-      result
+      result.respond_to?(:content) ? result.content : result
 
-    rescue RubyLLM::BadRequestError => e
-      handle_api_error(e, message_content)
-    rescue RubyLLM::Error => e
-      Rails.logger.error "RubyLLM Error: #{e.message}"
+    rescue McpRateLimiter::RateLimitError => e
+      e.message
+    rescue ValidationError => e
+      e.message
+    rescue => e
+      Rails.logger.error "MCP Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
+      # NEW: Use error recovery service if available
+      if @error_recovery
+        recovery_result = @error_recovery.recover_from_error(e, original_message: message_content)
+
+        if recovery_result[:recoverable] && recovery_result[:new_chat]
+          # Switch to new chat and retry
+          @chat = recovery_result[:new_chat]
+          process_message(message_content)
+        elsif recovery_result[:recoverable] && recovery_result[:retry_message]
+          # Retry with same chat after healing
+          process_message(recovery_result[:retry_message])
+        else
+          # Return user-friendly error message
+          recovery_result[:user_message] || "I apologize, but I encountered an error processing your request. Please try again."
+        end
+      else
+        # Fallback to existing error handling
+        handle_standard_error(e, message_content)
+      end
+    end
+  end
+
+  private
+
+  def process_with_resilient_llm(message_content)
+    # Set the model using existing config
+    model = Rails.application.config.mcp.model
+    @chat.update!(model_id: model) if @chat.model_id.blank?
+
+    # Add system instructions if context requires it
+    if needs_system_instructions?
+      @chat.with_instructions(build_system_instructions, replace: true)
+    end
+
+    # Configure tools if available
+    if @tools.available_tools.any?
+      @tools.available_tools.each do |tool|
+        @chat.with_tool(tool)
+      end
+    end
+
+    # Use resilient LLM service
+    @resilient_llm.resilient_ask(@chat, message_content)
+  end
+
+  def process_with_standard_llm(message_content)
+    # Your existing process_message logic from the transaction block
+    result = nil
+
+    ActiveRecord::Base.transaction do
+      # Set the model for this interaction if not already set
+      model = Rails.application.config.mcp.model
+      @chat.update!(model_id: model) if @chat.model_id.blank?
+
+      # Add system instructions if context requires it
+      if needs_system_instructions?
+        @chat.with_instructions(build_system_instructions, replace: true)
+      end
+
+      # Configure tools if available
+      if @tools.available_tools.any?
+        @tools.available_tools.each do |tool|
+          @chat.with_tool(tool)
+        end
+      end
+
+      # Use RubyLLM's ask method which handles the full conversation flow
+      begin
+        response = @chat.ask(message_content)
+      rescue PG::UniqueViolation => e
+        if e.message.include?("list_id_and_position")
+          retry_count = (@retry_count ||= 0) + 1
+          if retry_count <= 2
+            @retry_count = retry_count
+            sleep(0.1)
+            retry
+          else
+            raise StandardError, "Unable to add item due to position conflict after multiple retries"
+          end
+        else
+          raise e
+        end
+      end
+
+      # After successful processing, mark the conversation as stable
+      @chat.update_column(:last_stable_at, Time.current)
+
+      # Verify conversation state after the interaction
+      begin
+        @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
+      rescue => e
+        Rails.logger.warn "Post-conversation validation warning: #{e.message}"
+        # Don't fail the entire operation for validation issues
+      end
+
+      result = response.content
+    end
+
+    result
+  end
+
+  def handle_standard_error(error, message_content)
+    # Your existing error handling logic as fallback
+    case error
+    when RubyLLM::BadRequestError
+      handle_api_error(error, message_content)
+    when RubyLLM::Error
+      Rails.logger.error "RubyLLM Error: #{error.message}"
+      Rails.logger.error error.backtrace.join("\n")
+
       # If it's a conversation-related error, try with a fresh chat
-      if conversation_related_error?(e)
+      if conversation_related_error?(error)
         return retry_with_fresh_chat(message_content)
       end
 
       "I apologize, but I encountered an error processing your request. Please try again."
-    rescue ConversationStateError => e
-      Rails.logger.error "Conversation state error: #{e.message}"
+    when ConversationStateError
+      Rails.logger.error "Conversation state error: #{error.message}"
       retry_with_fresh_chat(message_content)
+    else
+      Rails.logger.error "MCP Error: #{error.message}"
+      Rails.logger.error error.backtrace.join("\n")
+
+      "I apologize, but I encountered an error processing your request. Please try again."
     end
-
-  rescue McpRateLimiter::RateLimitError => e
-    e.message
-  rescue ValidationError => e
-    e.message
-  rescue => e
-    Rails.logger.error "MCP Error: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-
-    "I apologize, but I encountered an error processing your request. Please try again."
   end
-
-  private
 
   def handle_api_error(error, message_content)
     Rails.logger.error "OpenAI API Error: #{error.message}"
@@ -154,6 +250,20 @@ class McpService
 
     "I apologize, but there was an issue with the conversation format. I've started a fresh conversation to resolve this."
   end
+
+  def conversation_related_error?(error)
+    error_patterns = [
+      /tool.*must be.*response.*tool_calls/i,
+      /tool_call_id.*did not have response messages/i,
+      /invalid.*parameter.*messages/i,
+      /malformed.*conversation/i,
+      /tool_call.*missing/i,
+      /assistant message.*tool_calls.*must be followed/i
+    ]
+
+    error_patterns.any? { |pattern| error.message.match?(pattern) }
+  end
+
 
   def conversation_related_error?(error)
     error_patterns = [
@@ -273,38 +383,22 @@ class McpService
       📋 AUTOMATIC LIST CREATION RULES:
       1. When user mentions planning ANYTHING, create a list immediately using create_planning_list
       2. Always include a descriptive title and helpful description
-      3. Auto-generate relevant planning items based on the context
-      4. Use appropriate item types (task, goal, milestone, reminder)
-      5. Set reasonable priorities (high for critical items, medium for important, low for nice-to-have)
+      3. Add 5-10 relevant items to get them started
+      4. Include helpful details, priorities, and assignments where appropriate
+      5. Ask if they want to add more items or modify the list
 
-      💡 EXAMPLES:
-      - "Plan vacation to Argentina" → Create "Argentina Vacation Planning" list with flights, hotels, itinerary items
-      - "Organize sprint for Q1" → Create "Q1 Sprint Planning" list with scope, tasks, milestones
-      - "Need to quit smoking" → Create "Quit Smoking Plan" list with strategy steps, milestones, support items
-      - "Planning wedding" → Create "Wedding Planning" list with venue, catering, invitations, etc.
-      - "Organize roadshow" → Create "Multi-City Roadshow Planning" list with venue, logistics, marketing items
-
-      🚀 PROACTIVE PLANNING:
-      - Don't wait for the user to say "create a list"
-      - Recognize planning intent and act immediately
-      - Suggest additional items that might be helpful
-      - Ask follow-up questions to enhance the plan
+      Example: If user says "I'm planning a trip to Japan", immediately create a "Japan Trip Planning" list with items like flights, hotels, visa, itinerary, etc.
     PLANNING
 
     if @context.present?
-      instructions << "Current context: #{build_context_message}"
-    end
-
-    if @tools.available_tools.any?
-      instructions << "You have access to tools that can help you:"
-      @tools.available_tools.each do |tool|
-        instructions << "- #{tool.class.name}: #{tool.class.description}"
+      if @context[:current_page]
+        instructions << "Current page context: #{@context[:current_page]}"
       end
-      instructions << "Use these tools proactively when appropriate to help the user accomplish their goals."
-    end
 
-    instructions << "Always be helpful, accurate, and respect user permissions."
-    instructions << "Remember: When in doubt about whether something involves planning, CREATE A LIST!"
+      if @context[:selected_items]
+        instructions << "User has selected items: #{@context[:selected_items].join(', ')}"
+      end
+    end
 
     instructions.join("\n\n")
   end

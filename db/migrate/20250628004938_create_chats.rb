@@ -10,7 +10,7 @@ class CreateChats < ActiveRecord::Migration[8.0]
       t.json :metadata, default: {}
       # Add model_id for RubyLLM integration
       t.string :model_id
-      t.datetime:last_stable_at
+      t.datetime :last_stable_at
 
       t.timestamps
     end

@@ -70,10 +70,10 @@ class ListItemService
 
       Result.success(item)
     else
-      Result.failure(@errors.presence || ["Failed to create item"])
+      Result.failure(@errors.presence || [ "Failed to create item" ])
     end
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 

@@ -49,8 +49,8 @@ class ListCreationService
           item_result = items_service.create_item(
             title: item_data[:title],
             description: item_data[:description],
-            item_type: item_data[:type] || 'task',
-            priority: item_data[:priority] || 'medium',
+            item_type: item_data[:type] || "task",
+            priority: item_data[:priority] || "medium",
             position: index,
             due_date: item_data[:due_date],
             url: item_data[:url],
@@ -69,7 +69,7 @@ class ListCreationService
       Result.success(@list)
     end
   rescue => e
-    @errors = [e.message]
+    @errors = [ e.message ]
     Result.failure(@errors)
   end
 

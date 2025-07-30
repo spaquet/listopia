@@ -360,4 +360,151 @@ export default class extends Controller {
   get hasActiveError() {
     return this.lastError !== null
   }
+
+  // Enhanced error handling for conversation recovery
+handleConversationRecovery(event) {
+  const { originalChatId, newChatId, reason } = event.detail
+  
+  this.showError({
+    type: 'conversation_recovery',
+    title: 'Conversation Recovered',
+    message: `Started a fresh conversation to resolve ${reason}. Your previous conversation has been safely archived.`,
+    actions: ['dismiss'],
+    severity: 'info',
+    autoHide: true,
+    autoHideDelay: 8000
+  })
+  
+  // Update chat context if needed
+  this.storeContext({
+    previousChatId: originalChatId,
+    currentChatId: newChatId,
+    recoveryReason: reason,
+    recoveryTime: new Date().toISOString()
+  })
+  
+  // Dispatch event for other controllers to handle chat switch
+  const chatSwitchEvent = new CustomEvent('chat:switched', {
+    detail: { 
+      oldChatId: originalChatId, 
+      newChatId: newChatId,
+      reason: 'recovery'
+    },
+    bubbles: true
+  })
+  this.element.dispatchEvent(chatSwitchEvent)
+}
+
+// Handle checkpoint restoration notifications
+handleCheckpointRestored(event) {
+  const { checkpointName, actionsRestored } = event.detail
+  
+  this.showSuccess({
+    title: 'Conversation Restored',
+    message: `Restored conversation from checkpoint "${checkpointName}". ${actionsRestored} actions were recovered.`,
+    autoHide: true,
+    autoHideDelay: 6000
+  })
+}
+
+// Handle circuit breaker status changes
+handleCircuitBreakerOpen(event) {
+  const { nextAttemptTime } = event.detail
+  const waitMinutes = Math.ceil((new Date(nextAttemptTime) - new Date()) / 60000)
+  
+  this.showError({
+    type: 'circuit_breaker',
+    title: 'Service Temporarily Unavailable',
+    message: `The service is experiencing issues and has been temporarily disabled. Please try again in ${waitMinutes} minute(s).`,
+    actions: ['dismiss'],
+    severity: 'warning',
+    persistent: true
+  })
+}
+
+// Enhanced retry with exponential backoff visualization
+scheduleEnhancedRetry(config, attempt = 1) {
+  const delay = this.calculateBackoffDelay(attempt)
+  
+  // Show countdown timer for longer delays
+  if (delay > 5000) {
+    this.showRetryCountdown(delay)
+  }
+  
+  setTimeout(() => {
+    if (this.lastError === config) {
+      this.retryWithExponentialBackoff(attempt)
+    }
+  }, delay)
+}
+
+calculateBackoffDelay(attempt) {
+  const baseDelay = 1000 // 1 second
+  const maxDelay = 30000 // 30 seconds
+  const exponentialDelay = baseDelay * Math.pow(2, attempt - 1)
+  const jitter = Math.random() * 0.3 + 0.85 // 85-115% of calculated delay
+  
+  return Math.min(exponentialDelay * jitter, maxDelay)
+}
+
+showRetryCountdown(totalDelay) {
+  if (!this.hasNotificationTarget) return
+  
+  let remainingSeconds = Math.ceil(totalDelay / 1000)
+  
+  const updateCountdown = () => {
+    if (remainingSeconds <= 0) return
+    
+    const countdownElement = this.notificationTarget.querySelector('.retry-countdown')
+    if (countdownElement) {
+      countdownElement.textContent = `Retrying in ${remainingSeconds}s...`
+    }
+    
+    remainingSeconds--
+    if (remainingSeconds > 0) {
+      setTimeout(updateCountdown, 1000)
+    }
+  }
+  
+  updateCountdown()
+}
+
+// Add API health status monitoring
+monitorApiHealth() {
+  // Poll API health status every 30 seconds
+  setInterval(() => {
+    this.checkApiHealth()
+  }, 30000)
+}
+
+async checkApiHealth() {
+  try {
+    const response = await fetch('/admin/mcp_health/api_status', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    
+    if (response.ok) {
+      const healthData = await response.json()
+      this.updateApiHealthIndicator(healthData.api_health)
+    }
+  } catch (error) {
+    console.warn('Health check failed:', error)
+  }
+}
+
+updateApiHealthIndicator(healthStatus) {
+  const indicator = document.querySelector('[data-api-health-indicator]')
+  if (!indicator) return
+  
+  const isHealthy = healthStatus.api_health?.healthy !== false
+  
+  indicator.classList.toggle('api-healthy', isHealthy)
+  indicator.classList.toggle('api-unhealthy', !isHealthy)
+  
+  if (!isHealthy) {
+    indicator.title = 'API experiencing issues'
+  } else {
+    indicator.title = 'API is healthy'
+  }
+}
 }

@@ -1,4 +1,36 @@
 # app/models/chat.rb
+# == Schema Information
+#
+# Table name: chats
+#
+#  id                 :uuid             not null, primary key
+#  context            :json
+#  conversation_state :string           default("stable")
+#  last_cleanup_at    :datetime
+#  last_message_at    :datetime
+#  last_stable_at     :datetime
+#  metadata           :json
+#  status             :string           default("active")
+#  title              :string(255)
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  model_id           :string
+#  user_id            :uuid             not null
+#
+# Indexes
+#
+#  index_chats_on_conversation_state      (conversation_state)
+#  index_chats_on_last_message_at         (last_message_at)
+#  index_chats_on_last_stable_at          (last_stable_at)
+#  index_chats_on_model_id                (model_id)
+#  index_chats_on_user_id                 (user_id)
+#  index_chats_on_user_id_and_created_at  (user_id,created_at)
+#  index_chats_on_user_id_and_status      (user_id,status)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (user_id => users.id)
+#
 class Chat < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_chat
@@ -77,6 +109,16 @@ class Chat < ApplicationRecord
       orphaned_tool_messages: orphaned_tool_messages.count,
       has_issues: has_conversation_issues?
     }
+  end
+
+  def add_assistant_message(content, metadata: {})
+    messages.create!(
+      role: "assistant",
+      content: content,
+      message_type: "text",
+      metadata: metadata,
+      user: nil # Assistant messages don't have a user
+    )
   end
 
   def total_tokens

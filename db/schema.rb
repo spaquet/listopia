@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -97,6 +97,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
     t.datetime "updated_at", null: false
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
+  create_table "conversation_checkpoints", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "chat_id", null: false
+    t.string "checkpoint_name", null: false
+    t.integer "message_count", default: 0, null: false
+    t.integer "tool_calls_count", default: 0, null: false
+    t.string "conversation_state", default: "stable"
+    t.text "messages_snapshot"
+    t.text "context_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "checkpoint_name"], name: "index_conversation_checkpoints_on_chat_id_and_checkpoint_name", unique: true
+    t.index ["chat_id"], name: "index_conversation_checkpoints_on_chat_id"
+    t.index ["created_at"], name: "index_conversation_checkpoints_on_created_at"
   end
 
   create_table "currents", force: :cascade do |t|
@@ -275,6 +290,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
     t.index ["user_id"], name: "index_notification_settings_on_user_id"
   end
 
+  create_table "recovery_contexts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.uuid "chat_id", null: false
+    t.text "context_data"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id"], name: "index_recovery_contexts_on_chat_id"
+    t.index ["created_at"], name: "index_recovery_contexts_on_created_at"
+    t.index ["expires_at"], name: "index_recovery_contexts_on_expires_at"
+    t.index ["user_id", "chat_id"], name: "index_recovery_contexts_on_user_id_and_chat_id"
+    t.index ["user_id"], name: "index_recovery_contexts_on_user_id"
+  end
+
   create_table "relationships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "parent_type", null: false
     t.uuid "parent_id", null: false
@@ -401,6 +430,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
   add_foreign_key "chats", "users"
   add_foreign_key "collaborators", "users"
   add_foreign_key "comments", "users"
+  add_foreign_key "conversation_checkpoints", "chats"
   add_foreign_key "invitations", "users"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "board_columns"
@@ -410,6 +440,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_23_185557) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "users"
   add_foreign_key "notification_settings", "users"
+  add_foreign_key "recovery_contexts", "chats"
+  add_foreign_key "recovery_contexts", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tool_calls", "messages"

@@ -69,7 +69,7 @@ module ListsHelper
   # Check if user can edit a list (edit action)
   def can_edit_list?(list, user)
     permission = list_permission_for_user(list, user)
-    result = [:owner, :write, :public_write].include?(permission)
+    result = [ :owner, :write, :public_write ].include?(permission)
     Rails.logger.debug "can_edit_list? permission=#{permission}, result=#{result}"
     result
   end
@@ -77,7 +77,7 @@ module ListsHelper
   # Check if user can share a list (share action)
   def can_share_list?(list, user)
     permission = list_permission_for_user(list, user)
-    result = [:owner, :write].include?(permission)
+    result = [ :owner, :write ].include?(permission)
     Rails.logger.debug "can_share_list? permission=#{permission}, result=#{result}"
     result
   end
@@ -93,7 +93,7 @@ module ListsHelper
   # Check if user can view a list
   def can_view_list?(list, user)
     permission = list_permission_for_user(list, user)
-    [:owner, :write, :read, :public_write, :public_read].include?(permission)
+    [ :owner, :write, :read, :public_write, :public_read ].include?(permission)
   end
 
   # Helper to get available actions for current user
