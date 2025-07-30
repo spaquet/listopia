@@ -19,11 +19,17 @@ application.register("clipboard", ClipboardController)
 import CollaborationController from "./collaboration_controller"
 application.register("collaboration", CollaborationController)
 
+import ConnectionStatusController from "./connection_status_controller"
+application.register("connection-status", ConnectionStatusController)
+
 import CustomSelectController from "./custom_select_controller"
 application.register("custom-select", CustomSelectController)
 
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
+
+import ErrorHandlerController from "./error_handler_controller"
+application.register("error-handler", ErrorHandlerController)
 
 import FiltersController from "./filters_controller"
 application.register("filters", FiltersController)

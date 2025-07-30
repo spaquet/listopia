@@ -26,6 +26,7 @@ export default class extends Controller {
     this.restoreState();
     this.initializeWithRetry();
     this.logContextInfo();
+    this.setupErrorHandling();
   }
 
   initializeWithRetry() {
@@ -188,12 +189,14 @@ export default class extends Controller {
           Turbo.renderStreamMessage(responseText)
         }
       } else {
-        console.error('Response not ok:', response.status)
-        this.addErrorMessage("Sorry, I couldn't process your message. Please try again.")
+        // Handle HTTP errors
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+        this.handleError(error, { message, type: 'http_error' })
       }
     } catch (error) {
       console.error('Chat error:', error)
-      this.addErrorMessage("Connection error. Please check your internet and try again.")
+      // Handle network/fetch errors  
+      this.handleError(error, { message, type: 'network_error' })
     } finally {
       this.hideTypingIndicator()
       this.setInputState(true)
@@ -462,5 +465,67 @@ export default class extends Controller {
       return this.contextValue.suggestions;
     }
     return [];
+  }
+
+  setupErrorHandling() {
+  document.addEventListener('error-handler:retry', this.handleRetryRequest.bind(this))
+  document.addEventListener('connection:status-changed', this.handleConnectionChange.bind(this))
+}
+
+  handleError(error, context = {}) {
+    const errorEvent = new CustomEvent('chat:error', {
+      detail: {
+        error,
+        context: {
+          ...context,
+          chatId: this.userIdValue,
+          currentPage: this.currentPageValue,
+          timestamp: new Date().toISOString(),
+          originalMessage: context.message || context.originalMessage
+        },
+        retryable: this.isRetryableError(error)
+      },
+      bubbles: true
+    })
+    document.dispatchEvent(errorEvent)
+  }
+
+  isRetryableError(error) {
+    const retryableErrors = [
+      'NetworkError',
+      'AbortError', 
+      'TimeoutError',
+      'TypeError'
+    ]
+    
+    if (typeof error === 'string') {
+      return retryableErrors.some(type => error.includes(type))
+    }
+    
+    return retryableErrors.includes(error?.constructor?.name)
+  }
+
+  handleRetryRequest(event) {
+    const { originalMessage, context } = event.detail
+    
+    if (context.chatId === this.userIdValue && originalMessage) {
+      console.log('Retrying chat message:', originalMessage)
+      this.sendMessageWithText(originalMessage)
+    }
+  }
+
+  handleConnectionChange(event) {
+    const { status, isOnline } = event.detail
+    
+    // Update send button state based on connection
+    if (this.hasSendButtonTarget) {
+      if (!isOnline) {
+        this.sendButtonTarget.disabled = true
+        this.sendButtonTarget.title = 'Offline - Cannot send messages'
+      } else {
+        this.sendButtonTarget.disabled = false
+        this.sendButtonTarget.title = 'Send message'
+      }
+    }
   }
 }
