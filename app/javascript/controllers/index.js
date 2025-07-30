@@ -10,6 +10,9 @@ application.register("auto-save", AutoSaveController)
 import ChatController from "./chat_controller"
 application.register("chat", ChatController)
 
+import ChatKeyboardController from "./chat_keyboard_controller"
+application.register("chat-keyboard", ChatKeyboardController)
+
 import ClipboardController from "./clipboard_controller"
 application.register("clipboard", ClipboardController)
 

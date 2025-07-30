@@ -87,9 +87,9 @@ export default class extends Controller {
   }
 
   minimize() {
-    this.expandedValue = false;
-    this.updateDisplay();
-    this.saveState();
+    this.expandedValue = false
+    this.updateDisplay()
+    this.saveState()
   }
 
   handleKeydown(event) {
@@ -137,34 +137,40 @@ export default class extends Controller {
   }
 
   async sendMessage(event) {
-    event?.preventDefault();
+    event?.preventDefault()
     
-    const message = this.messageInputTarget.value.trim();
-    if (!message) return;
+    // Get message from either the event detail (keyboard shortcut) or the textarea directly
+    const message = event?.detail?.message || this.messageInputTarget.value.trim()
+    if (!message) return
 
-    if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot send message: messagesContainer target missing");
-      return;
-    }
+    await this.sendMessageWithText(message)
+    
+    // Clear the textarea and trigger events for other controllers
+    this.messageInputTarget.value = ""
+    this.messageInputTarget.dispatchEvent(new Event('input', { bubbles: true }))
+  }
 
-    this.setInputState(false);
-    this.addUserMessage(message);
-    this.messageInputTarget.value = "";
-    this.showTypingIndicator();
+  // New method to handle sending with specific text
+  async sendMessageWithText(message) {
+    if (!message || !this.hasMessagesContainerTarget) return
+
+    this.setInputState(false)
+    this.addUserMessage(message)
+    this.showTypingIndicator()
 
     try {
-      const formData = new FormData();
-      formData.append('message', message);
-      formData.append('current_page', this.currentPageValue);
+      const formData = new FormData()
+      formData.append('message', message)
+      formData.append('current_page', this.currentPageValue)
       
       if (this.contextValue) {
         Object.keys(this.contextValue).forEach(key => {
           if (typeof this.contextValue[key] === 'object') {
-            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]));
+            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]))
           } else {
-            formData.append(`context[${key}]`, this.contextValue[key]);
+            formData.append(`context[${key}]`, this.contextValue[key])
           }
-        });
+        })
       }
 
       const response = await fetch('/chat/messages', {
@@ -174,45 +180,57 @@ export default class extends Controller {
           'Accept': 'text/vnd.turbo-stream.html'
         },
         body: formData
-      });
+      })
 
       if (response.ok) {
-        const responseText = await response.text();
+        const responseText = await response.text()
         if (responseText.trim()) {
-          Turbo.renderStreamMessage(responseText);
+          Turbo.renderStreamMessage(responseText)
         }
       } else {
-        console.error('Response not ok:', response.status);
-        this.addErrorMessage("Sorry, I couldn't process your message. Please try again.");
+        console.error('Response not ok:', response.status)
+        this.addErrorMessage("Sorry, I couldn't process your message. Please try again.")
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      this.addErrorMessage("Connection error. Please check your internet and try again.");
+      console.error('Chat error:', error)
+      this.addErrorMessage("Connection error. Please check your internet and try again.")
     } finally {
-      this.hideTypingIndicator();
-      this.setInputState(true);
-      this.focusInput();
+      this.hideTypingIndicator()
+      this.setInputState(true)
+      this.focusInput()
     }
   }
 
   addUserMessage(message) {
     if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot add user message: messagesContainer target missing");
-      return;
+      console.warn("Cannot add user message: messagesContainer target missing")
+      return
     }
-    const messageElement = this.createMessageElement(message, 'user');
-    this.messagesContainerTarget.appendChild(messageElement);
-    this.scrollToBottom();
+    
+    const messageElement = this.createMessageElement(message, 'user')
+    
+    // Add timestamp data for threading
+    messageElement.dataset.timestamp = new Date().toISOString()
+    messageElement.dataset.messageType = 'user'
+    
+    this.messagesContainerTarget.appendChild(messageElement)
+    this.scrollToBottom()
   }
 
   addAssistantMessage(message) {
     if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot add assistant message: messagesContainer target missing");
-      return;
+      console.warn("Cannot add assistant message: messagesContainer target missing")
+      return
     }
-    const messageElement = this.createMessageElement(message, 'assistant');
-    this.messagesContainerTarget.appendChild(messageElement);
-    this.scrollToBottom();
+    
+    const messageElement = this.createMessageElement(message, 'assistant')
+    
+    // Add timestamp data for threading
+    messageElement.dataset.timestamp = new Date().toISOString()
+    messageElement.dataset.messageType = 'assistant'
+    
+    this.messagesContainerTarget.appendChild(messageElement)
+    this.scrollToBottom()
   }
 
   addErrorMessage(message) {
@@ -304,15 +322,17 @@ export default class extends Controller {
   }
 
   setInputState(enabled) {
-    if (!this.hasMessageInputTarget || !this.hasSendButtonTarget) return;
+    if (!this.hasMessageInputTarget || !this.hasSendButtonTarget) return
     
-    this.messageInputTarget.disabled = !enabled;
-    this.sendButtonTarget.disabled = !enabled;
+    this.messageInputTarget.disabled = !enabled
+    this.sendButtonTarget.disabled = !enabled
     
     if (enabled) {
-      this.sendButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed');
+      this.sendButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed')
+      this.messageInputTarget.classList.remove('opacity-50')
     } else {
-      this.sendButtonTarget.classList.add('opacity-50', 'cursor-not-allowed');
+      this.sendButtonTarget.classList.add('opacity-50', 'cursor-not-allowed')
+      this.messageInputTarget.classList.add('opacity-50')
     }
   }
 
@@ -353,11 +373,31 @@ export default class extends Controller {
   }
 
   scrollToBottom() {
-    if (!this.hasMessagesContainerTarget) return;
+    const scrollController = this.application.getControllerForElementAndIdentifier(
+      this.element.querySelector('[data-controller*="chat-scroll"]'),
+      'chat-scroll'
+    )
     
-    setTimeout(() => {
-      this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight;
-    }, 50);
+    if (scrollController) {
+      scrollController.autoScrollToBottom()
+    } else {
+      // Fallback to original implementation
+      if (!this.hasMessagesContainerTarget) return
+      setTimeout(() => {
+        this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight
+      }, 50)
+    }
+  }
+
+  // Handle scroll events from scroll controller
+  handleScroll(event) {
+    const { isNearBottom, direction } = event.detail
+    
+    // Show/hide notification dot based on scroll position
+    if (!this.expandedValue && direction === 'up' && !isNearBottom) {
+      // User scrolled up and away from bottom - they might have missed messages
+      this.showNotificationDot()
+    }
   }
 
   focusInput() {
