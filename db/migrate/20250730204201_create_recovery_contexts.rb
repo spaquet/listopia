@@ -11,7 +11,7 @@ class CreateRecoveryContexts < ActiveRecord::Migration[8.0]
     end
 
     add_index :recovery_contexts, :expires_at
-    add_index :recovery_contexts, [:user_id, :chat_id]
+    add_index :recovery_contexts, [ :user_id, :chat_id ]
     add_index :recovery_contexts, :created_at
   end
 end

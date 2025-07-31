@@ -17,7 +17,7 @@ class McpService
     @tools = McpTools.new(user, context)
     @conversation_manager = ConversationStateManager.new(@chat)
 
-    # NEW: Add enhanced services only if error recovery is enabled AND chat exists
+    # Add enhanced services only if error recovery is enabled AND chat exists
     if Rails.application.config.mcp.error_recovery&.enabled && @chat
       begin
         @chat_state_manager = ChatStateManager.new(@chat)
@@ -29,6 +29,16 @@ class McpService
         @chat_state_manager = nil
         @resilient_llm = nil
         @error_recovery = nil
+      end
+    end
+
+    # Add AI orchestration services for Phase 3
+    if Rails.application.config.mcp.ai_orchestration&.enabled && @chat
+      begin
+        @ai_orchestrator = AiOrchestrationService.new(user: @user, context: @context, chat: @chat)
+      rescue => e
+        Rails.logger.error "Failed to initialize AI orchestration: #{e.message}"
+        @ai_orchestrator = nil
       end
     end
   end
@@ -49,7 +59,7 @@ class McpService
     end
 
     begin
-      # NEW: Enhanced error recovery if enabled
+      # Enhanced error recovery if enabled
       if @chat_state_manager && Rails.application.config.mcp.state_management&.auto_checkpoint
         # Create checkpoint before processing
         checkpoint_name = @chat_state_manager.create_checkpoint!("pre_message_#{Time.current.to_i}")
@@ -75,8 +85,10 @@ class McpService
         end
       end
 
-      # Process message with enhanced resilience if available, otherwise use existing method
-      result = if @resilient_llm
+      # NEW: Enhanced processing with AI orchestration
+      result = if @ai_orchestrator && should_use_orchestration?(message_content)
+        process_with_ai_orchestration(message_content)
+      elsif @resilient_llm
         process_with_resilient_llm(message_content)
       else
         process_with_standard_llm(message_content)
@@ -101,7 +113,7 @@ class McpService
       Rails.logger.error "MCP Error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
-      # NEW: Use error recovery service if available
+      # Use error recovery service if available
       if @error_recovery
         recovery_result = @error_recovery.recover_from_error(e, original_message: message_content)
 
@@ -123,7 +135,68 @@ class McpService
     end
   end
 
+private
+
+# NEW: Determine if message would benefit from AI orchestration
+def should_use_orchestration?(message_content)
+  orchestration_keywords = [
+    "plan", "planning", "create a plan", "step by step", "workflow",
+    "organize", "break down", "manage", "strategy", "approach",
+    "help me with", "guide me", "walk me through", "create a list for",
+    "project", "event", "travel", "learning", "curriculum", "schedule"
+  ]
+
+  message_lower = message_content.downcase
+  orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
+end
+
+# NEW: Process message using AI orchestration
+def process_with_ai_orchestration(message_content)
+  orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
+
+  if orchestration_result[:success]
+    orchestration_result[:result]
+  elsif orchestration_result[:fallback_needed]
+    # Fallback to standard processing
+    if @resilient_llm
+      process_with_resilient_llm(message_content)
+    else
+      process_with_standard_llm(message_content)
+    end
+  else
+    orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
+  end
+end
+
   private
+
+  def should_use_orchestration?(message_content)
+    # Determine if message would benefit from AI orchestration
+    orchestration_keywords = [
+      "plan", "planning", "create a plan", "step by step", "workflow",
+      "organize", "break down", "manage", "strategy", "approach"
+    ]
+
+    message_lower = message_content.downcase
+    orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
+  end
+
+  def process_with_ai_orchestration(message_content)
+    orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
+
+    if orchestration_result[:success]
+      orchestration_result[:result]
+    elsif orchestration_result[:fallback_needed]
+      # Fallback to standard processing
+      if @resilient_llm
+        process_with_resilient_llm(message_content)
+      else
+        process_with_standard_llm(message_content)
+      end
+    else
+      orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
+    end
+  end
 
   def process_with_resilient_llm(message_content)
     # Set the model using existing config

@@ -25,6 +25,5 @@
 #
 FactoryBot.define do
   factory :conversation_checkpoint do
-    
   end
 end
