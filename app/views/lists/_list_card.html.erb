@@ -1,4 +1,6 @@
 <!-- app/views/lists/_list_card.html.erb -->
+<%# Use local variable current_user if provided, fallback to helper method %>
+<% user = local_assigns[:current_user] || (respond_to?(:current_user) ? current_user : nil) %>
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-200 group" 
      id="list_<%= list.id %>">
   <div class="p-5">
@@ -40,8 +42,8 @@
         <% end %>
       </div>
       <!-- Quick Actions - ALWAYS VISIBLE with subtle styling -->
-      <% if current_user %>
-        <% available_actions = available_list_actions(list, current_user) %>
+      <% if user %>
+        <% available_actions = available_list_actions(list, user) %>
         <% unless available_actions.empty? %>
           <div class="flex items-center space-x-1 ml-3">
             <!-- Edit Action (for owners and write collaborators) -->

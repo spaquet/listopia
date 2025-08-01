@@ -11,7 +11,7 @@
   <%= render "lists/filters" %>
   <!-- Lists Grid - NO TURBO FRAME (so Turbo Streams can target it) -->
   <div id="lists-container">
-    <%= render "lists/lists_grid", lists: @lists %>
+    <%= render "lists/lists_grid", lists: @lists, current_user: current_user %>
   </div>
 </div>
 <!-- Subscribe to real-time updates for this user's lists -->

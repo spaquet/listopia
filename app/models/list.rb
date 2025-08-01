@@ -130,6 +130,12 @@ class List < ApplicationRecord
     collaborators.permission_write.exists?(user: user)
   end
 
+  # Method for backward compatibility and semantic clarity
+  # This method is being phased out in favor of `collaboratable_by?`
+  def can_collaborate?(user)
+    collaboratable_by?(user)
+  end
+
   # Check if user can collaborate on this list
   def collaboratable_by?(user)
     return false unless user
