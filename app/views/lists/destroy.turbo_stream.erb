@@ -1,6 +1,14 @@
 <!-- app/views/lists/destroy.turbo_stream.erb -->
-<!-- Remove the list card from any page where it appears -->
+<!-- Remove the specific list card from any page where it appears -->
+<%= turbo_stream.remove "list_card_#{@list.id}" %>
+<!-- Also remove the inner list card if it exists (fallback for old structure) -->
 <%= turbo_stream.remove "list_#{@list.id}" %>
+<!-- Check if we need to show empty state after removal -->
+<% if current_user.accessible_lists.count == 0 %>
+  <%= turbo_stream.replace "lists-grid" do %>
+    <%= render "lists/empty_state" %>
+  <% end %>
+<% end %>
 <!-- Update dashboard stats -->
 <% dashboard_data = dashboard_data_for_user(current_user) %>
 <%= turbo_stream.replace "dashboard-stats" do %>
@@ -8,20 +16,15 @@
 <% end %>
 <!-- Update my lists section on dashboard -->
 <%= turbo_stream.replace "dashboard-my-lists" do %>
-  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists] %>
+  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists], current_user: current_user %>
 <% end %>
 <!-- Update collaborated lists section on dashboard -->
 <%= turbo_stream.replace "dashboard-collaborated-lists" do %>
-  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists] %>
+  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists], current_user: current_user %>
 <% end %>
 <!-- Update recent activity on dashboard -->
 <%= turbo_stream.replace "dashboard-recent-activity" do %>
   <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
-<% end %>
-<!-- Update lists container on lists index page -->
-<% lists = current_user.accessible_lists.order(updated_at: :desc) %>
-<%= turbo_stream.replace "lists-container" do %>
-  <%= render "lists/lists_grid", lists: lists %>
 <% end %>
 <!-- Show success message -->
 <%= turbo_stream.update "flash-messages" do %>

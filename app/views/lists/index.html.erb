@@ -9,9 +9,19 @@
   </div>
   <!-- Filters and Search -->
   <%= render "lists/filters" %>
-  <!-- Lists Grid - NO TURBO FRAME (so Turbo Streams can target it) -->
+  <!-- Lists Container - Proper structure for Turbo Stream updates -->
   <div id="lists-container">
-    <%= render "lists/lists_grid", lists: @lists, current_user: current_user %>
+    <% if @lists.any? %>
+      <div id="lists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% @lists.each do |list| %>
+          <%= turbo_frame_tag "list_card_#{list.id}" do %>
+            <%= render "lists/list_card", list: list, current_user: current_user %>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <%= render "lists/empty_state" %>
+    <% end %>
   </div>
 </div>
 <!-- Subscribe to real-time updates for this user's lists -->

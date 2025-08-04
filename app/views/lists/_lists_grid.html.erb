@@ -1,8 +1,10 @@
 <!-- app/views/lists/_lists_grid.html.erb -->
 <% if lists.any? %>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div id="lists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <% lists.each do |list| %>
-      <%= render "lists/list_card", list: list, current_user: local_assigns[:current_user] %>
+      <%= turbo_frame_tag "list_card_#{list.id}" do %>
+        <%= render "lists/list_card", list: list, current_user: local_assigns[:current_user] %>
+      <% end %>
     <% end %>
   </div>
 <% else %>

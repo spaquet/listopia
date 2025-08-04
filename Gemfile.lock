@@ -254,10 +254,12 @@ GEM
     parser (3.3.9.0)
       ast (~> 2.4.1)
       racc
-    pg (1.6.0)
-    pg (1.6.0-aarch64-linux)
-    pg (1.6.0-arm64-darwin)
-    pg (1.6.0-x86_64-linux)
+    pg (1.6.1)
+    pg (1.6.1-aarch64-linux)
+    pg (1.6.1-aarch64-linux-musl)
+    pg (1.6.1-arm64-darwin)
+    pg (1.6.1-x86_64-linux)
+    pg (1.6.1-x86_64-linux-musl)
     positioning (0.4.6)
       activerecord (>= 6.1)
       activesupport (>= 6.1)
@@ -325,7 +327,7 @@ GEM
     rdoc (6.14.2)
       erb
       psych (>= 4.0.0)
-    regexp_parser (2.10.0)
+    regexp_parser (2.11.0)
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.1)
@@ -492,7 +494,7 @@ DEPENDENCIES
   multi_json
   noticed
   pagy
-  pg (~> 1.1)
+  pg (~> 1.6)
   positioning
   propshaft
   puma (>= 5.0)
@@ -517,4 +519,4 @@ DEPENDENCIES
   web-console
 
 BUNDLED WITH
-   2.6.7
+   2.7.1
