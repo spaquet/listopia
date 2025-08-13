@@ -16,7 +16,7 @@ module ServiceBroadcasting
   # Update dashboard for all affected users (service-safe version)
   def broadcast_dashboard_updates(list)
     # Get all affected users efficiently
-    affected_users = [list.owner]
+    affected_users = [ list.owner ]
 
     # Only load collaborators if list has any (avoid N+1)
     if list.list_collaborations_count > 0
@@ -71,7 +71,7 @@ module ServiceBroadcasting
 
   # NEW: Updated lists index broadcasting with Turbo Frame support
   def broadcast_lists_index_updates(list, action: :update)
-    affected_users = [list.owner]
+    affected_users = [ list.owner ]
 
     if list.list_collaborations_count > 0
       affected_users.concat(list.collaborators.to_a)

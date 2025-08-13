@@ -247,7 +247,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list-items",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list }
+      locals: { list_item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users

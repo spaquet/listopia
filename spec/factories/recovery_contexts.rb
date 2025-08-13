@@ -25,6 +25,5 @@
 #
 FactoryBot.define do
   factory :recovery_context do
-    
   end
 end

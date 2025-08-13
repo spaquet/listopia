@@ -59,7 +59,7 @@ module ListBroadcasting
 
   # NEW: Broadcast specific list card creation (for create actions)
   def broadcast_list_creation(list = @list)
-    affected_users = [list.owner]
+    affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
 
     affected_users.uniq.each do |user|
@@ -81,7 +81,7 @@ module ListBroadcasting
 
   # NEW: Broadcast specific list card updates (for update actions)
   def broadcast_list_update(list = @list)
-    affected_users = [list.owner]
+    affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
 
     affected_users.uniq.each do |user|
@@ -97,7 +97,7 @@ module ListBroadcasting
 
   # NEW: Broadcast specific list card removal (for destroy actions)
   def broadcast_list_deletion(list = @list, user_lists_count = nil)
-    affected_users = [list.owner]
+    affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
 
     affected_users.uniq.each do |user|
