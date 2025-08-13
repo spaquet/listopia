@@ -151,6 +151,9 @@ class ListsController < ApplicationController
     authorize @list
 
     if @list.update(list_params)
+      # Add broadcasting for real-time updates to other users
+      broadcast_all_updates(@list, action: :update)
+
       respond_to do |format|
         format.html { redirect_to @list, notice: "List was successfully updated." }
         format.turbo_stream { render :update }

@@ -20,11 +20,11 @@ class ListCreationService < ApplicationService
     )
 
     if @list.save
-      broadcast_all_updates(@list)
-      Result.success(data: @list)
+      broadcast_all_updates(@list, action: :create)
+      Result.success(@list)
     else
       @errors = @list.errors.full_messages
-      Result.failure(errors: @errors)
+      Result.failure(@errors)
     end
   end
 
@@ -65,13 +65,13 @@ class ListCreationService < ApplicationService
 
       # Reload to get the latest items
       @list.reload
-      broadcast_all_updates(@list)
+      broadcast_all_updates(@list, action: :create)
 
       Result.success(data: @list)
     end
   rescue => e
     Rails.logger.error "Error creating planning list: #{e.message}"
-    Result.failure(errors: [e.message])
+    Result.failure(errors: [ e.message ])
   end
 
   private
