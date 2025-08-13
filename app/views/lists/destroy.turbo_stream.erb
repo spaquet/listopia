@@ -4,7 +4,8 @@
 <!-- Also remove the inner list card if it exists (fallback for old structure) -->
 <%= turbo_stream.remove "list_#{@list.id}" %>
 <!-- Check if we need to show empty state after removal -->
-<% if current_user.accessible_lists.count == 0 %>
+<!-- Use -1 to account for the list being deleted -->
+<% if current_user.accessible_lists.count == 1 %>
   <%= turbo_stream.replace "lists-grid" do %>
     <%= render "lists/empty_state" %>
   <% end %>
