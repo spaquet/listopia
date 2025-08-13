@@ -17,6 +17,12 @@ class McpService
     @tools = McpTools.new(user, context)
     @conversation_manager = ConversationStateManager.new(@chat)
 
+    @context_manager = ConversationContextManager.new(
+      user: @user,
+      chat: @chat,
+      current_context: @context
+    )
+
     # Add enhanced services only if error recovery is enabled AND chat exists
     if Rails.application.config.mcp.error_recovery&.enabled && @chat
       begin
@@ -59,6 +65,13 @@ class McpService
     end
 
     begin
+      # Resolve context references before processing
+      resolved_context = @context_manager.resolve_references(message_content)
+      enhanced_context = @context.merge(resolved_context)
+
+      # Update tools with enhanced context
+      @tools = McpTools.new(@user, enhanced_context)
+
       # Enhanced error recovery if enabled
       if @chat_state_manager && Rails.application.config.mcp.state_management&.auto_checkpoint
         # Create checkpoint before processing
@@ -89,10 +102,21 @@ class McpService
       result = if @ai_orchestrator && should_use_orchestration?(message_content)
         process_with_ai_orchestration(message_content)
       elsif @resilient_llm
-        process_with_resilient_llm(message_content)
+        process_with_resilient_llm(message_content, enhanced_context)
       else
-        process_with_standard_llm(message_content)
+        process_with_standard_llm(message_content, enhanced_context)
       end
+
+      # Track the chat interaction
+      @context_manager.track_action(
+        action: "chat_message_sent",
+        entity: @chat,
+        metadata: {
+          message_length: message_content.length,
+          resolved_context: resolved_context.keys,
+          processing_time: Time.current - start_time
+        }
+      )
 
       # Mark successful processing
       @chat.update_columns(
@@ -198,25 +222,49 @@ end
     end
   end
 
-  def process_with_resilient_llm(message_content)
+  def process_with_resilient_llm(message_content, enhanced_context = nil)
+    context_to_use = enhanced_context || @context
+
     # Set the model using existing config
     model = Rails.application.config.mcp.model
     @chat.update!(model_id: model) if @chat.model_id.blank?
 
-    # Add system instructions if context requires it
+    # Add system instructions with context awareness
     if needs_system_instructions?
       @chat.with_instructions(build_system_instructions, replace: true)
     end
 
-    # Configure tools if available
+    # Configure tools with enhanced context
     if @tools.available_tools.any?
       @tools.available_tools.each do |tool|
         @chat.with_tool(tool)
       end
     end
 
-    # Use resilient LLM service
-    @resilient_llm.resilient_ask(@chat, message_content)
+    # Process the message with enhanced error handling
+    begin
+      response = @resilient_llm.ask_with_retry(@chat, message_content,
+        context: context_to_use,
+        timeout: Rails.application.config.mcp.request_timeout
+      )
+    rescue => e
+      Rails.logger.error "Enhanced LLM processing failed: #{e.message}"
+
+      # Track the error context
+      @context_manager.track_action(
+        action: "chat_error",
+        entity: @chat,
+        metadata: {
+          error_type: e.class.name,
+          error_message: e.message,
+          context_size: context_to_use.keys.size
+        }
+      )
+
+      raise e
+    end
+
+    response.content
   end
 
   def process_with_standard_llm(message_content)
@@ -435,32 +483,30 @@ end
     instructions << "You are an AI assistant integrated with Listopia, a collaborative list management application."
     instructions << "You can help users manage their lists, create items, update tasks, and collaborate with others."
 
+    # NEW: Add context-aware instructions
+    context_instructions = @context_manager.get_ai_context_instructions
+    if context_instructions.present?
+      instructions << "\nCURRENT CONTEXT:"
+      instructions << context_instructions
+      instructions << "\nWhen the user refers to 'this list', 'these items', 'first 3 items', etc., use the context above to resolve these references."
+    end
+
     # Enhanced planning context instructions
     instructions << <<~PLANNING
-      IMPORTANT: Listopia is fundamentally a planning and organization tool. When users mention ANY of the following, you should immediately create a list with relevant items:
+      IMPORTANT: Listopia is fundamentally a planning and organization tool.
+      When users ask for help with planning, organizing, or managing tasks:
+      1. CREATE concrete, actionable lists using the available tools
+      2. ORGANIZE information into clear, structured formats
+      3. SUGGEST workflows and processes that help users stay organized
+      4. USE the list and item management tools to create tangible outcomes
 
-      🎯 PLANNING CONTEXTS (always create lists):
-      - Vacation/Travel planning (flights, hotels, itinerary, packing)
-      - Project management (tasks, milestones, deliverables)
-      - Goal setting (objectives, steps, milestones)
-      - Event planning (weddings, parties, meetings, roadshows, conferences)
-      - Shopping (grocery, retail, supplies)
-      - Moving/Relocation (packing, utilities, address changes)
-      - Job search (resume, applications, interviews)
-      - Learning/Education (courses, materials, schedule)
-      - Health/Fitness (workouts, diet, appointments)
-      - Financial planning (budgets, savings, investments)
-      - Home improvement (tasks, materials, contractors)
-      - Business strategy (initiatives, analysis, execution)
+      Available tools can help you:
+      - Create and manage lists for any planning purpose
+      - Add, update, and organize list items
+      - Set priorities, due dates, and assignments
+      - Create structured approaches to complex projects
 
-      📋 AUTOMATIC LIST CREATION RULES:
-      1. When user mentions planning ANYTHING, create a list immediately using create_planning_list
-      2. Always include a descriptive title and helpful description
-      3. Add 5-10 relevant items to get them started
-      4. Include helpful details, priorities, and assignments where appropriate
-      5. Ask if they want to add more items or modify the list
-
-      Example: If user says "I'm planning a trip to Japan", immediately create a "Japan Trip Planning" list with items like flights, hotels, visa, itinerary, etc.
+      Always aim to provide practical, organized solutions that users can immediately act upon.
     PLANNING
 
     if @context.present?

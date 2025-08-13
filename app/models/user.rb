@@ -41,6 +41,7 @@ class User < ApplicationRecord
   has_many :collaborators, dependent: :destroy
   has_many :collaborated_lists, through: :collaborators, source: :collaboratable, source_type: "List"
   has_many :collaborated_list_items, through: :collaborators, source: :collaboratable, source_type: "ListItem"
+  has_many :conversation_contexts, dependent: :destroy
   has_many :invitations, dependent: :destroy
   has_many :sent_invitations, class_name: "Invitation", foreign_key: "invited_by_id"
   has_many :received_invitations, class_name: "Invitation", foreign_key: "user_id"
@@ -183,6 +184,34 @@ class User < ApplicationRecord
       total_tokens: chats.sum { |chat| chat.total_tokens },
       last_chat_at: chats.maximum(:last_message_at)
     }
+  end
+
+  # Helper method to get recent context
+  def recent_conversation_contexts(limit: 20)
+    conversation_contexts
+      .active
+      .recent
+      .limit(limit)
+      .includes(:chat)
+  end
+
+  # Get context for specific entity type
+  def contexts_for_entity_type(entity_type, limit: 10)
+    conversation_contexts
+      .for_entity_type(entity_type)
+      .active
+      .recent
+      .limit(limit)
+  end
+
+  # Get most recent list context
+  def current_list_context
+    contexts_for_entity_type("List", limit: 1).first
+  end
+
+  # Check if user has recent activity
+  def has_recent_activity?(hours: 1)
+    conversation_contexts.within_timeframe(hours).exists?
   end
 
   # Private methods

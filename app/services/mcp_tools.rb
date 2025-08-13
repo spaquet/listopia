@@ -3,6 +3,12 @@ class McpTools
   def initialize(user, context = {})
     @user = user
     @context = context
+
+    @context_manager = ConversationContextManager.new(
+      user: @user,
+      chat: @user.current_chat,
+      current_context: @context
+    )
   end
 
   def available_tools

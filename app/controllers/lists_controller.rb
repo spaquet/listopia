@@ -1,10 +1,11 @@
 # app/controllers/lists_controller.rb
 class ListsController < ApplicationController
   include ListBroadcasting
+  include ContextTracking
 
   before_action :authenticate_user!, except: [ :show, :show_by_slug ]
-  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status ]
-  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status, :ai_context ]
+  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :ai_context ]
 
   # Display all lists accessible to the current user
   def index
@@ -19,7 +20,7 @@ class ListsController < ApplicationController
       @lists = @lists.where(status: params[:status])
     end
 
-    # NEW: Apply visibility filter (public/private)
+    # Apply visibility filter (public/private)
     if params[:visibility].present?
       case params[:visibility]
       when "public"
@@ -29,7 +30,7 @@ class ListsController < ApplicationController
       end
     end
 
-    # NEW: Apply collaboration filter
+    # Apply collaboration filter
     if params[:collaboration].present?
       case params[:collaboration]
       when "owned"
@@ -69,6 +70,17 @@ class ListsController < ApplicationController
     # Apply includes and ordering at the end
     @lists = @lists.includes(:owner, :collaborators)
                   .order(updated_at: :desc)
+
+    # CONTEXT TRACKING: Track list index viewing
+    if current_user
+      track_entity_action("lists_index_viewed", current_user, {
+        lists_count: @lists.count,
+        filter_status: params[:status],
+        filter_visibility: params[:visibility],
+        filter_collaboration: params[:collaboration],
+        search_term: params[:search]&.strip
+      })
+    end
   end
 
   # Display a specific list with its items
@@ -79,6 +91,19 @@ class ListsController < ApplicationController
                       .order(:position, :created_at)
 
     @new_list_item = @list.list_items.build if can_collaborate_on_list?
+
+    # CONTEXT TRACKING: Track list viewing with enhanced context
+    if current_user
+      track_entity_action("list_viewed", @list, {
+        items_count: @list_items.count,
+        completed_count: @list_items.select(&:completed?).count,
+        user_role: user_role_for_list(@list),
+        view_source: params[:from] || "direct",
+        can_collaborate: can_collaborate_on_list?,
+        list_type: @list.list_type,
+        is_public: @list.is_public?
+      })
+    end
 
     # Track list views for analytics (optional)
     track_list_view if current_user
@@ -91,6 +116,16 @@ class ListsController < ApplicationController
                       .order(:position, :created_at)
 
     @new_list_item = @list.list_items.build if can_collaborate_on_list?
+
+    # CONTEXT TRACKING: Track public list viewing
+    if current_user
+      track_entity_action("list_viewed", @list, {
+        items_count: @list_items.count,
+        view_source: "public_slug",
+        is_public_access: true,
+        user_role: user_role_for_list(@list)
+      })
+    end
 
     # Track list views for analytics (optional)
     track_list_view if current_user
@@ -122,6 +157,16 @@ class ListsController < ApplicationController
 
     if result.success?
       @list = result.data
+
+      # CONTEXT TRACKING: Track list creation with detailed metadata
+      track_entity_action("list_created", @list, {
+        list_type: @list.list_type,
+        is_public: @list.is_public?,
+        creation_source: params[:source] || "web_form",
+        creation_method: request.format.turbo_stream? ? "modal" : "page",
+        initial_status: @list.status
+      })
+
       respond_to do |format|
         format.html { redirect_to lists_path, notice: "List was successfully created." }
         format.turbo_stream {
@@ -150,7 +195,23 @@ class ListsController < ApplicationController
   def update
     authorize @list
 
+    # Capture previous values for context tracking
+    previous_status = @list.status
+    previous_is_public = @list.is_public?
+
     if @list.update(list_params)
+      # CONTEXT TRACKING: Track list updates with change details
+      changes = @list.previous_changes.except("updated_at")
+      track_entity_action("list_updated", @list, {
+        changes: changes.keys,
+        status_changed: changes.key?("status"),
+        visibility_changed: changes.key?("is_public"),
+        previous_status: previous_status,
+        previous_is_public: previous_is_public,
+        update_source: params[:source] || "web_form",
+        update_method: request.format.turbo_stream? ? "inline" : "page"
+      })
+
       # Add broadcasting for real-time updates to other users
       broadcast_all_updates(@list, action: :update)
 
@@ -163,21 +224,6 @@ class ListsController < ApplicationController
         format.html { render :edit, status: :unprocessable_entity }
         format.turbo_stream { render :edit_errors }
       end
-    end
-  end
-
-  # Show sharing options for a list
-  def share
-    authorize @list, :share?
-
-    @collaborators = @list.collaborators.includes(:user)
-    @invitations = @list.invitations.pending.includes(:invited_by)
-    @sharing_service = ListSharingService.new(@list, current_user)
-    @sharing_summary = @sharing_service.sharing_summary
-
-    respond_to do |format|
-      format.html { render :share }
-      format.turbo_stream { render :share }
     end
   end
 
@@ -198,6 +244,24 @@ class ListsController < ApplicationController
       return
     end
 
+    # Delete the list
+    # CONTEXT TRACKING: Track list deletion BEFORE destroying
+    # Capture data while the entity still exists
+    list_data_for_context = {
+      list_id: @list.id,
+      list_title: @list.title,
+      items_count: @list.list_items.count,
+      was_public: @list.is_public?,
+      list_type: @list.list_type,
+      deletion_source: params[:source] || "web_form",
+      deletion_method: request.format.turbo_stream? ? "inline" : "page"
+    }
+
+    # Track before destruction
+    if current_user && @context_manager
+      track_entity_action("list_deleted", @list, list_data_for_context)
+    end
+
     @list.destroy
     respond_to do |format|
       format.html { redirect_to lists_path, notice: "List was successfully deleted." }
@@ -209,10 +273,20 @@ class ListsController < ApplicationController
   def toggle_status
     authorize @list, :update?
 
+    previous_status = @list.status
+
     service = ListManagementService.new(@list, current_user)
     result = service.toggle_status
 
     if result.success?
+      # CONTEXT TRACKING: Track status change
+      track_entity_action("list_status_changed", @list, {
+        previous_status: previous_status,
+        new_status: @list.status,
+        change_method: "toggle",
+        change_source: "web_interface"
+      })
+
       respond_to do |format|
         format.html { redirect_to @list, notice: "List status updated to #{@list.status.humanize}" }
         format.turbo_stream { render :status_updated }
@@ -229,12 +303,22 @@ class ListsController < ApplicationController
   def toggle_public_access
     authorize @list, :update?
 
+    previous_is_public = @list.is_public?
+
     @list.update!(is_public: !@list.is_public?)
 
     # Generate public slug if making public
     if @list.is_public? && @list.public_slug.blank?
       @list.update!(public_slug: SecureRandom.urlsafe_base64(8))
     end
+
+    # CONTEXT TRACKING: Track public access toggle
+    track_entity_action("list_visibility_changed", @list, {
+      previous_is_public: previous_is_public,
+      new_is_public: @list.is_public?,
+      public_slug_generated: @list.is_public? && @list.public_slug.present?,
+      change_source: "web_interface"
+    })
 
     respond_to do |format|
       format.html { redirect_to @list, notice: "Public access #{@list.is_public? ? 'enabled' : 'disabled'}" }
@@ -251,6 +335,15 @@ class ListsController < ApplicationController
 
     if result.success?
       @new_list = result.data
+
+      # CONTEXT TRACKING: Track list duplication
+      track_entity_action("list_duplicated", @new_list, {
+        original_list_id: @list.id,
+        original_list_title: @list.title,
+        items_duplicated: @new_list.list_items.count,
+        duplication_source: "web_interface"
+      })
+
       respond_to do |format|
         format.html { redirect_to @new_list, notice: "List duplicated successfully!" }
         format.turbo_stream { render :duplicated }
@@ -271,6 +364,57 @@ class ListsController < ApplicationController
     @invitations = @list.invitations.pending.includes(:invited_by)
     @sharing_service = ListSharingService.new(@list, current_user)
     @sharing_summary = @sharing_service.sharing_summary
+
+    # CONTEXT TRACKING: Track share dialog access
+    track_entity_action("list_share_viewed", @list, {
+      collaborators_count: @collaborators.count,
+      pending_invitations: @invitations.count,
+      is_public: @list.is_public?,
+      access_method: request.format.turbo_stream? ? "modal" : "page"
+    })
+  end
+
+  # NEW: AI Context endpoint for chat system
+  def ai_context
+    return head :unauthorized unless current_user
+
+    # CONTEXT TRACKING: Track AI context request
+    track_entity_action("list_ai_context_requested", @list, {
+      request_source: "ai_chat",
+      user_role: user_role_for_list(@list)
+    })
+
+    context_data = {
+      list: {
+        id: @list.id,
+        title: @list.title,
+        status: @list.status,
+        items_count: @list.list_items.count,
+        completed_count: @list.list_items.completed.count,
+        list_type: @list.list_type,
+        is_public: @list.is_public?
+      },
+      items: @list.list_items.order(:position).limit(20).map do |item|
+        {
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          position: item.position,
+          priority: item.priority,
+          due_date: item.due_date,
+          assigned_user_id: item.assigned_user_id
+        }
+      end,
+      user_permissions: {
+        can_edit: @list.writable_by?(current_user),
+        can_collaborate: @list.collaboratable_by?(current_user),
+        is_owner: @list.owner == current_user,
+        can_manage_collaborators: policy(@list).manage_collaborators?
+      },
+      recent_activity: recent_list_activity
+    }
+
+    render json: context_data
   end
 
   private
@@ -297,6 +441,36 @@ class ListsController < ApplicationController
     # Could store in a separate analytics table
     # ListAnalyticsService.new(@list, current_user).track_view
     @list.touch if @list && current_user
+  end
+
+  # NEW: Get user's role for the list
+  def user_role_for_list(list)
+    return "owner" if list.owner == current_user
+    return "collaborator" if list.collaborators.exists?(user: current_user)
+    return "public_viewer" if list.is_public?
+    "unauthorized"
+  end
+
+  # NEW: Get recent activity for context
+  def recent_list_activity
+    return [] unless current_user
+
+    current_user.conversation_contexts
+      .where(entity_id: @list.id, entity_type: "List")
+      .or(
+        current_user.conversation_contexts
+          .where("entity_data @> ?", { list_id: @list.id }.to_json)
+      )
+      .recent
+      .limit(10)
+      .map do |context|
+        {
+          action: context.action,
+          created_at: context.created_at,
+          entity_type: context.entity_type,
+          relevance_score: context.relevance_score
+        }
+      end
   end
 
   # Strong parameters for list creation/updates

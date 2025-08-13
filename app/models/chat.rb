@@ -36,6 +36,7 @@ class Chat < ApplicationRecord
   acts_as_chat
 
   belongs_to :user
+  has_many :conversation_contexts, dependent: :destroy
   has_many :messages, dependent: :destroy
   has_many :tool_calls, through: :messages
 
@@ -203,6 +204,27 @@ class Chat < ApplicationRecord
     return false if messages.where("created_at > ?", 10.minutes.ago).exists?
 
     true
+  end
+
+  # Get contexts related to this chat
+  def related_contexts(limit: 10)
+    conversation_contexts
+      .active
+      .recent
+      .limit(limit)
+  end
+
+  # Get session context summary
+  def session_context_summary
+    contexts = related_contexts(50)
+
+    {
+      total_actions: contexts.count,
+      unique_entities: contexts.distinct.count(:entity_id),
+      entity_types: contexts.distinct.pluck(:entity_type),
+      actions: contexts.group(:action).count,
+      session_started: contexts.minimum(:created_at)
+    }
   end
 
   private

@@ -51,6 +51,8 @@ class List < ApplicationRecord
   before_update :track_status_change
   after_update :notify_status_change
   after_create :create_default_board_columns
+  after_create :track_creation_context
+  after_update :track_update_context, if: :saved_changes?
 
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
@@ -173,6 +175,39 @@ class List < ApplicationRecord
   end
 
   private
+
+  def track_creation_context
+    # Track list creation context if there's a current user in context
+    if Current.user
+      ConversationContext.track_action(
+        user: Current.user,
+        action: "list_created",
+        entity: self,
+        metadata: {
+          list_type: list_type,
+          is_public: is_public?,
+          auto_tracked: true
+        }
+      )
+    end
+  end
+
+  def track_update_context
+    # Track significant updates
+    if Current.user && saved_change_to_status?
+      ConversationContext.track_action(
+        user: Current.user,
+        action: "list_updated",
+        entity: self,
+        metadata: {
+          status_changed: true,
+          previous_status: status_before_last_save,
+          new_status: status,
+          auto_tracked: true
+        }
+      )
+    end
+  end
 
   def generate_public_slug
     self.public_slug = SecureRandom.urlsafe_base64(8) if public_slug.blank?
