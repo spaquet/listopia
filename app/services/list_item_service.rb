@@ -70,7 +70,7 @@ class ListItemService
 
       ApplicationService::Result.success(data: item)
     else
-      Result.failure(@errors.presence || [ "Failed to create item" ])
+      ApplicationService::Result.failure(errors: @errors.presence || [ "Failed to create item" ])
     end
   rescue => e
     @errors = [ e.message ]
@@ -80,10 +80,10 @@ class ListItemService
   # Complete an item
   def complete_item(item_id)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.update(completed: true, completed_at: Time.current)
@@ -99,10 +99,10 @@ class ListItemService
   # Update an item
   def update_item(item_id, **attributes)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.update(attributes)
@@ -118,10 +118,10 @@ class ListItemService
   # Delete an item
   def delete_item(item_id)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.destroy
@@ -137,7 +137,7 @@ class ListItemService
   # Reorder items
   def reorder_items(item_positions)
     unless can_edit_list?
-      return Result.failure("You don't have permission to reorder items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to reorder items in this list")
     end
 
     ActiveRecord::Base.transaction do
@@ -150,7 +150,7 @@ class ListItemService
 
     @list.reload
     broadcast_all_updates(@list)
-    Result.success(@list)
+    ApplicationService::Result.success(data: @list)
   rescue => e
     @errors = [ e.message ]
     ApplicationService::Result.failure(errors: @errors)
@@ -159,7 +159,7 @@ class ListItemService
   # Bulk operations
   def bulk_complete_items(item_ids)
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     completed_items = []
@@ -176,7 +176,7 @@ class ListItemService
 
     @list.reload
     broadcast_all_updates(@list)
-    Result.success(completed_items)
+    ApplicationService::Result.success(data: completed_items)
   rescue => e
     @errors = [ e.message ]
     ApplicationService::Result.failure(errors: @errors)
@@ -247,7 +247,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list-items",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list, current_user: @user }
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -260,7 +260,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list, current_user: @user }
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -273,7 +273,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list, current_user: @user }
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
