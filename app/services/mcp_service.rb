@@ -17,6 +17,7 @@ class McpService
     @tools = McpTools.new(user, context)
     @conversation_manager = ConversationStateManager.new(@chat)
 
+    # Initialize context manager
     @context_manager = ConversationContextManager.new(
       user: @user,
       chat: @chat,
@@ -68,6 +69,7 @@ class McpService
       # Resolve context references before processing
       resolved_context = @context_manager.resolve_references(message_content)
       enhanced_context = @context.merge(resolved_context)
+      @enhanced_context = enhanced_context
 
       # Update tools with enhanced context
       @tools = McpTools.new(@user, enhanced_context)
@@ -104,7 +106,7 @@ class McpService
       elsif @resilient_llm
         process_with_resilient_llm(message_content, enhanced_context)
       else
-        process_with_standard_llm(message_content, enhanced_context)
+        process_with_standard_llm(message_content)
       end
 
       # Track the chat interaction
@@ -483,12 +485,14 @@ end
     instructions << "You are an AI assistant integrated with Listopia, a collaborative list management application."
     instructions << "You can help users manage their lists, create items, update tasks, and collaborate with others."
 
-    # NEW: Add context-aware instructions
-    context_instructions = @context_manager.get_ai_context_instructions
-    if context_instructions.present?
-      instructions << "\nCURRENT CONTEXT:"
-      instructions << context_instructions
-      instructions << "\nWhen the user refers to 'this list', 'these items', 'first 3 items', etc., use the context above to resolve these references."
+    # Use the enhanced context if available
+    if @enhanced_context && @context_manager
+      context_instructions = @context_manager.get_ai_context_instructions
+      if context_instructions.present?
+        instructions << "\nCURRENT CONTEXT:"
+        instructions << context_instructions
+        instructions << "\nWhen the user refers to 'this list', 'these items', 'first 3 items', etc., use the context above to resolve these references."
+      end
     end
 
     # Enhanced planning context instructions
@@ -509,13 +513,14 @@ end
       Always aim to provide practical, organized solutions that users can immediately act upon.
     PLANNING
 
+    # Keep your existing context logic
     if @context.present?
-      if @context[:current_page]
-        instructions << "Current page context: #{@context[:current_page]}"
+      if @context["page"]
+        instructions << "Current page context: #{@context['page']}"
       end
 
-      if @context[:selected_items]
-        instructions << "User has selected items: #{@context[:selected_items].join(', ')}"
+      if @context["selected_items"]
+        instructions << "User has selected items: #{@context['selected_items'].join(', ')}"
       end
     end
 

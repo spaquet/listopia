@@ -1,4 +1,4 @@
-# app/controllers/lists_controller.rb
+# app/controllers/lists_controller.rb - Updated with proper context tracking
 class ListsController < ApplicationController
   include ListBroadcasting
   include ContextTracking
@@ -244,7 +244,6 @@ class ListsController < ApplicationController
       return
     end
 
-    # Delete the list
     # CONTEXT TRACKING: Track list deletion BEFORE destroying
     # Capture data while the entity still exists
     list_data_for_context = {
