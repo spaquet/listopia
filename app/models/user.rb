@@ -24,6 +24,7 @@
 #
 # Update app/models/user.rb - Add notification association and methods
 class User < ApplicationRecord
+  rolify
   has_secure_password
 
   # Rails 8 token generation for magic links and email verification
@@ -32,8 +33,6 @@ class User < ApplicationRecord
 
   # Associations
   has_many :lists, dependent: :destroy
-  has_many :list_collaborations, dependent: :destroy
-  has_many :collaborated_lists, through: :list_collaborations, source: :list
   has_many :sessions, dependent: :destroy
   has_many :chats, dependent: :destroy
   has_many :messages, dependent: :destroy
@@ -43,7 +42,8 @@ class User < ApplicationRecord
   has_many :collaborated_lists, through: :collaborators, source: :collaboratable, source_type: "List"
   has_many :collaborated_list_items, through: :collaborators, source: :collaboratable, source_type: "ListItem"
   has_many :invitations, dependent: :destroy
-  has_many :sent_invitations, class_name: "Invitation", foreign_key: :invited_by_id, dependent: :destroy
+  has_many :sent_invitations, class_name: "Invitation", foreign_key: "invited_by_id"
+  has_many :received_invitations, class_name: "Invitation", foreign_key: "user_id"
   has_many :comments, dependent: :destroy
 
   # Add noticed notifications
@@ -121,7 +121,13 @@ class User < ApplicationRecord
 
   # Get all accessible lists (owned + collaborated)
   def accessible_lists
-    List.where(id: lists.pluck(:id) + collaborated_lists.pluck(:id))
+    owned_list_ids = lists.pluck(:id)
+    collaborated_list_ids = collaborated_lists.pluck(:id)
+    public_list_ids = List.where(is_public: true).pluck(:id)
+
+    all_accessible_ids = (owned_list_ids + collaborated_list_ids + public_list_ids).uniq
+
+    List.where(id: all_accessible_ids)
   end
 
   # Notification convenience methods

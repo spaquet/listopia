@@ -1,7 +1,7 @@
 <!-- app/views/lists/update.turbo_stream.erb -->
 <!-- Update the specific list card if it exists on the page -->
-<%= turbo_stream.replace "list_#{@list.id}" do %>
-  <%= render "lists/list_card", list: @list %>
+<%= turbo_stream.replace "list_card_#{@list.id}" do %>
+  <%= render "lists/list_card", list: @list, current_user: current_user %>
 <% end %>
 <!-- Update dashboard stats -->
 <% dashboard_data = dashboard_data_for_user(current_user) %>
@@ -10,20 +10,15 @@
 <% end %>
 <!-- Update my lists section on dashboard -->
 <%= turbo_stream.replace "dashboard-my-lists" do %>
-  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists] %>
+  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists], current_user: current_user %>
 <% end %>
 <!-- Update collaborated lists section on dashboard -->
 <%= turbo_stream.replace "dashboard-collaborated-lists" do %>
-  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists] %>
+  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists], current_user: current_user %>
 <% end %>
 <!-- Update recent activity on dashboard -->
 <%= turbo_stream.replace "dashboard-recent-activity" do %>
   <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
-<% end %>
-<!-- Update lists container on lists index page -->
-<% lists = current_user.accessible_lists.order(updated_at: :desc) %>
-<%= turbo_stream.replace "lists-container" do %>
-  <%= render "lists/lists_grid", lists: lists %>
 <% end %>
 <!-- Show success message -->
 <%= turbo_stream.update "flash-messages" do %>

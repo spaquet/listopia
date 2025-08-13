@@ -1,5 +1,12 @@
 # app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
+  include Pundit::Authorization
+
+  # Prevent outdated browsers from accessing the application
+  # This is a security measure to ensure users are on modern browsers.
+  # Associated resource: public/406-unsupported-browser.html
+  allow_browser versions: :modern
+
   # Prevent CSRF attacks by raising an exception.
   protect_from_forgery with: :exception
 
@@ -69,6 +76,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Pundit authorization
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
+
   protected
 
   # Set current user for use in models and services
@@ -110,6 +120,37 @@ class ApplicationController < ActionController::Base
 
   private
 
+  def chat_context
+    @chat_context ||= build_chat_context
+  end
+  helper_method :chat_context
+
+  def build_chat_context
+    context = {
+      page: "#{controller_name}##{action_name}",
+      current_page: "#{controller_name}##{action_name}"
+    }
+
+    # Add list-specific context if we're on a list page
+    if defined?(@list) && @list.present?
+      context.merge!(
+        list_id: @list.id,
+        list_title: @list.title,
+        items_count: @list.list_items.count,
+        completed_count: @list.list_items.where(completed: true).count,
+        is_owner: @list.user_id == current_user&.id,
+        can_collaborate: @list.user_id == current_user&.id || @list.can_collaborate?(current_user)
+      )
+    end
+
+    # Add user's total lists count
+    if current_user.present?
+      context[:total_lists] = current_user.accessible_lists.count
+    end
+
+    context
+  end
+
   # Store location for redirect after authentication
   def store_location
     session[:stored_location] = request.fullpath if request.get? && !request.xhr?
@@ -150,5 +191,13 @@ class ApplicationController < ActionController::Base
       reset_session
       nil
     end
+  end
+
+  # Handle unauthorized access
+  # This method is called by Pundit when a user tries to access a resource they
+  # are not authorized to access.
+  def user_not_authorized
+    flash[:alert] = "You are not authorized to perform this action."
+    redirect_back(fallback_location: lists_path)
   end
 end

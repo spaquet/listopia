@@ -1,7 +1,0 @@
-<!-- app/views/collaborations/update.turbo_stream.erb -->
-<%= turbo_stream.replace "collaboration_<%= @collaboration.id %>" do %>
-<%= render "collaborations/collaboration", collaboration: @collaboration %>
-<% end %>
-<%= turbo_stream.update "flash-messages" do %>
-  <%= render "shared/flash_messages" %>
-<% end %>

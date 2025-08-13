@@ -6,7 +6,7 @@
 #  child_type        :string           not null
 #  metadata          :json
 #  parent_type       :string           not null
-#  relationship_type :string           default("parent_child"), not null
+#  relationship_type :integer          default("parent_child"), not null
 #  created_at        :datetime         not null
 #  updated_at        :datetime         not null
 #  child_id          :uuid             not null

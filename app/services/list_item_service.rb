@@ -8,19 +8,8 @@
 require "active_record"
 require "turbo-rails"
 
-module ListBroadcasting
-  def broadcast_all_updates(list)
-    # Broadcast updates to all users viewing the list
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "list_#{list.id}",
-      target: "list-header",
-      partial: "lists/list_header",
-      locals: { list: list }
-    )
-  end
-end
 class ListItemService
-  include ListBroadcasting
+  include ServiceBroadcasting  # Use service-safe broadcasting instead
 
   attr_reader :list, :user, :errors
 
@@ -31,7 +20,7 @@ class ListItemService
   end
 
   # Create a new list item
-  def create_item(title:, description: nil, **options)
+  def create_item(title:, description: nil, skip_broadcasts: false, **options)
     # Validate permissions
     unless can_edit_list?
       return Result.failure("You don't have permission to add items to this list")
@@ -74,79 +63,81 @@ class ListItemService
       # Reload list to get updated counts
       @list.reload
 
-      # Broadcast the creation
-      broadcast_item_creation(item)
+      # Only broadcast if not explicitly skipped
+      unless skip_broadcasts
+        broadcast_item_creation(item)
+      end
 
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
-      Result.failure(@errors.presence || [ "Failed to create item" ])
+      ApplicationService::Result.failure(errors: @errors.presence || [ "Failed to create item" ])
     end
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   # Complete an item
   def complete_item(item_id)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.update(completed: true, completed_at: Time.current)
       @list.reload
       broadcast_item_completion(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = item.errors.full_messages
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
   # Update an item
   def update_item(item_id, **attributes)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.update(attributes)
       @list.reload
       broadcast_item_update(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = item.errors.full_messages
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
   # Delete an item
   def delete_item(item_id)
     item = find_item(item_id)
-    return Result.failure("Item not found") unless item
+    return ApplicationService::Result.failure(errors: "Item not found") unless item
 
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
     if item.destroy
       @list.reload
       broadcast_item_deletion(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = [ "Failed to delete item" ]
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
   # Reorder items
   def reorder_items(item_positions)
     unless can_edit_list?
-      return Result.failure("You don't have permission to reorder items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to reorder items in this list")
     end
 
     ActiveRecord::Base.transaction do
@@ -159,59 +150,36 @@ class ListItemService
 
     @list.reload
     broadcast_all_updates(@list)
-    Result.success(@list)
+    ApplicationService::Result.success(data: @list)
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   # Bulk operations
   def bulk_complete_items(item_ids)
     unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
+      return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
-    items = @list.list_items.where(id: item_ids)
-    updated_count = 0
-
+    completed_items = []
     ActiveRecord::Base.transaction do
-      items.find_each do |item|
-        item.skip_notifications = true # We'll send one bulk notification instead
+      item_ids.each do |item_id|
+        item = find_item(item_id)
+        next unless item
+
         if item.update(completed: true, completed_at: Time.current)
-          updated_count += 1
+          completed_items << item
         end
       end
     end
 
     @list.reload
     broadcast_all_updates(@list)
-    Result.success({ updated_count: updated_count, total_count: items.count })
+    ApplicationService::Result.success(data: completed_items)
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
-  end
-
-  def bulk_delete_items(item_ids)
-    unless can_edit_list?
-      return Result.failure("You don't have permission to modify items in this list")
-    end
-
-    items = @list.list_items.where(id: item_ids)
-    deleted_count = items.count
-
-    ActiveRecord::Base.transaction do
-      items.find_each do |item|
-        item.skip_notifications = true
-      end
-      items.destroy_all
-    end
-
-    @list.reload
-    broadcast_all_updates(@list)
-    Result.success({ deleted_count: deleted_count })
-  rescue => e
-    @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   private
@@ -279,7 +247,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list-items",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list }
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -291,8 +259,8 @@ class ListItemService
     Turbo::StreamsChannel.broadcast_replace_to(
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
-      partial: "list_items/qitem",
-      locals: { list_item: item, list: @list }
+      partial: "list_items/item",
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -305,7 +273,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list }
+      locals: { item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -321,32 +289,5 @@ class ListItemService
 
     # Update dashboard for affected users
     broadcast_all_updates(@list)
-  end
-
-  # Result class for consistent return values
-  class Result
-    attr_reader :data, :errors
-
-    def initialize(success, data = nil, errors = [])
-      @success = success
-      @data = data
-      @errors = errors
-    end
-
-    def success?
-      @success
-    end
-
-    def failure?
-      !@success
-    end
-
-    def self.success(data)
-      new(true, data)
-    end
-
-    def self.failure(errors)
-      new(false, nil, Array(errors))
-    end
   end
 end

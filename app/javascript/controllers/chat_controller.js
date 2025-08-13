@@ -26,6 +26,7 @@ export default class extends Controller {
     this.restoreState();
     this.initializeWithRetry();
     this.logContextInfo();
+    this.setupErrorHandling();
   }
 
   initializeWithRetry() {
@@ -87,9 +88,9 @@ export default class extends Controller {
   }
 
   minimize() {
-    this.expandedValue = false;
-    this.updateDisplay();
-    this.saveState();
+    this.expandedValue = false
+    this.updateDisplay()
+    this.saveState()
   }
 
   handleKeydown(event) {
@@ -99,35 +100,78 @@ export default class extends Controller {
     }
   }
 
-  async sendMessage(event) {
-    event?.preventDefault();
+  // Method to force UI refresh after AI creates lists
+  notifyListCreated(listId) {
+    // Dispatch custom event to notify other controllers
+    document.dispatchEvent(new CustomEvent('listopia:list-created', {
+      detail: { listId: listId }
+    }));
     
-    const message = this.messageInputTarget.value.trim();
-    if (!message) return;
-
-    if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot send message: messagesContainer target missing");
-      return;
+    // Force refresh of lists if user is on lists page
+    if (this.currentPageValue === 'lists#index') {
+      this.refreshListsPage();
     }
+  }
 
-    this.setInputState(false);
-    this.addUserMessage(message);
-    this.messageInputTarget.value = "";
-    this.showTypingIndicator();
+  async refreshListsPage() {
+    try {
+      const response = await fetch(window.location.pathname, {
+        headers: { 'Accept': 'text/html' }
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newContainer = doc.getElementById('lists-container');
+        
+        if (newContainer) {
+          const currentContainer = document.getElementById('lists-container');
+          if (currentContainer) {
+            currentContainer.innerHTML = newContainer.innerHTML;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh lists:', error);
+    }
+  }
+
+  async sendMessage(event) {
+    event?.preventDefault()
+    
+    // Get message from either the event detail (keyboard shortcut) or the textarea directly
+    const message = event?.detail?.message || this.messageInputTarget.value.trim()
+    if (!message) return
+
+    await this.sendMessageWithText(message)
+    
+    // Clear the textarea and trigger events for other controllers
+    this.messageInputTarget.value = ""
+    this.messageInputTarget.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  // New method to handle sending with specific text
+  async sendMessageWithText(message) {
+    if (!message || !this.hasMessagesContainerTarget) return
+
+    this.setInputState(false)
+    this.addUserMessage(message)
+    this.showTypingIndicator()
 
     try {
-      const formData = new FormData();
-      formData.append('message', message);
-      formData.append('current_page', this.currentPageValue);
+      const formData = new FormData()
+      formData.append('message', message)
+      formData.append('current_page', this.currentPageValue)
       
       if (this.contextValue) {
         Object.keys(this.contextValue).forEach(key => {
           if (typeof this.contextValue[key] === 'object') {
-            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]));
+            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]))
           } else {
-            formData.append(`context[${key}]`, this.contextValue[key]);
+            formData.append(`context[${key}]`, this.contextValue[key])
           }
-        });
+        })
       }
 
       const response = await fetch('/chat/messages', {
@@ -137,45 +181,59 @@ export default class extends Controller {
           'Accept': 'text/vnd.turbo-stream.html'
         },
         body: formData
-      });
+      })
 
       if (response.ok) {
-        const responseText = await response.text();
+        const responseText = await response.text()
         if (responseText.trim()) {
-          Turbo.renderStreamMessage(responseText);
+          Turbo.renderStreamMessage(responseText)
         }
       } else {
-        console.error('Response not ok:', response.status);
-        this.addErrorMessage("Sorry, I couldn't process your message. Please try again.");
+        // Handle HTTP errors
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+        this.handleError(error, { message, type: 'http_error' })
       }
     } catch (error) {
-      console.error('Chat error:', error);
-      this.addErrorMessage("Connection error. Please check your internet and try again.");
+      console.error('Chat error:', error)
+      // Handle network/fetch errors  
+      this.handleError(error, { message, type: 'network_error' })
     } finally {
-      this.hideTypingIndicator();
-      this.setInputState(true);
-      this.focusInput();
+      this.hideTypingIndicator()
+      this.setInputState(true)
+      this.focusInput()
     }
   }
 
   addUserMessage(message) {
     if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot add user message: messagesContainer target missing");
-      return;
+      console.warn("Cannot add user message: messagesContainer target missing")
+      return
     }
-    const messageElement = this.createMessageElement(message, 'user');
-    this.messagesContainerTarget.appendChild(messageElement);
-    this.scrollToBottom();
+    
+    const messageElement = this.createMessageElement(message, 'user')
+    
+    // Add timestamp data for threading
+    messageElement.dataset.timestamp = new Date().toISOString()
+    messageElement.dataset.messageType = 'user'
+    
+    this.messagesContainerTarget.appendChild(messageElement)
+    this.scrollToBottom()
   }
 
   addAssistantMessage(message) {
     if (!this.hasMessagesContainerTarget) {
-      console.warn("Cannot add assistant message: messagesContainer target missing");
-      return;
+      console.warn("Cannot add assistant message: messagesContainer target missing")
+      return
     }
-    const messageElement = this.createMessageElement(message, 'assistant');
-    this.messagesContainerTarget.appendChild(messageElement);
-    this.scrollToBottom();
+    
+    const messageElement = this.createMessageElement(message, 'assistant')
+    
+    // Add timestamp data for threading
+    messageElement.dataset.timestamp = new Date().toISOString()
+    messageElement.dataset.messageType = 'assistant'
+    
+    this.messagesContainerTarget.appendChild(messageElement)
+    this.scrollToBottom()
   }
 
   addErrorMessage(message) {
@@ -267,15 +325,17 @@ export default class extends Controller {
   }
 
   setInputState(enabled) {
-    if (!this.hasMessageInputTarget || !this.hasSendButtonTarget) return;
+    if (!this.hasMessageInputTarget || !this.hasSendButtonTarget) return
     
-    this.messageInputTarget.disabled = !enabled;
-    this.sendButtonTarget.disabled = !enabled;
+    this.messageInputTarget.disabled = !enabled
+    this.sendButtonTarget.disabled = !enabled
     
     if (enabled) {
-      this.sendButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed');
+      this.sendButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed')
+      this.messageInputTarget.classList.remove('opacity-50')
     } else {
-      this.sendButtonTarget.classList.add('opacity-50', 'cursor-not-allowed');
+      this.sendButtonTarget.classList.add('opacity-50', 'cursor-not-allowed')
+      this.messageInputTarget.classList.add('opacity-50')
     }
   }
 
@@ -316,11 +376,31 @@ export default class extends Controller {
   }
 
   scrollToBottom() {
-    if (!this.hasMessagesContainerTarget) return;
+    const scrollController = this.application.getControllerForElementAndIdentifier(
+      this.element.querySelector('[data-controller*="chat-scroll"]'),
+      'chat-scroll'
+    )
     
-    setTimeout(() => {
-      this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight;
-    }, 50);
+    if (scrollController) {
+      scrollController.autoScrollToBottom()
+    } else {
+      // Fallback to original implementation
+      if (!this.hasMessagesContainerTarget) return
+      setTimeout(() => {
+        this.messagesContainerTarget.scrollTop = this.messagesContainerTarget.scrollHeight
+      }, 50)
+    }
+  }
+
+  // Handle scroll events from scroll controller
+  handleScroll(event) {
+    const { isNearBottom, direction } = event.detail
+    
+    // Show/hide notification dot based on scroll position
+    if (!this.expandedValue && direction === 'up' && !isNearBottom) {
+      // User scrolled up and away from bottom - they might have missed messages
+      this.showNotificationDot()
+    }
   }
 
   focusInput() {
@@ -385,5 +465,67 @@ export default class extends Controller {
       return this.contextValue.suggestions;
     }
     return [];
+  }
+
+  setupErrorHandling() {
+  document.addEventListener('error-handler:retry', this.handleRetryRequest.bind(this))
+  document.addEventListener('connection:status-changed', this.handleConnectionChange.bind(this))
+}
+
+  handleError(error, context = {}) {
+    const errorEvent = new CustomEvent('chat:error', {
+      detail: {
+        error,
+        context: {
+          ...context,
+          chatId: this.userIdValue,
+          currentPage: this.currentPageValue,
+          timestamp: new Date().toISOString(),
+          originalMessage: context.message || context.originalMessage
+        },
+        retryable: this.isRetryableError(error)
+      },
+      bubbles: true
+    })
+    document.dispatchEvent(errorEvent)
+  }
+
+  isRetryableError(error) {
+    const retryableErrors = [
+      'NetworkError',
+      'AbortError', 
+      'TimeoutError',
+      'TypeError'
+    ]
+    
+    if (typeof error === 'string') {
+      return retryableErrors.some(type => error.includes(type))
+    }
+    
+    return retryableErrors.includes(error?.constructor?.name)
+  }
+
+  handleRetryRequest(event) {
+    const { originalMessage, context } = event.detail
+    
+    if (context.chatId === this.userIdValue && originalMessage) {
+      console.log('Retrying chat message:', originalMessage)
+      this.sendMessageWithText(originalMessage)
+    }
+  }
+
+  handleConnectionChange(event) {
+    const { status, isOnline } = event.detail
+    
+    // Update send button state based on connection
+    if (this.hasSendButtonTarget) {
+      if (!isOnline) {
+        this.sendButtonTarget.disabled = true
+        this.sendButtonTarget.title = 'Offline - Cannot send messages'
+      } else {
+        this.sendButtonTarget.disabled = false
+        this.sendButtonTarget.title = 'Send message'
+      }
+    }
   }
 }

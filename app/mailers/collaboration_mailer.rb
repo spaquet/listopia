@@ -1,56 +1,62 @@
 # app/mailers/collaboration_mailer.rb
 class CollaborationMailer < ApplicationMailer
-  # Notify user they've been added to a list
-  def added_to_list(collaboration)
-    @collaboration = collaboration
-    @user = collaboration.user
-    @list = collaboration.list
-    @inviter = @list.owner
-    @list_url = list_url(@list)
+  default from: "noreply@listopia.com"
+
+  def invitation(invitation)
+    @invitation = invitation
+    @invitable = invitation.invitable
+    @invited_by = invitation.invited_by
+    @invitation_url = accept_invitation_url(@invitation.invitation_token)
+
+    mail(
+      to: @invitation.email,
+      subject: "#{@invited_by.name} invited you to collaborate on #{@invitable.title}"
+    )
+  end
+
+  def invitation_reminder(invitation)
+    @invitation = invitation
+    @invitable = invitation.invitable
+    @invited_by = invitation.invited_by
+    @invitation_url = accept_invitation_url(@invitation.invitation_token)
+
+    mail(
+      to: @invitation.email,
+      subject: "Reminder: Invitation to collaborate on #{@invitable.title}"
+    )
+  end
+
+  def added_to_resource(collaborator)
+    @collaborator = collaborator
+    @collaboratable = collaborator.collaboratable
+    @resource_url = polymorphic_url(@collaboratable)
+
+    mail(
+      to: @collaborator.user.email,
+      subject: "You've been added as a collaborator on #{@collaboratable.title}"
+    )
+  end
+
+  def removed_from_resource(user, collaboratable)
+    @user = user
+    @collaboratable = collaboratable
 
     mail(
       to: @user.email,
-      subject: "You've been added to \"#{@list.title}\""
+      subject: "You've been removed from #{@collaboratable.title}"
     )
   end
 
-  # Send invitation to non-registered user
-  def invitation(email, list, inviter, token)
-    @email = email
-    @list = list
-    @inviter = inviter
-    @signup_url = new_registration_url
-    @accept_url = accept_invitation_url(token: token)  # Fixed route name
+  def permission_updated(collaborator, old_permission)
+    @collaborator = collaborator
+    @collaboratable = collaborator.collaboratable
+    @old_permission = old_permission
+    @new_permission = collaborator.permission
+    @resource_url = polymorphic_url(@collaboratable)
 
     mail(
-      to: email,
-      subject: "#{inviter.name} invited you to collaborate on \"#{list.title}\""
-    )
-  end
-
-  # Notify user they've been removed from a list
-  def removed_from_list(user, list)
-    @user = user
-    @list = list
-
-    mail(
-      to: user.email,
-      subject: "You've been removed from \"#{list.title}\""
-    )
-  end
-
-  # Send reminder for pending invitation
-  def invitation_reminder(email, list, inviter, token)
-    @email = email
-    @list = list
-    @inviter = inviter
-    @signup_url = new_registration_url
-    @accept_url = accept_invitation_url(token: token)
-    @is_reminder = true
-
-    mail(
-      to: email,
-      subject: "Reminder: #{inviter.name} invited you to collaborate on \"#{list.title}\""
+      to: @collaborator.user.email,
+      subject: "Your permission has been updated for #{@collaboratable.title}"
     )
   end
 end

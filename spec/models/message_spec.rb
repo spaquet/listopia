@@ -25,6 +25,7 @@
 #
 # Indexes
 #
+#  index_messages_on_chat_and_tool_call_id            (chat_id,tool_call_id) WHERE (tool_call_id IS NOT NULL)
 #  index_messages_on_chat_id                          (chat_id)
 #  index_messages_on_chat_id_and_created_at           (chat_id,created_at)
 #  index_messages_on_chat_id_and_role                 (chat_id,role)

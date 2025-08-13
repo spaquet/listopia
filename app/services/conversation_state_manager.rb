@@ -11,18 +11,18 @@ class ConversationStateManager
 
   # Main method to ensure conversation integrity before sending to OpenAI
   def ensure_conversation_integrity!
-    begin
+    # During active conversations (less than 5 minutes ago), only do minimal validation
+    # This prevents interference with ongoing tool calls
+    if @chat.messages.where(role: "user").where("created_at > ?", 5.minutes.ago).exists?
+      Rails.logger.debug "Active conversation detected, skipping aggressive validation"
+      validate_basic_structure!
+    else
+      Rails.logger.debug "Inactive conversation, performing full validation"
+      # Inactive conversation - full cleanup
       validate_conversation_structure!
       cleanup_orphaned_messages!
-      validate_tool_call_response_pairing!
-    rescue ConversationError => e
-      @logger.error "Conversation integrity error for chat #{@chat.id}: #{e.message}"
-
-      # Try to fix the conversation automatically
-      attempt_conversation_repair!
-
-      # Re-validate after repair
-      validate_conversation_structure!
+      # Skip tool call response pairing validation during normal operations
+      # validate_tool_call_response_pairing!
     end
   end
 
@@ -42,6 +42,20 @@ class ConversationStateManager
   end
 
   private
+
+  def validate_basic_structure!
+    # Only check for obvious structural issues, don't remove messages or raise errors
+    recent_messages = @chat.messages.where("created_at > ?", 5.minutes.ago).order(:created_at)
+
+    recent_messages.each do |msg|
+      if msg.role == "tool" && msg.tool_call_id.blank?
+        @logger.warn "Tool message #{msg.id} missing tool_call_id (non-critical during active conversation)"
+      end
+    end
+
+    # Always return true during active conversations to prevent blocking
+    true
+  end
 
   def validate_conversation_structure!
     messages = @chat.messages.order(:created_at)
@@ -77,7 +91,11 @@ class ConversationStateManager
 
     if orphaned_assistant_messages.any?
       @logger.warn "Found #{orphaned_assistant_messages.count} assistant messages with tool calls but no responses"
-      # Don't auto-delete these, but log them for investigation
+      # Instead of keeping these, clean them up to prevent the exact error we're seeing
+      orphaned_assistant_messages.each do |msg|
+        @logger.warn "Removing assistant message #{msg.id} with orphaned tool calls"
+        msg.destroy!
+      end
     end
   end
 

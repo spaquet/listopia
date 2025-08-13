@@ -18,3 +18,11 @@
     </div>
   </div>
 </div>
+<!-- Auto-scroll chat to bottom after message is added -->
+<script>
+  // Scroll chat to bottom
+  const messagesContainer = document.querySelector('#chat-messages');
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+</script>

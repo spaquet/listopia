@@ -1,19 +1,26 @@
 <!-- app/views/lists/create.turbo_stream.erb -->
-<!-- Always update lists and dashboard content (these will just do nothing if elements don't exist) -->
-<!-- Add new list to lists index if present -->
-<%= turbo_stream.prepend "lists-container" do %>
-  <%= render "lists/list_card", list: @list %>
+<!-- Prepend the new list to the lists grid (if on lists index page) -->
+<%= turbo_stream.prepend "lists-grid" do %>
+  <%= turbo_frame_tag "list_card_#{@list.id}" do %>
+    <%= render "lists/list_card", list: @list, current_user: current_user %>
+  <% end %>
 <% end %>
-<!-- Update dashboard stats if present -->
+<!-- Handle empty state - remove it if this is the first list -->
+<%= turbo_stream.remove "empty-state" %>
+<!-- Update dashboard stats -->
 <% dashboard_data = dashboard_data_for_user(current_user) %>
 <%= turbo_stream.replace "dashboard-stats" do %>
   <%= render "dashboard/stats_overview", stats: dashboard_data[:stats] %>
 <% end %>
-<!-- Update my lists section on dashboard if present -->
+<!-- Update my lists section on dashboard -->
 <%= turbo_stream.replace "dashboard-my-lists" do %>
-  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists] %>
+  <%= render "dashboard/my_lists", lists: dashboard_data[:my_lists], current_user: current_user %>
 <% end %>
-<!-- Update recent activity on dashboard if present -->
+<!-- Update collaborated lists section on dashboard -->
+<%= turbo_stream.replace "dashboard-collaborated-lists" do %>
+  <%= render "dashboard/collaborated_lists", lists: dashboard_data[:collaborated_lists], current_user: current_user %>
+<% end %>
+<!-- Update recent activity on dashboard -->
 <%= turbo_stream.replace "dashboard-recent-activity" do %>
   <%= render "dashboard/recent_activity", items: dashboard_data[:recent_items] %>
 <% end %>

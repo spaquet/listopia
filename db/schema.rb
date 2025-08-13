@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -61,9 +61,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.datetime "last_message_at"
     t.json "metadata", default: {}
     t.string "model_id"
+    t.datetime "last_stable_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "conversation_state", default: "stable"
+    t.datetime "last_cleanup_at"
+    t.index ["conversation_state"], name: "index_chats_on_conversation_state"
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
+    t.index ["last_stable_at"], name: "index_chats_on_last_stable_at"
     t.index ["model_id"], name: "index_chats_on_model_id"
     t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
     t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"
@@ -94,6 +99,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
+  create_table "conversation_checkpoints", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "chat_id", null: false
+    t.string "checkpoint_name", null: false
+    t.integer "message_count", default: 0, null: false
+    t.integer "tool_calls_count", default: 0, null: false
+    t.string "conversation_state", default: "stable"
+    t.text "messages_snapshot"
+    t.text "context_data"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "checkpoint_name"], name: "index_conversation_checkpoints_on_chat_id_and_checkpoint_name", unique: true
+    t.index ["chat_id"], name: "index_conversation_checkpoints_on_chat_id"
+    t.index ["created_at"], name: "index_conversation_checkpoints_on_created_at"
+  end
+
   create_table "currents", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -118,28 +138,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["invitation_token"], name: "index_invitations_on_invitation_token", unique: true
     t.index ["invited_by_id"], name: "index_invitations_on_invited_by_id"
     t.index ["user_id"], name: "index_invitations_on_user_id"
-  end
-
-  create_table "list_collaborations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "list_id", null: false
-    t.uuid "user_id"
-    t.integer "permission", default: 0, null: false
-    t.string "email"
-    t.string "invitation_token"
-    t.datetime "invitation_sent_at"
-    t.datetime "invitation_accepted_at"
-    t.uuid "invited_by_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_list_collaborations_on_email"
-    t.index ["invitation_token"], name: "index_list_collaborations_on_invitation_token", unique: true
-    t.index ["invited_by_id"], name: "index_list_collaborations_on_invited_by_id"
-    t.index ["list_id", "email"], name: "index_list_collaborations_on_list_and_email", unique: true, where: "(email IS NOT NULL)"
-    t.index ["list_id", "user_id"], name: "index_list_collaborations_on_list_and_user", unique: true, where: "(user_id IS NOT NULL)"
-    t.index ["list_id"], name: "index_list_collaborations_on_list_id"
-    t.index ["permission"], name: "index_list_collaborations_on_permission"
-    t.index ["user_id", "permission"], name: "index_list_collaborations_on_user_id_and_permission"
-    t.index ["user_id"], name: "index_list_collaborations_on_user_id"
   end
 
   create_table "list_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -188,7 +186,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.string "title", null: false
     t.text "description"
     t.integer "status", default: 0, null: false
-    t.boolean "is_public", default: false
+    t.boolean "is_public", default: false, null: false
+    t.integer "public_permission", default: 0, null: false
     t.string "public_slug"
     t.integer "list_type", default: 0, null: false
     t.json "metadata", default: {}
@@ -202,6 +201,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["list_collaborations_count"], name: "index_lists_on_list_collaborations_count"
     t.index ["list_items_count"], name: "index_lists_on_list_items_count"
     t.index ["list_type"], name: "index_lists_on_list_type"
+    t.index ["public_permission"], name: "index_lists_on_public_permission"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"
     t.index ["user_id", "created_at"], name: "index_lists_on_user_id_and_created_at"
@@ -236,6 +236,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["chat_id", "created_at"], name: "index_messages_on_chat_id_and_created_at"
     t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
     t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
+    t.index ["chat_id", "tool_call_id"], name: "index_messages_on_chat_and_tool_call_id", where: "(tool_call_id IS NOT NULL)"
     t.index ["chat_id"], name: "index_messages_on_chat_id"
     t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
     t.index ["message_type"], name: "index_messages_on_message_type"
@@ -289,6 +290,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["user_id"], name: "index_notification_settings_on_user_id"
   end
 
+  create_table "recovery_contexts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.uuid "chat_id", null: false
+    t.text "context_data"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id"], name: "index_recovery_contexts_on_chat_id"
+    t.index ["created_at"], name: "index_recovery_contexts_on_created_at"
+    t.index ["expires_at"], name: "index_recovery_contexts_on_expires_at"
+    t.index ["user_id", "chat_id"], name: "index_recovery_contexts_on_user_id_and_chat_id"
+    t.index ["user_id"], name: "index_recovery_contexts_on_user_id"
+  end
+
   create_table "relationships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "parent_type", null: false
     t.uuid "parent_id", null: false
@@ -301,6 +316,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["child_type", "child_id"], name: "index_relationships_on_child"
     t.index ["parent_id", "parent_type", "child_id", "child_type"], name: "index_relationships_on_parent_and_child", unique: true
     t.index ["parent_type", "parent_id"], name: "index_relationships_on_parent"
+  end
+
+  create_table "roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "name"
+    t.string "resource_type"
+    t.uuid "resource_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name", "resource_type", "resource_id"], name: "index_roles_on_name_and_resource_type_and_resource_id"
+    t.index ["resource_type", "resource_id"], name: "index_roles_on_resource"
   end
 
   create_table "sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -391,17 +416,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
   end
 
+  create_table "users_roles", id: false, force: :cascade do |t|
+    t.uuid "user_id"
+    t.uuid "role_id"
+    t.index ["role_id"], name: "index_users_roles_on_role_id"
+    t.index ["user_id", "role_id"], name: "index_users_roles_on_user_id_and_role_id"
+    t.index ["user_id"], name: "index_users_roles_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "board_columns", "lists"
   add_foreign_key "chats", "users"
   add_foreign_key "collaborators", "users"
   add_foreign_key "comments", "users"
+  add_foreign_key "conversation_checkpoints", "chats"
   add_foreign_key "invitations", "users"
   add_foreign_key "invitations", "users", column: "invited_by_id"
-  add_foreign_key "list_collaborations", "lists"
-  add_foreign_key "list_collaborations", "users"
-  add_foreign_key "list_collaborations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "board_columns"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"
@@ -409,6 +440,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_07_014433) do
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "users"
   add_foreign_key "notification_settings", "users"
+  add_foreign_key "recovery_contexts", "chats"
+  add_foreign_key "recovery_contexts", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tool_calls", "messages"

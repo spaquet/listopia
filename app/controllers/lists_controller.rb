@@ -3,27 +3,78 @@ class ListsController < ApplicationController
   include ListBroadcasting
 
   before_action :authenticate_user!, except: [ :show, :show_by_slug ]
-  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status ]
   before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
 
   # Display all lists accessible to the current user
   def index
-    # Remove unnecessary includes - use counter caches instead
-    @lists = current_user.accessible_lists
-                        .order(updated_at: :desc)
+    # Start with base scope from policy
+    base_scope = policy_scope(List)
 
-    # Filter by status if provided
-    @lists = @lists.where(status: params[:status]) if params[:status].present?
+    # Build the query step by step to avoid GROUP BY conflicts
+    @lists = base_scope
 
-    # Search functionality
-    if params[:search].present?
-      @lists = @lists.where("title ILIKE ? OR description ILIKE ?",
-                          "%#{params[:search]}%", "%#{params[:search]}%")
+    # Apply status filter (existing functionality)
+    if params[:status].present?
+      @lists = @lists.where(status: params[:status])
     end
+
+    # NEW: Apply visibility filter (public/private)
+    if params[:visibility].present?
+      case params[:visibility]
+      when "public"
+        @lists = @lists.where(is_public: true)
+      when "private"
+        @lists = @lists.where(is_public: false)
+      end
+    end
+
+    # NEW: Apply collaboration filter
+    if params[:collaboration].present?
+      case params[:collaboration]
+      when "owned"
+        # Only lists owned by current user
+        @lists = @lists.where(user_id: current_user.id)
+      when "shared_with_me"
+        # Only lists where current user is a collaborator (not owner)
+        # Use subquery to avoid GROUP BY issues
+        collaborated_list_ids = Collaborator.where(
+          collaboratable_type: "List",
+          user_id: current_user.id
+        ).pluck(:collaboratable_id)
+
+        @lists = @lists.where(id: collaborated_list_ids)
+                      .where.not(user_id: current_user.id)
+      when "shared_by_me"
+        # Only lists owned by current user that have collaborators
+        # Use subquery to find lists with collaborators
+        lists_with_collaborators = Collaborator.where(
+          collaboratable_type: "List"
+        ).select(:collaboratable_id).distinct
+
+        @lists = @lists.where(user_id: current_user.id)
+                      .where(id: lists_with_collaborators)
+      end
+    end
+
+    # Apply search filter (enhanced version)
+    if params[:search].present?
+      search_term = "%#{params[:search].strip}%"
+      @lists = @lists.where(
+        "title ILIKE ? OR description ILIKE ?",
+        search_term, search_term
+      )
+    end
+
+    # Apply includes and ordering at the end
+    @lists = @lists.includes(:owner, :collaborators)
+                  .order(updated_at: :desc)
   end
 
   # Display a specific list with its items
   def show
+    authorize @list
+
     @list_items = @list.list_items.includes(:assigned_user)
                       .order(:position, :created_at)
 
@@ -53,6 +104,7 @@ class ListsController < ApplicationController
   # Show form for creating a new list
   def new
     @list = current_user.lists.build
+    authorize @list
 
     respond_to do |format|
       format.html # Regular page (lists/new.html.erb)
@@ -62,6 +114,9 @@ class ListsController < ApplicationController
 
   # Create a new list
   def create
+    @list = current_user.lists.build(list_params)
+    authorize @list
+
     service = ListCreationService.new(current_user)
     result = service.create_list(**list_params.to_h.symbolize_keys)
 
@@ -69,7 +124,10 @@ class ListsController < ApplicationController
       @list = result.data
       respond_to do |format|
         format.html { redirect_to lists_path, notice: "List was successfully created." }
-        format.turbo_stream { render :create }
+        format.turbo_stream {
+          # Don't trigger additional broadcasts here since service already handled it
+          render :create
+        }
       end
     else
       @list = service.list # Get the unsaved list with errors for form redisplay
@@ -83,199 +141,166 @@ class ListsController < ApplicationController
     end
   end
 
-  # Check if user has permission to access the list
-  def authorize_list_access!
-    action = case action_name
-    when "show" then :read
-    when "edit", "update", "destroy", "toggle_status", "toggle_public_access" then :edit
-    else :read
-    end
-
-    # For public lists, allow read access even without authentication
-    if action == :read && @list.is_public?
-      return true
-    end
-
-    # For all other cases, use the standard authorization
-    authorize_resource_access!(@list, action)
-  end
-
-  # Show form for editing an existing list
+  # Show form for editing a list
   def edit
-    respond_to do |format|
-      format.html # Regular page
-      format.turbo_stream # For modal rendering
-    end
-  end
-
-  # Show sharing modal/page
-  def share
-    @sharing_service = ListSharingService.new(@list, current_user)
-    @sharing_summary = @sharing_service.sharing_summary
-
-    respond_to do |format|
-      format.html # Will render share.html.erb
-      format.turbo_stream # For modal rendering
-    end
+    authorize @list
   end
 
   # Update an existing list
   def update
-    # Store previous status for notifications
-    previous_status = @list.status
+    authorize @list
 
     if @list.update(list_params)
-      # Broadcast updates to other users after successful update
-      broadcast_all_updates(@list)
+      # Add broadcasting for real-time updates to other users
+      broadcast_all_updates(@list, action: :update)
 
       respond_to do |format|
         format.html { redirect_to @list, notice: "List was successfully updated." }
-        format.turbo_stream do
-          # Use turbo streams to update multiple parts of the page
-          render :update
-        end
+        format.turbo_stream { render :update }
       end
     else
       respond_to do |format|
         format.html { render :edit, status: :unprocessable_entity }
-        format.turbo_stream do
-          flash.now[:alert] = "Please fix the errors below."
-          render :edit, status: :unprocessable_entity
-        end
+        format.turbo_stream { render :edit_errors }
       end
+    end
+  end
+
+  # Show sharing options for a list
+  def share
+    authorize @list, :share?
+
+    @collaborators = @list.collaborators.includes(:user)
+    @invitations = @list.invitations.pending.includes(:invited_by)
+    @sharing_service = ListSharingService.new(@list, current_user)
+    @sharing_summary = @sharing_service.sharing_summary
+
+    respond_to do |format|
+      format.html { render :share }
+      format.turbo_stream { render :share }
     end
   end
 
   # Delete a list
   def destroy
-    # Store list data before destruction for broadcasting
-    list_for_broadcast = @list.dup
-    list_for_broadcast.owner = @list.owner
-    list_for_broadcast.collaborators = @list.collaborators.to_a
-
-    # Skip notifications for all list items when deleting the entire list
-    @list.list_items.update_all(skip_notifications: true) if @list.list_items.any?
+    # Ensure only the owner can delete the list
+    unless @list.owner == current_user
+      respond_to do |format|
+        format.html { redirect_to @list, alert: "Only the list owner can delete this list." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Only the list owner can delete this list.", type: "alert" }
+          )
+        }
+      end
+      return
+    end
 
     @list.destroy
-
-    # Broadcast updates to other users after successful deletion
-    broadcast_all_updates(list_for_broadcast)
-
     respond_to do |format|
       format.html { redirect_to lists_path, notice: "List was successfully deleted." }
-      format.turbo_stream do
-        # Use turbo streams to update multiple parts of the page
-        render :destroy
-      end
+      format.turbo_stream { render :destroy }
     end
   end
 
-  # Toggle list completion status
+  # Toggle list status (draft -> active -> completed -> archived)
   def toggle_status
-    @list = current_user.accessible_lists.find(params[:id])
-    authorize_resource_access!(@list, :edit)
+    authorize @list, :update?
 
-    previous_status = @list.status
-    new_status = @list.status_completed? ? :active : :completed
-    @list.update!(status: new_status)
+    service = ListManagementService.new(@list, current_user)
+    result = service.toggle_status
 
-    # Broadcast updates to other users after successful status change
-    broadcast_all_updates(@list)
-
-    respond_to do |format|
-      format.turbo_stream do
-        render :toggle_status
+    if result.success?
+      respond_to do |format|
+        format.html { redirect_to @list, notice: "List status updated to #{@list.status.humanize}" }
+        format.turbo_stream { render :status_updated }
       end
-      format.html { redirect_to @list, notice: "List status updated successfully!" }
+    else
+      respond_to do |format|
+        format.html { redirect_to @list, alert: result.errors.join(", ") }
+        format.turbo_stream { render :status_error }
+      end
     end
   end
 
-  # Toggle public access for the list
+  # Toggle public access for a list
   def toggle_public_access
-    authorize_resource_access!(@list, :edit)
+    authorize @list, :update?
 
-    if @list.is_public?
-      # Make private
-      @list.update!(is_public: false)
-    else
-      # Make public and generate slug if needed
-      @list.update!(is_public: true)
-      @list.generate_public_slug! if @list.public_slug.blank?
+    @list.update!(is_public: !@list.is_public?)
+
+    # Generate public slug if making public
+    if @list.is_public? && @list.public_slug.blank?
+      @list.update!(public_slug: SecureRandom.urlsafe_base64(8))
     end
 
-    # Broadcast updates to other users after successful public access change
-    broadcast_all_updates(@list)
-
     respond_to do |format|
-      format.turbo_stream do
-        render :toggle_public_access
-      end
-      format.html { redirect_to @list, notice: "List visibility updated successfully!" }
+      format.html { redirect_to @list, notice: "Public access #{@list.is_public? ? 'enabled' : 'disabled'}" }
+      format.turbo_stream { render :public_access_toggled }
     end
   end
 
   # Duplicate a list
   def duplicate
-    authorize_resource_access!(@list, :read)
+    authorize @list, :show?
 
-    service = ListCreationService.new(current_user)
-    result = service.duplicate_list(@list)
+    service = ListDuplicationService.new(@list, current_user)
+    result = service.duplicate
 
     if result.success?
       @new_list = result.data
       respond_to do |format|
-        format.html { redirect_to @new_list, notice: "List was successfully duplicated." }
-        format.turbo_stream do
-          @list = @new_list # Set @list to the new list for the turbo stream template
-          render :create # Use the same template as create
-        end
+        format.html { redirect_to @new_list, notice: "List duplicated successfully!" }
+        format.turbo_stream { render :duplicated }
       end
     else
       respond_to do |format|
         format.html { redirect_to @list, alert: result.errors.join(", ") }
-        format.turbo_stream do
-          flash.now[:alert] = result.errors.join(", ")
-          render :error
-        end
+        format.turbo_stream { render :duplication_error }
       end
     end
   end
 
+  # Show sharing options for a list
+  def share
+    authorize @list, :manage_collaborators?
+
+    @collaborators = @list.collaborators.includes(:user)
+    @invitations = @list.invitations.pending.includes(:invited_by)
+    @sharing_service = ListSharingService.new(@list, current_user)
+    @sharing_summary = @sharing_service.sharing_summary
+  end
+
   private
 
-  # Find the list ensuring user has access
   def set_list
-    @list = current_user.accessible_lists.find(params[:id])
+    @list = List.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to lists_path, alert: "List not found."
   end
 
+  # Check if user has permission to access the list using Pundit
+  def authorize_list_access!
+    authorize @list
+  end
+
   # Check if user can collaborate on this list
   def can_collaborate_on_list?
-    current_user && can_access_list?(@list, current_user, :edit)
+    current_user && policy(@list).update?
   end
 
   # Track list views for analytics
   def track_list_view
     # Implementation for analytics tracking
     # Could store in a separate analytics table
-  end
-
-  def can_access_list?(list, user, permission = :read)
-    return false unless user && list
-
-    case permission
-    when :read
-      list.readable_by?(user)
-    when :edit
-      list.collaboratable_by?(user)
-    else
-      false
-    end
+    # ListAnalyticsService.new(@list, current_user).track_view
+    @list.touch if @list && current_user
   end
 
   # Strong parameters for list creation/updates
   def list_params
-    params.require(:list).permit(:title, :description, :status, :is_public, :list_type, :color_theme)
+    params.require(:list).permit(:title, :description, :status, :is_public, :public_permission, :list_type, :color_theme)
   end
 end

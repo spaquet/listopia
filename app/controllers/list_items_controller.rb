@@ -129,7 +129,7 @@ class ListItemsController < ApplicationController
     when "bulk_delete"
       result = service.bulk_delete_items(params[:item_ids] || [])
     else
-      result = ListItemService::Result.failure("Unknown bulk action")
+      result = ApplicationService::Result.failure(errors: "Unknown bulk action")
     end
 
     if result.success?

@@ -58,7 +58,7 @@ class ListSharingService < ApplicationService
     user = user_or_email.is_a?(String) ? User.find_by(email: user_or_email) : user_or_email
     return failure(errors: "User not found") unless user
 
-    collaboration = @list.list_collaborations.find_by(user: user)
+    collaboration = @list.collaborators.find_by(user: user)
     return failure(errors: "User is not a collaborator") unless collaboration
 
     collaboration.destroy
@@ -73,7 +73,7 @@ class ListSharingService < ApplicationService
   def update_permission(user, new_permission)
     return failure(errors: "Not authorized") unless can_manage_sharing?
 
-    collaboration = @list.list_collaborations.find_by(user: user)
+    collaboration = @list.collaborators.find_by(user: user)
     return failure(errors: "User is not a collaborator") unless collaboration
 
     if collaboration.update(permission: new_permission)
@@ -89,9 +89,9 @@ class ListSharingService < ApplicationService
       is_public: @list.is_public?,
       public_url: @list.is_public? ? public_list_url : nil,
       direct_url: list_url(@list),
-      collaborators_count: @list.list_collaborations.count,
-      read_only_collaborators: @list.list_collaborations.permission_read.count,
-      full_collaborators: @list.list_collaborations.permission_collaborate.count
+      collaborators_count: @list.collaborators.count,
+      read_only_collaborators: @list.collaborators.permission_read.count,
+      full_collaborators: @list.collaborators.permission_write.count
     }
   end
 
@@ -106,7 +106,7 @@ class ListSharingService < ApplicationService
   def add_existing_user(user, permission, send_notification)
     return failure(errors: "Cannot add list owner as collaborator") if user == @list.owner
 
-    collaboration = @list.list_collaborations.find_or_initialize_by(user: user)
+    collaboration = @list.collaborators.find_or_initialize_by(user: user)
 
     if collaboration.persisted?
       # Update existing collaboration
