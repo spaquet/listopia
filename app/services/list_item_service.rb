@@ -68,13 +68,13 @@ class ListItemService
         broadcast_item_creation(item)
       end
 
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       Result.failure(@errors.presence || [ "Failed to create item" ])
     end
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   # Complete an item
@@ -89,10 +89,10 @@ class ListItemService
     if item.update(completed: true, completed_at: Time.current)
       @list.reload
       broadcast_item_completion(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = item.errors.full_messages
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
@@ -108,10 +108,10 @@ class ListItemService
     if item.update(attributes)
       @list.reload
       broadcast_item_update(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = item.errors.full_messages
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
@@ -127,10 +127,10 @@ class ListItemService
     if item.destroy
       @list.reload
       broadcast_item_deletion(item)
-      Result.success(item)
+      ApplicationService::Result.success(data: item)
     else
       @errors = [ "Failed to delete item" ]
-      Result.failure(@errors)
+      ApplicationService::Result.failure(errors: @errors)
     end
   end
 
@@ -153,7 +153,7 @@ class ListItemService
     Result.success(@list)
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   # Bulk operations
@@ -179,7 +179,7 @@ class ListItemService
     Result.success(completed_items)
   rescue => e
     @errors = [ e.message ]
-    Result.failure(@errors)
+    ApplicationService::Result.failure(errors: @errors)
   end
 
   private
@@ -260,7 +260,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list }
+      locals: { list_item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -273,7 +273,7 @@ class ListItemService
       "list_#{@list.id}",
       target: "list_item_#{item.id}",
       partial: "list_items/item",
-      locals: { list_item: item, list: @list }
+      locals: { list_item: item, list: @list, current_user: @user }
     )
 
     # Update dashboard for affected users
@@ -289,28 +289,5 @@ class ListItemService
 
     # Update dashboard for affected users
     broadcast_all_updates(@list)
-  end
-
-  # Result class for consistent return values
-  class Result
-    attr_reader :data, :errors
-
-    def initialize(success, data = nil, errors = [])
-      @success = success
-      @data = data
-      @errors = errors
-    end
-
-    def success?
-      @success
-    end
-
-    def self.success(data)
-      new(true, data)
-    end
-
-    def self.failure(errors)
-      new(false, nil, Array(errors))
-    end
   end
 end
