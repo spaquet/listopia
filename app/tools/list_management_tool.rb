@@ -82,23 +82,14 @@ class ListManagementTool < RubyLLM::Tool
 
     Rails.logger.info "Creating planning list: #{title} with context: #{mapped_context}"
 
-    service = ListCreationService.new(@user)
-    result = service.create_planning_list(
-      title: title,
-      description: description,
-      planning_context: mapped_context
-    )
+    begin
+      service = ListCreationService.new(@user)
+      list = service.create_planning_list(
+        title: title,
+        description: description,
+        planning_context: mapped_context
+      )
 
-    if result.nil?
-      Rails.logger.error "ListCreationService returned nil result"
-      return {
-        success: false,
-        error: "Failed to create planning list - service returned no result"
-      }
-    end
-
-    if result.success?
-      list = result.data
       list.reload
       items_count = list.list_items.count
 
@@ -109,20 +100,13 @@ class ListManagementTool < RubyLLM::Tool
         message: "Created planning list '#{list.title}' with #{items_count} initial items",
         list: serialize_list_with_items(list)
       }
-    else
-      Rails.logger.error "Failed to create planning list: #{result.errors.join(', ')}"
+    rescue => e
+      Rails.logger.error "Failed to create planning list: #{e.message}"
       {
         success: false,
-        error: result.errors.join(", ")
+        error: e.message
       }
     end
-  rescue => e
-    Rails.logger.error "Exception in create_planning_list: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-    {
-      success: false,
-      error: "Failed to create planning list: #{e.message}"
-    }
   end
 
   def create_list(title, description = nil)
@@ -132,20 +116,19 @@ class ListManagementTool < RubyLLM::Tool
       description = generate_smart_description(title)
     end
 
-    service = ListCreationService.new(@user)
-    result = service.create_list(title: title, description: description)
+    begin
+      service = ListCreationService.new(@user)
+      list = service.create_list(title: title, description: description)
 
-    if result.success?
-      list = result.data
       {
         success: true,
         message: "Created list '#{list.title}'",
         list: serialize_list(list)
       }
-    else
+    rescue => e
       {
         success: false,
-        error: result.errors.join(", ")
+        error: e.message
       }
     end
   end
