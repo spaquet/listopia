@@ -76,43 +76,62 @@ class ListCreationService < ApplicationService
 
   private
 
-  # Generate smart planning items based on context
+  # Generate smart planning items using AI
   def generate_smart_planning_items(title, description, context)
-    # This method should generate contextual planning items
-    # For now, return some default items based on context
-    case context.to_s.downcase
-    when /trip|travel|vacation/
-      [
-        { title: "Book Air France flights", description: "Use Amex card for booking", type: "task", priority: "high" },
-        { title: "Reserve accommodation", description: "Find hotel or Airbnb in Paris", type: "task", priority: "high" },
-        { title: "Plan itinerary", description: "Research attractions and activities", type: "task", priority: "medium" },
-        { title: "Check passport validity", description: "Ensure passport is valid for travel", type: "task", priority: "high" },
-        { title: "Pack essentials", description: "Create packing checklist", type: "task", priority: "low" },
-        { title: "Travel insurance", description: "Consider travel insurance options", type: "task", priority: "medium" }
-      ]
-    when /event|party|celebration/
-      [
-        { title: "Set date and time", description: "Confirm availability with key attendees", type: "task", priority: "high" },
-        { title: "Create guest list", description: "Determine who to invite", type: "task", priority: "high" },
-        { title: "Send invitations", description: "Send save the dates or invitations", type: "task", priority: "medium" },
-        { title: "Plan menu", description: "Decide on food and beverages", type: "task", priority: "medium" },
-        { title: "Arrange decorations", description: "Theme and decoration planning", type: "task", priority: "low" }
-      ]
-    when /project|work|business/
-      [
-        { title: "Define project scope", description: "Outline project objectives and deliverables", type: "task", priority: "high" },
-        { title: "Assemble team", description: "Identify and assign team members", type: "task", priority: "high" },
-        { title: "Create timeline", description: "Establish milestones and deadlines", type: "task", priority: "medium" },
-        { title: "Set up communication", description: "Establish team communication channels", type: "task", priority: "medium" },
-        { title: "Risk assessment", description: "Identify potential risks and mitigation strategies", type: "task", priority: "low" }
-      ]
-    else
-      [
-        { title: "Define objectives", description: "Clarify what you want to achieve", type: "task", priority: "high" },
-        { title: "Research requirements", description: "Gather necessary information", type: "task", priority: "medium" },
-        { title: "Create action plan", description: "Break down into actionable steps", type: "task", priority: "medium" },
-        { title: "Set timeline", description: "Establish deadlines and milestones", type: "task", priority: "low" }
-      ]
-    end
+    # Use the existing PlanningItemGenerator to create AI-powered contextual items
+    generator = PlanningItemGenerator.new(title, description, context, @user)
+    ai_items = generator.generate_items
+
+    # If AI generation succeeds, use those items
+    return ai_items if ai_items.present?
+
+    # Fallback to basic items if AI generation fails
+    Rails.logger.warn "AI planning generation failed or returned no items, using fallback"
+    generate_fallback_items(title, context)
+  rescue => e
+    Rails.logger.error "Error in generate_smart_planning_items: #{e.message}"
+    generate_fallback_items(title, context)
+  end
+
+  # Fallback items when AI generation fails
+  def generate_fallback_items(title, context)
+    [
+      {
+        title: "Define objectives and scope",
+        description: "Clearly outline what you want to achieve with this #{context || 'project'}",
+        type: "milestone",
+        priority: "high"
+      },
+      {
+        title: "Research and gather requirements",
+        description: "Collect all necessary information and identify what you need",
+        type: "task",
+        priority: "high"
+      },
+      {
+        title: "Create detailed timeline",
+        description: "Break down the work into phases with realistic deadlines",
+        type: "task",
+        priority: "medium"
+      },
+      {
+        title: "Identify resources and budget",
+        description: "Determine what resources, people, and budget you'll need",
+        type: "task",
+        priority: "medium"
+      },
+      {
+        title: "Begin execution",
+        description: "Start implementing your plan step by step",
+        type: "milestone",
+        priority: "medium"
+      },
+      {
+        title: "Review and adjust",
+        description: "Track progress and make adjustments as needed",
+        type: "task",
+        priority: "low"
+      }
+    ]
   end
 end
