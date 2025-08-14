@@ -2,9 +2,11 @@
 <%# Use local variable current_user if provided, fallback to helper method %>
 <% user = local_assigns[:current_user] || (respond_to?(:current_user) ? current_user : nil) %>
 <%= turbo_frame_tag "list_card_#{list.id}" do %>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-200 group" 
-     id="list_<%= list.id %>">
-    <div class="p-5">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-200 group h-[300px] sm:h-[320px] lg:h-[320px] overflow-hidden" 
+       id="list_<%= list.id %>">
+    <%# Added h-[300px] sm:h-[320px] lg:h-[340px] for fixed height and overflow-hidden %>
+    <div class="p-5 flex flex-col h-full">
+      <%# Added flex flex-col h-full to make inner content stretch to fill the card %>
       <!-- Header Section -->
       <div class="flex items-start justify-between mb-4">
         <div class="flex-1 min-w-0">
@@ -32,7 +34,8 @@
           <!-- Title -->
           <%= link_to list, 
                     data: { turbo_frame: "_top" },
-                    class: "block text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-1 mb-2" do %>
+                    class: "block text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-2 mb-2" do %>
+            <%# Changed line-clamp-1 to line-clamp-2 for max two rows %>
             <%= list.title %>
           <% end %>
           <!-- Description -->
@@ -117,11 +120,12 @@
         <!-- Progress Bar -->
         <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out" 
-             style="width: <%= stats[:percentage] %>%"></div>
+               style="width: <%= stats[:percentage] %>%"></div>
         </div>
       </div>
       <!-- Footer Meta Info -->
-      <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
+      <div class="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100 mt-auto">
+        <%# Added mt-auto to push footer to the bottom of the card %>
         <div class="flex items-center space-x-3">
           <!-- Public/Private Status -->
           <div class="flex items-center space-x-1">
