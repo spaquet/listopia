@@ -196,7 +196,8 @@ class ListManagementTool < RubyLLM::Tool
   end
 
   def get_lists
-    lists = @user.accessible_lists.recent.limit(20)
+    # Replace .recent with .order(updated_at: :desc)
+    lists = @user.accessible_lists.order(updated_at: :desc).limit(20)
 
     {
       success: true,

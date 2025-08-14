@@ -108,7 +108,8 @@ class List < ApplicationRecord
   joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
     .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
     .group("lists.id")  # Use GROUP BY instead of DISTINCT
-}
+  }
+  scope :recent, -> { order(updated_at: :desc) }
 
   # Callbacks
   before_create :generate_public_slug, if: :is_public?
