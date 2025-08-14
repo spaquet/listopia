@@ -40,7 +40,6 @@ RubyLLM.configure do |config|
   # Logging Settings
   config.log_file = Rails.root.join("log", "ruby_llm.log").to_s
   config.log_level = Rails.env.production? ? :info : :debug
-  config.log_assume_model_exists = false
 
   # Use Rails logger in Rails environment
   config.logger = Rails.logger
