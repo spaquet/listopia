@@ -177,7 +177,7 @@ class ListItem < ApplicationRecord
 
   def track_update_context
     if Current.user
-      action = if saved_change_to_status? && status == "completed"
+      action = if saved_change_to_completed? && completed?
         "item_completed"
       elsif saved_change_to_assigned_user_id?
         "item_assigned"
