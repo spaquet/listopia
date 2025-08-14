@@ -271,7 +271,7 @@ end
 
   def process_with_standard_llm(message_content)
     # Eager loading for tool_calls
-    messages = @chat.messages.includes(:tool_calls).ordered
+    messages = @chat.messages.includes(:tool_calls).order(:created_at)
 
     # Your existing process_message logic from the transaction block
     result = nil
