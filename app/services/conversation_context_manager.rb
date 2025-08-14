@@ -95,69 +95,52 @@ class ConversationContextManager
 
     # Add recent interaction context
     if recent_contexts.any?
-      recent_actions = recent_contexts.group_by(&:action).transform_values(&:count)
-      action_summary = recent_actions.map { |action, count| "#{action} (#{count}x)" }.join(', ')
-      instructions << "Recent user actions: #{action_summary}."
+      recent_actions = recent_contexts.map(&:action).uniq
+      instructions << "Recent actions: #{recent_actions.join(', ')}."
     end
 
-    # Add disambiguation hints
-    disambiguation_context = build_disambiguation_context(recent_contexts)
-    if disambiguation_context.any?
-      instructions << "Context for reference resolution:"
-      disambiguation_context.each do |key, value|
-        instructions << "- #{key}: #{value}"
-      end
+    # Add disambiguation context
+    disambiguation = build_disambiguation_context(recent_contexts)
+    if disambiguation.any?
+      instructions << "Context references: #{disambiguation.map { |k, v| "#{k}: #{v}" }.join(', ')}."
     end
 
-    instructions.join("\n")
-  end
-
-  # Cleanup old contexts (called by background job)
-  def self.cleanup_expired_contexts!
-    start_time = Time.current
-
-    # Remove explicitly expired contexts
-    expired_count = ConversationContext.where("expires_at < ?", Time.current).delete_all
-
-    # Remove very old contexts (older than 7 days)
-    old_count = ConversationContext.where("created_at < ?", 7.days.ago).delete_all
-
-    # Remove low-relevance old contexts (older than 24 hours with score < 50)
-    irrelevant_count = ConversationContext
-      .where("created_at < ? AND relevance_score < ?", 24.hours.ago, 50)
-      .delete_all
-
-    processing_time = Time.current - start_time
-    total_cleaned = expired_count + old_count + irrelevant_count
-
-    Rails.logger.info "Context cleanup completed: #{total_cleaned} contexts removed in #{processing_time.round(2)}s"
-
-    {
-      expired: expired_count,
-      old: old_count,
-      irrelevant: irrelevant_count,
-      total: total_cleaned,
-      processing_time: processing_time
-    }
+    instructions.join(' ')
   end
 
   private
 
   def extract_references(message_content)
-    references = {}
     message_lower = message_content.downcase
+    references = {}
 
     # List references
-    if message_lower.match?(/\b(this|current|the)\s+(list|project)\b/)
+    if message_lower.match?(/\b(this|current|the)\s+(list|todo|task\s*list)\b/)
       references[:this_list] = true
     end
 
-    if message_lower.match?(/\b(my|recent|last)\s+(list|project)\b/)
+    if message_lower.match?(/\b(my|user)\s+(lists?)\b/)
+      references[:user_lists] = true
+    end
+
+    if message_lower.match?(/\b(recent|last|latest)\s+(list)\b/)
       references[:recent_list] = true
     end
 
-    # Item references with quantities
-    if match = message_lower.match(/\b(first|last|top)\s+(\d+)\s+(items?|tasks?)\b/)
+    # Item references with quantity
+    if (match = message_lower.match(/\b(first|top)\s+(\d+)\s+(items?|tasks?)\b/))
+      references[:first_items] = { position: match[1], count: match[2].to_i }
+    elsif message_lower.match?(/\b(first|top)\s+(item|task|few\s+items)\b/)
+      references[:first_items] = { position: "first", count: 3 }
+    end
+
+    if (match = message_lower.match(/\b(last|bottom)\s+(\d+)\s+(items?|tasks?)\b/))
+      references[:last_items] = { position: match[1], count: match[2].to_i }
+    elsif message_lower.match?(/\b(last|bottom)\s+(item|task|few\s+items)\b/)
+      references[:last_items] = { position: "last", count: 3 }
+    end
+
+    if (match = message_lower.match(/\b(\d+)(?:st|nd|rd|th)\s+(items?|tasks?)\b/))
       references[:ordered_items] = { position: match[1], count: match[2].to_i }
     end
 
@@ -271,6 +254,18 @@ class ConversationContextManager
     items.limit(10).map { |item| format_item_context(item) }
   end
 
+  def resolve_user_lists
+    @user.lists.order(updated_at: :desc).limit(10).map { |list| format_list_context(list) }
+  end
+
+  def resolve_items_by_ids(item_ids)
+    items = ListItem.where(id: item_ids)
+                   .joins(:list)
+                   .where(lists: { id: @user.accessible_lists.select(:id) })
+
+    items.map { |item| format_item_context(item) }
+  end
+
   def get_recent_contexts(limit: 20)
     @user.conversation_contexts
       .active
@@ -279,6 +274,7 @@ class ConversationContextManager
       .includes(:chat)
   end
 
+  # FIXED: Use correct fields for ListItem
   def format_list_context(list)
     return nil unless list
 
@@ -290,18 +286,26 @@ class ConversationContextManager
       completed_count: list.list_items.completed.count,
       is_owner: list.owner == @user,
       recent_items: list.list_items.order(updated_at: :desc).limit(5).map { |item|
-        { id: item.id, title: item.title, status: item.status }
+        # Use completed boolean instead of status enum for ListItem
+        {
+          id: item.id,
+          title: item.title,
+          completed: item.completed,
+          status: item.completed? ? "completed" : "pending"  # Create status for consistency
+        }
       }
     }
   end
 
+  # FIXED: Use correct fields for ListItem
   def format_item_context(item)
     return nil unless item
 
     {
       id: item.id,
       title: item.title,
-      status: item.status,
+      completed: item.completed,
+      status: item.completed? ? "completed" : "pending",  # Create status for consistency
       list_id: item.list_id,
       list_title: item.list.title,
       position: item.position,
@@ -374,5 +378,23 @@ class ConversationContextManager
     end
 
     disambiguation
+  end
+
+  # Class methods for cleanup
+  class << self
+    def cleanup_expired_contexts!
+      cutoff_time = 7.days.ago
+      expired_contexts = ConversationContext.where('created_at < ?', cutoff_time)
+
+      cleanup_count = expired_contexts.count
+      expired_contexts.delete_all
+
+      Rails.logger.info "Cleaned up #{cleanup_count} expired conversation contexts"
+
+      {
+        total: cleanup_count,
+        cutoff_time: cutoff_time
+      }
+    end
   end
 end
