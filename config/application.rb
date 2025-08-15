@@ -23,5 +23,18 @@ module Listopia
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+
+    config.complexity_analysis = ActiveSupport::OrderedOptions.new
+    config.complexity_analysis.enabled = ENV.fetch("COMPLEXITY_ANALYSIS_ENABLED", "false") == "true"
+    config.complexity_analysis.method = ENV.fetch("COMPLEXITY_ANALYSIS_METHOD", "llm_primary")
+    config.complexity_analysis.cultural_adaptation = ENV.fetch("CULTURAL_ADAPTATION", "true") == "true"
+    config.complexity_analysis.user_learning = ENV.fetch("USER_LEARNING", "false") == "true"
+    config.complexity_analysis.cache_duration = ENV.fetch("COMPLEXITY_CACHE_DURATION", "3600").to_i
+    config.complexity_analysis.timeout = ENV.fetch("COMPLEXITY_ANALYSIS_TIMEOUT", "30").to_i
+    config.complexity_analysis.fallback_enabled = ENV.fetch("COMPLEXITY_FALLBACK_ENABLED", "true") == "true"
+    config.complexity_analysis.debug_logging = ENV.fetch("COMPLEXITY_DEBUG_LOGGING", "false") == "true"
+    config.complexity_analysis.error_reporting = ENV.fetch("COMPLEXITY_ERROR_REPORTING", "false") == "true"
+    config.complexity_analysis.metrics_enabled = ENV.fetch("COMPLEXITY_METRICS_ENABLED", "false") == "true"
   end
 end
