@@ -1,17 +1,18 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
   before_action :authenticate_user!
+  before_action :set_user, only: [ :show, :edit, :update ]
+  before_action :authorize_user_access!, only: [ :edit, :update ]
 
-  def show
-    @user = current_user
-  end
 
-  def edit
-    @user = current_user
-  end
+  # Make helper methods available to views - THIS GOES AT THE TOP
+  helper_method :locale_options, :timezone_options
+
+  def show; end
+
+  def edit; end
 
   def update
-    @user = current_user
     if @user.update(user_params)
       redirect_to user_path, notice: "Profile updated successfully."
     else
@@ -66,7 +67,7 @@ class UsersController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:name, :email, :bio, :avatar_url)
+    params.require(:user).permit(:name, :email, :bio, :avatar_url, :locale, :timezone)
   end
 
   def password_params
@@ -88,5 +89,36 @@ class UsersController < ApplicationController
       :status_change_notifications,
       :notification_frequency
     )
+  end
+
+  def set_user
+    @user = User.find(params[:id])
+  end
+
+  # TODO: Upgrade this to use Pundit and Rolify for authorization
+  def authorize_user_access!
+    unless @user == current_user
+      redirect_to root_path, alert: "Access denied."
+    end
+  end
+
+  # Helper methods for locale and timezone dropdowns
+  def locale_options
+    [
+      [ "English", "en" ],
+      [ "Español", "es" ],
+      [ "Français", "fr" ],
+      [ "Deutsch", "de" ],
+      [ "日本語", "ja" ],
+      [ "中文", "zh" ],
+      [ "العربية", "ar" ],
+      [ "Русский", "ru" ],
+      [ "Português", "pt" ],
+      [ "Italiano", "it" ]
+    ]
+  end
+
+  def timezone_options
+    ActiveSupport::TimeZone.all.map { |tz| [tz.to_s, tz.name] }
   end
 end

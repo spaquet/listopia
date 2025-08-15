@@ -433,13 +433,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
     t.datetime "email_verified_at"
     t.string "provider"
     t.string "uid"
+    t.string "locale", limit: 10, default: "en", null: false
+    t.string "timezone", limit: 50, default: "UTC", null: false
     t.string "avatar_url"
     t.text "bio"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["email_verification_token"], name: "index_users_on_email_verification_token", unique: true
+    t.index ["locale"], name: "index_users_on_locale"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
+    t.index ["timezone"], name: "index_users_on_timezone"
   end
 
   create_table "users_roles", id: false, force: :cascade do |t|

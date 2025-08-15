@@ -1,4 +1,8 @@
 # app/services/mcp_service.rb
+
+require "net/http"
+require "timeout"
+
 class McpService
   include ActiveModel::Model
   include ActiveModel::Attributes

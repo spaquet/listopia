@@ -9,9 +9,11 @@
 #  email                    :string           not null
 #  email_verification_token :string
 #  email_verified_at        :datetime
+#  locale                   :string(10)       default("en"), not null
 #  name                     :string           not null
 #  password_digest          :string           not null
 #  provider                 :string
+#  timezone                 :string(50)       default("UTC"), not null
 #  uid                      :string
 #  created_at               :datetime         not null
 #  updated_at               :datetime         not null
@@ -20,7 +22,9 @@
 #
 #  index_users_on_email                     (email) UNIQUE
 #  index_users_on_email_verification_token  (email_verification_token) UNIQUE
+#  index_users_on_locale                    (locale)
 #  index_users_on_provider_and_uid          (provider,uid) UNIQUE
+#  index_users_on_timezone                  (timezone)
 #
 # Update app/models/user.rb - Add notification association and methods
 class User < ApplicationRecord
@@ -58,6 +62,7 @@ class User < ApplicationRecord
   validates :name, presence: true
 
   # Callbacks
+  before_validation :set_defaults, on: :create
   after_create :create_default_notification_settings
 
   # Scopes
@@ -214,8 +219,33 @@ class User < ApplicationRecord
     conversation_contexts.within_timeframe(hours).exists?
   end
 
+  # Set locale for I18n around user actions
+  def with_locale(&block)
+    I18n.with_locale(locale, &block)
+  end
+
+  # Get user's preferred locale or fallback to default
+  def preferred_locale
+    locale.presence&.to_sym || I18n.default_locale
+  end
+
+  # Timezone-aware methods
+  def in_timezone(&block)
+    Time.use_zone(timezone, &block)
+  end
+
+  def current_time
+    Time.current.in_time_zone(timezone)
+  end
+
   # Private methods
   private
+
+  # Set default locale and timezone on user creation
+  def set_defaults
+    self.locale ||= I18n.default_locale.to_s
+    self.timezone ||= "UTC"
+  end
 
   def create_default_notification_settings
     build_notification_settings.save! unless notification_settings
