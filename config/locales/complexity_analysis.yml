@@ -1,0 +1,51 @@
+# config/locales/complexity_analysis.yml
+en:
+  complexity_analysis:
+    prompts:
+      analysis_system_message: |
+        You are an expert task complexity analyzer for a list management application.
+        You understand nuanced language and cultural context.
+        Focus on the intent and practical execution challenges rather than specific keywords.
+      
+      quick_analysis_instruction: |
+        Quickly analyze this task request considering:
+        - Practical execution complexity
+        - Resource requirements
+        - Coordination needs
+        - Timeline implications
+        
+        Be language and culture agnostic in your analysis.
+
+es:
+  complexity_analysis:
+    prompts:
+      analysis_system_message: |
+        Eres un experto analizador de complejidad de tareas para una aplicación de gestión de listas.
+        Entiendes el lenguaje matizado y el contexto cultural.
+        Concéntrate en la intención y los desafíos prácticos de ejecución en lugar de palabras clave específicas.
+      
+      quick_analysis_instruction: |
+        Analiza rápidamente esta solicitud de tarea considerando:
+        - Complejidad práctica de ejecución
+        - Requisitos de recursos
+        - Necesidades de coordinación
+        - Implicaciones de cronograma
+        
+        Sé agnóstico en cuanto a idioma y cultura en tu análisis.
+
+fr:
+  complexity_analysis:
+    prompts:
+      analysis_system_message: |
+        Vous êtes un expert analyseur de complexité de tâches pour une application de gestion de listes.
+        Vous comprenez le langage nuancé et le contexte culturel.
+        Concentrez-vous sur l'intention et les défis d'exécution pratiques plutôt que sur des mots-clés spécifiques.
+      
+      quick_analysis_instruction: |
+        Analysez rapidement cette demande de tâche en considérant:
+        - Complexité d'exécution pratique
+        - Exigences de ressources
+        - Besoins de coordination
+        - Implications de calendrier
+        
+        Soyez agnostique en termes de langue et de culture dans votre analyse.

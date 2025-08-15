@@ -61,22 +61,36 @@ class AiOrchestrationService
 
   # Analyze the complexity and type of the user's task
   def analyze_task_complexity(user_message)
-    # Use RubyLLM for intelligent task analysis instead of rigid patterns
-    analysis_chat = create_analysis_chat
-
-    analysis_prompt = build_task_analysis_prompt(user_message)
+    # Use the new TaskComplexityAnalyzer instead of custom analysis
+    complexity_analyzer = MultilingualComplexityAnalyzer.new(
+      user: @user,
+      context: @context,
+      chat: @chat
+    )
 
     begin
-      response = analysis_chat.ask(analysis_prompt)
-      parsed_analysis = parse_task_analysis_response(response.content)
+      analysis = complexity_analyzer.analyze_complexity(user_message)
 
-      # Validate the analysis
-      validate_task_analysis!(parsed_analysis)
+      # Convert to format expected by existing orchestration logic
+      {
+        type: determine_task_type_from_analysis(analysis),
+        complexity_level: analysis[:complexity_score],
+        requires_tools: analysis[:external_service_analysis][:needs_external_services] ||
+                      analysis[:complexity_score] >= 4,
+        suggested_tools: determine_suggested_tools(analysis),
+        multi_step: analysis[:multi_step_analysis][:has_multi_step_elements],
+        dependencies: [], # Could be enhanced from analysis
+        urgency: "medium", # Could be enhanced from analysis
+        context_needed: [],
+        user_intent: analysis[:list_type_classification][:primary_type],
+        analysis_method: "complexity_analyzer_integration",
 
-      parsed_analysis
+        # ADD: Full analysis for enhanced services
+        full_analysis: analysis
+      }
     rescue => e
       @logger.error "Task analysis failed: #{e.message}"
-      # Fallback to heuristic analysis
+      # Fallback to your existing method
       fallback_task_analysis(user_message)
     end
   end
@@ -364,5 +378,39 @@ class AiOrchestrationService
     end
 
     instructions.empty? ? nil : instructions.join(" ")
+  end
+
+  def determine_task_type_from_analysis(analysis)
+    if analysis[:list_type_classification][:primary_type] == "professional"
+      if analysis[:complexity_score] >= 7
+        "complex_planning"
+      else
+        "task_management"
+      end
+    else
+      if analysis[:complexity_score] >= 6
+        "complex_planning"
+      else
+        "task_management"
+      end
+    end
+  end
+
+  def determine_suggested_tools(analysis)
+    tools = []
+
+    if analysis[:complexity_score] >= 3
+      tools << "list_management_tool"
+    end
+
+    if analysis[:external_service_analysis][:service_categories][:communication]
+      tools << "email_tool" # if you have it
+    end
+
+    if analysis[:location_analysis][:travel_related]
+      tools << "calendar_tool" # if you have it
+    end
+
+    tools
   end
 end

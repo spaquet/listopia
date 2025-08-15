@@ -117,7 +117,7 @@ Rails.application.routes.draw do
     resources :users
     resources :lists
 
-    resources :conversation_contexts, only: [:index, :show, :destroy] do
+    resources :conversation_contexts, only: [ :index, :show, :destroy ] do
       collection do
         delete :cleanup
         get :stats

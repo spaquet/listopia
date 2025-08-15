@@ -24,6 +24,22 @@ class McpService
       current_context: @context
     )
 
+    # ADD: Initialize complexity analyzer if enabled
+    if Rails.application.config.complexity_analysis&.enabled && @chat
+      begin
+        @complexity_analyzer = MultilingualComplexityAnalyzer.new(
+          user: @user,
+          context: @context,
+          chat: @chat,
+          locale: @user.locale || I18n.locale
+        )
+        Rails.logger.debug "TaskComplexityAnalyzer initialized for user #{@user.id}"
+      rescue => e
+        Rails.logger.error "Failed to initialize TaskComplexityAnalyzer: #{e.message}"
+        @complexity_analyzer = nil
+      end
+    end
+
     # Add enhanced services only if error recovery is enabled AND chat exists
     if Rails.application.config.mcp.error_recovery&.enabled && @chat
       begin
@@ -66,12 +82,35 @@ class McpService
     end
 
     begin
+      # ADD: Perform complexity analysis if available
+      complexity_preview = nil
+      if @complexity_analyzer
+        begin
+          complexity_preview = @complexity_analyzer.quick_complexity_check(message_content)
+          Rails.logger.debug "Complexity preview: #{complexity_preview[:complexity_score]}/10, requires_planning: #{complexity_preview[:requires_planning]}"
+        rescue => e
+          Rails.logger.warn "Complexity analysis failed, continuing without: #{e.message}"
+          complexity_preview = nil
+        end
+      end
+
       # Resolve context references before processing
       resolved_context = @context_manager.resolve_references(message_content)
+
+      # ENHANCE: Add complexity insights to context
       enhanced_context = @context.merge(resolved_context)
+      if complexity_preview
+        enhanced_context = enhanced_context.merge({
+          complexity_preview: complexity_preview,
+          requires_planning: complexity_preview[:requires_planning],
+          estimated_complexity: complexity_preview[:complexity_score],
+          planning_intelligence: build_planning_intelligence(complexity_preview)
+        })
+      end
+
       @enhanced_context = enhanced_context
 
-      # Update tools with enhanced context
+      # Update tools with enhanced context (including complexity insights)
       @tools = McpTools.new(@user, enhanced_context)
 
       # Enhanced error recovery if enabled
@@ -100,8 +139,8 @@ class McpService
         end
       end
 
-      # NEW: Enhanced processing with AI orchestration
-      result = if @ai_orchestrator && should_use_orchestration?(message_content)
+      # ENHANCE: Enhanced processing with complexity-aware orchestration
+      result = if @ai_orchestrator && should_use_orchestration?(message_content, complexity_preview)
         process_with_ai_orchestration(message_content)
       elsif @resilient_llm
         process_with_resilient_llm(message_content, enhanced_context)
@@ -109,15 +148,25 @@ class McpService
         process_with_standard_llm(message_content)
       end
 
-      # Track the chat interaction
+      # Track the chat interaction with complexity data
+      tracking_metadata = {
+        message_length: message_content.length,
+        resolved_context: resolved_context.keys,
+        processing_time: Time.current - start_time
+      }
+
+      if complexity_preview
+        tracking_metadata.merge!({
+          complexity_score: complexity_preview[:complexity_score],
+          requires_planning: complexity_preview[:requires_planning],
+          analysis_method: "complexity_analyzer"
+        })
+      end
+
       @context_manager.track_action(
         action: "chat_message_sent",
         entity: @chat,
-        metadata: {
-          message_length: message_content.length,
-          resolved_context: resolved_context.keys,
-          processing_time: Time.current - start_time
-        }
+        metadata: tracking_metadata
       )
 
       # Mark successful processing
@@ -161,40 +210,80 @@ class McpService
     end
   end
 
-private
-
-# NEW: Determine if message would benefit from AI orchestration
-def should_use_orchestration?(message_content)
-  orchestration_keywords = [
-    "plan", "planning", "create a plan", "step by step", "workflow",
-    "organize", "break down", "manage", "strategy", "approach",
-    "help me with", "guide me", "walk me through", "create a list for",
-    "project", "event", "travel", "learning", "curriculum", "schedule"
-  ]
-
-  message_lower = message_content.downcase
-  orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
-end
-
-# NEW: Process message using AI orchestration
-def process_with_ai_orchestration(message_content)
-  orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
-
-  if orchestration_result[:success]
-    orchestration_result[:result]
-  elsif orchestration_result[:fallback_needed]
-    # Fallback to standard processing
-    if @resilient_llm
-      process_with_resilient_llm(message_content)
-    else
-      process_with_standard_llm(message_content)
-    end
-  else
-    orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
-  end
-end
-
   private
+
+  # Determine if message would benefit from AI orchestration
+  def should_use_orchestration?(message_content, complexity_preview = nil)
+    # Use complexity analysis for smarter orchestration decisions
+    if complexity_preview
+        # High complexity or planning-required messages benefit from orchestration
+        return true if complexity_preview[:complexity_score] >= 6
+        return true if complexity_preview[:requires_planning]
+        return true if complexity_preview[:multi_location]
+        return true if complexity_preview[:external_services]
+    end
+
+    # Fallback to existing keyword detection
+    orchestration_keywords = [
+        "plan", "planning", "create a plan", "step by step", "workflow",
+        "organize", "break down", "manage", "strategy", "approach",
+        "help me with", "guide me", "walk me through", "create a list for",
+        "project", "event", "travel", "learning", "curriculum", "schedule"
+    ]
+
+    message_lower = message_content.downcase
+    orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
+  end
+
+  # Build planning intelligence context for system instructions
+  def build_planning_intelligence(complexity_preview)
+    return nil unless complexity_preview
+
+    intelligence = []
+
+    case complexity_preview[:complexity_score]
+    when 1..3
+      intelligence << "This appears to be a straightforward task."
+    when 4..6
+      intelligence << "This appears to be a moderate complexity task that may benefit from structured planning."
+    when 7..8
+      intelligence << "This appears to be a complex task that would benefit from hierarchical organization and careful planning."
+    when 9..10
+      intelligence << "This appears to be a very complex task requiring comprehensive planning with phases and dependencies."
+    end
+
+    if complexity_preview[:multi_location]
+      intelligence << "Multi-location coordination may be needed."
+    end
+
+    if complexity_preview[:external_services]
+      intelligence << "External services (booking, research, communication) may be required."
+    end
+
+    if complexity_preview[:requires_planning]
+      intelligence << "Consider creating structured lists with appropriate organization."
+    end
+
+    intelligence.join(" ")
+  end
+
+  # Process message using AI orchestration
+  def process_with_ai_orchestration(message_content)
+    orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
+
+    if orchestration_result[:success]
+      orchestration_result[:result]
+    elsif orchestration_result[:fallback_needed]
+      # Fallback to standard processing
+      if @resilient_llm
+        process_with_resilient_llm(message_content)
+      else
+        process_with_standard_llm(message_content)
+      end
+    else
+      orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
+    end
+  end
 
   def should_use_orchestration?(message_content)
     # Determine if message would benefit from AI orchestration
@@ -482,6 +571,7 @@ end
     @context.present? || @chat.messages.where(role: "system").empty?
   end
 
+  # Build system instructions with enhanced context
   def build_system_instructions
     instructions = []
 
@@ -498,22 +588,31 @@ end
       end
     end
 
+    # ADD: Include planning intelligence if available
+    if @enhanced_context && @enhanced_context[:planning_intelligence]
+      instructions << "\nTASK COMPLEXITY ANALYSIS:"
+      instructions << @enhanced_context[:planning_intelligence]
+      instructions << "\nUse this analysis to provide appropriately structured solutions."
+    end
+
     # Enhanced planning context instructions
     instructions << <<~PLANNING
       IMPORTANT: Listopia is fundamentally a planning and organization tool.
       When users ask for help with planning, organizing, or managing tasks:
       1. CREATE concrete, actionable lists using the available tools
-      2. ORGANIZE information into clear, structured formats
+      2. ORGANIZE information into clear, structured formats appropriate to the task complexity
       3. SUGGEST workflows and processes that help users stay organized
       4. USE the list and item management tools to create tangible outcomes
+      5. ADAPT your approach based on the complexity analysis provided
 
       Available tools can help you:
       - Create and manage lists for any planning purpose
-      - Add, update, and organize list items
+      - Add, update, and organize list items with appropriate complexity
       - Set priorities, due dates, and assignments
-      - Create structured approaches to complex projects
+      - Create structured approaches from simple lists to complex hierarchical projects
 
       Always aim to provide practical, organized solutions that users can immediately act upon.
+      Scale your organizational approach to match the task complexity.
     PLANNING
 
     # Keep your existing context logic

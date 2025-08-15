@@ -35,13 +35,13 @@ class ConversationContext < ApplicationRecord
   # Complex scopes for context resolution
   scope :lists_recently_viewed, -> {
     for_entity_type("List")
-      .for_action(["list_viewed", "list_created", "list_updated"])
+      .for_action([ "list_viewed", "list_created", "list_updated" ])
       .within_timeframe(2) # 2 hours for list context
   }
 
   scope :items_recently_interacted, -> {
     for_entity_type("ListItem")
-      .for_action(["item_added", "item_updated", "item_completed", "item_assigned"])
+      .for_action([ "item_added", "item_updated", "item_completed", "item_assigned" ])
       .within_timeframe(1) # 1 hour for item context
   }
 
@@ -152,7 +152,7 @@ class ConversationContext < ApplicationRecord
       base_score += 25
     end
 
-    [base_score, 1000].min # Cap at 1000
+    [ base_score, 1000 ].min # Cap at 1000
   end
 
   def self.calculate_expiration(action)

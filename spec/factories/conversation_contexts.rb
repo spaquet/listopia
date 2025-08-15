@@ -35,6 +35,5 @@
 #
 FactoryBot.define do
   factory :conversation_context do
-    
   end
 end

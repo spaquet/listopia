@@ -100,15 +100,15 @@ module Chat::ChatHelper
         # NEW: Add recent item interactions
         if current_user
           recent_item_contexts = current_user.conversation_contexts
-            .for_entity_type('ListItem')
-            .where('entity_data @> ?', { list_id: @list.id }.to_json)
+            .for_entity_type("ListItem")
+            .where("entity_data @> ?", { list_id: @list.id }.to_json)
             .recent
             .limit(5)
 
           list_context[:recent_item_interactions] = recent_item_contexts.map do |ctx|
             {
               action: ctx.action,
-              item_title: ctx.entity_data['title'],
+              item_title: ctx.entity_data["title"],
               created_at: ctx.created_at
             }
           end
@@ -127,15 +127,15 @@ module Chat::ChatHelper
 
         # NEW: Add recently viewed lists
         recent_list_contexts = current_user.conversation_contexts
-          .for_entity_type('List')
-          .for_action(['list_viewed', 'list_created'])
+          .for_entity_type("List")
+          .for_action([ "list_viewed", "list_created" ])
           .recent
           .limit(5)
 
         index_context[:recently_viewed_lists] = recent_list_contexts.map do |ctx|
           {
             list_id: ctx.entity_id,
-            list_title: ctx.entity_data['title'],
+            list_title: ctx.entity_data["title"],
             action: ctx.action,
             viewed_at: ctx.created_at
           }
@@ -291,7 +291,7 @@ module Chat::ChatHelper
     suggestions << "Assign items to collaborators" if @list.collaborators.any?
 
     # NEW: Context-based suggestions
-    if current_user.conversation_contexts.for_action('item_added').within_timeframe(1).any?
+    if current_user.conversation_contexts.for_action("item_added").within_timeframe(1).any?
       suggestions << "Organize recently added items"
     end
 
@@ -312,11 +312,11 @@ module Chat::ChatHelper
     # NEW: Context-based suggestions
     recent_activity = current_user.conversation_contexts.within_timeframe(24).group(:action).count
 
-    if recent_activity['list_created'].to_i > 0
+    if recent_activity["list_created"].to_i > 0
       suggestions << "Continue working on recently created lists"
     end
 
-    if recent_activity['item_completed'].to_i > 5
+    if recent_activity["item_completed"].to_i > 5
       suggestions << "Review completed tasks from today"
     end
 

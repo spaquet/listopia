@@ -1,7 +1,6 @@
 # db/migrate/20250813185320_create_conversation_contexts.rb
 class CreateConversationContexts < ActiveRecord::Migration[8.0]
   def change
-
     create_table :conversation_contexts, id: :uuid do |t|
       t.references :user, null: false, foreign_key: true, type: :uuid
       t.references :chat, null: true, foreign_key: true, type: :uuid

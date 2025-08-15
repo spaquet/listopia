@@ -39,6 +39,14 @@ class ListManagementTool < RubyLLM::Tool
       chat: @user.current_chat,
       current_context: @context
     )
+
+    # Initialize complexity analyzer with user's locale
+    @complexity_analyzer = MultilingualComplexityAnalyzer.new(
+      user: @user,
+      context: @context,
+      chat: @user.current_chat,
+      locale: @user.locale || I18n.locale
+    )
   end
 
   def execute(action:, list_id: nil, title: nil, description: nil, item_id: nil, planning_context: nil)
@@ -77,33 +85,54 @@ class ListManagementTool < RubyLLM::Tool
   def create_planning_list(title, description = nil, planning_context = nil)
     return { success: false, error: "Title is required to create a planning list" } if title.blank?
 
+    # Extract user message from current chat context
+    user_message = extract_user_message_from_context || "#{title} #{description}"
+
+    # Analyze complexity before creating
+    complexity_analysis = @complexity_analyzer.analyze_complexity(user_message)
+    Rails.logger.info "Complexity analysis: #{complexity_analysis[:complexity_level]} (#{complexity_analysis[:complexity_score]}/10)"
+
     # Auto-generate description if not provided
     if description.blank?
-      description = generate_smart_description(title, planning_context)
+      description = generate_smart_description(title, planning_context, complexity_analysis)
     end
 
-    # Map the planning context intelligently
-    mapped_context = PlanningContextMapper.map_context(planning_context || "", title)
+    # Map context using both existing mapper and complexity analysis
+    mapped_context = enhance_planning_context(planning_context, title, complexity_analysis)
 
-    Rails.logger.info "Creating planning list: #{title} with context: #{mapped_context}"
+    Rails.logger.info "Creating planning list: #{title} with enhanced context: #{mapped_context}"
 
     begin
-      service = ListCreationService.new(@user)
-      list = service.create_planning_list(
-        title: title,
-        description: description,
-        planning_context: mapped_context
-      )
+      # DECISION: Use enhanced service based on complexity
+      if complexity_analysis[:complexity_score] >= 6 || complexity_analysis[:hierarchical_needs][:needs_hierarchy]
+        # Use enhanced service for complex tasks
+        service = EnhancedListCreationService.new(@user)
+        list = service.create_planning_list_with_analysis(
+          title: title,
+          description: description,
+          user_message: user_message,
+          context: @context.merge({ analysis: complexity_analysis })
+        )
+      else
+        # Use existing service for simple tasks
+        service = ListCreationService.new(@user)
+        list = service.create_planning_list(
+          title: title,
+          description: description,
+          planning_context: mapped_context
+        )
+      end
 
       list.reload
       items_count = list.list_items.count
 
-      Rails.logger.info "Successfully created planning list #{list.id} with #{items_count} items"
+      Rails.logger.info "Successfully created #{complexity_analysis[:complexity_level]} list #{list.id} with #{items_count} items"
 
       {
         success: true,
-        message: "Created planning list '#{list.title}' with #{items_count} initial items",
-        list: serialize_list_with_items(list)
+        message: build_success_message_with_complexity(list, complexity_analysis),
+        list: serialize_list_with_items(list),
+        complexity_insights: extract_user_friendly_insights(complexity_analysis)
       }
     rescue => e
       Rails.logger.error "Failed to create planning list: #{e.message}"
@@ -329,5 +358,122 @@ class ListManagementTool < RubyLLM::Tool
     else
       "An organized approach to #{title.downcase}"
     end
+  end
+
+  def extract_user_message_from_context
+    # Get the most recent user message from the current chat
+    @user.current_chat&.messages&.where(role: "user")&.last&.content
+  end
+
+  def enhance_planning_context(base_context, title, analysis)
+    # Start with existing mapper
+    mapped_context = PlanningContextMapper.map_context(base_context || "", title)
+
+    # Enhance based on complexity analysis
+    if analysis[:location_analysis][:travel_related]
+      mapped_context = "travel #{mapped_context}"
+    end
+
+    if analysis[:external_service_analysis][:needs_external_services]
+      service_types = analysis[:external_service_analysis][:service_categories]
+      if service_types[:booking]
+        mapped_context = "booking and #{mapped_context}"
+      end
+    end
+
+    if analysis[:list_type_classification][:primary_type] != "mixed"
+      type = analysis[:list_type_classification][:primary_type]
+      mapped_context = "#{type} #{mapped_context}"
+    end
+
+    mapped_context
+  end
+
+  def generate_smart_description(title, planning_context, analysis = nil)
+    if analysis
+      base_desc = "#{title} planning"
+
+      complexity_notes = []
+      if analysis[:location_analysis][:multiple_locations]
+        complexity_notes << "across multiple locations"
+      end
+
+      if analysis[:external_service_analysis][:needs_external_services]
+        complexity_notes << "with external service coordination"
+      end
+
+      if analysis[:hierarchical_needs][:needs_hierarchy]
+        complexity_notes << "organized in phases"
+      end
+
+      complexity_notes.any? ? "#{base_desc} #{complexity_notes.join(' and ')}" : base_desc
+    else
+      "#{title} planning and organization"
+    end
+  end
+
+  def build_success_message_with_complexity(list, analysis)
+    base_message = "Created planning list '#{list.title}' with #{list.list_items.count} initial items"
+
+    insights = []
+    case analysis[:complexity_level]
+    when "complex", "very_complex"
+      insights << "organized into structured phases due to complexity"
+    when "moderate"
+      insights << "with organized planning approach"
+    end
+
+    if analysis[:location_analysis][:multiple_locations]
+      insights << "including multi-location coordination"
+    end
+
+    insights.any? ? "#{base_message} #{insights.join(' and ')}" : base_message
+  end
+
+  def extract_user_friendly_insights(analysis)
+    {
+      complexity: {
+        level: analysis[:complexity_level],
+        user_friendly: complexity_level_description(analysis[:complexity_level])
+      },
+      special_features: extract_special_features(analysis),
+      recommendations: extract_recommendations(analysis)
+    }
+  end
+
+  def complexity_level_description(level)
+    {
+      "simple" => "Quick and straightforward",
+      "moderate" => "Well-structured planning needed",
+      "complex" => "Detailed coordination required",
+      "very_complex" => "Comprehensive project management"
+    }[level] || "Standard planning"
+  end
+
+  def extract_special_features(analysis)
+    features = []
+    features << "Multi-location coordination" if analysis[:location_analysis][:multiple_locations]
+    features << "External service integration" if analysis[:external_service_analysis][:needs_external_services]
+    features << "Hierarchical organization" if analysis[:hierarchical_needs][:needs_hierarchy]
+    features << "Cultural adaptation" if analysis[:language_and_cultural_context][:detected_language] != "en"
+    features
+  end
+
+  def extract_recommendations(analysis)
+    recommendations = []
+
+    if analysis[:complexity_score] >= 8
+      recommendations << "Consider breaking into smaller phases"
+    end
+
+    if analysis[:external_service_analysis][:needs_external_services]
+      recommendations << "Plan for external service dependencies"
+    end
+
+    if analysis[:location_analysis][:multiple_locations]
+      recommendations << "Coordinate timing across locations"
+    end
+
+    recommendations
   end
 end

@@ -17,7 +17,7 @@ namespace :context do
     puts "- Total contexts: #{total_contexts}"
     puts "- Active contexts: #{active_contexts}"
     puts "- Users with contexts: #{users_with_contexts}"
-    puts "- Average contexts per user: #{total_contexts / [users_with_contexts, 1].max}"
+    puts "- Average contexts per user: #{total_contexts / [ users_with_contexts, 1 ].max}"
 
     # Show breakdown by action
     puts "\nBreakdown by action:"
@@ -53,7 +53,7 @@ namespace :context do
   end
 
   desc "Show recent activity for a user"
-  task :user_activity, [:user_id] => :environment do |t, args|
+  task :user_activity, [ :user_id ] => :environment do |t, args|
     user = User.find(args[:user_id])
     puts "Recent activity for #{user.name} (#{user.email}):"
 

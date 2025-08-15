@@ -105,7 +105,7 @@ class ConversationContextManager
       instructions << "Context references: #{disambiguation.map { |k, v| "#{k}: #{v}" }.join(', ')}."
     end
 
-    instructions.join(' ')
+    instructions.join(" ")
   end
 
   private
@@ -221,7 +221,7 @@ class ConversationContextManager
   def resolve_recent_list
     recent_context = @user.conversation_contexts
       .for_entity_type("List")
-      .for_action(["list_created", "list_updated", "list_viewed"])
+      .for_action([ "list_created", "list_updated", "list_viewed" ])
       .recent
       .first
 
@@ -374,7 +374,7 @@ class ConversationContextManager
     recent_items = contexts.select { |c| c.entity_type == "ListItem" }.first(3)
     if recent_items.any?
       item_titles = recent_items.map { |c| c.entity_data["title"] }
-      disambiguation["recent items"] = item_titles.join(', ')
+      disambiguation["recent items"] = item_titles.join(", ")
     end
 
     disambiguation
@@ -384,7 +384,7 @@ class ConversationContextManager
   class << self
     def cleanup_expired_contexts!
       cutoff_time = 7.days.ago
-      expired_contexts = ConversationContext.where('created_at < ?', cutoff_time)
+      expired_contexts = ConversationContext.where("created_at < ?", cutoff_time)
 
       cleanup_count = expired_contexts.count
       expired_contexts.delete_all
