@@ -119,6 +119,6 @@ class UsersController < ApplicationController
   end
 
   def timezone_options
-    ActiveSupport::TimeZone.all.map { |tz| [tz.to_s, tz.name] }
+    ActiveSupport::TimeZone.all.map { |tz| [ tz.to_s, tz.name ] }
   end
 end
