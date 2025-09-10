@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -60,16 +60,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
     t.string "status", default: "active"
     t.datetime "last_message_at"
     t.json "metadata", default: {}
-    t.string "model_id"
+    t.string "model_id_string"
     t.datetime "last_stable_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "conversation_state", default: "stable"
     t.datetime "last_cleanup_at"
+    t.bigint "model_id"
     t.index ["conversation_state"], name: "index_chats_on_conversation_state"
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
     t.index ["last_stable_at"], name: "index_chats_on_last_stable_at"
     t.index ["model_id"], name: "index_chats_on_model_id"
+    t.index ["model_id_string"], name: "index_chats_on_model_id_string"
     t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
     t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"
     t.index ["user_id"], name: "index_chats_on_user_id"
@@ -251,7 +253,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
     t.json "metadata", default: {}
     t.string "llm_provider"
     t.string "llm_model"
-    t.string "model_id"
+    t.string "model_id_string"
     t.string "tool_call_id"
     t.integer "token_count"
     t.integer "input_tokens"
@@ -259,6 +261,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
     t.decimal "processing_time", precision: 8, scale: 3
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "model_id"
     t.index ["chat_id", "created_at"], name: "index_messages_on_chat_id_and_created_at"
     t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
     t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
@@ -267,10 +270,33 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
     t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
     t.index ["message_type"], name: "index_messages_on_message_type"
     t.index ["model_id"], name: "index_messages_on_model_id"
+    t.index ["model_id_string"], name: "index_messages_on_model_id_string"
     t.index ["role"], name: "index_messages_on_role"
     t.index ["tool_call_id"], name: "index_messages_on_tool_call_id"
     t.index ["user_id", "created_at"], name: "index_messages_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_messages_on_user_id"
+  end
+
+  create_table "models", force: :cascade do |t|
+    t.string "model_id", null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.string "family"
+    t.datetime "model_created_at"
+    t.integer "context_window"
+    t.integer "max_output_tokens"
+    t.date "knowledge_cutoff"
+    t.jsonb "modalities", default: {}
+    t.jsonb "capabilities", default: []
+    t.jsonb "pricing", default: {}
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["capabilities"], name: "index_models_on_capabilities", using: :gin
+    t.index ["family"], name: "index_models_on_family"
+    t.index ["modalities"], name: "index_models_on_modalities", using: :gin
+    t.index ["provider", "model_id"], name: "index_models_on_provider_and_model_id", unique: true
+    t.index ["provider"], name: "index_models_on_provider"
   end
 
   create_table "noticed_events", force: :cascade do |t|
@@ -457,6 +483,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "board_columns", "lists"
+  add_foreign_key "chats", "models"
   add_foreign_key "chats", "users"
   add_foreign_key "collaborators", "users"
   add_foreign_key "comments", "users"
@@ -470,6 +497,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_185320) do
   add_foreign_key "list_items", "users", column: "assigned_user_id"
   add_foreign_key "lists", "users"
   add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "models"
   add_foreign_key "messages", "users"
   add_foreign_key "notification_settings", "users"
   add_foreign_key "recovery_contexts", "chats"

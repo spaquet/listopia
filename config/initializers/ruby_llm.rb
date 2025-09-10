@@ -43,4 +43,8 @@ RubyLLM.configure do |config|
 
   # Use Rails logger in Rails environment
   config.logger = Rails.logger
+
+  # Enable the new Rails-like API
+  config.use_new_acts_as = true
+
 end
