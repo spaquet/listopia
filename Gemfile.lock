@@ -383,7 +383,7 @@ GEM
     ruby-vips (2.2.4)
       ffi (~> 1.12)
       logger
-    ruby_llm (1.6.0)
+    ruby_llm (1.7.1)
       base64
       event_stream_parser (~> 1)
       faraday (>= 1.10.0)
