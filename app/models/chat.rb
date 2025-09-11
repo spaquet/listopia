@@ -39,6 +39,7 @@ class Chat < ApplicationRecord
   acts_as_chat
 
   belongs_to :user
+  belongs_to :model, optional: true
   has_many :conversation_contexts, dependent: :destroy
   has_many :messages, dependent: :destroy
   has_many :tool_calls, through: :messages

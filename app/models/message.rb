@@ -55,6 +55,7 @@ class Message < ApplicationRecord
 
   belongs_to :chat
   belongs_to :user, optional: true # Assistant messages don't have a user
+  belongs_to :model, optional: true
   has_many :tool_calls, dependent: :destroy
 
   validates :role, inclusion: { in: %w[user assistant system tool] }

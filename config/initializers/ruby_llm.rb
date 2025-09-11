@@ -46,5 +46,4 @@ RubyLLM.configure do |config|
 
   # Enable the new Rails-like API
   config.use_new_acts_as = true
-
 end
