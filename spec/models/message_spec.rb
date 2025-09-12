@@ -31,14 +31,17 @@
 #  index_messages_on_chat_id_and_created_at           (chat_id,created_at)
 #  index_messages_on_chat_id_and_role                 (chat_id,role)
 #  index_messages_on_chat_id_and_role_and_created_at  (chat_id,role,created_at)
+#  index_messages_on_chat_id_and_tool_call_id         (chat_id,tool_call_id) WHERE (tool_call_id IS NOT NULL)
 #  index_messages_on_llm_provider_and_llm_model       (llm_provider,llm_model)
 #  index_messages_on_message_type                     (message_type)
 #  index_messages_on_model_id                         (model_id)
 #  index_messages_on_model_id_string                  (model_id_string)
 #  index_messages_on_role                             (role)
+#  index_messages_on_role_and_tool_call_id            (role,tool_call_id) WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL))
 #  index_messages_on_tool_call_id                     (tool_call_id)
 #  index_messages_on_user_id                          (user_id)
 #  index_messages_on_user_id_and_created_at           (user_id,created_at)
+#  index_messages_unique_tool_call_id_per_chat        (chat_id,tool_call_id) UNIQUE WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL))
 #
 # Foreign Keys
 #
