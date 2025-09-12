@@ -1,54 +1,4 @@
 # app/models/message.rb
-# == Schema Information
-#
-# Table name: messages
-#
-#  id                :uuid             not null, primary key
-#  content           :text
-#  context_snapshot  :json
-#  input_tokens      :integer
-#  llm_model         :string
-#  llm_provider      :string
-#  message_type      :string           default("text")
-#  metadata          :json
-#  model_id_string   :string
-#  output_tokens     :integer
-#  processing_time   :decimal(8, 3)
-#  role              :string           not null
-#  token_count       :integer
-#  tool_call_results :json
-#  tool_calls        :json
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  chat_id           :uuid             not null
-#  model_id          :bigint
-#  tool_call_id      :string
-#  user_id           :uuid
-#
-# Indexes
-#
-#  index_messages_on_chat_and_tool_call_id            (chat_id,tool_call_id) WHERE (tool_call_id IS NOT NULL)
-#  index_messages_on_chat_id                          (chat_id)
-#  index_messages_on_chat_id_and_created_at           (chat_id,created_at)
-#  index_messages_on_chat_id_and_role                 (chat_id,role)
-#  index_messages_on_chat_id_and_role_and_created_at  (chat_id,role,created_at)
-#  index_messages_on_llm_provider_and_llm_model       (llm_provider,llm_model)
-#  index_messages_on_message_type                     (message_type)
-#  index_messages_on_model_id                         (model_id)
-#  index_messages_on_model_id_string                  (model_id_string)
-#  index_messages_on_role                             (role)
-#  index_messages_on_tool_call_id                     (tool_call_id)
-#  index_messages_on_user_id                          (user_id)
-#  index_messages_on_user_id_and_created_at           (user_id,created_at)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (chat_id => chats.id)
-#  fk_rails_...  (model_id => models.id)
-#  fk_rails_...  (user_id => users.id)
-#
-
-# This is the AI message sent to the LLM or received from it.
 class Message < ApplicationRecord
   # Use RubyLLM's Rails integration
   acts_as_message
@@ -60,8 +10,11 @@ class Message < ApplicationRecord
 
   validates :role, inclusion: { in: %w[user assistant system tool] }
   validates :message_type, inclusion: { in: %w[text tool_call tool_result] }
-  # Note: Don't validate content presence due to RubyLLM's two-phase creation
-  # validates :content, presence: true, unless: -> { tool_calls.any? }
+  validates :tool_call_id, presence: true, if: :tool_message?
+  validates :tool_call_id, uniqueness: { scope: :chat_id }, if: :tool_message?
+
+  # Custom validation to ensure tool messages have valid tool_call_id
+  validate :tool_message_must_have_valid_tool_call_id, if: :tool_message?
 
   enum :role, {
     user: "user",
@@ -79,9 +32,20 @@ class Message < ApplicationRecord
   scope :conversation, -> { where(role: [ "user", "assistant" ]) }
   scope :recent, -> { order(created_at: :desc) }
   scope :for_chat, ->(chat) { where(chat: chat) }
+  scope :tool_messages, -> { where(role: "tool") }
+  scope :orphaned_tool_messages, -> {
+    tool_messages.left_joins(chat: { messages: :tool_calls })
+                 .where(tool_calls: { tool_call_id: nil })
+                 .or(tool_messages.where(tool_call_id: [ nil, "" ]))
+  }
 
+  before_validation :ensure_tool_call_id_format, if: :tool_message?
   before_save :calculate_token_count
   after_create :update_chat_timestamp
+
+  def tool_message?
+    role == "tool"
+  end
 
   def to_llm_format
     case role
@@ -90,15 +54,24 @@ class Message < ApplicationRecord
 
       # Add tool calls if present
       if tool_calls.any?
-        base_format[:tool_calls] = tool_calls
+        base_format[:tool_calls] = tool_calls.map do |tc|
+          {
+            id: tc.tool_call_id,
+            type: "function",
+            function: {
+              name: tc.name,
+              arguments: tc.arguments
+            }
+          }
+        end
       end
 
       base_format
     when "tool"
       {
         role: "tool",
-        tool_call_id: metadata["tool_call_id"],
-        content: content
+        tool_call_id: tool_call_id,
+        content: content || ""
       }
     end
   end
@@ -133,7 +106,69 @@ class Message < ApplicationRecord
     read_attribute(:tool_call_results) || []
   end
 
+  # Find the corresponding tool call for this tool message
+  def corresponding_tool_call
+    return nil unless tool_message? && tool_call_id.present?
+
+    chat.tool_calls.find_by(tool_call_id: tool_call_id)
+  end
+
+  # Check if this tool message has a valid corresponding tool call
+  def has_valid_tool_call?
+    return true unless tool_message?
+
+    corresponding_tool_call.present?
+  end
+
+  # Create a tool response message with proper linking
+  def self.create_tool_response!(chat:, tool_call_id:, content:, metadata: {})
+    # Validate that the tool_call_id exists
+    tool_call = chat.tool_calls.find_by(tool_call_id: tool_call_id)
+    raise ArgumentError, "No tool call found with ID: #{tool_call_id}" unless tool_call
+
+    # Create the tool response message
+    create!(
+      chat: chat,
+      role: "tool",
+      tool_call_id: tool_call_id,
+      content: content,
+      message_type: "tool_result",
+      metadata: metadata.merge(
+        tool_name: tool_call.name,
+        tool_call_created_at: tool_call.created_at
+      )
+    )
+  end
+
   private
+
+  def tool_message_must_have_valid_tool_call_id
+    return unless tool_message?
+
+    if tool_call_id.blank?
+      errors.add(:tool_call_id, "cannot be blank for tool messages")
+      return
+    end
+
+    # Validate format (should start with 'call_' for OpenAI)
+    unless tool_call_id.start_with?("call_")
+      errors.add(:tool_call_id, "must start with 'call_' for OpenAI compatibility")
+    end
+
+    # Check if tool call exists (only if chat is persisted)
+    if chat&.persisted? && !chat.tool_calls.exists?(tool_call_id: tool_call_id)
+      errors.add(:tool_call_id, "must correspond to an existing tool call")
+    end
+  end
+
+  def ensure_tool_call_id_format
+    return unless tool_message? && tool_call_id.present?
+
+    # Ensure tool_call_id follows OpenAI format
+    unless tool_call_id.start_with?("call_")
+      self.tool_call_id = "call_#{tool_call_id}" if tool_call_id.present?
+    end
+  end
 
   def calculate_token_count
     # Simple token estimation - you might want to use a more sophisticated method
