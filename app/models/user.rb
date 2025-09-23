@@ -178,7 +178,12 @@ class User < ApplicationRecord
 
   # Get or create the active chat for this user
   def current_chat
-    chats.status_active.recent.first || chats.create!(status: "active")
+    chats.status_active.recent.first || chats.create!(
+      status: "active",
+      title: "Chat #{Time.current.strftime('%m/%d %H:%M')}",
+      conversation_state: "stable",
+      last_stable_at: Time.current
+    )
   end
 
   # Get chat history summary
