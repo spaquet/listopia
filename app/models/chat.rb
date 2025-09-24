@@ -309,6 +309,28 @@ class Chat < ApplicationRecord
     messages.sum(:processing_time) || 0
   end
 
+  # Get latest messages for chat history loading
+  def latest_messages(limit = 50)
+    messages.order(created_at: :desc).limit(limit).reverse
+  end
+
+  # Alternative method that includes eager loading for better performance
+  def latest_messages_with_includes(limit = 50)
+    messages.includes(:user, :tool_calls)
+            .order(created_at: :desc)
+            .limit(limit)
+            .reverse
+  end
+
+  # Get recent conversation context (last few messages)
+  def recent_context(limit = 5)
+    messages.order(created_at: :desc)
+            .limit(limit)
+            .reverse
+            .map { |msg| "#{msg.role}: #{msg.content&.truncate(100)}" }
+            .join("\n")
+  end
+
   private
 
   def set_default_title

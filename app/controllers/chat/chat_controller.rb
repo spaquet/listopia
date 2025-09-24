@@ -42,14 +42,37 @@ class Chat::ChatController < ApplicationController
 
   # Load chat history for a user
   def load_history
-    chat = current_user.current_chat
-    messages = chat.latest_messages(50) # Get last 50 messages
+    begin
+      chat = current_user.current_chat
 
-    render turbo_stream: turbo_stream.replace(
-      "chat-messages",
-      partial: "chat/messages_history",
-      locals: { messages: messages }
-    ), content_type: "text/vnd.turbo-stream.html"
+      # Handle case where user has no chat yet
+      unless chat
+        render turbo_stream: turbo_stream.replace(
+          "chat-messages",
+          partial: "chat/empty_history"
+        ), content_type: "text/vnd.turbo-stream.html"
+        return
+      end
+
+      # Use the corrected method name
+      messages = chat.latest_messages_with_includes(50)
+
+      render turbo_stream: turbo_stream.replace(
+        "chat-messages",
+        partial: "chat/messages_history",
+        locals: { messages: messages }
+      ), content_type: "text/vnd.turbo-stream.html"
+
+    rescue => e
+      Rails.logger.error "Chat history loading error: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+
+      # Render empty history on error
+      render turbo_stream: turbo_stream.replace(
+        "chat-messages",
+        partial: "chat/empty_history"
+      ), content_type: "text/vnd.turbo-stream.html"
+    end
   end
 
   private
