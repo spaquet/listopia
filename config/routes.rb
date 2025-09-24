@@ -135,5 +135,16 @@ Rails.application.routes.draw do
         post :repair_chat
       end
     end
+
+    # MCP Health Controller
+    resources :mcp_health, only: [ :index ] do
+      collection do
+        get :api_status
+        get :conversation_health
+        post :repair_conversation
+        post :force_health_check
+        get :error_recovery_stats
+      end
+    end
   end
 end

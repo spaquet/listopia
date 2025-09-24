@@ -1,7 +1,5 @@
 # app/controllers/admin/conversation_health_controller.rb
 class Admin::ConversationHealthController < ApplicationController
-  before_action :authenticate_admin! # Add your admin authentication
-
   def index
     @health_stats = calculate_health_stats
     @recent_issues = recent_conversation_issues
@@ -92,12 +90,5 @@ class Admin::ConversationHealthController < ApplicationController
         percentage: (count.to_f / archived_chats.count * 100).round(2)
       }
     end.sort_by { |p| -p[:count] }
-  end
-
-  def authenticate_admin!
-    # Implement your admin authentication logic
-    # For example:
-    # authenticate_user!
-    # redirect_to root_path unless current_user.admin?
   end
 end
