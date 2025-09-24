@@ -98,23 +98,6 @@ class User < ApplicationRecord
     end
   end
 
-  # Check if user wants immediate notifications
-  def wants_immediate_notifications?
-    notification_preferences.immediate_notifications?
-  end
-
-  # Used to reset the current chat
-  def reset_current_chat!
-    # Archive the current chat
-    current_chat&.update!(status: "archived")
-
-    # Create a fresh chat
-    chats.create!(
-      status: "active",
-      title: "Chat #{Time.current.strftime('%m/%d %H:%M')}"
-    )
-  end
-
   # Check if user's email is verified
   def email_verified?
     email_verified_at.present?
@@ -212,20 +195,6 @@ class User < ApplicationRecord
   # Set locale for I18n around user actions
   def with_locale(&block)
     I18n.with_locale(locale, &block)
-  end
-
-  # Get user's preferred locale or fallback to default
-  def preferred_locale
-    locale.presence&.to_sym || I18n.default_locale
-  end
-
-  # Timezone-aware methods
-  def in_timezone(&block)
-    Time.use_zone(timezone, &block)
-  end
-
-  def current_time
-    Time.current.in_time_zone(timezone)
   end
 
   # Private methods
