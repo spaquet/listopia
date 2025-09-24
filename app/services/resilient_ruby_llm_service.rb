@@ -481,14 +481,5 @@ class ResilientRubyLlmService
         response_length: result.respond_to?(:content) ? result.content&.length : nil
       )
     end
-
-    def get_request_log(request_id)
-      @requests[request_id]
-    end
-
-    def cleanup_old_logs!
-      cutoff = 1.hour.ago
-      @requests.delete_if { |_, data| data[:started_at] < cutoff }
-    end
   end
 end
