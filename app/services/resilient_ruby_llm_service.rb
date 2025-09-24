@@ -299,21 +299,6 @@ class ResilientRubyLlmService
     delay.round(2)
   end
 
-  def calculate_rate_limit_delay(error, attempt)
-    # Try to extract retry-after header or use exponential backoff
-    if error.respond_to?(:response) && error.response
-      retry_after = error.response.headers["retry-after"]
-      if retry_after
-        return retry_after.to_i + rand(1..3) # Add small jitter
-      end
-    end
-
-    # Fallback to exponential backoff with higher base delay for rate limits
-    base_delay = @config[:base_delay] * 2 # Double the base delay for rate limits
-    delay = base_delay * (@config[:exponential_base] ** (attempt - 1))
-    [ delay, @config[:max_delay] ].min
-  end
-
   def conversation_structure_error?(error)
     error_patterns = [
       /tool_calls.*must be followed by tool messages/i,
