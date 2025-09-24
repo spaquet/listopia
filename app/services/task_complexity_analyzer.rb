@@ -20,21 +20,36 @@ class TaskComplexityAnalyzer < ApplicationService
   def initialize(user:, context: {}, chat: nil)
     @user = user
     @context = context || {}
-    @chat = chat
+    @chat = chat # Now properly utilized for conversation context
     @logger = Rails.logger
+
+    # Initialize conversation context manager if chat is available
+    if @chat
+      @conversation_context_manager = ConversationContextManager.new(
+        user: @user,
+        chat: @chat,
+        current_context: @context
+      )
+    end
   end
 
-  # Main analysis method using LLM-first approach
+  # Main analysis method using LLM-first approach with chat context
   def analyze_complexity(user_message, additional_context: {})
     @logger.info "TaskComplexityAnalyzer: Starting LLM-based analysis for user #{@user.id}"
 
     begin
-      # Primary: Use LLM for intelligent analysis
-      llm_analysis = perform_llm_analysis(user_message, additional_context)
+      # Extract conversation context from chat if available
+      conversation_context = extract_conversation_context
+
+      # Merge all contexts for comprehensive analysis
+      enhanced_context = additional_context.merge(conversation_context)
+
+      # Primary: Use LLM for intelligent analysis with chat context
+      llm_analysis = perform_llm_analysis(user_message, enhanced_context)
 
       if llm_analysis[:success]
-        @logger.debug "LLM analysis successful"
-        return enhance_llm_analysis(llm_analysis[:data], user_message)
+        @logger.debug "LLM analysis successful with chat context"
+        return enhance_llm_analysis(llm_analysis[:data], user_message, conversation_context)
       else
         @logger.warn "LLM analysis failed: #{llm_analysis[:error]}"
       end
@@ -43,25 +58,516 @@ class TaskComplexityAnalyzer < ApplicationService
       @logger.error "LLM analysis error: #{e.message}"
     end
 
-    # Fallback: Use keyword-based heuristic analysis
-    @logger.info "Using fallback heuristic analysis"
-    fallback_analysis(user_message, additional_context)
+    # Fallback: Use keyword-based heuristic analysis with chat context
+    @logger.info "Using fallback heuristic analysis with chat context"
+    fallback_analysis(user_message, additional_context.merge(extract_conversation_context))
   end
 
-  # Quick complexity check using hybrid approach
+  # Quick complexity check using hybrid approach with chat awareness
   def quick_complexity_check(user_message)
-    # Try LLM quick analysis first
-    quick_llm_result = perform_quick_llm_analysis(user_message)
+    # Add conversation context for better quick analysis
+    conversation_context = extract_conversation_context
+
+    # Try LLM quick analysis first with context
+    quick_llm_result = perform_quick_llm_analysis(user_message, conversation_context)
 
     if quick_llm_result[:success]
       return quick_llm_result[:data]
     end
 
-    # Fallback to heuristic
-    quick_heuristic_analysis(user_message)
+    # Fallback to heuristic with context
+    quick_heuristic_analysis(user_message, conversation_context)
   end
 
   private
+
+  # Extract relevant context from the ongoing conversation
+  def extract_conversation_context
+    return {} unless @chat && @conversation_context_manager
+
+    context = {
+      chat_context: {
+        chat_id: @chat.id,
+        message_count: @chat.messages.count,
+        conversation_age_minutes: conversation_age_in_minutes,
+        has_recent_activity: @user.has_recent_activity?(hours: 1)
+      }
+    }
+
+    # Add conversation patterns
+    conversation_patterns = analyze_conversation_patterns
+    context[:conversation_patterns] = conversation_patterns if conversation_patterns.present?
+
+    # Add recent conversation topics
+    recent_topics = extract_recent_conversation_topics
+    context[:recent_topics] = recent_topics if recent_topics.present?
+
+    # Add user's complexity preferences based on chat history
+    complexity_preferences = analyze_user_complexity_preferences
+    context[:user_complexity_preferences] = complexity_preferences if complexity_preferences.present?
+
+    # Add current context summary from conversation manager
+    if @conversation_context_manager
+      context_summary = @conversation_context_manager.build_context_summary
+      context[:current_context] = context_summary
+    end
+
+    @logger.debug "Extracted conversation context: #{context.keys.join(', ')}"
+    context
+  end
+
+  # Analyze patterns in the user's conversation history
+  def analyze_conversation_patterns
+    return {} unless @chat && @chat.messages.count > 5
+
+    recent_messages = @chat.messages.order(:created_at).limit(20)
+    user_messages = recent_messages.where(role: "user")
+
+    patterns = {
+      average_message_length: calculate_average_message_length(user_messages),
+      complexity_trend: analyze_complexity_trend(user_messages),
+      planning_orientation: analyze_planning_orientation(user_messages),
+      collaboration_indicators: analyze_collaboration_indicators(user_messages),
+      time_horizon_preference: analyze_time_horizon_preference(user_messages)
+    }
+
+    patterns.compact
+  end
+
+  # Extract recent conversation topics to understand context continuity
+  def extract_recent_conversation_topics
+    return [] unless @chat
+
+    recent_messages = @chat.messages
+                           .where(role: [ "user", "assistant" ])
+                           .order(:created_at)
+                           .limit(10)
+
+    topics = []
+
+    recent_messages.each do |message|
+      content = message.content&.downcase
+      next unless content
+
+      # Extract potential topics using simple keyword analysis
+      if content.match?(/\b(list|task|plan|project|organize)\b/)
+        if content.match?(/\b(travel|vacation|trip)\b/)
+          topics << "travel_planning"
+        elsif content.match?(/\b(work|business|meeting|project)\b/)
+          topics << "work_planning"
+        elsif content.match?(/\b(shopping|buy|purchase)\b/)
+          topics << "shopping"
+        elsif content.match?(/\b(event|party|wedding|celebration)\b/)
+          topics << "event_planning"
+        else
+          topics << "general_planning"
+        end
+      end
+    end
+
+    topics.uniq.last(3) # Return last 3 unique topics
+  end
+
+  # Analyze user's historical complexity preferences based on their list creation patterns
+  def analyze_user_complexity_preferences
+    recent_lists = @user.lists.includes(:list_items)
+                              .order(:created_at)
+                              .limit(10)
+
+    return {} if recent_lists.empty?
+
+    preferences = {
+      prefers_detailed_lists: calculate_detail_preference(recent_lists),
+      typical_list_size: calculate_typical_list_size(recent_lists),
+      uses_hierarchical_structure: analyze_hierarchy_usage(recent_lists),
+      completion_rate: calculate_completion_rate(recent_lists),
+      planning_depth_preference: analyze_planning_depth(recent_lists)
+    }
+
+    preferences.compact
+  end
+
+  # Calculate how long the conversation has been active
+  def conversation_age_in_minutes
+    return 0 unless @chat&.created_at
+    ((Time.current - @chat.created_at) / 60).round(1)
+  end
+
+  # Enhanced LLM analysis with conversation context
+  def perform_llm_analysis(user_message, enhanced_context)
+    # Use the original chat for analysis but with specific context instructions
+    analysis_chat = prepare_chat_for_analysis(enhanced_context)
+
+    analysis_prompt = build_llm_analysis_prompt_with_context(user_message, enhanced_context)
+
+    begin
+      response = analysis_chat.ask(analysis_prompt)
+      parsed_result = parse_llm_analysis_response(response.content)
+
+      validate_llm_analysis!(parsed_result)
+
+      { success: true, data: parsed_result }
+    rescue => e
+      @logger.error "LLM analysis failed: #{e.message}"
+      { success: false, error: e.message }
+    end
+  end
+
+  # Prepare the original chat for analysis with context-aware instructions
+  def prepare_chat_for_analysis(context)
+    if @chat
+      # Add context-aware instructions to the existing chat
+      context_instructions = build_analysis_context_instructions(context)
+      @chat.with_instructions(context_instructions, replace: false)
+      @chat
+    else
+      # Fallback to creating a new analysis chat
+      create_analysis_chat
+    end
+  end
+
+  # Build context-aware instructions for the analysis
+  def build_analysis_context_instructions(context)
+    instructions = [ "You are analyzing a task request with the following conversation context:" ]
+
+    if context[:chat_context].present?
+      chat_ctx = context[:chat_context]
+      instructions << "This is message ##{chat_ctx[:message_count]} in a #{chat_ctx[:conversation_age_minutes]}-minute conversation."
+    end
+
+    if context[:recent_topics].present?
+      instructions << "Recent conversation topics: #{context[:recent_topics].join(', ')}"
+    end
+
+    if context[:user_complexity_preferences].present?
+      prefs = context[:user_complexity_preferences]
+      if prefs[:prefers_detailed_lists]
+        instructions << "User typically prefers detailed, well-structured lists."
+      end
+      if prefs[:typical_list_size] && prefs[:typical_list_size] > 10
+        instructions << "User typically works with larger lists (#{prefs[:typical_list_size]} items average)."
+      end
+    end
+
+    if context[:conversation_patterns].present?
+      patterns = context[:conversation_patterns]
+      if patterns[:planning_orientation] == "high"
+        instructions << "User demonstrates strong planning orientation in conversations."
+      end
+      if patterns[:collaboration_indicators]
+        instructions << "User frequently engages in collaborative planning."
+      end
+    end
+
+    instructions << "Consider this context when assessing task complexity and requirements."
+    instructions.join("\n\n")
+  end
+
+  def build_llm_analysis_prompt_with_context(user_message, enhanced_context)
+    context_info = build_context_string(enhanced_context)
+    conversation_context = build_conversation_context_string(enhanced_context)
+
+    <<~PROMPT
+      You are an expert task complexity analyzer for a list management application.
+      Analyze the following user request for complexity factors and classification.
+
+      USER MESSAGE: "#{user_message}"
+
+      CONTEXT INFORMATION:
+      #{context_info}
+
+      CONVERSATION CONTEXT:
+      #{conversation_context}
+
+      Provide a comprehensive JSON analysis:
+      {
+        "complexity_score": 1-10,
+        "complexity_level": "simple|moderate|complex|very_complex",
+        "complexity_factors": ["factor1", "factor2"],
+        "list_type_classification": {
+          "primary_type": "professional|personal|mixed",
+          "confidence_percentage": 1-100,
+          "type_indicators": ["indicator1", "indicator2"]
+        },
+        "multi_step_analysis": {
+          "has_multi_step_elements": true/false,
+          "estimated_steps": 1-20,
+          "coordination_required": true/false,
+          "time_dependencies": true/false
+        },
+        "external_service_analysis": {
+          "needs_external_services": true/false,
+          "service_types": ["booking", "location", "communication"],
+          "integration_complexity": "low|medium|high"
+        },
+        "hierarchical_analysis": {
+          "needs_hierarchical_structure": true/false,
+          "estimated_levels": 1-5,
+          "parent_child_relationships": true/false
+        },
+        "resource_requirements": {
+          "time_commitment": "low|medium|high",
+          "coordination_needs": "individual|team|multi_team",
+          "skill_requirements": ["skill1", "skill2"]
+        },
+        "conversation_context_influence": {
+          "context_relevance": "low|medium|high",
+          "builds_on_previous": true/false,
+          "complexity_adjustment": -2 to +2
+        }
+      }
+
+      Focus on practical execution complexity rather than keyword matching.
+      Consider how conversation context influences the actual complexity.
+      Only respond with valid JSON.
+    PROMPT
+  end
+
+  # Build conversation context string for the prompt
+  def build_conversation_context_string(enhanced_context)
+    context_parts = []
+
+    if enhanced_context[:chat_context].present?
+      chat_ctx = enhanced_context[:chat_context]
+      context_parts << "Conversation: Message ##{chat_ctx[:message_count]}, #{chat_ctx[:conversation_age_minutes]} minutes old"
+    end
+
+    if enhanced_context[:recent_topics].present?
+      context_parts << "Recent topics: #{enhanced_context[:recent_topics].join(', ')}"
+    end
+
+    if enhanced_context[:user_complexity_preferences].present?
+      prefs = enhanced_context[:user_complexity_preferences]
+      context_parts << "User preferences: #{prefs.keys.join(', ')}"
+    end
+
+    if enhanced_context[:conversation_patterns].present?
+      patterns = enhanced_context[:conversation_patterns]
+      context_parts << "Conversation patterns: #{patterns.keys.join(', ')}"
+    end
+
+    context_parts.any? ? context_parts.join("\n") : "No conversation context available"
+  end
+
+  # Enhanced LLM analysis enhancement with conversation context
+  def enhance_llm_analysis(llm_data, user_message, conversation_context = {})
+    enhanced_data = llm_data.dup
+
+    # Apply conversation context adjustments
+    if conversation_context[:conversation_patterns].present?
+      patterns = conversation_context[:conversation_patterns]
+
+      # Adjust complexity based on user's historical patterns
+      if patterns[:complexity_trend] == "increasing"
+        enhanced_data[:complexity_score] = [ enhanced_data[:complexity_score] + 1, 10 ].min
+        enhanced_data[:complexity_factors] << "user_complexity_trend_increasing"
+      end
+
+      if patterns[:planning_orientation] == "high"
+        enhanced_data[:hierarchical_analysis][:needs_hierarchical_structure] = true
+      end
+    end
+
+    # Apply user complexity preferences
+    if conversation_context[:user_complexity_preferences].present?
+      prefs = conversation_context[:user_complexity_preferences]
+
+      if prefs[:prefers_detailed_lists] && enhanced_data[:complexity_score] < 5
+        enhanced_data[:complexity_score] += 1
+        enhanced_data[:complexity_factors] << "user_prefers_detailed_structure"
+      end
+    end
+
+    # Add conversation context metadata
+    enhanced_data[:analysis_metadata] = {
+      used_conversation_context: conversation_context.present?,
+      context_influence_applied: conversation_context.any?,
+      chat_id: @chat&.id,
+      analysis_timestamp: Time.current.iso8601
+    }
+
+    enhanced_data
+  end
+
+  # Enhanced quick analysis with conversation context
+  def perform_quick_llm_analysis(user_message, conversation_context = {})
+    analysis_chat = prepare_chat_for_analysis(conversation_context)
+
+    context_summary = conversation_context[:current_context] || {}
+
+    quick_prompt = <<~PROMPT
+      Quick task complexity analysis with conversation context:
+
+      REQUEST: "#{user_message}"
+      CONVERSATION CONTEXT: #{conversation_context.keys.join(', ')}
+      CURRENT CONTEXT: #{context_summary.keys.join(', ')}
+
+      {
+        "complexity_score": 1-10,
+        "requires_planning": boolean,
+        "list_type": "professional|personal|mixed",
+        "multi_step": boolean,
+        "context_influence": "none|low|medium|high",
+        "quick_reasoning": "brief explanation considering conversation context"
+      }
+
+      JSON only, no other text.
+    PROMPT
+
+    begin
+      response = analysis_chat.ask(quick_prompt)
+      parsed_result = JSON.parse(clean_json_response(response.content), symbolize_names: true)
+
+      { success: true, data: parsed_result }
+    rescue => e
+      @logger.error "Quick LLM analysis failed: #{e.message}"
+      { success: false, error: e.message }
+    end
+  end
+
+  # Helper methods for conversation analysis
+  def calculate_average_message_length(messages)
+    return 0 if messages.empty?
+    total_length = messages.sum { |msg| msg.content&.length || 0 }
+    (total_length.to_f / messages.count).round(1)
+  end
+
+  def analyze_complexity_trend(messages)
+    return "stable" if messages.count < 5
+
+    # Simple heuristic: longer messages often indicate more complex requests
+    recent_avg = messages.last(3).sum { |msg| msg.content&.length || 0 } / 3.0
+    earlier_avg = messages.first(3).sum { |msg| msg.content&.length || 0 } / 3.0
+
+    if recent_avg > earlier_avg * 1.3
+      "increasing"
+    elsif recent_avg < earlier_avg * 0.7
+      "decreasing"
+    else
+      "stable"
+    end
+  end
+
+  def analyze_planning_orientation(messages)
+    planning_keywords = %w[plan organize schedule structure phases steps workflow]
+    planning_count = messages.count do |msg|
+      content = msg.content&.downcase || ""
+      planning_keywords.any? { |keyword| content.include?(keyword) }
+    end
+
+    ratio = planning_count.to_f / messages.count
+    ratio > 0.3 ? "high" : "low"
+  end
+
+  def analyze_collaboration_indicators(messages)
+    collab_keywords = %w[we team share collaborate together group]
+    messages.any? do |msg|
+      content = msg.content&.downcase || ""
+      collab_keywords.any? { |keyword| content.include?(keyword) }
+    end
+  end
+
+  def analyze_time_horizon_preference(messages)
+    short_term = %w[today tomorrow this week urgent immediate]
+    long_term = %w[month quarter year future long-term strategic]
+
+    short_count = messages.count { |msg| short_term.any? { |word| msg.content&.downcase&.include?(word) } }
+    long_count = messages.count { |msg| long_term.any? { |word| msg.content&.downcase&.include?(word) } }
+
+    if short_count > long_count
+      "short_term"
+    elsif long_count > short_count
+      "long_term"
+    else
+      "mixed"
+    end
+  end
+
+  def calculate_detail_preference(lists)
+    avg_items_per_list = lists.sum { |list| list.list_items.count }.to_f / lists.count
+    avg_items_per_list > 7 # Consider detailed if average > 7 items per list
+  end
+
+  def calculate_typical_list_size(lists)
+    return 0 if lists.empty?
+    lists.sum { |list| list.list_items.count } / lists.count
+  end
+
+  def analyze_hierarchy_usage(lists)
+    # Simple heuristic: look for lists with related titles or structured naming
+    structured_count = lists.count do |list|
+      title = list.title.downcase
+      title.match?(/phase|step|part|\d+\.|\w+:/) || list.list_items.any? { |item| item.title.match?(/\d+\.|\w+:/) }
+    end
+
+    (structured_count.to_f / lists.count) > 0.3
+  end
+
+  def calculate_completion_rate(lists)
+    return 0 if lists.empty?
+
+    total_items = lists.sum { |list| list.list_items.count }
+    return 0 if total_items == 0
+
+    completed_items = lists.sum { |list| list.list_items.count(&:completed) }
+    (completed_items.to_f / total_items * 100).round(1)
+  end
+
+  def analyze_planning_depth(lists)
+    depth_indicators = lists.count do |list|
+      # Look for indicators of deep planning: long descriptions, metadata, structured items
+      has_detailed_description = list.description.present? && list.description.length > 100
+      has_structured_items = list.list_items.any? { |item| item.description.present? && item.description.length > 50 }
+      has_metadata_planning = list.metadata.present? && list.metadata.keys.any? { |key| key.to_s.match?(/planning|workflow|phase/) }
+
+      has_detailed_description || has_structured_items || has_metadata_planning
+    end
+
+    ratio = depth_indicators.to_f / lists.count
+    if ratio > 0.4
+      "deep"
+    elsif ratio > 0.2
+      "moderate"
+    else
+      "shallow"
+    end
+  end
+
+  # Rest of the existing methods remain the same...
+  def create_analysis_chat
+    Chat.new(
+      user: @user,
+      title: "Task Complexity Analysis - #{Time.current.to_i}",
+      status: "analysis"
+    )
+  end
+
+  def build_context_string(additional_context)
+    full_context = @context.merge(additional_context)
+
+    context_parts = []
+    context_parts << "Page: #{full_context[:page]}" if full_context[:page]
+    context_parts << "Time: #{full_context[:time_context]}" if full_context[:time_context]
+    context_parts << "User Location: #{full_context[:user_location]}" if full_context[:user_location]
+    context_parts << "Previous Lists: #{full_context[:recent_lists]}" if full_context[:recent_lists]
+
+    context_parts.any? ? context_parts.join("\n") : "No additional context available"
+  end
+
+  def clean_json_response(response)
+    # Remove markdown code blocks
+    cleaned = response.gsub(/```json\n?/, "").gsub(/```\n?/, "")
+
+    # Find JSON boundaries
+    json_start = cleaned.index("{")
+    json_end = cleaned.rindex("}")
+
+    if json_start && json_end && json_end > json_start
+      cleaned[json_start..json_end]
+    else
+      cleaned.strip
+    end
+  end
 
   # LLM-based complexity analysis
   def perform_llm_analysis(user_message, additional_context)
@@ -80,85 +586,6 @@ class TaskComplexityAnalyzer < ApplicationService
       @logger.error "LLM analysis failed: #{e.message}"
       { success: false, error: e.message }
     end
-  end
-
-  def build_llm_analysis_prompt(user_message, additional_context)
-    context_info = build_context_string(additional_context)
-
-    <<~PROMPT
-      You are an expert task complexity analyzer for a list management application.
-      Analyze the following user request for complexity factors and classification.
-
-      USER REQUEST: "#{user_message}"
-
-      CONTEXT INFORMATION:
-      #{context_info}
-
-      Please analyze this request across multiple dimensions and respond with JSON:
-
-      {
-        "complexity_score": 1-10,
-        "complexity_level": "simple|moderate|complex|very_complex",
-        "location_analysis": {
-          "has_location_elements": boolean,
-          "multiple_locations": boolean,
-          "travel_related": boolean,
-          "location_types": ["city", "venue", "remote", "etc"],
-          "complexity_reasoning": "explain why"
-        },
-        "multi_step_analysis": {
-          "has_multi_step_elements": boolean,
-          "estimated_step_count": number,
-          "sequential_dependencies": boolean,
-          "parallel_tasks_possible": boolean,
-          "complexity_reasoning": "explain the process flow"
-        },
-        "external_service_analysis": {
-          "needs_external_services": boolean,
-          "service_categories": {
-            "booking": boolean,
-            "communication": boolean,
-            "research": boolean,
-            "commerce": boolean,
-            "integration": boolean
-          },
-          "service_reasoning": "explain what services and why"
-        },
-        "list_type_classification": {
-          "primary_type": "professional|personal|mixed",
-          "confidence_percentage": 0-100,
-          "type_indicators": ["list of factors that influenced classification"],
-          "classification_reasoning": "explain the classification decision"
-        },
-        "hierarchical_needs": {
-          "needs_hierarchy": boolean,
-          "estimated_depth": 1-5,
-          "hierarchy_type": "phases|categories|nested_tasks|timeline",
-          "hierarchy_reasoning": "explain why hierarchical structure is or isn't needed"
-        },
-        "language_and_cultural_context": {
-          "detected_language": "language code or 'mixed'",
-          "cultural_context": "business|personal|academic|etc",
-          "regional_considerations": "any location or culture specific factors"
-        },
-        "planning_context_compatibility": {
-          "suggested_context": "recommended planning context type",
-          "fits_existing_patterns": boolean,
-          "extension_needed": boolean,
-          "context_reasoning": "explain context recommendation"
-        }
-      }
-
-      ANALYSIS GUIDELINES:
-      - Consider linguistic nuances, not just keywords
-      - Detect implied complexity (e.g., "coordinate" implies multi-step)
-      - Consider cultural context (business vs personal indicators vary by culture)
-      - Think about practical execution challenges
-      - Consider dependencies and resource requirements
-      - Be language-agnostic in your analysis
-
-      Respond ONLY with valid JSON. No explanatory text outside the JSON structure.
-    PROMPT
   end
 
   def parse_llm_analysis_response(response_content)
@@ -180,52 +607,6 @@ class TaskComplexityAnalyzer < ApplicationService
     rescue JSON::ParserError => e
       raise AnalysisError, "Failed to parse LLM analysis response: #{e.message}"
     end
-  end
-
-  # Quick LLM analysis for real-time UI
-  def perform_quick_llm_analysis(user_message)
-    analysis_chat = create_analysis_chat
-
-    quick_prompt = <<~PROMPT
-      Quickly analyze this task request and respond with JSON:
-
-      REQUEST: "#{user_message}"
-
-      {
-        "complexity_score": 1-10,
-        "requires_planning": boolean,
-        "list_type": "professional|personal|mixed",
-        "multi_location": boolean,
-        "external_services": boolean,
-        "quick_reasoning": "brief explanation"
-      }
-
-      JSON only, no other text.
-    PROMPT
-
-    begin
-      response = analysis_chat.ask(quick_prompt)
-      parsed = JSON.parse(clean_json_response(response.content), symbolize_names: true)
-      { success: true, data: parsed }
-    rescue => e
-      { success: false, error: e.message }
-    end
-  end
-
-  # Enhanced LLM analysis with additional processing
-  def enhance_llm_analysis(llm_data, user_message)
-    # Add integration compatibility assessment
-    llm_data[:planning_context_compatibility] = assess_planning_context_compatibility_llm(
-      llm_data[:planning_context_compatibility][:suggested_context]
-    )
-
-    # Add execution recommendations
-    llm_data[:execution_recommendations] = generate_execution_recommendations(llm_data)
-
-    # Add risk assessment
-    llm_data[:risk_assessment] = assess_complexity_risks(llm_data)
-
-    llm_data
   end
 
   # Fallback heuristic analysis (minimal keywords)
@@ -358,42 +739,6 @@ class TaskComplexityAnalyzer < ApplicationService
       type_indicators: prof_matches + pers_matches,
       classification_reasoning: "Keyword-based classification with context bias"
     }
-  end
-
-  # Utility methods
-  def create_analysis_chat
-    Chat.new(
-      user: @user,
-      title: "Task Complexity Analysis - #{Time.current.to_i}",
-      status: "analysis"
-    )
-  end
-
-  def build_context_string(additional_context)
-    full_context = @context.merge(additional_context)
-
-    context_parts = []
-    context_parts << "Page: #{full_context[:page]}" if full_context[:page]
-    context_parts << "Time: #{full_context[:time_context]}" if full_context[:time_context]
-    context_parts << "User Location: #{full_context[:user_location]}" if full_context[:user_location]
-    context_parts << "Previous Lists: #{full_context[:recent_lists]}" if full_context[:recent_lists]
-
-    context_parts.any? ? context_parts.join("\n") : "No additional context available"
-  end
-
-  def clean_json_response(response)
-    # Remove markdown code blocks
-    cleaned = response.gsub(/```json\n?/, "").gsub(/```\n?/, "")
-
-    # Find JSON boundaries
-    json_start = cleaned.index("{")
-    json_end = cleaned.rindex("}")
-
-    if json_start && json_end && json_end > json_start
-      cleaned[json_start..json_end]
-    else
-      cleaned.strip
-    end
   end
 
   def count_keyword_matches(text, keywords)
