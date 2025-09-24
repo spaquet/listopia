@@ -186,16 +186,6 @@ class User < ApplicationRecord
     )
   end
 
-  # Get chat history summary
-  def chat_summary
-    {
-      total_chats: chats.count,
-      total_messages: messages.count,
-      total_tokens: chats.sum { |chat| chat.total_tokens },
-      last_chat_at: chats.maximum(:last_message_at)
-    }
-  end
-
   # Helper method to get recent context
   def recent_conversation_contexts(limit: 20)
     conversation_contexts
@@ -212,11 +202,6 @@ class User < ApplicationRecord
       .active
       .recent
       .limit(limit)
-  end
-
-  # Get most recent list context
-  def current_list_context
-    contexts_for_entity_type("List", limit: 1).first
   end
 
   # Check if user has recent activity
