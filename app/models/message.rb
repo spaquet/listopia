@@ -52,7 +52,7 @@
 #
 class Message < ApplicationRecord
   # Use RubyLLM's Rails integration
-  acts_as_message
+  acts_as_message chat: :chat, chat_class: "Chat", tool_calls: :tool_calls, tool_call_class: "ToolCall", model: :model
 
   belongs_to :chat
   belongs_to :user, optional: true # Assistant messages don't have a user
@@ -61,11 +61,11 @@ class Message < ApplicationRecord
 
   validates :role, inclusion: { in: %w[user assistant system tool] }
   validates :message_type, inclusion: { in: %w[text tool_call tool_result] }
-  validates :tool_call_id, presence: true, if: :tool_message_requires_tool_call_id?
   validates :tool_call_id, uniqueness: {
     scope: :chat_id,
     allow_blank: true
   }, if: :tool_message_with_tool_call_id?
+  validate :tool_message_must_have_valid_tool_call_id, if: :should_validate_tool_call_id?
 
   # Custom validation to ensure tool messages have valid tool_call_id
   validate :tool_message_must_have_valid_tool_call_id, if: :tool_message?
@@ -237,18 +237,8 @@ class Message < ApplicationRecord
     chat.update_column(:last_message_at, created_at)
   end
 
-  def tool_message_requires_tool_call_id?
-    tool_message? && !in_recovery_mode?
-  end
-
   def tool_message_with_tool_call_id?
     tool_message? && tool_call_id.present?
-  end
-
-  def in_recovery_mode?
-    chat&.conversation_state == "needs_cleanup" ||
-    Rails.env.development? ||
-    defined?(@in_recovery_mode) && @in_recovery_mode
   end
 
   def handle_duplicate_tool_call_ids
@@ -265,5 +255,18 @@ class Message < ApplicationRecord
       self.tool_call_id = "#{base_id}_#{Time.current.to_i}"
       Rails.logger.info "Updated tool_call_id to #{self.tool_call_id}"
     end
+  end
+
+  def should_validate_tool_call_id?
+    tool_message? && persisted? && !during_ruby_llm_17_operations?
+  end
+
+  def during_ruby_llm_17_operations?
+    caller_string = caller.join("\n")
+    ruby_llm_17_patterns = [
+      /acts_as_message/, /acts_as_chat/, /ruby_llm.*persistence/,
+      /ruby_llm.*complete/, /persist.*completion/
+    ]
+    ruby_llm_17_patterns.any? { |pattern| caller_string.match?(pattern) }
   end
 end

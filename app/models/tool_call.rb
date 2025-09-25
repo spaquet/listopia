@@ -24,7 +24,7 @@
 #
 class ToolCall < ApplicationRecord
   # Use RubyLLM's Rails integration
-  acts_as_tool_call
+  acts_as_tool_call message: :message, message_class: "Message"
 
   belongs_to :message
 

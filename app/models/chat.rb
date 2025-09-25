@@ -36,7 +36,7 @@
 #
 class Chat < ApplicationRecord
   # Use RubyLLM's Rails integration
-  acts_as_chat
+  acts_as_chat messages: :messages, message_class: "Message", model: :model
 
   belongs_to :user
   belongs_to :model, optional: true
