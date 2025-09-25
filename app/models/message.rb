@@ -61,8 +61,11 @@ class Message < ApplicationRecord
 
   validates :role, inclusion: { in: %w[user assistant system tool] }
   validates :message_type, inclusion: { in: %w[text tool_call tool_result] }
-  validates :tool_call_id, presence: true, if: :tool_message?
-  validates :tool_call_id, uniqueness: { scope: :chat_id }, if: :tool_message?
+  validates :tool_call_id, presence: true, if: :tool_message_requires_tool_call_id?
+  validates :tool_call_id, uniqueness: {
+    scope: :chat_id,
+    allow_blank: true
+  }, if: :tool_message_with_tool_call_id?
 
   # Custom validation to ensure tool messages have valid tool_call_id
   validate :tool_message_must_have_valid_tool_call_id, if: :tool_message?
@@ -90,6 +93,7 @@ class Message < ApplicationRecord
                  .or(tool_messages.where(tool_call_id: [ nil, "" ]))
   }
 
+  before_validation :handle_duplicate_tool_call_ids, if: :tool_message?
   before_validation :ensure_tool_call_id_format, if: :tool_message?
   before_save :calculate_token_count
   after_create :update_chat_timestamp
@@ -231,5 +235,35 @@ class Message < ApplicationRecord
 
   def update_chat_timestamp
     chat.update_column(:last_message_at, created_at)
+  end
+
+  def tool_message_requires_tool_call_id?
+    tool_message? && !in_recovery_mode?
+  end
+
+  def tool_message_with_tool_call_id?
+    tool_message? && tool_call_id.present?
+  end
+
+  def in_recovery_mode?
+    chat&.conversation_state == "needs_cleanup" ||
+    Rails.env.development? ||
+    defined?(@in_recovery_mode) && @in_recovery_mode
+  end
+
+  def handle_duplicate_tool_call_ids
+    return unless tool_message? && tool_call_id.present?
+
+    existing_message = chat.messages.where(
+      role: "tool",
+      tool_call_id: tool_call_id
+    ).where.not(id: id).first
+
+    if existing_message
+      Rails.logger.warn "Duplicate tool_call_id #{tool_call_id} detected, handling gracefully"
+      base_id = tool_call_id.gsub(/_\d+$/, "")
+      self.tool_call_id = "#{base_id}_#{Time.current.to_i}"
+      Rails.logger.info "Updated tool_call_id to #{self.tool_call_id}"
+    end
   end
 end

@@ -41,12 +41,16 @@ class ListManagementTool < RubyLLM::Tool
     )
 
     # Initialize complexity analyzer with user's locale
-    @complexity_analyzer = MultilingualComplexityAnalyzer.new(
-      user: @user,
-      context: @context,
-      chat: @user.current_chat,
-      locale: @user.locale || I18n.locale
-    )
+    if defined?(MultilingualComplexityAnalyzer)
+      @complexity_analyzer = MultilingualComplexityAnalyzer.new(
+        user: @user,
+        context: @context,
+        chat: @user.current_chat,
+        locale: @user.locale || I18n.locale
+      )
+    else
+      @complexity_analyzer = nil
+    end
   end
 
   def execute(action:, list_id: nil, title: nil, description: nil, item_id: nil, planning_context: nil)
@@ -89,8 +93,16 @@ class ListManagementTool < RubyLLM::Tool
     user_message = extract_user_message_from_context || "#{title} #{description}"
 
     # Analyze complexity before creating
-    complexity_analysis = @complexity_analyzer.analyze_complexity(user_message)
-    Rails.logger.info "Complexity analysis: #{complexity_analysis[:complexity_level]} (#{complexity_analysis[:complexity_score]}/10)"
+    complexity_analysis = nil
+    if @complexity_analyzer
+      begin
+        complexity_analysis = @complexity_analyzer.analyze_complexity(user_message)
+        Rails.logger.info "Complexity analysis: #{complexity_analysis[:complexity_level]} (#{complexity_analysis[:complexity_score]}/10)"
+      rescue => e
+        Rails.logger.warn "Complexity analysis failed: #{e.message}"
+        complexity_analysis = nil
+      end
+    end
 
     # Auto-generate description if not provided
     if description.blank?
@@ -103,25 +115,13 @@ class ListManagementTool < RubyLLM::Tool
     Rails.logger.info "Creating planning list: #{title} with enhanced context: #{mapped_context}"
 
     begin
-      # DECISION: Use enhanced service based on complexity
-      if complexity_analysis[:complexity_score] >= 6 || complexity_analysis[:hierarchical_needs][:needs_hierarchy]
-        # Use enhanced service for complex tasks
-        service = EnhancedListCreationService.new(@user)
-        list = service.create_planning_list_with_analysis(
-          title: title,
-          description: description,
-          user_message: user_message,
-          context: @context.merge({ analysis: complexity_analysis })
-        )
-      else
-        # Use existing service for simple tasks
-        service = ListCreationService.new(@user)
-        list = service.create_planning_list(
-          title: title,
-          description: description,
-          planning_context: mapped_context
-        )
-      end
+      # DECISION: service based on complexity
+      service = ListCreationService.new(@user)
+      list = service.create_planning_list(
+        title: title,
+        description: description,
+        planning_context: mapped_context
+      )
 
       list.reload
       items_count = list.list_items.count
@@ -147,7 +147,7 @@ class ListManagementTool < RubyLLM::Tool
     return { success: false, error: "Title is required to create a list" } if title.blank?
 
     if description.blank?
-      description = generate_smart_description(title)
+      description = generate_smart_description(title, nil, nil)
     end
 
     begin
