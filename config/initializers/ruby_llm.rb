@@ -8,6 +8,6 @@ RubyLLM.configure do |config|
   # Use modern RubyLLM 1.8 features
   config.use_new_acts_as = true
 
-  # Set defaults
-  config.default_chat_model = "gpt-4.1-nano"
+  # Correct property name for default model
+  config.default_model = "gpt-4.1-nano"
 end

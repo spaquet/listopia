@@ -1,7 +1,5 @@
 # app/controllers/list_items_controller.rb - Context tracking integration
 class ListItemsController < ApplicationController
-  include ContextTracking  # NEW: Include context tracking
-
   before_action :authenticate_user!
   before_action :set_list
   before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :complete, :toggle_status ]
@@ -11,15 +9,6 @@ class ListItemsController < ApplicationController
     @list_item = @list.list_items.build(list_item_params)
 
     if @list_item.save
-      # NEW: Track item creation with rich context
-      track_entity_action("item_added", @list_item, {
-        list_id: @list.id,
-        list_title: @list.title,
-        priority: @list_item.priority,
-        assigned_user_id: @list_item.assigned_user_id,
-        position: @list_item.position,
-        creation_method: params[:creation_method] || "manual"
-      })
 
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item was successfully added." }
@@ -42,22 +31,7 @@ class ListItemsController < ApplicationController
   end
 
   def update
-    previous_status = @list_item.status
-    previous_assigned_user_id = @list_item.assigned_user_id
-
     if @list_item.update(list_item_params)
-      # NEW: Track item updates with detailed change information
-      changes = @list_item.previous_changes.except("updated_at")
-      track_entity_action("item_updated", @list_item, {
-        list_id: @list.id,
-        changes: changes.keys,
-        status_changed: changes.key?("status"),
-        assignment_changed: changes.key?("assigned_user_id"),
-        previous_status: previous_status,
-        previous_assigned_user_id: previous_assigned_user_id,
-        update_source: params[:source] || "manual"
-      })
-
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item was successfully updated." }
         format.turbo_stream do
@@ -79,17 +53,8 @@ class ListItemsController < ApplicationController
 
   def toggle_status
     new_status = @list_item.completed? ? "pending" : "completed"
-    previous_status = @list_item.status
 
     if @list_item.update(status: new_status)
-      # NEW: Track status changes with completion context
-      action = new_status == "completed" ? "item_completed" : "item_uncompleted"
-      track_entity_action(action, @list_item, {
-        list_id: @list.id,
-        previous_status: previous_status,
-        completion_method: params[:method] || "toggle",
-        completed_at: new_status == "completed" ? Time.current : nil
-      })
 
       respond_to do |format|
         format.html { redirect_to @list }
@@ -111,17 +76,8 @@ class ListItemsController < ApplicationController
 
   def assign
     user_to_assign = User.find_by(id: params[:user_id])
-    previous_assigned_user_id = @list_item.assigned_user_id
 
     if @list_item.update(assigned_user_id: user_to_assign&.id)
-      # NEW: Track assignment changes
-      track_entity_action("item_assigned", @list_item, {
-        list_id: @list.id,
-        assigned_to_user_id: user_to_assign&.id,
-        assigned_to_name: user_to_assign&.name,
-        previous_assigned_user_id: previous_assigned_user_id,
-        assignment_method: params[:method] || "manual"
-      })
 
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item assignment updated." }
@@ -172,11 +128,6 @@ class ListItemsController < ApplicationController
     items.each do |item|
       if item.update(status: "completed")
         completed_count += 1
-        track_entity_action("item_completed", item, {
-          list_id: @list.id,
-          bulk_operation: true,
-          bulk_operation_id: SecureRandom.uuid
-        })
       end
     end
 
