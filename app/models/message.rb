@@ -67,9 +67,6 @@ class Message < ApplicationRecord
   }, if: :tool_message_with_tool_call_id?
   validate :tool_message_must_have_valid_tool_call_id, if: :should_validate_tool_call_id?
 
-  # Custom validation to ensure tool messages have valid tool_call_id
-  validate :tool_message_must_have_valid_tool_call_id, if: :tool_message?
-
   enum :role, {
     user: "user",
     assistant: "assistant",
@@ -258,15 +255,33 @@ class Message < ApplicationRecord
   end
 
   def should_validate_tool_call_id?
-    tool_message? && persisted? && !during_ruby_llm_17_operations?
+    # Don't validate during RubyLLM internal operations or when not persisted
+    tool_message? && persisted? && !during_ruby_llm_operations?
   end
 
-  def during_ruby_llm_17_operations?
-    caller_string = caller.join("\n")
-    ruby_llm_17_patterns = [
-      /acts_as_message/, /acts_as_chat/, /ruby_llm.*persistence/,
-      /ruby_llm.*complete/, /persist.*completion/
+  def during_ruby_llm_operations?
+    # Check if we're currently in RubyLLM's internal processing
+    caller_locations = caller_locations(1, 30) # Get first 30 stack frames
+    caller_string = caller_locations.map(&:to_s).join("\n")
+
+    # Patterns that indicate RubyLLM internal operations
+    ruby_llm_patterns = [
+      /ruby_llm.*persistence/i,
+      /ruby_llm.*complete/i,
+      /persist.*completion/i,
+      /acts_as_message/i,
+      /acts_as_chat/i,
+      /handle_tool_calls/i,
+      /setup_persistence_callbacks/i,
+      /persist_message_completion/i,
+      /chat_methods\.rb/i,
+      /active_record.*chat_methods/i
     ]
-    ruby_llm_17_patterns.any? { |pattern| caller_string.match?(pattern) }
+
+    # Also check for Thread.current flag that RubyLLM might set
+    ruby_llm_processing = Thread.current[:ruby_llm_processing] == true
+
+    # Return true if we're in RubyLLM processing or match patterns
+    ruby_llm_processing || ruby_llm_patterns.any? { |pattern| caller_string.match?(pattern) }
   end
 end

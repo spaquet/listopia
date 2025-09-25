@@ -79,33 +79,31 @@ class Chat < ApplicationRecord
     pre_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
 
     begin
+      # Set flag to indicate RubyLLM processing
+      Thread.current[:ruby_llm_processing] = true
+
       # Clean conversation before making the API call
       clean_conversation_for_api_call!
 
-      # Call RubyLLM's ask method
-      response = super(message_content, **options)
+      # Call the parent implementation
+      result = super(message_content, **options)
 
-      # Validate tool call responses after the call
-      post_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
+      # Validate tool call consistency after completion
+      post_call_tool_ids = Set.new(tool_calls.reload.pluck(:tool_call_id))
       new_tool_ids = post_call_tool_ids - pre_call_tool_ids
 
       if new_tool_ids.any?
-        validate_new_tool_responses(new_tool_ids)
+        Rails.logger.debug "New tool calls created: #{new_tool_ids.to_a}"
+        validate_new_tool_calls!(new_tool_ids)
       end
 
-      # Mark conversation as stable
-      update_column(:conversation_state, "stable")
-      update_column(:last_stable_at, Time.current)
-
-      response
-
-    rescue RubyLLM::BadRequestError => e
-      handle_api_error(e, message_content, options)
-    rescue ConversationStateManager::ConversationError => e
-      handle_conversation_error(e, message_content, options)
+      result
     rescue => e
       Rails.logger.error "Error in Chat#ask: #{e.class.name} - #{e.message}"
       raise e
+    ensure
+      # Always clear the flag
+      Thread.current[:ruby_llm_processing] = nil
     end
   end
 
