@@ -35,16 +35,13 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Chat < ApplicationRecord
-  # Use RubyLLM's Rails integration
-  acts_as_chat messages: :messages, message_class: "Message", model: :model
+  # Use RubyLLM 1.8 standard approach - let it handle everything
+  acts_as_chat
 
   belongs_to :user
   belongs_to :model, optional: true
   has_many :messages, dependent: :destroy
   has_many :tool_calls, through: :messages
-  has_many :conversation_contexts, dependent: :destroy
-  has_many :conversation_checkpoints, dependent: :destroy
-  has_many :recovery_contexts, dependent: :destroy
 
   validates :title, presence: true, length: { maximum: 255 }
   validates :status, inclusion: { in: %w[active archived completed workflow_planning error] }
@@ -71,155 +68,8 @@ class Chat < ApplicationRecord
   before_create :set_default_title
   after_update :update_last_message_timestamp, if: :saved_change_to_last_message_at?
 
-  # Override RubyLLM's ask method to ensure conversation integrity
-  def ask(message_content, **options)
-    Rails.logger.debug "Chat#ask called for chat #{id} with message: #{message_content[0..100]}..."
+  # Keep only essential business logic methods
 
-    # Track tool calls before and after to validate responses
-    pre_call_tool_ids = Set.new(tool_calls.pluck(:tool_call_id))
-
-    begin
-      # Set flag to indicate RubyLLM processing
-      Thread.current[:ruby_llm_processing] = true
-
-      # Clean conversation before making the API call
-      clean_conversation_for_api_call!
-
-      # Call the parent implementation
-      result = super(message_content, **options)
-
-      # Validate tool call consistency after completion
-      post_call_tool_ids = Set.new(tool_calls.reload.pluck(:tool_call_id))
-      new_tool_ids = post_call_tool_ids - pre_call_tool_ids
-
-      if new_tool_ids.any?
-        Rails.logger.debug "New tool calls created: #{new_tool_ids.to_a}"
-        validate_new_tool_calls!(new_tool_ids)
-      end
-
-      result
-    rescue => e
-      Rails.logger.error "Error in Chat#ask: #{e.class.name} - #{e.message}"
-      raise e
-    ensure
-      # Always clear the flag
-      Thread.current[:ruby_llm_processing] = nil
-    end
-  end
-
-  # Clean conversation state before API call
-  def clean_conversation_for_api_call!
-    conversation_manager = ConversationStateManager.new(self)
-
-    begin
-      conversation_manager.ensure_conversation_integrity!
-    rescue ConversationStateManager::ConversationError => e
-      Rails.logger.warn "Cleaning conversation issues before API call: #{e.message}"
-
-      # Perform comprehensive cleanup
-      cleanup_count = conversation_manager.perform_comprehensive_cleanup!
-
-      if cleanup_count > 0
-        Rails.logger.info "Cleaned up #{cleanup_count} problematic messages before API call"
-        update_column(:conversation_state, "stable")
-      end
-    end
-  end
-
-  # Validate that new tool calls have corresponding responses
-  def validate_new_tool_responses(new_tool_ids)
-    tool_response_manager = ToolResponseManager.new(self)
-
-    new_tool_ids.each do |tool_call_id|
-      unless tool_response_manager.tool_call_has_response?(tool_call_id)
-        Rails.logger.warn "Tool call #{tool_call_id} missing response message"
-
-        # Create placeholder response to maintain conversation integrity
-        begin
-          tool_response_manager.create_tool_response(
-            tool_call_id: tool_call_id,
-            content: "Tool execution completed",
-            metadata: { auto_generated: true, reason: "missing_response" }
-          )
-        rescue => e
-          Rails.logger.error "Failed to create placeholder response: #{e.message}"
-        end
-      end
-    end
-  end
-
-  # Handle API errors with conversation repair
-  def handle_api_error(error, message_content, options)
-    Rails.logger.error "API Error in chat #{id}: #{error.message}"
-
-    if conversation_structure_error?(error)
-      Rails.logger.warn "Conversation structure error detected, attempting repair"
-
-      # Mark as needing cleanup
-      update_column(:conversation_state, "needs_cleanup")
-
-      # Attempt repair
-      repair_conversation_and_retry(message_content, options)
-    else
-      # Re-raise non-conversation errors
-      raise error
-    end
-  end
-
-  # Handle conversation state errors
-  def handle_conversation_error(error, message_content, options)
-    Rails.logger.error "Conversation Error in chat #{id}: #{error.message}"
-
-    update_column(:conversation_state, "error")
-
-    # Attempt aggressive repair
-    repair_conversation_and_retry(message_content, options)
-  end
-
-  # Repair conversation and retry the request
-  def repair_conversation_and_retry(message_content, options)
-    conversation_manager = ConversationStateManager.new(self)
-
-    # Perform comprehensive cleanup
-    cleanup_count = conversation_manager.perform_comprehensive_cleanup!
-
-    Rails.logger.info "Repaired conversation: cleaned #{cleanup_count} messages"
-
-    if cleanup_count > 0
-      # Mark as stable and retry
-      update_columns(
-        conversation_state: "stable",
-        last_stable_at: Time.current
-      )
-
-      # Retry the API call once
-      begin
-        super(message_content, **options)
-      rescue => retry_error
-        Rails.logger.error "Retry failed even after repair: #{retry_error.message}"
-        raise retry_error
-      end
-    else
-      # If no cleanup was needed, the issue might be elsewhere
-      raise ConversationStateManager::ConversationError, "Unable to repair conversation state"
-    end
-  end
-
-  # Check if error is related to conversation structure
-  def conversation_structure_error?(error)
-    error_patterns = [
-      /tool_calls.*must be followed by tool messages/i,
-      /tool_call_id.*did not have response messages/i,
-      /assistant message.*tool_calls.*must be followed/i,
-      /invalid.*parameter.*messages/i,
-      /missing.*parameter.*tool_call_id/i,
-      /tool.*must have.*tool_call_id/i
-    ]
-
-    error_patterns.any? { |pattern| error.message.match?(pattern) }
-  end
-
-  # Get conversation statistics
   def conversation_stats
     {
       total_messages: messages.count,
@@ -228,73 +78,9 @@ class Chat < ApplicationRecord
       tool_messages: messages.where(role: "tool").count,
       system_messages: messages.where(role: "system").count,
       tool_calls_count: tool_calls.count,
-      orphaned_tool_messages: orphaned_tool_messages.count,
       conversation_state: conversation_state,
-      last_stable_at: last_stable_at,
-      has_issues: has_conversation_issues?
+      last_stable_at: last_stable_at
     }
-  end
-
-  # Find orphaned tool messages
-  def orphaned_tool_messages
-    messages.where(role: "tool").left_joins(:chat)
-           .joins("LEFT JOIN tool_calls ON tool_calls.tool_call_id = messages.tool_call_id")
-           .where(tool_calls: { tool_call_id: nil })
-           .or(messages.where(role: "tool", tool_call_id: [ nil, "" ]))
-  end
-
-  # Check if conversation has issues
-  def has_conversation_issues?
-    conversation_manager = ConversationStateManager.new(self)
-
-    begin
-      conversation_manager.ensure_conversation_integrity!
-      false
-    rescue ConversationStateManager::ConversationError
-      true
-    end
-  end
-
-  # Repair conversation issues
-  def repair_conversation!
-    conversation_manager = ConversationStateManager.new(self)
-    cleanup_count = conversation_manager.perform_comprehensive_cleanup!
-
-    update_columns(
-      conversation_state: "stable",
-      last_stable_at: Time.current
-    )
-
-    cleanup_count
-  end
-
-  # Get safe conversation history for API calls
-  def safe_conversation_history
-    conversation_manager = ConversationStateManager.new(self)
-    conversation_manager.clean_conversation_history
-  end
-
-  # Create checkpoint for conversation state
-  def create_checkpoint!(name)
-    conversation_checkpoints.create!(
-      checkpoint_name: name,
-      message_count: messages.count,
-      tool_calls_count: tool_calls.count,
-      conversation_state: conversation_state,
-      messages_snapshot: messages.order(:created_at).to_json,
-      context_data: conversation_stats.to_json
-    )
-  end
-
-  # Add assistant message safely
-  def add_assistant_message(content, metadata: {})
-    messages.create!(
-      role: "assistant",
-      content: content,
-      message_type: "text",
-      metadata: metadata,
-      user: nil # Assistant messages don't have a user
-    )
   end
 
   # Calculate total tokens used
@@ -307,12 +93,7 @@ class Chat < ApplicationRecord
     messages.sum(:processing_time) || 0
   end
 
-  # Get latest messages for chat history loading
-  def latest_messages(limit = 50)
-    messages.order(created_at: :desc).limit(limit).reverse
-  end
-
-  # Alternative method that includes eager loading for better performance
+  # Get latest messages for chat history loading with performance optimization
   def latest_messages_with_includes(limit = 50)
     messages.includes(:user, :tool_calls)
             .order(created_at: :desc)
