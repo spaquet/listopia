@@ -218,6 +218,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.integer "public_permission", default: 0, null: false
     t.string "public_slug"
     t.integer "list_type", default: 0, null: false
+    t.uuid "parent_list_id"
     t.json "metadata", default: {}
     t.string "color_theme", default: "blue"
     t.datetime "created_at", null: false
@@ -229,12 +230,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.index ["list_collaborations_count"], name: "index_lists_on_list_collaborations_count"
     t.index ["list_items_count"], name: "index_lists_on_list_items_count"
     t.index ["list_type"], name: "index_lists_on_list_type"
+    t.index ["parent_list_id", "created_at"], name: "index_lists_on_parent_list_id_and_created_at"
+    t.index ["parent_list_id"], name: "index_lists_on_parent_list_id"
     t.index ["public_permission"], name: "index_lists_on_public_permission"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"
     t.index ["user_id", "created_at"], name: "index_lists_on_user_id_and_created_at"
     t.index ["user_id", "is_public"], name: "index_lists_on_user_is_public"
     t.index ["user_id", "list_type"], name: "index_lists_on_user_list_type"
+    t.index ["user_id", "parent_list_id"], name: "index_lists_on_user_parent"
     t.index ["user_id", "status", "list_type"], name: "index_lists_on_user_status_list_type"
     t.index ["user_id", "status"], name: "index_lists_on_user_id_and_status"
     t.index ["user_id", "status"], name: "index_lists_on_user_status"
@@ -499,6 +503,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
   add_foreign_key "list_items", "board_columns"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"
+  add_foreign_key "lists", "lists", column: "parent_list_id"
   add_foreign_key "lists", "users"
   add_foreign_key "messages", "chats"
   add_foreign_key "messages", "models"

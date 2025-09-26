@@ -1,4 +1,6 @@
-class MigrateToRubyLLMModelReferences < ActiveRecord::Migration[8.0]
+# 20250910233319_migrate_to_ruby_llm_model_references.rb
+
+class MigrateToRubyLlmModelReferences < ActiveRecord::Migration[8.0]
   def up
     model_class = Model
     chat_class = Chat
