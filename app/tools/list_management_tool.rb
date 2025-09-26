@@ -1,14 +1,15 @@
 # app/tools/list_management_tool.rb
 class ListManagementTool < RubyLLM::Tool
-  description "Manages lists and list items in Listopia. Use this tool for ANY planning, organization, or task management needs."
+  description "Manages lists and list items in Listopia. Use this tool for ANY planning, organization, or task management needs. You can create main lists, sub-lists, and organize complex projects intelligently."
 
-  param :action, desc: "The action to perform",
-        enum: [ "create_list", "add_item", "complete_item", "get_lists", "get_list_items", "create_planning_list" ]
+  # RubyLLM 1.8+ compatible parameter definitions (no enum keyword)
+  param :action, desc: "Action to perform: create_list, create_sub_lists, add_item, get_lists, get_list_items, complete_item"
   param :title, desc: "Title for new lists or items", required: false
   param :description, desc: "Description for new lists or items", required: false
-  param :list_id, desc: "The ID or reference to the list", required: false
-  param :item_id, desc: "The ID of the item", required: false
-  param :planning_context, desc: "Context for planning", required: false
+  param :list_id, desc: "ID or title reference to existing list", required: false
+  param :item_id, desc: "ID of the item to modify", required: false
+  param :parent_list_id, desc: "Parent list ID when creating sub-lists", required: false
+  param :sub_lists, desc: "Array of sub-list data when creating multiple lists", required: false
 
   def initialize(user, context = {})
     @user = user
@@ -19,8 +20,8 @@ class ListManagementTool < RubyLLM::Tool
     case action
     when "create_list"
       create_list(params[:title], params[:description])
-    when "create_planning_list"
-      create_planning_list(params[:title], params[:description], params[:planning_context])
+    when "create_sub_lists"
+      create_sub_lists(params[:parent_list_id], params[:sub_lists] || [])
     when "add_item"
       add_item(params[:list_id], params[:title], params[:description])
     when "get_lists"
@@ -30,11 +31,9 @@ class ListManagementTool < RubyLLM::Tool
     when "complete_item"
       complete_item(params[:item_id])
     else
-      { error: "Unknown action: #{action}" }
+      { success: false, error: "Unknown action: #{action}" }
     end
-  rescue => e
-    Rails.logger.error "ListManagementTool error: #{e.message}"
-    { error: e.message }
+    # RubyLLM 1.8 handles errors automatically - no manual rescue needed
   end
 
   private
@@ -55,23 +54,45 @@ class ListManagementTool < RubyLLM::Tool
     }
   end
 
-  def create_planning_list(title, description, context)
-    list = create_list(title, description)
+  def create_sub_lists(parent_list_id, sub_lists_data)
+    parent_list = find_list(parent_list_id) if parent_list_id
 
-    # Add contextual items based on planning context
-    if context&.downcase&.include?("roadshow")
-      cities = extract_cities_from_context(description || title)
-      cities.each do |city|
-        add_item(list[:list][:id], "#{city} stop", "Plan and execute roadshow stop in #{city}")
+    created_lists = []
+
+    sub_lists_data.each do |sub_list_info|
+      list = @user.lists.create!(
+        title: sub_list_info[:title] || sub_list_info["title"],
+        description: sub_list_info[:description] || sub_list_info["description"],
+        status: "active"
+      )
+
+      # Add items to sub-list if provided
+      if sub_list_info[:items] || sub_list_info["items"]
+        items_data = sub_list_info[:items] || sub_list_info["items"]
+        items_data.each_with_index do |item_data, index|
+          list.list_items.create!(
+            title: item_data[:title] || item_data["title"] || item_data,
+            description: item_data[:description] || item_data["description"],
+            position: index
+          )
+        end
       end
+
+      broadcast_list_update(list)
+      created_lists << serialize_list(list)
     end
 
-    list
+    {
+      success: true,
+      message: "Created #{created_lists.length} sub-lists#{parent_list ? " under '#{parent_list.title}'" : ""}",
+      lists: created_lists,
+      parent_list: parent_list ? serialize_list(parent_list) : nil
+    }
   end
 
   def add_item(list_id, title, description = nil)
     list = find_list(list_id)
-    return { error: "List not found" } unless list
+    return { success: false, error: "List not found" } unless list
 
     item = list.list_items.create!(
       title: title,
@@ -83,22 +104,55 @@ class ListManagementTool < RubyLLM::Tool
 
     {
       success: true,
-      message: "Added item '#{title}' to list",
-      item: serialize_item(item)
+      message: "Added item '#{title}' to '#{list.title}'",
+      item: serialize_item(item),
+      list: serialize_list(list)
     }
   end
 
-  def extract_cities_from_context(text)
-    # Simple city extraction - could be enhanced
-    cities = %w[San\ Francisco New\ York Austin Denver Seattle Portland Boston Los\ Angeles]
-    cities.select { |city| text.match?(/#{city}/i) }
+  def get_lists
+    lists = @user.lists.recent.limit(20)
+
+    {
+      success: true,
+      message: "Retrieved #{lists.count} lists",
+      lists: lists.map { |list| serialize_list(list) }
+    }
+  end
+
+  def get_list_items(list_id)
+    list = find_list(list_id)
+    return { success: false, error: "List not found" } unless list
+
+    items = list.list_items.order(:position)
+
+    {
+      success: true,
+      message: "Retrieved #{items.count} items from '#{list.title}'",
+      list: serialize_list(list),
+      items: items.map { |item| serialize_item(item) }
+    }
+  end
+
+  def complete_item(item_id)
+    item = @user.list_items.joins(:list).find_by(id: item_id)
+    return { success: false, error: "Item not found" } unless item
+
+    item.update!(status: "completed")
+    broadcast_item_update(item)
+
+    {
+      success: true,
+      message: "Marked '#{item.title}' as completed",
+      item: serialize_item(item)
+    }
   end
 
   def find_list(list_id)
     if list_id.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
       @user.lists.find_by(id: list_id)
     else
-      @user.lists.find_by(title: list_id)
+      @user.lists.find_by("title ILIKE ?", "%#{list_id}%")
     end
   end
 
@@ -109,9 +163,7 @@ class ListManagementTool < RubyLLM::Tool
       description: list.description,
       status: list.status,
       items_count: list.list_items.count,
-      completed_count: list.list_items.where(completed: true).count,
-      created_at: list.created_at,
-      updated_at: list.updated_at
+      created_at: list.created_at
     }
   end
 
@@ -120,28 +172,32 @@ class ListManagementTool < RubyLLM::Tool
       id: item.id,
       title: item.title,
       description: item.description,
-      completed: item.completed,
-      position: item.position
+      status: item.status,
+      priority: item.priority,
+      position: item.position,
+      list_id: item.list_id
     }
   end
 
   def broadcast_list_update(list)
-    # Keep existing broadcast logic
-    list.user.broadcast_prepend_to(
-      "user_lists_#{list.user.id}",
-      target: "lists-grid",
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "user_#{@user.id}_lists",
+      target: "list-#{list.id}",
       partial: "lists/list_card",
       locals: { list: list }
     )
+  rescue => e
+    Rails.logger.warn "Broadcast failed: #{e.message}"
   end
 
   def broadcast_item_update(item)
-    # Keep existing broadcast logic for items
-    item.list.broadcast_append_to(
-      "list_items_#{item.list.id}",
-      target: "list-items",
-      partial: "list_items/item",
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "list_#{item.list_id}_items",
+      target: "item-#{item.id}",
+      partial: "list_items/item_card",
       locals: { item: item }
     )
+  rescue => e
+    Rails.logger.warn "Broadcast failed: #{e.message}"
   end
 end

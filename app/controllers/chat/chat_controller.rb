@@ -13,7 +13,7 @@ class Chat::ChatController < ApplicationController
     render turbo_stream: turbo_stream.append(
       "chat-messages",
       partial: "chat/assistant_message",
-      locals: { content: response_content }
+      locals: { message: response_content } # Fixed: message not content
     )
   end
 

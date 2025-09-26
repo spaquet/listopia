@@ -11,15 +11,12 @@ class McpService
     setup_chat
     response = @chat.ask(message_content)
     response.content
-  rescue => e
-    Rails.logger.error "MCP Error: #{e.message}"
-    handle_error(e)
+    # RubyLLM 1.8 handles all errors automatically
   end
 
   private
 
   def setup_chat
-    # Use RubyLLM 1.8 standard approach
     @chat.with_instructions(build_system_instructions)
     @chat.with_tool(ListManagementTool.new(@user, @context))
   end
@@ -28,23 +25,33 @@ class McpService
     <<~INSTRUCTIONS
       You are an AI assistant integrated with Listopia, a collaborative list management application.
 
-      You can help users manage their lists, create items, update tasks, and collaborate with others.
-
       CURRENT CONTEXT:
       #{build_context_summary}
 
-      When the user refers to 'this list', 'these items', 'first 3 items', etc., use the context above to resolve these references.
+      IMPORTANT: You are a smart planning assistant. When users describe complex projects:
 
-      IMPORTANT: Listopia is fundamentally a planning and organization tool.
-      When users ask for help with planning, organizing, or managing tasks:
-      1. CREATE concrete, actionable lists using the available tools
-      2. ORGANIZE information into clear, structured formats
-      3. SUGGEST workflows and processes that help users stay organized
-      4. USE the list and item management tools to create tangible outcomes
+      1. **ANALYZE the request** - Does this need multiple related lists or just one?
 
+      2. **CREATE INTELLIGENTLY**:
+         - For simple tasks → create ONE list with items
+         - For complex projects → create MULTIPLE related lists
+         - Examples requiring sub-lists:
+           * Multi-city events (roadshows, tours, conferences)
+           * Complex projects with phases/departments
+           * Event planning with multiple venues/dates
+           * Product launches across regions
+           * Any task with natural subdivisions
+
+      3. **USE TOOLS SMARTLY**:
+         - Use create_list for single lists
+         - Use create_sub_lists for complex multi-list projects
+         - Add relevant items to each list
+         - Make lists actionable and well-organized
+
+      4. **THINK CONTEXTUALLY** - What would be most helpful for this specific user request?
+
+      When in doubt, create multiple focused lists rather than one overwhelming list.
       Always aim to provide practical, organized solutions that users can immediately act upon.
-
-      Current page context: #{@context[:page] || 'unknown'}
     INSTRUCTIONS
   end
 
@@ -59,27 +66,10 @@ class McpService
       context_parts << "Total lists: #{@context[:total_lists]}"
     end
 
-    # Get recent list context
     if recent_list = @user.lists.order(:updated_at).last
       context_parts << "Most recent list: #{recent_list.title}"
     end
 
     context_parts.join(", ")
-  end
-
-  def handle_error(error)
-    case error
-    when ActiveRecord::StatementInvalid
-      if error.message.include?("tool_messages_must_have_tool_call_id")
-        Rails.logger.error "Database constraint violation - this should not happen with RubyLLM 1.8"
-        "I encountered a technical issue. Please try again."
-      else
-        "I encountered a database error. Please try again."
-      end
-    when RubyLLM::Error
-      "I encountered an AI service error. Please try again."
-    else
-      "I apologize, but I encountered an error processing your request."
-    end
   end
 end
