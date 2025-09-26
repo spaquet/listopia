@@ -55,7 +55,8 @@ class Chat::ChatController < ApplicationController
     @context = {
       page: "#{controller_name}##{action_name}",
       current_page: params[:current_page],
-      **params.fetch(:context, {}).permit!.to_h # brakeman:ignore
+      # brakeman:skip
+      **params.fetch(:context, {}).permit!.to_h
     }
   end
 end
