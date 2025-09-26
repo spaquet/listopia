@@ -9,7 +9,7 @@ class ListManagementTool < RubyLLM::Tool
   param :list_id, desc: "ID or title reference to existing list", required: false
   param :item_id, desc: "ID of the item to modify", required: false
   param :parent_list_id, desc: "Parent list ID when creating sub-lists", required: false
-  param :sub_lists, desc: "Array of sub-list data when creating multiple lists", required: false
+  param :sub_lists, desc: "Array of sub-list data or comma-separated string of cities/names when creating multiple lists", required: false
 
   def initialize(user, context = {})
     @user = user
@@ -21,7 +21,7 @@ class ListManagementTool < RubyLLM::Tool
     when "create_list"
       create_list(params[:title], params[:description])
     when "create_sub_lists"
-      create_sub_lists(params[:parent_list_id], params[:sub_lists] || [])
+      create_sub_lists(params[:parent_list_id], params[:sub_lists])
     when "add_item"
       add_item(params[:list_id], params[:title], params[:description])
     when "get_lists"
@@ -55,26 +55,63 @@ class ListManagementTool < RubyLLM::Tool
   end
 
   def create_sub_lists(parent_list_id, sub_lists_data)
-    parent_list = find_list(parent_list_id) if parent_list_id
+    parent_list = find_list(parent_list_id) if parent_list_id && parent_list_id != "most_recent"
+
+    # Handle different input formats for sub_lists_data
+    sub_lists_array = normalize_sub_lists_input(sub_lists_data)
+
+    return { success: false, error: "No sub-lists data provided" } if sub_lists_array.empty?
 
     created_lists = []
 
-    sub_lists_data.each do |sub_list_info|
-      list = @user.lists.create!(
-        title: sub_list_info[:title] || sub_list_info["title"],
-        description: sub_list_info[:description] || sub_list_info["description"],
-        status: "active"
-      )
+    sub_lists_array.each do |sub_list_info|
+      # Handle both hash format and string format
+      if sub_list_info.is_a?(String)
+        # For roadshow cities, create default planning items
+        list_title = "#{sub_list_info} - Roadshow Planning"
+        list_description = "Planning checklist for #{sub_list_info} roadshow stop"
 
-      # Add items to sub-list if provided
-      if sub_list_info[:items] || sub_list_info["items"]
-        items_data = sub_list_info[:items] || sub_list_info["items"]
-        items_data.each_with_index do |item_data, index|
+        list = @user.lists.create!(
+          title: list_title,
+          description: list_description,
+          status: "active"
+        )
+
+        # Add default roadshow planning items
+        default_roadshow_items = [
+          "Venue research and booking",
+          "Local partnership outreach",
+          "Marketing and promotion planning",
+          "Travel and accommodation arrangements",
+          "Equipment and materials shipping",
+          "Local team coordination",
+          "Post-event follow-up planning"
+        ]
+
+        default_roadshow_items.each_with_index do |item_title, index|
           list.list_items.create!(
-            title: item_data[:title] || item_data["title"] || item_data,
-            description: item_data[:description] || item_data["description"],
+            title: item_title,
             position: index
           )
+        end
+      else
+        # Handle hash format
+        list = @user.lists.create!(
+          title: sub_list_info[:title] || sub_list_info["title"],
+          description: sub_list_info[:description] || sub_list_info["description"],
+          status: "active"
+        )
+
+        # Add items to sub-list if provided
+        if sub_list_info[:items] || sub_list_info["items"]
+          items_data = sub_list_info[:items] || sub_list_info["items"]
+          items_data.each_with_index do |item_data, index|
+            list.list_items.create!(
+              title: item_data[:title] || item_data["title"] || item_data,
+              description: item_data[:description] || item_data["description"],
+              position: index
+            )
+          end
         end
       end
 
@@ -88,6 +125,20 @@ class ListManagementTool < RubyLLM::Tool
       lists: created_lists,
       parent_list: parent_list ? serialize_list(parent_list) : nil
     }
+  end
+
+  def normalize_sub_lists_input(input)
+    return [] if input.nil? || input.empty?
+
+    case input
+    when String
+      # Handle comma-separated string like "San Francisco, New York, Austin"
+      input.split(",").map(&:strip).reject(&:empty?)
+    when Array
+      input
+    else
+      []
+    end
   end
 
   def add_item(list_id, title, description = nil)
@@ -149,6 +200,11 @@ class ListManagementTool < RubyLLM::Tool
   end
 
   def find_list(list_id)
+    return nil if list_id.nil? || list_id.empty?
+
+    # Handle special case for "most_recent"
+    return @user.lists.order(:updated_at).last if list_id == "most_recent"
+
     if list_id.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
       @user.lists.find_by(id: list_id)
     else
@@ -163,7 +219,8 @@ class ListManagementTool < RubyLLM::Tool
       description: list.description,
       status: list.status,
       items_count: list.list_items.count,
-      created_at: list.created_at
+      created_at: list.created_at,
+      updated_at: list.updated_at
     }
   end
 
@@ -175,29 +232,35 @@ class ListManagementTool < RubyLLM::Tool
       status: item.status,
       priority: item.priority,
       position: item.position,
-      list_id: item.list_id
+      list_id: item.list_id,
+      created_at: item.created_at,
+      updated_at: item.updated_at
     }
   end
 
   def broadcast_list_update(list)
+    # Turbo Stream broadcasts for real-time updates
     Turbo::StreamsChannel.broadcast_replace_to(
       "user_#{@user.id}_lists",
-      target: "list-#{list.id}",
-      partial: "lists/list_card",
-      locals: { list: list }
+      target: "lists",
+      partial: "lists/list_cards",
+      locals: { lists: @user.lists.recent.limit(20) }
     )
   rescue => e
-    Rails.logger.warn "Broadcast failed: #{e.message}"
+    Rails.logger.error "Failed to broadcast list update: #{e.message}"
+    # Don't let broadcast errors break the main functionality
   end
 
   def broadcast_item_update(item)
+    # Turbo Stream broadcasts for real-time updates
     Turbo::StreamsChannel.broadcast_replace_to(
-      "list_#{item.list_id}_items",
-      target: "item-#{item.id}",
-      partial: "list_items/item_card",
-      locals: { item: item }
+      "user_#{@user.id}_list_#{item.list_id}",
+      target: "list_items",
+      partial: "list_items/item_cards",
+      locals: { items: item.list.list_items.order(:position) }
     )
   rescue => e
-    Rails.logger.warn "Broadcast failed: #{e.message}"
+    Rails.logger.error "Failed to broadcast item update: #{e.message}"
+    # Don't let broadcast errors break the main functionality
   end
 end
