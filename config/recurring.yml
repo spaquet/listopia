@@ -8,3 +8,20 @@
 #     command: "SoftDeletedRecord.due.delete_all"
 #     priority: 2
 #     schedule: at 5am every day
+
+production:
+  conversation_context_cleanup:
+    class: ConversationContextCleanupJob
+    cron: "0 2 * * *"  # Daily at 2 AM
+    queue: low_priority
+    
+  conversation_health_check:
+    class: ConversationHealthJob
+    cron: "0 */6 * * *"  # Every 6 hours
+    queue: low_priority
+
+development:
+  conversation_context_cleanup:
+    class: ConversationContextCleanupJob
+    cron: "0 */2 * * *"  # Every 2 hours in development
+    queue: low_priority

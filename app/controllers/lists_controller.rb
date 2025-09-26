@@ -1,10 +1,10 @@
-# app/controllers/lists_controller.rb
+# app/controllers/lists_controller.rb - Updated with proper context tracking
 class ListsController < ApplicationController
   include ListBroadcasting
 
   before_action :authenticate_user!, except: [ :show, :show_by_slug ]
-  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status ]
-  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate ]
+  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status, :ai_context ]
+  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :ai_context ]
 
   # Display all lists accessible to the current user
   def index
@@ -19,7 +19,7 @@ class ListsController < ApplicationController
       @lists = @lists.where(status: params[:status])
     end
 
-    # NEW: Apply visibility filter (public/private)
+    # Apply visibility filter (public/private)
     if params[:visibility].present?
       case params[:visibility]
       when "public"
@@ -29,7 +29,7 @@ class ListsController < ApplicationController
       end
     end
 
-    # NEW: Apply collaboration filter
+    # Apply collaboration filter
     if params[:collaboration].present?
       case params[:collaboration]
       when "owned"
@@ -122,6 +122,7 @@ class ListsController < ApplicationController
 
     if result.success?
       @list = result.data
+
       respond_to do |format|
         format.html { redirect_to lists_path, notice: "List was successfully created." }
         format.turbo_stream {
@@ -166,21 +167,6 @@ class ListsController < ApplicationController
     end
   end
 
-  # Show sharing options for a list
-  def share
-    authorize @list, :share?
-
-    @collaborators = @list.collaborators.includes(:user)
-    @invitations = @list.invitations.pending.includes(:invited_by)
-    @sharing_service = ListSharingService.new(@list, current_user)
-    @sharing_summary = @sharing_service.sharing_summary
-
-    respond_to do |format|
-      format.html { render :share }
-      format.turbo_stream { render :share }
-    end
-  end
-
   # Delete a list
   def destroy
     # Ensure only the owner can delete the list
@@ -213,6 +199,7 @@ class ListsController < ApplicationController
     result = service.toggle_status
 
     if result.success?
+
       respond_to do |format|
         format.html { redirect_to @list, notice: "List status updated to #{@list.status.humanize}" }
         format.turbo_stream { render :status_updated }
@@ -251,6 +238,7 @@ class ListsController < ApplicationController
 
     if result.success?
       @new_list = result.data
+
       respond_to do |format|
         format.html { redirect_to @new_list, notice: "List duplicated successfully!" }
         format.turbo_stream { render :duplicated }
@@ -271,6 +259,43 @@ class ListsController < ApplicationController
     @invitations = @list.invitations.pending.includes(:invited_by)
     @sharing_service = ListSharingService.new(@list, current_user)
     @sharing_summary = @sharing_service.sharing_summary
+  end
+
+  # NEW: AI Context endpoint for chat system
+  def ai_context
+    return head :unauthorized unless current_user
+
+    context_data = {
+      list: {
+        id: @list.id,
+        title: @list.title,
+        status: @list.status,
+        items_count: @list.list_items.count,
+        completed_count: @list.list_items.completed.count,
+        list_type: @list.list_type,
+        is_public: @list.is_public?
+      },
+      items: @list.list_items.order(:position).limit(20).map do |item|
+        {
+          id: item.id,
+          title: item.title,
+          status: item.status,
+          position: item.position,
+          priority: item.priority,
+          due_date: item.due_date,
+          assigned_user_id: item.assigned_user_id
+        }
+      end,
+      user_permissions: {
+        can_edit: @list.writable_by?(current_user),
+        can_collaborate: @list.collaboratable_by?(current_user),
+        is_owner: @list.owner == current_user,
+        can_manage_collaborators: policy(@list).manage_collaborators?
+      },
+      recent_activity: recent_list_activity
+    }
+
+    render json: context_data
   end
 
   private
@@ -297,6 +322,36 @@ class ListsController < ApplicationController
     # Could store in a separate analytics table
     # ListAnalyticsService.new(@list, current_user).track_view
     @list.touch if @list && current_user
+  end
+
+  # NEW: Get user's role for the list
+  def user_role_for_list(list)
+    return "owner" if list.owner == current_user
+    return "collaborator" if list.collaborators.exists?(user: current_user)
+    return "public_viewer" if list.is_public?
+    "unauthorized"
+  end
+
+  # NEW: Get recent activity for context
+  def recent_list_activity
+    return [] unless current_user
+
+    current_user.conversation_contexts
+      .where(entity_id: @list.id, entity_type: "List")
+      .or(
+        current_user.conversation_contexts
+          .where("entity_data @> ?", { list_id: @list.id }.to_json)
+      )
+      .recent
+      .limit(10)
+      .map do |context|
+        {
+          action: context.action,
+          created_at: context.created_at,
+          entity_type: context.entity_type,
+          relevance_score: context.relevance_score
+        }
+      end
   end
 
   # Strong parameters for list creation/updates

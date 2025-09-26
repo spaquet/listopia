@@ -54,8 +54,9 @@ Rails.application.routes.draw do
   # Chat functionality
   namespace :chat do
     post "messages", to: "chat#create_message"
-    get "history", to: "chat#load_history"
+    get :ai_context
     get "export", to:  "exports#show"
+    get "history", to: "chat#load_history"
   end
   # post "/chat/messages", to: "chat/chat#create_message", as: :chat_messages
 
@@ -78,6 +79,8 @@ Rails.application.routes.draw do
       end
       collection do
         patch :bulk_update
+        patch :bulk_complete
+        get :context_summary
         patch :reorder
       end
     end
@@ -114,6 +117,13 @@ Rails.application.routes.draw do
     resources :users
     resources :lists
 
+    resources :conversation_contexts, only: [ :index, :show, :destroy ] do
+      collection do
+        delete :cleanup
+        get :stats
+      end
+    end
+
     # Conversation health monitoring routes
     resources :conversation_health, only: [ :index, :show ] do
       collection do
@@ -123,6 +133,17 @@ Rails.application.routes.draw do
       member do
         get :show_chat_details
         post :repair_chat
+      end
+    end
+
+    # MCP Health Controller
+    resources :mcp_health, only: [ :index ] do
+      collection do
+        get :api_status
+        get :conversation_health
+        post :repair_conversation
+        post :force_health_check
+        get :error_recovery_stats
       end
     end
   end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -60,16 +60,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.string "status", default: "active"
     t.datetime "last_message_at"
     t.json "metadata", default: {}
-    t.string "model_id"
+    t.string "model_id_string"
     t.datetime "last_stable_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "conversation_state", default: "stable"
     t.datetime "last_cleanup_at"
+    t.bigint "model_id"
     t.index ["conversation_state"], name: "index_chats_on_conversation_state"
     t.index ["last_message_at"], name: "index_chats_on_last_message_at"
     t.index ["last_stable_at"], name: "index_chats_on_last_stable_at"
     t.index ["model_id"], name: "index_chats_on_model_id"
+    t.index ["model_id_string"], name: "index_chats_on_model_id_string"
     t.index ["user_id", "created_at"], name: "index_chats_on_user_id_and_created_at"
     t.index ["user_id", "status"], name: "index_chats_on_user_id_and_status"
     t.index ["user_id"], name: "index_chats_on_user_id"
@@ -112,6 +114,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.index ["chat_id", "checkpoint_name"], name: "index_conversation_checkpoints_on_chat_id_and_checkpoint_name", unique: true
     t.index ["chat_id"], name: "index_conversation_checkpoints_on_chat_id"
     t.index ["created_at"], name: "index_conversation_checkpoints_on_created_at"
+  end
+
+  create_table "conversation_contexts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "user_id", null: false
+    t.uuid "chat_id"
+    t.string "action", limit: 50, null: false
+    t.string "entity_type", limit: 50, null: false
+    t.uuid "entity_id", null: false
+    t.jsonb "entity_data", default: {}, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.integer "relevance_score", default: 100, null: false
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["chat_id", "created_at"], name: "index_conversation_contexts_on_chat_id_and_created_at", order: { created_at: :desc }, where: "(chat_id IS NOT NULL)"
+    t.index ["chat_id"], name: "index_conversation_contexts_on_chat_id"
+    t.index ["entity_data"], name: "index_conversation_contexts_on_entity_data", using: :gin
+    t.index ["expires_at"], name: "index_conversation_contexts_on_expires_at", where: "(expires_at IS NOT NULL)"
+    t.index ["metadata"], name: "index_conversation_contexts_on_metadata", using: :gin
+    t.index ["user_id", "action", "created_at"], name: "idx_on_user_id_action_created_at_a6d0f1b259", order: { created_at: :desc }
+    t.index ["user_id", "created_at"], name: "index_conversation_contexts_on_user_id_and_created_at", order: { created_at: :desc }
+    t.index ["user_id", "entity_type", "created_at"], name: "idx_on_user_id_entity_type_created_at_d22f14e09a", order: { created_at: :desc }
+    t.index ["user_id", "entity_type", "entity_id", "created_at"], name: "idx_contexts_user_entity_time", order: { created_at: :desc }
+    t.index ["user_id"], name: "index_conversation_contexts_on_user_id"
+    t.check_constraint "action::text = ANY (ARRAY['list_viewed'::character varying, 'list_created'::character varying, 'list_updated'::character varying, 'list_deleted'::character varying, 'list_status_changed'::character varying, 'list_visibility_changed'::character varying, 'list_duplicated'::character varying, 'list_share_viewed'::character varying, 'list_ai_context_requested'::character varying, 'item_added'::character varying, 'item_updated'::character varying, 'item_completed'::character varying, 'item_deleted'::character varying, 'item_assigned'::character varying, 'item_uncompleted'::character varying, 'collaboration_added'::character varying, 'collaboration_removed'::character varying, 'chat_started'::character varying, 'chat_switched'::character varying, 'chat_message_sent'::character varying, 'chat_error'::character varying, 'page_visited'::character varying, 'dashboard_viewed'::character varying, 'lists_index_viewed'::character varying]::text[])", name: "valid_actions"
+    t.check_constraint "entity_type::text = ANY (ARRAY['List'::character varying, 'ListItem'::character varying, 'User'::character varying, 'Chat'::character varying, 'Page'::character varying]::text[])", name: "valid_entity_types"
   end
 
   create_table "currents", force: :cascade do |t|
@@ -190,6 +218,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.integer "public_permission", default: 0, null: false
     t.string "public_slug"
     t.integer "list_type", default: 0, null: false
+    t.uuid "parent_list_id"
     t.json "metadata", default: {}
     t.string "color_theme", default: "blue"
     t.datetime "created_at", null: false
@@ -201,12 +230,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.index ["list_collaborations_count"], name: "index_lists_on_list_collaborations_count"
     t.index ["list_items_count"], name: "index_lists_on_list_items_count"
     t.index ["list_type"], name: "index_lists_on_list_type"
+    t.index ["parent_list_id", "created_at"], name: "index_lists_on_parent_list_id_and_created_at"
+    t.index ["parent_list_id"], name: "index_lists_on_parent_list_id"
     t.index ["public_permission"], name: "index_lists_on_public_permission"
     t.index ["public_slug"], name: "index_lists_on_public_slug", unique: true
     t.index ["status"], name: "index_lists_on_status"
     t.index ["user_id", "created_at"], name: "index_lists_on_user_id_and_created_at"
     t.index ["user_id", "is_public"], name: "index_lists_on_user_is_public"
     t.index ["user_id", "list_type"], name: "index_lists_on_user_list_type"
+    t.index ["user_id", "parent_list_id"], name: "index_lists_on_user_parent"
     t.index ["user_id", "status", "list_type"], name: "index_lists_on_user_status_list_type"
     t.index ["user_id", "status"], name: "index_lists_on_user_id_and_status"
     t.index ["user_id", "status"], name: "index_lists_on_user_status"
@@ -216,6 +248,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
   create_table "messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "chat_id", null: false
     t.uuid "user_id"
+    t.bigint "model_id"
     t.string "role", null: false
     t.text "content"
     t.json "tool_calls", default: []
@@ -225,7 +258,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.json "metadata", default: {}
     t.string "llm_provider"
     t.string "llm_model"
-    t.string "model_id"
+    t.string "model_id_string"
     t.string "tool_call_id"
     t.integer "token_count"
     t.integer "input_tokens"
@@ -237,14 +270,41 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.index ["chat_id", "role", "created_at"], name: "index_messages_on_chat_id_and_role_and_created_at"
     t.index ["chat_id", "role"], name: "index_messages_on_chat_id_and_role"
     t.index ["chat_id", "tool_call_id"], name: "index_messages_on_chat_and_tool_call_id", where: "(tool_call_id IS NOT NULL)"
+    t.index ["chat_id", "tool_call_id"], name: "index_messages_on_chat_id_and_tool_call_id", where: "(tool_call_id IS NOT NULL)"
+    t.index ["chat_id", "tool_call_id"], name: "index_messages_unique_tool_call_id_per_chat", unique: true, where: "(((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL))"
     t.index ["chat_id"], name: "index_messages_on_chat_id"
     t.index ["llm_provider", "llm_model"], name: "index_messages_on_llm_provider_and_llm_model"
     t.index ["message_type"], name: "index_messages_on_message_type"
     t.index ["model_id"], name: "index_messages_on_model_id"
+    t.index ["model_id_string"], name: "index_messages_on_model_id_string"
+    t.index ["role", "tool_call_id"], name: "index_messages_on_role_and_tool_call_id", where: "(((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL))"
     t.index ["role"], name: "index_messages_on_role"
     t.index ["tool_call_id"], name: "index_messages_on_tool_call_id"
     t.index ["user_id", "created_at"], name: "index_messages_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_messages_on_user_id"
+    t.check_constraint "role::text <> 'tool'::text OR tool_call_id IS NOT NULL", name: "tool_messages_must_have_tool_call_id"
+  end
+
+  create_table "models", force: :cascade do |t|
+    t.string "model_id", null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.string "family"
+    t.datetime "model_created_at"
+    t.integer "context_window"
+    t.integer "max_output_tokens"
+    t.date "knowledge_cutoff"
+    t.jsonb "modalities", default: {}
+    t.jsonb "capabilities", default: []
+    t.jsonb "pricing", default: {}
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["capabilities"], name: "index_models_on_capabilities", using: :gin
+    t.index ["family"], name: "index_models_on_family"
+    t.index ["modalities"], name: "index_models_on_modalities", using: :gin
+    t.index ["provider", "model_id"], name: "index_models_on_provider_and_model_id", unique: true
+    t.index ["provider"], name: "index_models_on_provider"
   end
 
   create_table "noticed_events", force: :cascade do |t|
@@ -407,13 +467,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
     t.datetime "email_verified_at"
     t.string "provider"
     t.string "uid"
+    t.string "locale", limit: 10, default: "en", null: false
+    t.string "timezone", limit: 50, default: "UTC", null: false
     t.string "avatar_url"
     t.text "bio"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["email_verification_token"], name: "index_users_on_email_verification_token", unique: true
+    t.index ["locale"], name: "index_users_on_locale"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
+    t.index ["timezone"], name: "index_users_on_timezone"
   end
 
   create_table "users_roles", id: false, force: :cascade do |t|
@@ -427,17 +491,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_30_204201) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "board_columns", "lists"
+  add_foreign_key "chats", "models"
   add_foreign_key "chats", "users"
   add_foreign_key "collaborators", "users"
   add_foreign_key "comments", "users"
   add_foreign_key "conversation_checkpoints", "chats"
+  add_foreign_key "conversation_contexts", "chats"
+  add_foreign_key "conversation_contexts", "users"
   add_foreign_key "invitations", "users"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "board_columns"
   add_foreign_key "list_items", "lists"
   add_foreign_key "list_items", "users", column: "assigned_user_id"
+  add_foreign_key "lists", "lists", column: "parent_list_id"
   add_foreign_key "lists", "users"
   add_foreign_key "messages", "chats"
+  add_foreign_key "messages", "models"
   add_foreign_key "messages", "users"
   add_foreign_key "notification_settings", "users"
   add_foreign_key "recovery_contexts", "chats"

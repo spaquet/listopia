@@ -1,222 +1,336 @@
-# Listopia Rails 8 Application - Development Context
+# Claude.md - Listopia Development Instructions
 
-## Project Overview
+You are assisting with development of **Listopia**, a modern collaborative list management application built with Rails 8. Focus on maintaining the established architecture, patterns, and technical standards.
 
-**Listopia** is a modern, collaborative list management application built with Rails 8. It's designed as a comprehensive example of cutting-edge Rails development practices, featuring real-time collaboration, passwordless authentication, and a beautiful responsive interface.
+## Technology Stack & Architecture
 
-### Core Mission
-Create a powerful yet intuitive list management platform that demonstrates Rails 8's latest features while providing genuine utility for organizing tasks, projects, and collaborative workflows.
+### Core Framework
+- **Rails 8.0.2** with latest features and conventions
+- **Ruby 3.4+** following modern Ruby patterns
+- **PostgreSQL** as primary database with advanced features
+- **UUID Primary Keys** for all models (security and scalability)
+- **Solid Queue** for background job processing (Rails 8 default)
+- **Solid Cache** for caching layer
+- **RubyLLM** for AI chat integration
 
-## Technical Architecture
-
-### Framework & Version
-- **Rails 8.0+** with latest features including Solid Queue
-- **Ruby 3.4+** 
-- **PostgreSQL** with UUID primary keys throughout
-- **Tailwind CSS 4.1** for responsive design
+### Frontend & Real-time
+- **Hotwire Turbo Streams** for real-time updates without page refreshes
+- **Stimulus Controllers** for progressive JavaScript enhancement
+- **Tailwind CSS 4.1** for responsive, mobile-first design
 - **Bun** for JavaScript package management
+- **Persistent AI Chat** with context awareness
 
-### Key Technologies
-- **Hotwire Turbo Streams** - Real-time UI updates without page refreshes
-- **Stimulus Controllers** - Progressive JavaScript enhancement
-- **Rails 8 Authentication** - Custom-built authentication system
-- **Magic Link Authentication** - Passwordless sign-in option
-- **Action Mailer** - Email notifications and verification
-- **ActiveRecord** - Advanced associations and validations
+### Database Design Principles
+- **UUID Primary Keys** - All models must use UUIDs, never integer IDs
+- **PostgreSQL Extensions** - Leverage pgcrypto, proper indexing
+- **Optimized Queries** - Always consider N+1 prevention with includes/joins
+- **Soft Dependencies** - Flexible associations with proper null handling
 
-### Database Design
-- **UUID Primary Keys** - All models use UUIDs for better security and scalability
-- **PostgreSQL Extensions** - pgcrypto for UUID generation
-- **Optimized Indexes** - Performance-focused database design
-- **Soft Dependencies** - Flexible association design
+## Core Models & Relationships
 
-## Core Features & Functionality
-
-### Authentication System
-- **Multiple Auth Methods**: Email/password, magic links, OAuth-ready
-- **Email Verification**: Secure account verification workflow  
-- **Session Management**: Secure session handling with expiration
-- **Permission System**: Read/collaborate permissions for lists
-
-### List Management
-- **Smart Lists**: Multiple item types (tasks, notes, links, files, reminders)
-- **Status Tracking**: Draft, active, completed, archived states
-- **Progress Visualization**: Real-time completion percentages
-- **Drag & Drop Reordering**: Intuitive item management
-- **Public Sharing**: Optional public access with unique URLs
-
-### Real-time Collaboration
-- **Live Updates**: Changes appear instantly across all users
-- **Permission Levels**: Granular read/collaborate access control
-- **Invitation System**: Email invitations for non-registered users
-- **Activity Tracking**: Monitor collaborator engagement
-
-### User Experience
-- **Responsive Design**: Mobile-first Tailwind CSS implementation
-- **Progressive Enhancement**: Works with/without JavaScript
-- **Keyboard Shortcuts**: Power-user productivity features
-- **Toast Notifications**: Non-intrusive feedback system
-
-## Code Architecture & Patterns
-
-### MVC Structure
-```
-app/
-├── controllers/
-│   ├── concerns/authentication.rb     # Custom auth system
-│   ├── application_controller.rb      # Base controller
-│   ├── lists_controller.rb           # List CRUD operations
-│   ├── list_items_controller.rb      # Item management
-│   ├── sessions_controller.rb        # Authentication
-│   └── collaborations_controller.rb  # Sharing & permissions
-├── models/
-│   ├── user.rb                       # User authentication & management
-│   ├── list.rb                       # Core list entity
-│   ├── list_item.rb                  # Individual list items
-│   ├── list_collaboration.rb         # Sharing permissions
-│   └── magic_link.rb                 # Passwordless auth tokens
-├── services/
-│   ├── list_sharing_service.rb       # Complex sharing logic
-│   └── list_analytics_service.rb     # Statistics & insights
-└── views/
-    ├── layouts/application.html.erb   # Main layout
-    ├── shared/                       # Reusable partials
-    ├── lists/                        # List management views
-    └── turbo_streams/                # Real-time update templates
+### Authentication & Users
+```ruby
+# User model with Rails 8 authentication patterns
+class User < ApplicationRecord
+  has_secure_password
+  has_many :lists, foreign_key: 'owner_id', dependent: :destroy
+  has_many :list_collaborations, dependent: :destroy
+  has_many :collaborated_lists, through: :list_collaborations, source: :list
+  has_many :chats, dependent: :destroy
+  has_many :sessions, dependent: :destroy
+  
+  # Rails 8 token generation for magic links
+  generates_token_for :magic_link, expires_in: 15.minutes
+  generates_token_for :email_verification, expires_in: 24.hours
+end
 ```
 
-### Rails 8 Features Utilized
-- **Solid Queue**: Background job processing
-- **Modern Credentials**: Secure configuration management
-- **Zeitwerk Autoloading**: Efficient code loading
-- **Action Mailbox**: Email processing (extensible)
-- **Active Storage**: File attachment support
+### Core Entities
+```ruby
+# All models use UUID primary keys
+class List < ApplicationRecord
+  belongs_to :owner, class_name: 'User'
+  has_many :list_items, dependent: :destroy
+  has_many :list_collaborations, dependent: :destroy
+  has_many :collaborators, through: :list_collaborations, source: :user
+  
+  enum :status, { draft: "draft", active: "active", completed: "completed", archived: "archived" }
+end
 
-### Hotwire Implementation
-- **Turbo Frames**: Efficient partial page updates
-- **Turbo Streams**: Real-time collaborative features
-- **Stimulus Controllers**: Enhanced interactivity
-- **Progressive Enhancement**: Graceful JavaScript degradation
+class ListItem < ApplicationRecord
+  belongs_to :list
+  belongs_to :assigned_user, class_name: 'User', optional: true
+  
+  enum :priority, { low: "low", medium: "medium", high: "high" }
+  enum :status, { pending: "pending", in_progress: "in_progress", completed: "completed" }
+end
+```
 
-## Design Philosophy
+### AI Chat System
+```ruby
+class Chat < ApplicationRecord
+  acts_as_chat # RubyLLM integration
+  belongs_to :user
+  has_many :messages, dependent: :destroy
+  
+  enum :status, { active: "active", archived: "archived", completed: "completed" }
+  enum :conversation_state, { stable: "stable", needs_cleanup: "needs_cleanup", error: "error" }
+end
 
-### User Interface Principles
-- **Mobile-First**: Responsive design that works on all devices
-- **Accessibility**: WCAG compliant with proper semantic markup
-- **Performance**: Optimized loading and interaction patterns
-- **Intuitive**: Clear information hierarchy and user flows
+class Message < ApplicationRecord
+  acts_as_message # RubyLLM integration
+  belongs_to :chat
+  belongs_to :user, optional: true # Assistant messages don't have a user
+  
+  enum :role, { user: "user", assistant: "assistant", system: "system", tool: "tool" }
+end
+```
 
-### Code Quality Standards
-- **RESTful Design**: Consistent API patterns
-- **DRY Principles**: Shared concerns and reusable components
-- **Security First**: Input validation, CSRF protection, secure defaults
-- **Testable Architecture**: Service objects and clear separation of concerns
+## Development Patterns & Standards
 
-## Development Guidelines
+### Controller Patterns
+```ruby
+# Follow RESTful conventions with proper authorization
+class ListsController < ApplicationController
+  before_action :authenticate_user!
+  before_action :set_list, only: [:show, :edit, :update, :destroy]
+  before_action :authorize_list_access!, only: [:show, :edit, :update, :destroy]
+  
+  def create
+    @list = current_user.lists.build(list_params)
+    if @list.save
+      respond_to do |format|
+        format.html { redirect_to @list }
+        format.turbo_stream # Real-time updates
+      end
+    end
+  end
+  
+  private
+  
+  def authorize_list_access!
+    authorize @list # Using Pundit for authorization
+  end
+end
+```
 
-### When Working on Listopia
-1. **Maintain Rails 8 Patterns**: Use latest Rails conventions and features
-2. **Preserve Real-time Features**: Ensure Turbo Streams continue working
-3. **Keep UUID Consistency**: All new models should use UUID primary keys
-4. **Follow Security Practices**: Validate inputs, authorize actions
-5. **Responsive Design**: Test changes on mobile/tablet/desktop
-6. **Performance Awareness**: Consider N+1 queries and database optimization
+### Service Object Patterns
+```ruby
+# Use service objects for complex business logic
+class ListSharingService
+  def initialize(list, user)
+    @list = list
+    @user = user
+  end
+  
+  def share_with(email, permission_level: 'read')
+    # Complex sharing logic with email invitations
+    # Handle non-registered users
+    # Send notifications
+  end
+end
 
-### Code Style & Conventions
-- **Ruby Style**: Follow community standards (Rubocop compatible)
-- **Naming**: Descriptive method/variable names, RESTful controller actions
-- **Comments**: Business logic explanation, not obvious code description
-- **Error Handling**: Graceful degradation with user-friendly messages
+# AI-specific services
+class McpService
+  def initialize(user:, context: {}, chat: nil)
+    @user = user
+    @context = context # Current page, selected items, permissions
+    @chat = chat || user.current_chat
+    @tools = McpTools.new(user, context)
+  end
+  
+  def process_message(message_content)
+    # AI message processing with error recovery
+    # Context-aware responses
+    # Tool execution with permission validation
+  end
+end
+```
 
-### Testing Approach
-- **Model Tests**: Business logic validation
-- **Controller Tests**: Authorization and response testing  
-- **Integration Tests**: Full user workflow testing
-- **JavaScript Tests**: Stimulus controller functionality
+### Real-time Updates with Turbo Streams
+```ruby
+# Controller actions should respond with Turbo Streams
+def update
+  if @list_item.update(list_item_params)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(@list_item),
+          turbo_stream.replace("progress-#{@list.id}", 
+            partial: "lists/progress", locals: { list: @list })
+        ]
+      end
+    end
+  end
+end
+```
 
-## Current State & Metrics
+### Database Migration Standards
+```ruby
+# Always use UUIDs for primary keys
+class CreateLists < ActiveRecord::Migration[8.0]
+  def change
+    enable_extension 'pgcrypto' unless extension_enabled?('pgcrypto')
+    
+    create_table :lists, id: :uuid do |t|
+      t.references :owner, null: false, foreign_key: { to_table: :users }, type: :uuid
+      t.string :title, limit: 255, null: false
+      t.text :description
+      t.string :status, default: 'draft', null: false
+      t.boolean :is_public, default: false
+      t.json :metadata, default: {}
+      
+      t.timestamps
+    end
+    
+    add_index :lists, [:owner_id, :status]
+    add_index :lists, :is_public, where: "is_public = true"
+  end
+end
+```
 
-### Implementation Status
-- **Core Authentication**: Complete with magic links
-- **List Management**: Full CRUD with real-time updates
-- **Collaboration**: Sharing and permission system
-- **UI/UX**: Responsive Tailwind CSS implementation
-- **Email System**: Verification and notification emails
-- **API Endpoints**: Basic structure, needs expansion
-- **Admin Interface**: Placeholder implementation
-- **Analytics**: Basic service, needs dashboard
+## Code Quality Standards
 
-### Performance Characteristics
-- **Database Queries**: Optimized with includes/joins
-- **Page Load Times**: Fast with Turbo navigation
-- **Real-time Updates**: Immediate via Turbo Streams
-- **Mobile Performance**: Responsive and touch-friendly
+### Security Requirements
+- **Always validate user input** with strong parameters
+- **Authorize every action** using Pundit policies
+- **CSRF protection** enabled by default
+- **SQL injection prevention** through parameterized queries
+- **XSS protection** via Rails built-in helpers
 
-## Development Context
+### Performance Guidelines
+- **Prevent N+1 queries** with includes, joins, preload
+- **Database indexes** for all foreign keys and frequent queries
+- **Pagination** with Pagy for large result sets
+- **Caching** with Solid Cache for expensive operations
+- **Background jobs** for slow operations
 
-### When I Need Help With Listopia
-Please consider this context:
+### Testing Standards
+```ruby
+# Model tests with comprehensive coverage
+RSpec.describe List, type: :model do
+  it { should belong_to(:owner).class_name('User') }
+  it { should have_many(:list_items).dependent(:destroy) }
+  it { should validate_presence_of(:title) }
+  it { should validate_length_of(:title).is_at_most(255) }
+end
 
-1. **Maintain Existing Patterns**: The app has established patterns for auth, real-time features, and UI components
-2. **Rails 8 Focus**: Leverage new Rails 8 features appropriately
-3. **Real-time Priority**: Preserve/enhance live collaboration features
-4. **Security Awareness**: All changes should maintain security standards
-5. **User Experience**: Keep the interface intuitive and responsive
+# Integration tests for user workflows
+RSpec.describe "List Management", type: :system do
+  it "creates list with real-time updates" do
+    # Test Turbo Stream functionality
+    # Test AI chat integration
+    # Test collaboration features
+  end
+end
+```
 
-### Common Tasks & Approaches
-- **New Features**: Create service objects for complex logic
-- **UI Changes**: Use existing Tailwind patterns and Stimulus controllers
-- **Database Changes**: Maintain UUID keys and add proper indexes
-- **API Additions**: Follow RESTful conventions with proper serialization
-- **Performance**: Address N+1 queries and optimize database access
+## AI Chat Integration Guidelines
 
-### Quality Expectations
-- **Production Ready**: Code should be deployment-ready
-- **Well Documented**: Clear comments for business logic
-- **Error Resilient**: Graceful error handling and user feedback
-- **Maintainable**: Clean, readable code following Rails conventions
+### Tool Development
+```ruby
+# AI tools must validate permissions before execution
+class McpTools
+  def create_planning_list(title:, description:, items: [])
+    # Validate user can create lists
+    return error_response unless @user.can_create_lists?
+    
+    list = @user.lists.create!(
+      title: title,
+      description: description,
+      status: 'active'
+    )
+    
+    # Add items with proper associations
+    items.each { |item| list.list_items.create!(content: item) }
+    
+    success_response(list)
+  end
+end
+```
 
-## Model Relationships
+### Context Awareness
+```ruby
+# Always provide relevant context to AI
+def gather_chat_context
+  {
+    page: "#{controller_name}##{action_name}",
+    list_id: params[:id],
+    list_title: @list&.title,
+    user_permissions: current_user.permissions_for(@list),
+    selected_items: session[:selected_items] || []
+  }
+end
+```
 
-### Core Models
-- **User**: Authentication, profile, and ownership
-- **List**: Central entity with status, sharing, and metadata
-- **ListItem**: Individual items with types, priorities, and assignments
-- **ListCollaboration**: Many-to-many relationship with permissions
-- **MagicLink**: Temporary authentication tokens
+## Error Handling & Recovery
 
-### Key Associations
-- User has_many lists (owned)
-- User has_many collaborated_lists through list_collaborations
-- List belongs_to owner (User)
-- List has_many list_items
-- List has_many list_collaborations
-- ListItem belongs_to list
-- ListItem belongs_to assigned_user (User, optional)
+### Graceful Degradation
+```ruby
+# AI chat should degrade gracefully
+rescue StandardError => e
+  Rails.logger.error "AI processing failed: #{e.message}"
+  
+  if e.is_a?(ConversationStateError)
+    # Create fresh chat and retry
+    create_fresh_chat_recovery(original_message)
+  else
+    # Return user-friendly error
+    "I encountered an issue processing your request. Please try again."
+  end
+end
+```
 
-## Authentication & Authorization
+### Conversation State Management
+```ruby
+# Maintain chat integrity
+class ConversationStateManager
+  def ensure_conversation_integrity!
+    # Validate tool call sequences
+    # Clean orphaned messages
+    # Maintain proper conversation flow
+  end
+end
+```
 
-### Authentication Flow
-1. Traditional email/password with bcrypt
-2. Magic link generation and validation
-3. Email verification workflow
-4. Session management with expiration
+## Deployment & Production
 
-### Authorization Patterns
-- **List Access**: Owner + collaborators with permission levels
-- **Item Access**: Inherited from list permissions
-- **Admin Access**: Future-proofed admin interface structure
+### Rails 8 Production Configuration
+```ruby
+# config/environments/production.rb
+config.active_job.queue_adapter = :solid_queue
+config.solid_queue.connects_to = { database: { writing: :queue } }
+config.cache_store = :solid_cache_store
+config.force_ssl = true
+config.assume_ssl = true
+```
 
-## Real-time Features
+### Environment Variables
+```bash
+# Required for production
+DATABASE_URL=postgresql://...
+RAILS_MASTER_KEY=...
+OPENAI_API_KEY=... # or ANTHROPIC_API_KEY
+SMTP_USERNAME=...
+SMTP_PASSWORD=...
+```
 
-### Turbo Stream Implementation
-- **List Updates**: Status changes, title/description edits
-- **Item Updates**: Creation, completion, deletion, reordering
-- **Collaboration**: Real-time user join/leave notifications
-- **Progress Updates**: Live completion percentage updates
+## Development Workflow
 
-### Stimulus Controllers
-- **Dropdown Management**: User menus and action dropdowns
-- **Form Enhancement**: Auto-save, keyboard shortcuts
-- **Drag and Drop**: List item reordering
-- **Real-time Updates**: WebSocket fallback patterns
+### Code Review Checklist
+- [ ] UUID primary keys maintained
+- [ ] Proper authorization with Pundit
+- [ ] N+1 query prevention
+- [ ] Turbo Stream responses for real-time updates
+- [ ] AI chat context properly handled
+- [ ] Tests cover new functionality
+- [ ] Database migrations are reversible
+- [ ] Error handling implemented
+
+### Performance Monitoring
+- Monitor database query performance
+- Track AI response times
+- Measure Turbo Stream update latency
+- Monitor background job queue health
+
+Remember: Listopia demonstrates modern Rails 8 development with AI integration. Maintain the established patterns for authentication, real-time features, and collaborative functionality while ensuring security and performance standards.

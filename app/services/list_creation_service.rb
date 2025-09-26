@@ -21,10 +21,10 @@ class ListCreationService < ApplicationService
 
     if @list.save
       broadcast_all_updates(@list, action: :create)
-      Result.success(@list)
+      @list  # Return the list directly instead of Result object
     else
       @errors = @list.errors.full_messages
-      Result.failure(@errors)
+      raise StandardError, @errors.join(", ")
     end
   end
 
@@ -45,6 +45,8 @@ class ListCreationService < ApplicationService
 
         planning_items.each_with_index do |item_data, index|
           items_service = ListItemService.new(@list, @user)
+
+          # Handle the fact that ListItemService might still use Result pattern
           item_result = items_service.create_item(
             title: item_data[:title],
             description: item_data[:description],
@@ -56,8 +58,11 @@ class ListCreationService < ApplicationService
             metadata: item_data[:metadata] || {}
           )
 
-          unless item_result.success?
-            Rails.logger.warn "Failed to create planning item: #{item_result.errors}"
+          # Check if result is a Result object or direct response
+          success = item_result.respond_to?(:success?) ? item_result.success? : item_result.present?
+          unless success
+            errors = item_result.respond_to?(:errors) ? item_result.errors : [ "Failed to create item" ]
+            Rails.logger.warn "Failed to create planning item: #{errors}"
             # Continue creating other items even if one fails
           end
         end
@@ -67,71 +72,26 @@ class ListCreationService < ApplicationService
       @list.reload
       broadcast_all_updates(@list, action: :create)
 
-      Result.success(data: @list)
+      @list  # Return the list directly instead of Result object
     end
   rescue => e
     Rails.logger.error "Error creating planning list: #{e.message}"
-    Result.failure(errors: [ e.message ])
+    raise StandardError, e.message
   end
 
   private
 
   # Generate smart planning items using AI
   def generate_smart_planning_items(title, description, context)
-    # Use the existing PlanningItemGenerator to create AI-powered contextual items
+    # Use the AI-powered PlanningItemGenerator
     generator = PlanningItemGenerator.new(title, description, context, @user)
     ai_items = generator.generate_items
 
     # If AI generation succeeds, use those items
     return ai_items if ai_items.present?
 
-    # Fallback to basic items if AI generation fails
-    Rails.logger.warn "AI planning generation failed or returned no items, using fallback"
-    generate_fallback_items(title, context)
-  rescue => e
-    Rails.logger.error "Error in generate_smart_planning_items: #{e.message}"
-    generate_fallback_items(title, context)
-  end
-
-  # Fallback items when AI generation fails
-  def generate_fallback_items(title, context)
-    [
-      {
-        title: "Define objectives and scope",
-        description: "Clearly outline what you want to achieve with this #{context || 'project'}",
-        type: "milestone",
-        priority: "high"
-      },
-      {
-        title: "Research and gather requirements",
-        description: "Collect all necessary information and identify what you need",
-        type: "task",
-        priority: "high"
-      },
-      {
-        title: "Create detailed timeline",
-        description: "Break down the work into phases with realistic deadlines",
-        type: "task",
-        priority: "medium"
-      },
-      {
-        title: "Identify resources and budget",
-        description: "Determine what resources, people, and budget you'll need",
-        type: "task",
-        priority: "medium"
-      },
-      {
-        title: "Begin execution",
-        description: "Start implementing your plan step by step",
-        type: "milestone",
-        priority: "medium"
-      },
-      {
-        title: "Review and adjust",
-        description: "Track progress and make adjustments as needed",
-        type: "task",
-        priority: "low"
-      }
-    ]
+    # If AI generation fails completely, return empty array - let the AI agent handle it
+    Rails.logger.warn "AI planning generation failed for '#{title}' with context '#{context}'"
+    []
   end
 end

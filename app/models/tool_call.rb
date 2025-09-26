@@ -23,40 +23,20 @@
 #  fk_rails_...  (message_id => messages.id)
 #
 class ToolCall < ApplicationRecord
-  # Use RubyLLM's Rails integration
+  # Use RubyLLM 1.8 standard approach - let it handle everything
   acts_as_tool_call
 
   belongs_to :message
 
   validates :tool_call_id, presence: true, uniqueness: true
   validates :name, presence: true
-  validates :message, presence: true
 
   scope :for_message, ->(message) { where(message: message) }
   scope :by_name, ->(name) { where(name: name) }
   scope :recent, -> { order(created_at: :desc) }
 
+  # Keep only essential helper methods
   def arguments_hash
     arguments || {}
-  end
-
-  def result_message
-    # Find the tool result message that corresponds to this tool call
-    message.chat.messages.find_by(
-      role: "tool",
-      metadata: { tool_call_id: tool_call_id }
-    )
-  end
-
-  def has_result?
-    result_message.present?
-  end
-
-  def successful?
-    result = result_message
-    return false unless result
-
-    # Check if the result contains an error
-    !result.content&.include?("error") && !result.metadata&.dig("error")
   end
 end

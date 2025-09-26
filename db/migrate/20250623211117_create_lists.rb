@@ -15,6 +15,9 @@ class CreateLists < ActiveRecord::Migration[8.0]
       # List type (personal, professional)
       t.integer :list_type, default: 0, null: false
 
+      # Parent-child relationships for hierarchical lists
+      t.references :parent_list, null: true, foreign_key: { to_table: :lists }, type: :uuid
+
       # Metadata
       t.json :metadata, default: {}
       t.string :color_theme, default: 'blue'
@@ -29,9 +32,16 @@ class CreateLists < ActiveRecord::Migration[8.0]
     add_index :lists, :public_permission
     add_index :lists, :created_at
     add_index :lists, :list_type
+
+    # Parent-child relationship indexes for efficient hierarchy queries
+    # Note: :parent_list_id index is automatically created by t.references above
+    add_index :lists, [ :parent_list_id, :created_at ]
+
+    # Composite indexes for common query patterns
     add_index :lists, [ :user_id, :status, :list_type ], name: "index_lists_on_user_status_list_type"
     add_index :lists, [ :user_id, :is_public ], name: "index_lists_on_user_is_public"
     add_index :lists, [ :user_id, :status ], name: "index_lists_on_user_status"
     add_index :lists, [ :user_id, :list_type ], name: "index_lists_on_user_list_type"
+    add_index :lists, [ :user_id, :parent_list_id ], name: "index_lists_on_user_parent"
   end
 end

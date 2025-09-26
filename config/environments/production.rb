@@ -53,6 +53,12 @@ Rails.application.configure do
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :queue } }
 
+  config.conversation_context = ActiveSupport::OrderedOptions.new
+  config.conversation_context.cleanup_interval = 1.day
+  config.conversation_context.max_contexts_per_user = 10_000
+  config.conversation_context.default_expiration = 24.hours
+  config.conversation_context.relevance_threshold = 50
+
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false

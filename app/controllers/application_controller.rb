@@ -84,6 +84,9 @@ class ApplicationController < ActionController::Base
   # Set current user for use in models and services
   def set_current_user
     Current.user = current_user if defined?(current_user)
+    Current.request_id = request.request_id if request.respond_to?(:request_id)
+    Current.user_agent = request.user_agent if request.respond_to?(:user_agent)
+    Current.ip_address = request.remote_ip if request.respond_to?(:remote_ip)
   end
 
   # Authorization helper - check if user can access resource

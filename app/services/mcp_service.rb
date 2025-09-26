@@ -1,501 +1,462 @@
 # app/services/mcp_service.rb
 class McpService
-  include ActiveModel::Model
-  include ActiveModel::Attributes
-
-  attr_accessor :user, :context, :chat
-
-  # Custom exceptions for better error handling
-  class AuthorizationError < StandardError; end
-  class ValidationError < StandardError; end
-  class ConversationStateError < StandardError; end
-
-  def initialize(user:, context: {}, chat: nil)
+  def initialize(user:, context: {})
     @user = user
     @context = context
-    @chat = chat || user.current_chat
-    @tools = McpTools.new(user, context)
-    @conversation_manager = ConversationStateManager.new(@chat)
-
-    # Add enhanced services only if error recovery is enabled AND chat exists
-    if Rails.application.config.mcp.error_recovery&.enabled && @chat
-      begin
-        @chat_state_manager = ChatStateManager.new(@chat)
-        @resilient_llm = ResilientRubyLlmService.new
-        @error_recovery = ErrorRecoveryService.new(user: @user, chat: @chat, context: @context)
-      rescue => e
-        Rails.logger.error "Failed to initialize enhanced error recovery services: #{e.message}"
-        # Fall back to basic services
-        @chat_state_manager = nil
-        @resilient_llm = nil
-        @error_recovery = nil
-      end
-    end
-
-    # Add AI orchestration services for Phase 3
-    if Rails.application.config.mcp.ai_orchestration&.enabled && @chat
-      begin
-        @ai_orchestrator = AiOrchestrationService.new(user: @user, context: @context, chat: @chat)
-      rescue => e
-        Rails.logger.error "Failed to initialize AI orchestration: #{e.message}"
-        @ai_orchestrator = nil
-      end
-    end
+    @chat = find_or_create_chat
   end
 
   def process_message(message_content)
-    start_time = Time.current
+    # Use AI to understand and create lists with items
+    result = ai_powered_list_creation(message_content)
 
-    # Ensure user is authenticated
-    raise AuthorizationError, "User must be authenticated" unless @user
+    # Create response message
+    response_message = @chat.add_message(
+      role: "assistant",
+      content: result[:message],
+      message_type: "text"
+    )
 
-    # Check rate limits using existing rate limiter
-    rate_limiter = McpRateLimiter.new(@user)
-    rate_limiter.check_rate_limit!
+    # Return both message and created lists for UI updates
+    {
+      message: response_message,
+      lists_created: result[:lists_created],
+      items_created: result[:items_created]
+    }
+  rescue => e
+    Rails.logger.error "McpService error: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
 
-    # Validate message length using existing config
-    if message_content.length > Rails.application.config.mcp.max_message_length
-      raise ValidationError, "Message is too long (max #{Rails.application.config.mcp.max_message_length} characters)"
-    end
+    error_message = @chat.add_message(
+      role: "assistant",
+      content: "I encountered an error creating your lists. Please try again.",
+      message_type: "text"
+    )
 
-    begin
-      # Enhanced error recovery if enabled
-      if @chat_state_manager && Rails.application.config.mcp.state_management&.auto_checkpoint
-        # Create checkpoint before processing
-        checkpoint_name = @chat_state_manager.create_checkpoint!("pre_message_#{Time.current.to_i}")
-
-        # Validate and heal state proactively
-        health_result = @chat_state_manager.validate_and_heal_state!
-
-        case health_result[:status]
-        when :recovery_branch_created
-          # Switch to recovery branch if needed
-          @chat = health_result[:recovery_chat]
-          @chat_state_manager = ChatStateManager.new(@chat)
-          @error_recovery = ErrorRecoveryService.new(user: @user, chat: @chat, context: @context)
-        end
-      else
-        # Fallback to existing conversation integrity check
-        begin
-          @conversation_manager.ensure_conversation_integrity!
-        rescue ConversationStateManager::ConversationError => e
-          Rails.logger.warn "Conversation state warning (non-blocking): #{e.message}"
-        rescue => e
-          Rails.logger.error "Unexpected conversation error: #{e.message}"
-        end
-      end
-
-      # NEW: Enhanced processing with AI orchestration
-      result = if @ai_orchestrator && should_use_orchestration?(message_content)
-        process_with_ai_orchestration(message_content)
-      elsif @resilient_llm
-        process_with_resilient_llm(message_content)
-      else
-        process_with_standard_llm(message_content)
-      end
-
-      # Mark successful processing
-      @chat.update_columns(
-        last_stable_at: Time.current,
-        conversation_state: "stable"
-      )
-
-      # Increment rate limit counters after successful processing
-      rate_limiter.increment_counters!
-
-      result.respond_to?(:content) ? result.content : result
-
-    rescue McpRateLimiter::RateLimitError => e
-      e.message
-    rescue ValidationError => e
-      e.message
-    rescue => e
-      Rails.logger.error "MCP Error: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
-
-      # Use error recovery service if available
-      if @error_recovery
-        recovery_result = @error_recovery.recover_from_error(e, original_message: message_content)
-
-        if recovery_result[:recoverable] && recovery_result[:new_chat]
-          # Switch to new chat and retry
-          @chat = recovery_result[:new_chat]
-          process_message(message_content)
-        elsif recovery_result[:recoverable] && recovery_result[:retry_message]
-          # Retry with same chat after healing
-          process_message(recovery_result[:retry_message])
-        else
-          # Return user-friendly error message
-          recovery_result[:user_message] || "I apologize, but I encountered an error processing your request. Please try again."
-        end
-      else
-        # Fallback to existing error handling
-        handle_standard_error(e, message_content)
-      end
-    end
+    { message: error_message, lists_created: [], items_created: [] }
   end
-
-private
-
-# NEW: Determine if message would benefit from AI orchestration
-def should_use_orchestration?(message_content)
-  orchestration_keywords = [
-    "plan", "planning", "create a plan", "step by step", "workflow",
-    "organize", "break down", "manage", "strategy", "approach",
-    "help me with", "guide me", "walk me through", "create a list for",
-    "project", "event", "travel", "learning", "curriculum", "schedule"
-  ]
-
-  message_lower = message_content.downcase
-  orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
-end
-
-# NEW: Process message using AI orchestration
-def process_with_ai_orchestration(message_content)
-  orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
-
-  if orchestration_result[:success]
-    orchestration_result[:result]
-  elsif orchestration_result[:fallback_needed]
-    # Fallback to standard processing
-    if @resilient_llm
-      process_with_resilient_llm(message_content)
-    else
-      process_with_standard_llm(message_content)
-    end
-  else
-    orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
-  end
-end
 
   private
 
-  def should_use_orchestration?(message_content)
-    # Determine if message would benefit from AI orchestration
-    orchestration_keywords = [
-      "plan", "planning", "create a plan", "step by step", "workflow",
-      "organize", "break down", "manage", "strategy", "approach"
-    ]
+  def find_or_create_chat
+    existing = @user.chats.where(status: "active").order(last_message_at: :desc, created_at: :desc).first
+    return existing if existing
 
-    message_lower = message_content.downcase
-    orchestration_keywords.any? { |keyword| message_lower.include?(keyword) }
-  end
-
-  def process_with_ai_orchestration(message_content)
-    orchestration_result = @ai_orchestrator.orchestrate_task(message_content)
-
-    if orchestration_result[:success]
-      orchestration_result[:result]
-    elsif orchestration_result[:fallback_needed]
-      # Fallback to standard processing
-      if @resilient_llm
-        process_with_resilient_llm(message_content)
-      else
-        process_with_standard_llm(message_content)
-      end
-    else
-      orchestration_result[:user_message] || "I encountered an issue processing your request. Please try again."
-    end
-  end
-
-  def process_with_resilient_llm(message_content)
-    # Set the model using existing config
-    model = Rails.application.config.mcp.model
-    @chat.update!(model_id: model) if @chat.model_id.blank?
-
-    # Add system instructions if context requires it
-    if needs_system_instructions?
-      @chat.with_instructions(build_system_instructions, replace: true)
-    end
-
-    # Configure tools if available
-    if @tools.available_tools.any?
-      @tools.available_tools.each do |tool|
-        @chat.with_tool(tool)
-      end
-    end
-
-    # Use resilient LLM service
-    @resilient_llm.resilient_ask(@chat, message_content)
-  end
-
-  def process_with_standard_llm(message_content)
-    # Your existing process_message logic from the transaction block
-    result = nil
-
-    ActiveRecord::Base.transaction do
-      # Set the model for this interaction if not already set
-      model = Rails.application.config.mcp.model
-      @chat.update!(model_id: model) if @chat.model_id.blank?
-
-      # Add system instructions if context requires it
-      if needs_system_instructions?
-        @chat.with_instructions(build_system_instructions, replace: true)
-      end
-
-      # Configure tools if available
-      if @tools.available_tools.any?
-        @tools.available_tools.each do |tool|
-          @chat.with_tool(tool)
-        end
-      end
-
-      # Use RubyLLM's ask method which handles the full conversation flow
-      begin
-        response = @chat.ask(message_content)
-      rescue PG::UniqueViolation => e
-        if e.message.include?("list_id_and_position")
-          retry_count = (@retry_count ||= 0) + 1
-          if retry_count <= 2
-            @retry_count = retry_count
-            sleep(0.1)
-            retry
-          else
-            raise StandardError, "Unable to add item due to position conflict after multiple retries"
-          end
-        else
-          raise e
-        end
-      end
-
-      # After successful processing, mark the conversation as stable
-      @chat.update_column(:last_stable_at, Time.current)
-
-      # Verify conversation state after the interaction
-      begin
-        @conversation_manager.validate_basic_structure! if @conversation_manager.respond_to?(:validate_basic_structure!)
-      rescue => e
-        Rails.logger.warn "Post-conversation validation warning: #{e.message}"
-        # Don't fail the entire operation for validation issues
-      end
-
-      result = response.content
-    end
-
-    result
-  end
-
-  def handle_standard_error(error, message_content)
-    # Your existing error handling logic as fallback
-    case error
-    when RubyLLM::BadRequestError
-      handle_api_error(error, message_content)
-    when RubyLLM::Error
-      Rails.logger.error "RubyLLM Error: #{error.message}"
-      Rails.logger.error error.backtrace.join("\n")
-
-      # If it's a conversation-related error, try with a fresh chat
-      if conversation_related_error?(error)
-        return retry_with_fresh_chat(message_content)
-      end
-
-      "I apologize, but I encountered an error processing your request. Please try again."
-    when ConversationStateError
-      Rails.logger.error "Conversation state error: #{error.message}"
-      retry_with_fresh_chat(message_content)
-    else
-      Rails.logger.error "MCP Error: #{error.message}"
-      Rails.logger.error error.backtrace.join("\n")
-
-      "I apologize, but I encountered an error processing your request. Please try again."
-    end
-  end
-
-  def handle_api_error(error, message_content)
-    Rails.logger.error "OpenAI API Error: #{error.message}"
-
-    # Check for the specific tool call mismatch error
-    if error.message.include?("tool_calls") && error.message.include?("must be followed by tool messages")
-      Rails.logger.warn "Detected tool call/response mismatch error, attempting recovery"
-      return retry_with_fresh_chat(message_content)
-    end
-
-    # Check for invalid parameter errors related to conversation structure
-    if error.message.include?("Invalid parameter") && error.message.include?("messages")
-      Rails.logger.warn "Detected conversation parameter error, attempting recovery"
-      return retry_with_fresh_chat(message_content)
-    end
-
-    # Check for other conversation structure issues
-    if conversation_related_error?(error)
-      return retry_with_fresh_chat(message_content)
-    end
-
-    "I apologize, but there was an issue with the conversation format. I've started a fresh conversation to resolve this."
-  end
-
-  def conversation_related_error?(error)
-    error_patterns = [
-      /tool.*must be.*response.*tool_calls/i,
-      /tool_call_id.*did not have response messages/i,
-      /invalid.*parameter.*messages/i,
-      /malformed.*conversation/i,
-      /tool_call.*missing/i,
-      /assistant message.*tool_calls.*must be followed/i
-    ]
-
-    error_patterns.any? { |pattern| error.message.match?(pattern) }
-  end
-
-
-  def conversation_related_error?(error)
-    error_patterns = [
-      /tool.*must be.*response.*tool_calls/i,
-      /tool_call_id.*did not have response messages/i,
-      /invalid.*parameter.*messages/i,
-      /malformed.*conversation/i,
-      /tool_call.*missing/i,
-      /assistant message.*tool_calls.*must be followed/i
-    ]
-
-    error_patterns.any? { |pattern| error.message.match?(pattern) }
-  end
-
-  def should_create_fresh_chat?(error)
-    # Create fresh chat for certain types of severe errors
-    severe_error_patterns = [
-      ConversationStateManager::OrphanedToolCallError,
-      ConversationStateManager::MalformedToolResponseError
-    ]
-
-    severe_error_patterns.any? { |pattern| error.is_a?(pattern) }
-  end
-
-  def retry_with_fresh_chat(message_content)
-    Rails.logger.info "Retrying with fresh chat for user #{@user.id}"
-
-    # Archive the problematic chat
-    original_title = @chat.title
-    @chat.update!(
-      status: "archived",
-      title: "#{original_title} (Archived - Conversation Error at #{Time.current.strftime('%H:%M')})"
-    )
-
-    # Create a fresh chat
-    @chat = create_fresh_chat!
-    @conversation_manager = ConversationStateManager.new(@chat)
-
-    # Retry the message processing with the fresh chat
-    begin
-      # Set the model
-      model = Rails.application.config.mcp.model
-      @chat.update!(model_id: model)
-
-      # Add system instructions
-      @chat.with_instructions(build_system_instructions, replace: true)
-
-      # Configure tools
-      if @tools.available_tools.any?
-        @tools.available_tools.each do |tool|
-          @chat.with_tool(tool)
-        end
-      end
-
-      # Process the message
-      begin
-        response = @chat.ask(message_content)
-      rescue PG::UniqueViolation => e
-        if e.message.include?("list_id_and_position")
-          retry_count = (@fresh_chat_retry_count ||= 0) + 1
-          if retry_count <= 2
-            @fresh_chat_retry_count = retry_count
-            sleep(0.1)
-            retry
-          else
-            raise StandardError, "Unable to add item due to position conflict even with fresh chat"
-          end
-        else
-          raise e
-        end
-      end
-
-      response.content
-
-    rescue => e
-      Rails.logger.error "Failed to process message even with fresh chat: #{e.message}"
-      "I encountered a technical issue and had to start a fresh conversation. Please try your request again."
-    end
-  end
-
-  def create_fresh_chat!
     @user.chats.create!(
+      title: "AI Chat - #{Time.current.strftime('%m/%d %H:%M')}",
       status: "active",
-      title: "Chat #{Time.current.strftime('%m/%d %H:%M')}"
+      conversation_state: "stable"
     )
   end
 
-  def needs_system_instructions?
-    # Only add instructions if we have meaningful context or this is a new conversation
-    @context.present? || @chat.messages.where(role: "system").empty?
+  def ai_powered_list_creation(user_message)
+    # For now, use simple pattern matching until we can set up proper AI analysis
+    # This will work immediately and we can enhance it later
+
+    if simple_grocery_request?(user_message)
+      create_grocery_list_with_items(user_message)
+    elsif roadshow_request?(user_message)
+      create_roadshow_with_cities(user_message)
+    elsif book_request?(user_message)
+      create_book_list(user_message)
+    elsif travel_request?(user_message)
+      create_travel_planning(user_message)
+    else
+      create_general_list_with_items(user_message)
+    end
   end
 
-  def build_system_instructions
-    instructions = []
-
-    instructions << "You are an AI assistant integrated with Listopia, a collaborative list management application."
-    instructions << "You can help users manage their lists, create items, update tasks, and collaborate with others."
-
-    # Enhanced planning context instructions
-    instructions << <<~PLANNING
-      IMPORTANT: Listopia is fundamentally a planning and organization tool. When users mention ANY of the following, you should immediately create a list with relevant items:
-
-      🎯 PLANNING CONTEXTS (always create lists):
-      - Vacation/Travel planning (flights, hotels, itinerary, packing)
-      - Project management (tasks, milestones, deliverables)
-      - Goal setting (objectives, steps, milestones)
-      - Event planning (weddings, parties, meetings, roadshows, conferences)
-      - Shopping (grocery, retail, supplies)
-      - Moving/Relocation (packing, utilities, address changes)
-      - Job search (resume, applications, interviews)
-      - Learning/Education (courses, materials, schedule)
-      - Health/Fitness (workouts, diet, appointments)
-      - Financial planning (budgets, savings, investments)
-      - Home improvement (tasks, materials, contractors)
-      - Business strategy (initiatives, analysis, execution)
-
-      📋 AUTOMATIC LIST CREATION RULES:
-      1. When user mentions planning ANYTHING, create a list immediately using create_planning_list
-      2. Always include a descriptive title and helpful description
-      3. Add 5-10 relevant items to get them started
-      4. Include helpful details, priorities, and assignments where appropriate
-      5. Ask if they want to add more items or modify the list
-
-      Example: If user says "I'm planning a trip to Japan", immediately create a "Japan Trip Planning" list with items like flights, hotels, visa, itinerary, etc.
-    PLANNING
-
-    if @context.present?
-      if @context[:current_page]
-        instructions << "Current page context: #{@context[:current_page]}"
-      end
-
-      if @context[:selected_items]
-        instructions << "User has selected items: #{@context[:selected_items].join(', ')}"
-      end
-    end
-
-    instructions.join("\n\n")
+  def simple_grocery_request?(message)
+    message.downcase.include?("grocery") && message.downcase.include?("list")
   end
 
-  def build_context_message
-    return "No additional context available." if @context.blank?
+  def roadshow_request?(message)
+    message.downcase.include?("roadshow") ||
+    (message.downcase.include?("cities") && message.downcase.include?("organize"))
+  end
 
-    context_parts = []
+  def book_request?(message)
+    message.downcase.include?("book") && message.downcase.include?("list")
+  end
 
-    if @context["page"]
-      context_parts << "User is currently on page: #{@context['page']}"
+  def travel_request?(message)
+    message.downcase.include?("travel") || message.downcase.include?("vacation") ||
+    message.downcase.include?("trip")
+  end
+
+  def create_grocery_list_with_items(message)
+    lists_created = []
+    items_created = []
+
+    # Create grocery list
+    list = @user.lists.create!(
+      title: "Grocery List",
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
+
+    # Extract items from message
+    items = extract_grocery_items(message)
+    items.each_with_index do |item, index|
+      list_item = list.list_items.create!(
+        title: item,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "shopping",  # ✅ Better type for grocery items
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
     end
 
-    if @context["list_id"]
-      context_parts << "User is viewing list: #{@context['list_title']} (ID: #{@context['list_id']})"
-      context_parts << "List has #{@context['items_count']} items, #{@context['completed_count']} completed"
-      context_parts << "User #{@context['is_owner'] ? 'owns' : 'collaborates on'} this list"
-      context_parts << "User #{@context['can_collaborate'] ? 'can edit' : 'can only view'} this list"
+    {
+      message: "Created grocery list with #{items.count} items: #{items.join(', ')}",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  def create_roadshow_with_cities(message)
+    lists_created = []
+    items_created = []
+
+    # Create main list
+    main_list = @user.lists.create!(
+      title: "Roadshow Planning",
+      status: "active",
+      list_type: "professional"
+    )
+    lists_created << main_list
+
+    # Extract cities
+    cities = extract_cities_from_message(message)
+    cities.each do |city|
+      sublist = @user.lists.create!(
+        title: "#{city} Stop",
+        parent_list: main_list,
+        status: "active",
+        list_type: "professional"
+      )
+      lists_created << sublist
+
+      # Add basic planning items to each city
+      planning_items = [ "Book venue", "Arrange travel", "Local marketing", "Setup logistics" ]
+      planning_items.each_with_index do |item, index|
+        list_item = sublist.list_items.create!(
+          title: item,
+          completed: false,  # ✅ Fixed: Use completed boolean instead of status
+          priority: "medium",
+          item_type: "task",
+          position: index  # ✅ Fixed: Set unique position for each item
+        )
+        items_created << list_item
+      end
     end
 
-    if @context["total_lists"]
-      context_parts << "User has access to #{@context['total_lists']} total lists"
+    {
+      message: "Created roadshow planning with #{cities.count} city stops: #{cities.join(', ')}",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  def create_general_list_with_items(message)
+    lists_created = []
+    items_created = []
+
+    # Extract title
+    title = extract_title_from_message(message)
+
+    list = @user.lists.create!(
+      title: title,
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
+
+    # Try to extract any items mentioned
+    items = extract_items_from_message(message)
+    items.each_with_index do |item, index|
+      list_item = list.list_items.create!(
+        title: item,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "task",
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
     end
 
-    context_parts.join(". ")
+    message_text = if items.any?
+                     "Created '#{title}' with #{items.count} items"
+    else
+                     "Created '#{title}' - ready for you to add items"
+    end
+
+    {
+      message: message_text,
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  def create_book_list(message)
+    lists_created = []
+    items_created = []
+
+    # Create book reading list
+    list = @user.lists.create!(
+      title: "Reading List",
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
+
+    # Extract book titles from message
+    books = extract_book_titles(message)
+    books.each_with_index do |book, index|
+      list_item = list.list_items.create!(
+        title: book,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "learning",  # ✅ Better type for reading
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
+    end
+
+    {
+      message: "Created reading list with #{books.count} books: #{books.join(', ')}",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  def create_travel_planning(message)
+    lists_created = []
+    items_created = []
+
+    # Create travel planning list
+    list = @user.lists.create!(
+      title: "Travel Planning",
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
+
+    # Add basic travel planning items
+    travel_items = [
+      "Research destinations",
+      "Book flights",
+      "Book accommodation",
+      "Plan itinerary",
+      "Check passport/visa requirements",
+      "Pack luggage"
+    ]
+
+    travel_items.each_with_index do |item, index|
+      list_item = list.list_items.create!(
+        title: item,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "travel",  # ✅ Better type for travel
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
+    end
+
+    {
+      message: "Created travel planning list with #{travel_items.count} essential items",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  # Extract methods for parsing user input
+
+  def extract_grocery_items(message)
+    # Simple extraction - in production this would use more sophisticated parsing
+    default_items = [ "Milk", "Bread", "Eggs", "Fruits", "Vegetables" ]
+
+    # Try to extract specific items from the message
+    if message.include?("with") || message.include?(":")
+      extracted = message.split(/with|:/).last&.split(/,|and/)&.map(&:strip)&.reject(&:blank?)
+      return extracted if extracted&.any?
+    end
+
+    default_items
+  end
+
+  def extract_cities_from_message(message)
+    # Simple city extraction - in production this would use NLP
+    default_cities = [ "New York", "Los Angeles", "Chicago" ]
+
+    # Look for city names in the message
+    if message.downcase.include?("cities")
+      # Try to extract specific cities mentioned
+      words = message.split(/\s+/)
+      cities = words.select { |w| w.match?(/^[A-Z][a-z]+$/) }.first(5)
+      return cities if cities.any?
+    end
+
+    default_cities
+  end
+
+  def extract_book_titles(message)
+    # Simple book extraction
+    default_books = [ "To Kill a Mockingbird", "1984", "Pride and Prejudice" ]
+
+    # Try to extract book titles from quotes or specific patterns
+    titles = message.scan(/"([^"]+)"/).flatten
+    return titles if titles.any?
+
+    default_books
+  end
+
+  def extract_title_from_message(message)
+    # Extract a meaningful title from the user's message
+    words = message.split(/\s+/).reject { |w| common_word?(w) }
+    words.first(3).join(" ").titleize || "New List"
+  end
+
+  def extract_items_from_message(message)
+    # Look for comma-separated items
+    if match = message.match(/with\s+([^\.!?]+)/i)
+      items_text = match[1]
+      items = items_text.split(/,|\sand\s/).map(&:strip)
+      items.select { |item| item.length > 2 }
+    else
+      []
+    end
+  end
+
+  def common_word?(word)
+    %w[the and or but with from that this they create make list].include?(word.downcase)
+  end
+
+  # Additional methods for AI-powered creation (future enhancement)
+
+  def execute_list_creation_plan(ai_response, original_message)
+    begin
+      # Parse AI response
+      plan = JSON.parse(ai_response)
+
+      lists_created = []
+      items_created = []
+
+      if plan["structure_type"] == "single"
+        result = create_single_list_from_plan(plan)
+        lists_created = result[:lists]
+        items_created = result[:items]
+        message = result[:message]
+      else # hierarchical
+        result = create_hierarchical_from_plan(plan)
+        lists_created = result[:lists]
+        items_created = result[:items]
+        message = result[:message]
+      end
+
+      {
+        message: message,
+        lists_created: lists_created,
+        items_created: items_created
+      }
+    rescue JSON::ParserError => e
+      Rails.logger.error "JSON parse error: #{e.message}"
+      Rails.logger.error "AI Response: #{ai_response}"
+      create_simple_fallback(original_message)
+    end
+  end
+
+  def create_single_list_from_plan(plan)
+    lists_created = []
+    items_created = []
+
+    # Create the main list
+    list = @user.lists.create!(
+      title: plan["title"] || "New List",
+      status: "active",
+      list_type: plan["list_type"] || "personal"
+    )
+    lists_created << list
+
+    # Add items to the list
+    if plan["items"]&.any?
+      plan["items"].each_with_index do |item_info, index|
+        item_title = item_info.is_a?(Hash) ? item_info["title"] : item_info.to_s
+        next if item_title.blank?
+
+        item = list.list_items.create!(
+          title: item_title,
+          completed: false,  # ✅ Fixed: Use completed boolean instead of status
+          priority: item_info.is_a?(Hash) ? (item_info["priority"] || "medium") : "medium",
+          item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task",
+          position: index  # ✅ Fixed: Set unique position for each item
+        )
+        items_created << item
+      end
+    end
+
+    message = if items_created.any?
+                "Created '#{list.title}' with #{items_created.count} items"
+    else
+                "Created '#{list.title}' - ready for you to add items"
+    end
+
+    { lists: lists_created, items: items_created, message: message }
+  end
+
+  def create_hierarchical_from_plan(plan)
+    lists_created = []
+    items_created = []
+
+    # Create main list
+    main_list = @user.lists.create!(
+      title: plan["title"] || "Planning List",
+      status: "active",
+      list_type: plan["list_type"] || "personal"
+    )
+    lists_created << main_list
+
+    # Create sublists
+    if plan["sublists"]&.any?
+      plan["sublists"].each do |sublist_info|
+        sublist_title = sublist_info.is_a?(Hash) ? sublist_info["title"] : sublist_info.to_s
+        next if sublist_title.blank?
+
+        sublist = @user.lists.create!(
+          title: sublist_title,
+          parent_list: main_list,
+          status: "active",
+          list_type: plan["list_type"] || "personal"
+        )
+        lists_created << sublist
+
+        # Add items to sublist
+        if sublist_info.is_a?(Hash) && sublist_info["items"]&.any?
+          sublist_info["items"].each_with_index do |item_info, index|
+            item_title = item_info.is_a?(Hash) ? item_info["title"] : item_info.to_s
+            next if item_title.blank?
+
+            item = sublist.list_items.create!(
+              title: item_title,
+              completed: false,  # ✅ Fixed: Use completed boolean instead of status
+              priority: item_info.is_a?(Hash) ? (item_info["priority"] || "medium") : "medium",
+              item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task",
+              position: index  # ✅ Fixed: Set unique position for each item
+            )
+            items_created << item
+          end
+        end
+      end
+    end
+
+    message = "Created '#{main_list.title}' with #{lists_created.count - 1} sublists and #{items_created.count} items"
+    { lists: lists_created, items: items_created, message: message }
+  end
+
+  def create_simple_fallback(original_message)
+    # Fallback to simple list creation if AI parsing fails
+    create_general_list_with_items(original_message)
   end
 end

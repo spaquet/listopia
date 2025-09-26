@@ -14,6 +14,10 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.string :provider
       t.string :uid
 
+      #
+      t.string :locale, limit: 10, default: "en", null: false
+      t.string :timezone, limit: 50, default: "UTC", null: false
+
       # Profile fields
       t.string :avatar_url
       t.text :bio
@@ -24,5 +28,7 @@ class CreateUsers < ActiveRecord::Migration[8.0]
     add_index :users, :email, unique: true
     add_index :users, :email_verification_token, unique: true
     add_index :users, [ :provider, :uid ], unique: true
+    add_index :users, :locale
+    add_index :users, :timezone
   end
 end
