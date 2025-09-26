@@ -141,11 +141,8 @@ class User < ApplicationRecord
   # Simplified current_chat method - let RubyLLM handle the complexity
   def current_chat
     chats.where(status: "active")
-         .order(last_message_at: :desc, created_at: :desc)
-         .first_or_create!(
-           title: "Chat #{Time.current.strftime('%m/%d %H:%M')}",
-           model_id: Rails.application.config.mcp&.model || "gpt-4.1-nano"
-         )
+        .order(last_message_at: :desc, created_at: :desc)
+        .first
   end
 
   # I18n helper
