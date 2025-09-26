@@ -36,8 +36,8 @@ class List < ApplicationRecord
   validates :title, presence: true, length: { maximum: 255 }
   validates :description, length: { maximum: 1000 }
   validates :status, presence: true
-  # Prevent circular references
-  validate :cannot_be_parent_of_itself
+  # Prevent circular references - only check on updates, not creates
+  validate :cannot_be_parent_of_itself, on: :update
 
   # Enums (Rails only, not in PostgreSQL)
   enum :status, {
@@ -176,7 +176,7 @@ class List < ApplicationRecord
   private
 
   def cannot_be_parent_of_itself
-    if parent_list_id == id
+    if parent_list_id.present? && parent_list_id == id
       errors.add(:parent_list_id, "cannot be the same as the list itself")
     end
   end

@@ -52,6 +52,7 @@ class ListManagementTool < RubyLLM::Tool
       list_type: determined_type
     )
 
+    # Use direct broadcasting instead of the concern
     broadcast_list_creation(list)
 
     {
@@ -77,8 +78,10 @@ class ListManagementTool < RubyLLM::Tool
     # Add planning overview items to main list
     add_planning_overview_items(main_list, planning_context)
 
-    created_lists = [ main_list ]
+    # Use direct broadcasting instead of the concern
     broadcast_list_creation(main_list)
+
+    created_lists = [ main_list ]
 
     # Create sub-lists if provided, using the new parent_list relationship
     if sub_lists_data.present?
@@ -169,6 +172,7 @@ class ListManagementTool < RubyLLM::Tool
         end
       end
 
+      # Use direct broadcasting instead of the concern for each sub-list
       broadcast_list_creation(list)
       created_lists << serialize_list(list)
     end
@@ -371,25 +375,6 @@ class ListManagementTool < RubyLLM::Tool
     }
   end
 
-  # FIXED: Use correct Turbo Stream broadcast targets
-  def broadcast_list_creation(list)
-    Turbo::StreamsChannel.broadcast_prepend_to(
-      "user_lists_#{@user.id}",  # Fixed target name to match existing patterns
-      target: "lists-grid",
-      partial: "lists/list_card",
-      locals: { list: list, current_user: @user }
-    )
-
-    # Remove empty state if this might be the first list
-    Turbo::StreamsChannel.broadcast_remove_to(
-      "user_lists_#{@user.id}",
-      target: "empty-state"
-    )
-  rescue => e
-    Rails.logger.error "Failed to broadcast list creation: #{e.message}"
-    # Don't let broadcast errors break the main functionality
-  end
-
   def broadcast_item_update(item)
     # Turbo Stream broadcasts for real-time updates
     Turbo::StreamsChannel.broadcast_replace_to(
@@ -401,5 +386,31 @@ class ListManagementTool < RubyLLM::Tool
   rescue => e
     Rails.logger.error "Failed to broadcast item update: #{e.message}"
     # Don't let broadcast errors break the main functionality
+  end
+
+  # Direct broadcasting methods that don't rely on view_context
+  def broadcast_list_creation(list)
+    affected_users = [ list.owner ]
+    affected_users.concat(list.collaborators) if list.collaborators.any?
+
+    affected_users.uniq.each do |user|
+      begin
+        # Prepend new list card to lists grid (if user is on lists index)
+        Turbo::StreamsChannel.broadcast_prepend_to(
+          "user_lists_#{user.id}",
+          target: "lists-grid",
+          partial: "lists/list_card",
+          locals: { list: list, current_user: user }
+        )
+
+        # Remove empty state if this might be the first list
+        Turbo::StreamsChannel.broadcast_remove_to(
+          "user_lists_#{user.id}",
+          target: "empty-state"
+        )
+      rescue => e
+        Rails.logger.error "Failed to broadcast list creation for user #{user.id}: #{e.message}"
+      end
+    end
   end
 end
