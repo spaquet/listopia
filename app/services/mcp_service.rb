@@ -98,12 +98,13 @@ class McpService
 
     # Extract items from message
     items = extract_grocery_items(message)
-    items.each do |item|
+    items.each_with_index do |item, index|
       list_item = list.list_items.create!(
         title: item,
-        status: "pending",
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
         priority: "medium",
-        item_type: "task"
+        item_type: "shopping",  # ✅ Better type for grocery items
+        position: index  # ✅ Fixed: Set unique position for each item
       )
       items_created << list_item
     end
@@ -140,12 +141,13 @@ class McpService
 
       # Add basic planning items to each city
       planning_items = [ "Book venue", "Arrange travel", "Local marketing", "Setup logistics" ]
-      planning_items.each do |item|
+      planning_items.each_with_index do |item, index|
         list_item = sublist.list_items.create!(
           title: item,
-          status: "pending",
+          completed: false,  # ✅ Fixed: Use completed boolean instead of status
           priority: "medium",
-          item_type: "task"
+          item_type: "task",
+          position: index  # ✅ Fixed: Set unique position for each item
         )
         items_created << list_item
       end
@@ -174,12 +176,13 @@ class McpService
 
     # Try to extract any items mentioned
     items = extract_items_from_message(message)
-    items.each do |item|
+    items.each_with_index do |item, index|
       list_item = list.list_items.create!(
         title: item,
-        status: "pending",
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
         priority: "medium",
-        item_type: "task"
+        item_type: "task",
+        position: index  # ✅ Fixed: Set unique position for each item
       )
       items_created << list_item
     end
@@ -197,39 +200,123 @@ class McpService
     }
   end
 
-  def extract_grocery_items(message)
-    # Look for specific grocery items
-    items = []
+  def create_book_list(message)
+    lists_created = []
+    items_created = []
 
-    # Pattern for quantities + items (2 apples, 1 bottle of water)
-    quantity_items = message.scan(/(\d+\s+[^,\.!?]+)/i)
-    items.concat(quantity_items.flatten.map(&:strip))
+    # Create book reading list
+    list = @user.lists.create!(
+      title: "Reading List",
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
 
-    # Common grocery words
-    grocery_words = %w[milk chocolate bread eggs butter cheese apples bananas chicken beef]
-    grocery_words.each do |word|
-      if message.downcase.include?(word)
-        items << word.capitalize
-      end
+    # Extract book titles from message
+    books = extract_book_titles(message)
+    books.each_with_index do |book, index|
+      list_item = list.list_items.create!(
+        title: book,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "learning",  # ✅ Better type for reading
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
     end
 
-    # Clean up
-    items.uniq.map(&:strip).reject(&:empty?)
+    {
+      message: "Created reading list with #{books.count} books: #{books.join(', ')}",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  def create_travel_planning(message)
+    lists_created = []
+    items_created = []
+
+    # Create travel planning list
+    list = @user.lists.create!(
+      title: "Travel Planning",
+      status: "active",
+      list_type: "personal"
+    )
+    lists_created << list
+
+    # Add basic travel planning items
+    travel_items = [
+      "Research destinations",
+      "Book flights",
+      "Book accommodation",
+      "Plan itinerary",
+      "Check passport/visa requirements",
+      "Pack luggage"
+    ]
+
+    travel_items.each_with_index do |item, index|
+      list_item = list.list_items.create!(
+        title: item,
+        completed: false,  # ✅ Fixed: Use completed boolean instead of status
+        priority: "medium",
+        item_type: "travel",  # ✅ Better type for travel
+        position: index  # ✅ Fixed: Set unique position for each item
+      )
+      items_created << list_item
+    end
+
+    {
+      message: "Created travel planning list with #{travel_items.count} essential items",
+      lists_created: lists_created,
+      items_created: items_created
+    }
+  end
+
+  # Extract methods for parsing user input
+
+  def extract_grocery_items(message)
+    # Simple extraction - in production this would use more sophisticated parsing
+    default_items = [ "Milk", "Bread", "Eggs", "Fruits", "Vegetables" ]
+
+    # Try to extract specific items from the message
+    if message.include?("with") || message.include?(":")
+      extracted = message.split(/with|:/).last&.split(/,|and/)&.map(&:strip)&.reject(&:blank?)
+      return extracted if extracted&.any?
+    end
+
+    default_items
   end
 
   def extract_cities_from_message(message)
-    # Look for known city names
-    known_cities = [ "San Francisco", "New York", "Austin", "Denver", "Seattle", "Portland", "Boston", "Los Angeles" ]
-    cities = known_cities.select { |city| message.include?(city) }
+    # Simple city extraction - in production this would use NLP
+    default_cities = [ "New York", "Los Angeles", "Chicago" ]
 
-    # If no cities found in this message, return the full list
-    cities.any? ? cities : known_cities
+    # Look for city names in the message
+    if message.downcase.include?("cities")
+      # Try to extract specific cities mentioned
+      words = message.split(/\s+/)
+      cities = words.select { |w| w.match?(/^[A-Z][a-z]+$/) }.first(5)
+      return cities if cities.any?
+    end
+
+    default_cities
+  end
+
+  def extract_book_titles(message)
+    # Simple book extraction
+    default_books = [ "To Kill a Mockingbird", "1984", "Pride and Prejudice" ]
+
+    # Try to extract book titles from quotes or specific patterns
+    titles = message.scan(/"([^"]+)"/).flatten
+    return titles if titles.any?
+
+    default_books
   end
 
   def extract_title_from_message(message)
-    # Simple title extraction
-    words = message.split(/\s+/).select { |w| w.length > 3 && !common_word?(w) }
-    words.first(2).join(" ").titleize || "New List"
+    # Extract a meaningful title from the user's message
+    words = message.split(/\s+/).reject { |w| common_word?(w) }
+    words.first(3).join(" ").titleize || "New List"
   end
 
   def extract_items_from_message(message)
@@ -244,8 +331,10 @@ class McpService
   end
 
   def common_word?(word)
-    %w[the and or but with from that this they].include?(word.downcase)
+    %w[the and or but with from that this they create make list].include?(word.downcase)
   end
+
+  # Additional methods for AI-powered creation (future enhancement)
 
   def execute_list_creation_plan(ai_response, original_message)
     begin
@@ -293,15 +382,16 @@ class McpService
 
     # Add items to the list
     if plan["items"]&.any?
-      plan["items"].each do |item_info|
+      plan["items"].each_with_index do |item_info, index|
         item_title = item_info.is_a?(Hash) ? item_info["title"] : item_info.to_s
         next if item_title.blank?
 
         item = list.list_items.create!(
           title: item_title,
-          status: "pending",
+          completed: false,  # ✅ Fixed: Use completed boolean instead of status
           priority: item_info.is_a?(Hash) ? (item_info["priority"] || "medium") : "medium",
-          item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task"
+          item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task",
+          position: index  # ✅ Fixed: Set unique position for each item
         )
         items_created << item
       end
@@ -338,21 +428,22 @@ class McpService
           title: sublist_title,
           parent_list: main_list,
           status: "active",
-          list_type: main_list.list_type
+          list_type: plan["list_type"] || "personal"
         )
         lists_created << sublist
 
-        # Add items to sublists if specified
+        # Add items to sublist
         if sublist_info.is_a?(Hash) && sublist_info["items"]&.any?
-          sublist_info["items"].each do |item_info|
+          sublist_info["items"].each_with_index do |item_info, index|
             item_title = item_info.is_a?(Hash) ? item_info["title"] : item_info.to_s
             next if item_title.blank?
 
             item = sublist.list_items.create!(
               title: item_title,
-              status: "pending",
+              completed: false,  # ✅ Fixed: Use completed boolean instead of status
               priority: item_info.is_a?(Hash) ? (item_info["priority"] || "medium") : "medium",
-              item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task"
+              item_type: item_info.is_a?(Hash) ? (item_info["type"] || "task") : "task",
+              position: index  # ✅ Fixed: Set unique position for each item
             )
             items_created << item
           end
@@ -360,65 +451,12 @@ class McpService
       end
     end
 
-    sublists_names = lists_created[1..-1]&.map(&:title) || []
-    message = "Created '#{main_list.title}' with #{sublists_names.count} sections: #{sublists_names.join(', ')}"
-
+    message = "Created '#{main_list.title}' with #{lists_created.count - 1} sublists and #{items_created.count} items"
     { lists: lists_created, items: items_created, message: message }
   end
 
-  def create_simple_fallback(message)
-    # Extract basic title
-    title = message.split(/\s+/).select { |w| w.length > 3 }.first(2).join(" ").titleize
-    title = "New List" if title.blank?
-
-    list = @user.lists.create!(
-      title: title,
-      status: "active",
-      list_type: "personal"
-    )
-
-    {
-      message: "Created '#{title}' - what would you like to add?",
-      lists_created: [ list ],
-      items_created: []
-    }
-  end
-
-  def build_analysis_prompt(user_message)
-    <<~PROMPT
-      Analyze this user request and create a plan for organizing their lists and tasks: "#{user_message}"
-
-      Rules:
-      1. Determine if this needs a single list or main list with sublists (max 1 level deep)
-      2. Extract specific items/tasks they mentioned
-      3. Create actionable items that help them achieve their goal
-      4. Determine if this is personal or professional context
-
-      Respond with JSON only:
-      {
-        "structure_type": "single" or "hierarchical",
-        "title": "Main List Title",
-        "list_type": "personal" or "professional",
-        "items": ["item1", "item2"] (for single lists),
-        "sublists": [
-          {
-            "title": "Sublist Name",
-            "items": ["task1", "task2"]
-          }
-        ] (for hierarchical)
-      }
-
-      Examples:
-      - "grocery list with apples, milk" → single list with those items
-      - "plan vacation to Paris" → hierarchical: Planning/Packing/Bookings sublists with relevant tasks
-      - "organize team 1:1s" → hierarchical: sublists for each team member with meeting prep tasks
-      - "booklist to develop my mind" → single list ready for book titles
-
-      Always populate with actionable items that help the user accomplish their goal.
-    PROMPT
-  end
-
-  def default_model
-    Model.find_by(provider: "openai") || Model.first
+  def create_simple_fallback(original_message)
+    # Fallback to simple list creation if AI parsing fails
+    create_general_list_with_items(original_message)
   end
 end

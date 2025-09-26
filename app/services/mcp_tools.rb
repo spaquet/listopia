@@ -29,7 +29,7 @@ class McpTools
       list = @user.lists.create!(
         title: title.to_s.strip,
         description: description&.to_s&.strip,
-        category: category.to_s,
+        list_type: category.to_s,  # ✅ Fixed: Use list_type instead of category
         status: "active"
       )
 
@@ -55,7 +55,7 @@ class McpTools
         main_list = @user.lists.create!(
           title: title.to_s.strip,
           description: description&.to_s&.strip,
-          category: category.to_s,
+          list_type: category.to_s,  # ✅ Fixed: Use list_type instead of category
           status: "active"
         )
 
@@ -70,7 +70,7 @@ class McpTools
             title: sublist_title.strip,
             description: sublist_description&.strip,
             parent_list: main_list,
-            category: category.to_s,
+            list_type: category.to_s,  # ✅ Fixed: Use list_type instead of category
             status: "active"
           )
         end.compact
@@ -99,15 +99,20 @@ class McpTools
 
       target_list = list[:list]
 
+      # Get the next position for this list
+      next_position = target_list.list_items.maximum(:position).to_i + 1
+
       # Create the item
       item = target_list.list_items.create!(
-        content: content.to_s.strip,
+        title: content.to_s.strip,        # ✅ Fixed: Use title instead of content
         priority: priority.to_s,
-        status: "pending"
+        completed: false,                 # ✅ Fixed: Use completed boolean instead of status
+        item_type: "task",                # ✅ Added: Set default item_type
+        position: next_position           # ✅ Fixed: Set proper position
       )
 
       success_response(
-        "Added item '#{item.content}' to list '#{target_list.title}'",
+        "Added item '#{item.title}' to list '#{target_list.title}'",  # ✅ Fixed: Use title instead of content
         item: format_item_data(item),
         list: format_list_data(target_list)
       )
@@ -172,7 +177,7 @@ class McpTools
       id: list.id,
       title: list.title,
       description: list.description,
-      category: list.category,
+      list_type: list.list_type,      # ✅ Fixed: Use list_type instead of category
       status: list.status,
       items_count: list.list_items.count,
       created_at: list.created_at.strftime("%Y-%m-%d %H:%M"),
@@ -183,9 +188,10 @@ class McpTools
   def format_item_data(item)
     {
       id: item.id,
-      content: item.content,
+      title: item.title,              # ✅ Fixed: Use title instead of content
       priority: item.priority,
-      status: item.status,
+      completed: item.completed,      # ✅ Fixed: Use completed boolean instead of status
+      item_type: item.item_type,      # ✅ Added: Include item_type
       created_at: item.created_at.strftime("%Y-%m-%d %H:%M")
     }
   end
