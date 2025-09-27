@@ -116,35 +116,5 @@ Rails.application.routes.draw do
     root "dashboard#index"
     resources :users
     resources :lists
-
-    resources :conversation_contexts, only: [ :index, :show, :destroy ] do
-      collection do
-        delete :cleanup
-        get :stats
-      end
-    end
-
-    # Conversation health monitoring routes
-    resources :conversation_health, only: [ :index, :show ] do
-      collection do
-        post :check_all
-      end
-
-      member do
-        get :show_chat_details
-        post :repair_chat
-      end
-    end
-
-    # MCP Health Controller
-    resources :mcp_health, only: [ :index ] do
-      collection do
-        get :api_status
-        get :conversation_health
-        post :repair_conversation
-        post :force_health_check
-        get :error_recovery_stats
-      end
-    end
   end
 end

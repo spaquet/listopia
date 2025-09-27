@@ -11,7 +11,7 @@ You are assisting with development of **Listopia**, a modern collaborative list 
 - **UUID Primary Keys** for all models (security and scalability)
 - **Solid Queue** for background job processing (Rails 8 default)
 - **Solid Cache** for caching layer
-- **RubyLLM** for AI chat integration
+- **RubyLLM** for AI chat integration version 1.8+
 
 ### Frontend & Real-time
 - **Hotwire Turbo Streams** for real-time updates without page refreshes

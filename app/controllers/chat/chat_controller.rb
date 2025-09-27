@@ -1,6 +1,5 @@
 # app/controllers/chat/chat_controller.rb
-module Chat
-  class ChatController < ApplicationController
+class Chat::ChatController < ApplicationController
     include ListBroadcasting  # real-time updates
 
     before_action :authenticate_user!
@@ -116,5 +115,4 @@ module Chat
         "Successfully processed your request"
       end
     end
-  end
 end
