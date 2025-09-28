@@ -25,8 +25,8 @@ class AiAgentMcpService
       message_type: "text"
     )
 
-    # Execute multi-step AI agent workflow
-    result = execute_ai_workflow
+    # Execute consolidated AI workflow
+    result = execute_consolidated_ai_workflow
 
     # Create response message
     response_message = @chat.add_message(
@@ -76,49 +76,31 @@ class AiAgentMcpService
       moderation_result = RubyLLM.moderate(content)
 
       if moderation_result.flagged?
-        Rails.logger.warn "Content flagged by moderation: #{moderation_result.flagged_categories.join(', ')}"
+        flagged_categories = moderation_result.categories
 
         {
           blocked: true,
-          categories: moderation_result.flagged_categories,
-          message: generate_moderation_message(moderation_result.flagged_categories),
-          scores: moderation_result.category_scores
+          categories: flagged_categories,
+          message: generate_moderation_message(flagged_categories)
         }
       else
-        Rails.logger.debug "Content passed moderation checks"
         { blocked: false }
       end
-
-    rescue RubyLLM::ConfigurationError => e
-      Rails.logger.error "Moderation not configured: #{e.message}"
-      # Fallback: allow content but log the issue
-      { blocked: false, warning: "Moderation unavailable" }
-
-    rescue RubyLLM::RateLimitError => e
-      Rails.logger.warn "Moderation rate limited: #{e.message}"
-      # Fallback: allow content but log rate limit
-      { blocked: false, warning: "Moderation rate limited" }
-
-    rescue RubyLLM::Error => e
+    rescue => e
       Rails.logger.error "Moderation failed: #{e.message}"
-      # Fallback: allow content but log error
-      { blocked: false, warning: "Moderation error" }
+      # If moderation fails, allow the request to proceed (fail open)
+      { blocked: false }
     end
   end
 
   def moderation_enabled?
-    # Default to true if environment variable is not set
     ENV.fetch("LISTOPIA_USE_MODERATION", "true").downcase == "true"
   end
 
   def generate_moderation_message(flagged_categories)
-    # Provide user-friendly, specific feedback based on flagged categories
     case
-    when flagged_categories.include?("harassment") || flagged_categories.include?("harassment/threatening")
-      "I can't help create lists with content that could be used to harass others. Please try a different request focused on positive organization and productivity."
-
     when flagged_categories.include?("hate") || flagged_categories.include?("hate/threatening")
-      "I'm designed to help with positive list creation and organization. Please rephrase your request without targeting any groups or individuals."
+      "I can't create lists with hateful content. Please rephrase your request without targeting any groups or individuals."
 
     when flagged_categories.include?("violence") || flagged_categories.include?("violence/graphic")
       "I can't create lists involving violent content. Let me help you organize something constructive instead - perhaps a project, travel plans, or learning goals?"
@@ -154,165 +136,245 @@ class AiAgentMcpService
     }
   end
 
-  def execute_ai_workflow
-    # Step 1: Analyze intent
-    intent_data = analyze_user_intent
-    return fallback_creation if intent_data.nil?
+  # NEW: Consolidated AI workflow - single call approach
+  def execute_consolidated_ai_workflow
+    # Create comprehensive prompt that handles everything in one go
+    prompt = build_comprehensive_prompt
 
-    # Step 2: Extract entities based on intent
-    entities = extract_entities_with_ai(intent_data)
-    return fallback_creation if entities.nil?
+    # Single AI call with proper configuration
+    response = call_ai_with_retry(prompt)
 
-    # Step 3: Create execution plan
-    plan = create_execution_plan(intent_data, entities)
-    return fallback_creation if plan.nil?
+    # Parse and execute the comprehensive response
+    result = parse_and_execute_comprehensive_response(response)
 
-    # Step 4: Execute the plan
-    execute_plan(plan)
+    # If AI approach fails, fall back to simple creation
+    return result if result[:success]
+
+    Rails.logger.warn "Consolidated AI workflow failed, using fallback"
+    fallback_creation
   end
 
-  # Step 1: AI analyzes user intent
-  def analyze_user_intent
-    prompt = <<~PROMPT
-      Analyze this user message and determine their intent for list management:
+  def build_comprehensive_prompt
+    <<~PROMPT
+      You are an expert list creation assistant. Analyze the user's request and create a complete, detailed list plan.
 
-      Message: "#{@current_message}"
+      User Request: "#{@current_message}"
 
-      Respond with JSON only (no markdown, no extra text):
+      Your task is to:
+      1. Understand exactly what the user wants
+      2. Create ALL items they requested (don't miss any!)
+      3. Provide specific, actionable items
+      4. Preserve exact quantities mentioned
+
+      CRITICAL: If the user asks for 5 books, provide exactly 5 books. If they mention specific items, include ALL of them.
+
+      Respond with a JSON object containing the complete execution plan:
+
       {
-        "intent_type": "grocery_shopping|event_planning|travel_planning|project_management|reading_list|roadshow_planning|generic_list",
-        "complexity": "simple|moderate|complex",
-        "entities_needed": ["cities", "items", "books", "tasks", "attendees"],
-        "structure_type": "simple_list|hierarchical_lists|categorized_lists",
-        "estimated_count": 5,
-        "keywords": ["key", "words", "found"]
-      }
-    PROMPT
-
-    # Use RubyLLM through the existing chat
-    temp_chat = Chat.new(user: @user, title: "Intent Analysis")
-    response = temp_chat.ask([
-      {
-        role: "system",
-        content: "You are an intelligent task analysis assistant. Always respond with valid JSON only."
-      },
-      { role: "user", content: prompt }
-    ])
-
-    parse_json_response(response.content, "intent analysis")
-  rescue => e
-    Rails.logger.error "Intent analysis failed: #{e.message}"
-    nil
-  end
-
-  # Step 2: AI extracts specific entities
-  def extract_entities_with_ai(intent_data)
-    entities_needed = intent_data["entities_needed"] || []
-
-    prompt = <<~PROMPT
-      Extract specific entities from this message. Extract ALL entities mentioned, preserving full names:
-
-      Message: "#{@current_message}"
-      Intent: #{intent_data['intent_type']}
-      Extract: #{entities_needed.join(', ')}
-
-      Respond with JSON only (no markdown, no extra text):
-      {
-        "cities": ["San Francisco", "New York", "Austin"],
-        "items": ["2 apples", "milk", "chocolate"],
-        "books": ["Complete Book Title 1", "Author Name"],
-        "tasks": ["Complete task description"],
-        "quantities": {"books": 5, "cities": 8},
-        "categories": ["energizing", "business"],
-        "title_suggestion": "Suggested List Title"
-      }
-
-      Include only entity types that exist in the message. Preserve complete names and quantities.
-    PROMPT
-
-    temp_chat = Chat.new(user: @user, title: "Entity Extraction")
-    response = temp_chat.ask([
-      {
-        role: "system",
-        content: "You are a precise entity extraction specialist. Always respond with valid JSON only."
-      },
-      { role: "user", content: prompt }
-    ])
-
-    parse_json_response(response.content, "entity extraction")
-  rescue => e
-    Rails.logger.error "Entity extraction failed: #{e.message}"
-    nil
-  end
-
-  # Step 3: AI creates execution plan
-  def create_execution_plan(intent_data, entities)
-    prompt = <<~PROMPT
-      Create a detailed execution plan for list creation:
-
-      Intent: #{intent_data.to_json}
-      Entities: #{entities.to_json}
-
-      Respond with JSON only (no markdown, no extra text):
-      {
-        "structure_type": "simple_list|hierarchical_lists",
-        "main_list": {
-          "title": "Main List Title",
-          "description": "Optional description",
-          "list_type": "personal|professional"
+        "analysis": {
+          "intent_type": "grocery_shopping|reading_list|travel_planning|project_management|roadshow_planning|generic_task_list",
+          "requested_quantity": <number if specified>,
+          "specific_items_mentioned": ["item1", "item2"],
+          "categories_or_themes": ["theme1", "theme2"],
+          "complexity": "simple|moderate|complex"
         },
-        "items": [
+        "execution_plan": {
+          "structure_type": "simple_list|hierarchical_lists",
+          "main_list": {
+            "title": "Specific descriptive title",
+            "description": "Brief description",
+            "list_type": "personal|professional"
+          },
+          "items": [
+            {
+              "title": "Specific item title",
+              "description": "Detailed description if helpful",
+              "item_type": "task|shopping|learning|travel|planning",
+              "priority": "low|medium|high"
+            }
+          ],
+          "sub_lists": [
+            {
+              "title": "Sub-list title",
+              "items": [
+                {
+                  "title": "Sub-item title",
+                  "item_type": "task",
+                  "priority": "medium"
+                }
+              ]
+            }
+          ]
+        },
+        "validation": {
+          "total_items_created": <number>,
+          "meets_user_requirements": true|false,
+          "missing_elements": []
+        }
+      }
+
+      IMPORTANT RULES:
+      - If user asks for N items, create exactly N items
+      - Include ALL specific items mentioned by the user
+      - For reading lists, provide complete book titles and authors when possible
+      - For grocery lists, include specific items mentioned plus logical additions
+      - For travel/roadshow lists, include all mentioned cities
+      - Always aim for completeness and specificity
+      - Never truncate or abbreviate lists
+
+      Example: If user says "5 energizing books", provide exactly 5 book recommendations.
+      Example: If user says "grocery list with apples, milk, bread", include those 3 plus reasonable additions.
+    PROMPT
+  end
+
+  def call_ai_with_retry(prompt, max_retries: 2)
+    retry_count = 0
+
+    begin
+      # Use chat with proper configuration for longer responses
+      response = @chat.ask(
+        [
           {
-            "title": "Item title",
-            "item_type": "task|shopping|learning|travel",
-            "priority": "low|medium|high"
+            role: "system",
+            content: "You are a precise list creation expert. Always respond with complete, valid JSON that includes ALL requested items. Be thorough and never truncate responses."
+          },
+          {
+            role: "user",
+            content: prompt
           }
         ],
-        "sub_lists": [
-          {
-            "title": "Sub-list title",
-            "items": [
-              {
-                "title": "Sub-item title",
-                "item_type": "task",
-                "priority": "medium"
-              }
-            ]
-          }
-        ]
-      }
+        # Ensure sufficient tokens for complete responses
+        max_tokens: 2000,
+        temperature: 0.3  # Lower temperature for more consistent results
+      )
 
-      Create comprehensive plans based on the extracted entities.
-    PROMPT
+      response.content
 
-    temp_chat = Chat.new(user: @user, title: "Planning")
-    response = temp_chat.ask([
-      {
-        role: "system",
-        content: "You are a project planning expert. Always respond with valid JSON only."
+    rescue => e
+      retry_count += 1
+      Rails.logger.error "AI call attempt #{retry_count} failed: #{e.message}"
+
+      if retry_count <= max_retries
+        sleep(retry_count * 2)  # Exponential backoff
+        retry
+      else
+        Rails.logger.error "All AI call attempts failed"
+        nil
+      end
+    end
+  end
+
+  def parse_and_execute_comprehensive_response(response_text)
+    return { success: false } if response_text.blank?
+
+    begin
+      # Robust JSON parsing
+      parsed_response = parse_json_robustly(response_text)
+      return { success: false } unless parsed_response
+
+      # Validate the response structure
+      unless valid_comprehensive_response?(parsed_response)
+        Rails.logger.error "Invalid response structure from AI"
+        return { success: false }
+      end
+
+      # Execute the plan
+      execution_result = execute_comprehensive_plan(parsed_response["execution_plan"])
+
+      # Validate we created what was requested
+      analysis = parsed_response["analysis"] || {}
+      validation = validate_creation_completeness(execution_result, analysis)
+
+      if validation[:complete]
+        {
+          success: true,
+          message: execution_result[:message],
+          lists_created: execution_result[:lists_created],
+          items_created: execution_result[:items_created]
+        }
+      else
+        Rails.logger.warn "Creation incomplete: #{validation[:issues].join(', ')}"
+        { success: false }
+      end
+
+    rescue => e
+      Rails.logger.error "Failed to parse/execute comprehensive response: #{e.message}"
+      { success: false }
+    end
+  end
+
+  def parse_json_robustly(response_text)
+    # Multiple parsing strategies
+    strategies = [
+      # Strategy 1: Direct parse
+      -> { JSON.parse(response_text.strip) },
+
+      # Strategy 2: Remove markdown
+      -> {
+        cleaned = response_text.gsub(/```json\n?/, "").gsub(/```\n?/, "").strip
+        JSON.parse(cleaned)
       },
-      { role: "user", content: prompt }
-    ])
 
-    parse_json_response(response.content, "execution planning")
-  rescue => e
-    Rails.logger.error "Execution planning failed: #{e.message}"
+      # Strategy 3: Extract JSON block
+      -> {
+        json_match = response_text.match(/\{.*\}/m)
+        return nil unless json_match
+        JSON.parse(json_match[0])
+      },
+
+      # Strategy 4: Find first complete JSON object
+      -> {
+        start_idx = response_text.index("{")
+        return nil unless start_idx
+
+        brace_count = 0
+        end_idx = nil
+
+        (start_idx...response_text.length).each do |i|
+          char = response_text[i]
+          brace_count += 1 if char == "{"
+          brace_count -= 1 if char == "}"
+
+          if brace_count == 0
+            end_idx = i
+            break
+          end
+        end
+
+        return nil unless end_idx
+        JSON.parse(response_text[start_idx..end_idx])
+      }
+    ]
+
+    strategies.each_with_index do |strategy, index|
+      begin
+        result = strategy.call
+        Rails.logger.info "JSON parsed successfully with strategy #{index + 1}" if result
+        return result
+      rescue JSON::ParserError => e
+        Rails.logger.debug "Strategy #{index + 1} failed: #{e.message}"
+        next
+      end
+    end
+
+    Rails.logger.error "All JSON parsing strategies failed for: #{response_text.truncate(200)}"
     nil
   end
 
-  # Step 4: Execute the AI-generated plan
-  def execute_plan(plan)
+  def valid_comprehensive_response?(parsed)
+    parsed.is_a?(Hash) &&
+      parsed["execution_plan"].is_a?(Hash) &&
+      parsed["execution_plan"]["main_list"].is_a?(Hash) &&
+      parsed["execution_plan"]["items"].is_a?(Array)
+  end
+
+  def execute_comprehensive_plan(plan)
     case plan["structure_type"]
-    when "simple_list"
-      execute_simple_list_plan(plan)
     when "hierarchical_lists"
       execute_hierarchical_plan(plan)
     else
-      execute_simple_list_plan(plan) # Default fallback
+      execute_simple_list_plan(plan)
     end
-  rescue => e
-    Rails.logger.error "Plan execution failed: #{e.message}"
-    fallback_creation
   end
 
   def execute_simple_list_plan(plan)
@@ -329,7 +391,7 @@ class AiAgentMcpService
     )
     lists_created << list
 
-    # Add items
+    # Add ALL items from the plan
     items = plan["items"] || []
     items.each_with_index do |item_config, index|
       item = list.list_items.create!(
@@ -408,15 +470,45 @@ class AiAgentMcpService
     }
   end
 
-  # Fallback for when AI steps fail
+  def validate_creation_completeness(execution_result, analysis)
+    requested_quantity = analysis["requested_quantity"]
+    items_created_count = execution_result[:items_created].count
+
+    issues = []
+
+    # Check quantity if specified
+    if requested_quantity && items_created_count < requested_quantity
+      issues << "Created #{items_created_count} items but user requested #{requested_quantity}"
+    end
+
+    # Check for specific items mentioned
+    specific_items = analysis["specific_items_mentioned"] || []
+    if specific_items.any?
+      created_titles = execution_result[:items_created].map(&:title)
+      missing_items = specific_items.reject do |item|
+        created_titles.any? { |title| title.downcase.include?(item.downcase) }
+      end
+
+      if missing_items.any?
+        issues << "Missing specific items: #{missing_items.join(', ')}"
+      end
+    end
+
+    {
+      complete: issues.empty?,
+      issues: issues
+    }
+  end
+
+  # Fallback for when AI approach fails completely
   def fallback_creation
-    # Simple extraction based on keywords as last resort
+    # Determine fallback type based on keywords in user message
     if @current_message.downcase.include?("grocery")
       create_simple_grocery_list
-    elsif @current_message.downcase.include?("roadshow") || @current_message.downcase.include?("cities")
-      create_simple_roadshow_list
-    elsif @current_message.downcase.include?("book")
+    elsif @current_message.downcase.include?("book") || @current_message.downcase.include?("read")
       create_simple_book_list
+    elsif @current_message.downcase.include?("travel") || @current_message.downcase.include?("trip")
+      create_simple_travel_list
     else
       create_generic_list
     end
@@ -429,9 +521,11 @@ class AiAgentMcpService
       list_type: "personal"
     )
 
-    default_items = [ "Milk", "Bread", "Eggs" ]
-    items_created = []
+    # Extract any food items mentioned in the message
+    mentioned_items = extract_grocery_items_from_message
+    default_items = mentioned_items.any? ? mentioned_items : [ "Milk", "Bread", "Eggs" ]
 
+    items_created = []
     default_items.each_with_index do |item_name, index|
       item = list.list_items.create!(
         title: item_name,
@@ -450,45 +544,6 @@ class AiAgentMcpService
     }
   end
 
-  def create_simple_roadshow_list
-    main_list = @user.lists.create!(
-      title: "Roadshow Planning",
-      status: "active",
-      list_type: "professional"
-    )
-
-    default_cities = [ "San Francisco", "New York", "Chicago" ]
-    lists_created = [ main_list ]
-    items_created = []
-
-    default_cities.each do |city|
-      sub_list = @user.lists.create!(
-        title: "#{city} Stop",
-        parent_list: main_list,
-        status: "active",
-        list_type: "professional"
-      )
-      lists_created << sub_list
-
-      [ "Book venue", "Arrange travel" ].each_with_index do |task, index|
-        item = sub_list.list_items.create!(
-          title: task,
-          completed: false,
-          priority: "medium",
-          item_type: "task",
-          position: index
-        )
-        items_created << item
-      end
-    end
-
-    {
-      message: "Created roadshow planning with #{default_cities.count} city stops",
-      lists_created: lists_created,
-      items_created: items_created
-    }
-  end
-
   def create_simple_book_list
     list = @user.lists.create!(
       title: "Reading List",
@@ -496,10 +551,15 @@ class AiAgentMcpService
       list_type: "personal"
     )
 
-    default_books = [ "Sapiens", "Atomic Habits", "The Alchemist" ]
+    # Try to extract number of books requested
+    quantity_match = @current_message.match(/(\d+)\s+books?/i)
+    requested_count = quantity_match ? quantity_match[1].to_i : 5
+
+    # Generate appropriate number of books
+    book_titles = generate_fallback_books(requested_count)
     items_created = []
 
-    default_books.each_with_index do |book, index|
+    book_titles.each_with_index do |book, index|
       item = list.list_items.create!(
         title: book,
         completed: false,
@@ -512,6 +572,40 @@ class AiAgentMcpService
 
     {
       message: "Created reading list with #{items_created.count} books",
+      lists_created: [ list ],
+      items_created: items_created
+    }
+  end
+
+  def create_simple_travel_list
+    list = @user.lists.create!(
+      title: "Travel Planning",
+      status: "active",
+      list_type: "personal"
+    )
+
+    travel_tasks = [
+      "Book transportation",
+      "Reserve accommodation",
+      "Plan itinerary",
+      "Pack luggage",
+      "Check travel documents"
+    ]
+
+    items_created = []
+    travel_tasks.each_with_index do |task, index|
+      item = list.list_items.create!(
+        title: task,
+        completed: false,
+        priority: "medium",
+        item_type: "task",
+        position: index
+      )
+      items_created << item
+    end
+
+    {
+      message: "Created travel planning list with #{items_created.count} tasks",
       lists_created: [ list ],
       items_created: items_created
     }
@@ -531,26 +625,41 @@ class AiAgentMcpService
     }
   end
 
-  # Helper method to parse JSON responses safely
-  def parse_json_response(response_text, step_name)
-    # Clean response text
-    cleaned = response_text.strip
+  # Helper methods for fallback creation
+  def extract_grocery_items_from_message
+    # Simple keyword extraction for grocery items
+    food_keywords = %w[milk bread eggs cheese apples bananas yogurt chicken rice pasta]
+    found_items = []
 
-    # Remove markdown code blocks if present
-    cleaned = cleaned.gsub(/```json\n?/, "").gsub(/```\n?/, "")
+    food_keywords.each do |keyword|
+      if @current_message.downcase.include?(keyword)
+        found_items << keyword.capitalize
+      end
+    end
 
-    # Find JSON content
-    json_start = cleaned.index("{")
-    json_end = cleaned.rindex("}")
+    found_items
+  end
 
-    return nil unless json_start && json_end && json_end > json_start
+  def generate_fallback_books(count)
+    all_books = [
+      "Atomic Habits by James Clear",
+      "Sapiens by Yuval Noah Harari",
+      "The 7 Habits of Highly Effective People by Stephen Covey",
+      "Mindset by Carol Dweck",
+      "The Power of Now by Eckhart Tolle",
+      "Thinking, Fast and Slow by Daniel Kahneman",
+      "The Lean Startup by Eric Ries",
+      "Deep Work by Cal Newport",
+      "The Alchemist by Paulo Coelho",
+      "Man's Search for Meaning by Viktor Frankl"
+    ]
 
-    json_text = cleaned[json_start..json_end]
-    JSON.parse(json_text)
-
-  rescue JSON::ParserError => e
-    Rails.logger.error "Failed to parse JSON for #{step_name}: #{e.message}"
-    Rails.logger.error "Response text: #{response_text.truncate(200)}"
-    nil
+    # Return the requested number of books, cycling if necessary
+    count = [ count, 10 ].min # Cap at 10 to avoid infinite arrays
+    if count <= all_books.length
+      all_books.first(count)
+    else
+      (all_books * ((count / all_books.length) + 1)).first(count)
+    end
   end
 end
