@@ -1,0 +1,15 @@
+<!-- app/views/shared/_success_notification.html.erb -->
+<div class="flex items-start gap-3 mb-4" data-success-message>
+  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M5 13l4 4L19 7"/>
+    </svg>
+  </div>
+  <div class="bg-green-50 border border-green-200 text-green-900 rounded-lg px-4 py-2 max-w-[80%]">
+    <p class="font-medium"><%= message %></p>
+    <% if defined?(details) && details.present? %>
+      <p class="text-sm mt-1"><%= details %></p>
+    <% end %>
+  </div>
+</div>

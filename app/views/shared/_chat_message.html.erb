@@ -1,28 +1,23 @@
-<%# app/views/shared/_chat_message.html.erb %>
-<%# Renders a chat message (user or assistant) %>
-<div class="flex items-start gap-3 mb-4 <%= 'justify-end' if message.role == 'user' %>" data-message-id="<%= message.id %>">
-  <% if message.role != 'user' %>
+<!-- app/views/shared/_chat_message.html.erb -->
+<%# Handles both ActiveRecord Message and RubyLLM::Message objects %>
+<% 
+  # Get ID safely - RubyLLM messages might not have IDs
+  message_id = message.respond_to?(:id) ? message.id : SecureRandom.uuid
+  message_role = message.respond_to?(:role) ? message.role : 'assistant'
+  message_content = message.respond_to?(:content) ? message.content : message.to_s
+%>
+<div class="flex items-start gap-3 mb-4 <%= 'justify-end' if message_role == 'user' %>" 
+     data-message-id="<%= message_id %>">
+  <% if message_role != 'user' %>
     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
       <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
       </svg>
     </div>
   <% end %>
-  <div class="flex-1 <%= 'max-w-3xl' unless message.role == 'user' %>">
-    <div class="<%= message.role == 'user' ? 'bg-blue-600 text-white ml-auto max-w-md' : 'bg-gray-100 text-gray-900' %> rounded-lg px-4 py-3 shadow-sm">
-      <div class="prose prose-sm max-w-none <%= 'prose-invert' if message.role == 'user' %>">
-        <%= simple_format(message.content) %>
-      </div>
-    </div>
-    <div class="text-xs text-gray-500 mt-1 <%= 'text-right' if message.role == 'user' %>">
-      <%= time_ago_in_words(message.created_at) %> ago
-    </div>
+  <div class="<%= message_role == 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900' %> 
+              rounded-lg px-4 py-2 max-w-[80%]">
+    <%= simple_format(message_content) %>
   </div>
-  <% if message.role == 'user' %>
-    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-      </svg>
-    </div>
-  <% end %>
 </div>

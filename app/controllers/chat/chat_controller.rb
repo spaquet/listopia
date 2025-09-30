@@ -88,17 +88,32 @@ class Chat::ChatController < ApplicationController
     end
 
     def success_notification_streams(result)
-      return [] unless result[:lists_created].any?
+      streams = []
 
-      # Create a success notification
-      notification_text = build_success_message(result)
+      lists_count = result[:lists_created]&.count || 0
+      items_count = result[:items_created]&.count || 0
 
-      [
-        turbo_stream.prepend("notifications",
-          partial: "shared/success_notification",
-          locals: { message: notification_text }
-        )
-      ]
+      # Build success message
+      message_parts = []
+      message_parts << "#{lists_count} #{'list'.pluralize(lists_count)}" if lists_count > 0
+      message_parts << "#{items_count} #{'item'.pluralize(items_count)}" if items_count > 0
+
+      success_message = if message_parts.any?
+        "Created #{message_parts.join(' with ')}"
+      else
+        "Task completed"
+      end
+
+      streams << turbo_stream.prepend(
+        "chat-messages",
+        partial: "shared/success_notification",
+        locals: {
+          message: success_message,
+          details: result[:message]
+        }
+      )
+
+      streams
     end
 
     def build_success_message(result)
