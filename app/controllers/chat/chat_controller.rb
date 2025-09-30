@@ -33,7 +33,7 @@ class Chat::ChatController < ApplicationController
           render turbo_stream: [
             # Update chat messages (works for both normal and moderation blocked messages)
             turbo_stream.append("chat-messages",
-              partial: "chat/chat_message",
+              partial: "chat/message",
               locals: { message: result[:message] }
             ),
             # NOTE: We don't need manual lists_turbo_streams anymore because
@@ -59,7 +59,7 @@ class Chat::ChatController < ApplicationController
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: turbo_stream.append("chat-messages",
-            partial: "chat/chat_error_message",
+            partial: "chat/error_message",
             locals: { error: error_message }
           )
         end
