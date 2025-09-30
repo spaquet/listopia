@@ -228,21 +228,11 @@ class AiAgentMcpService
       - "Q4 marketing campaign" → professional, "Q4 Marketing Campaign", "business marketing"
       - "wedding planning" → personal, "Wedding Planning", "event organization"
       - "server migration checklist" → professional, "Server Migration", "IT infrastructure"
-      - "travel itinerary for Europe trip" → personal, "Europe Trip Itinerary", "travel plans and activities"
-      - "project launch tasks" → professional, "Project Launch", "product launch activities"
-      - "fitness goals and workouts" → personal, "Fitness Goals", "health and exercise routines"
-      - "client onboarding steps" → professional, "Client Onboarding", "new client setup process"
-      - "gardening to-do list" → personal, "Gardening Tasks", "garden maintenance and planting"
-      - "software development sprint" → professional, "Development Sprint", "software project tasks"
-      - "market research topics" → professional, "Market Research", "business analysis"
-      - "marketing ideas" → professional, "Marketing Ideas", "business promotion strategies"
-      - "product launch checklist" → professional, "Product Launch Checklist", "steps for launching a product"
-      - "vacation packing list" → personal, "Vacation Packing List", "items to pack for a trip"
 
       Be flexible and creative with titles. Match the user's intent and language.
     PROMPT
 
-    response = call_ai_step("categorization", prompt, temperature: 0.3)
+    response = call_ai_step("categorization", prompt)
     return nil unless response
 
     result = parse_json_response(response, "categorization")
@@ -288,7 +278,7 @@ class AiAgentMcpService
       }
     PROMPT
 
-    response = call_ai_step("structure_determination", prompt, temperature: 0.3)
+    response = call_ai_step("structure_determination", prompt)
     return nil unless response
 
     result = parse_json_response(response, "structure determination")
@@ -411,7 +401,7 @@ class AiAgentMcpService
       Be creative and specific. Generate appropriate items for whatever the user asks for.
     PROMPT
 
-    response = call_ai_step("item_extraction", prompt, temperature: 0.2, max_tokens: 3000)
+    response = call_ai_step("item_extraction", prompt)
     return nil unless response
 
     result = parse_json_response(response, "item extraction")
@@ -482,17 +472,8 @@ class AiAgentMcpService
                 "title": "Specific item for this sublist",
                 "description": "Optional details",
                 "priority": "high|medium|low"
-              },
-              {
-                "title": "Another specific item for this sublist",
-                "description": "Optional details",
-                "priority": "high|medium|low"
               }
             ]
-          },
-          {
-            "sublist_title": "Second sublist name (be specific)",
-            "items": [...]
           }
         ],
         "total_sublists": <count>,
@@ -504,96 +485,10 @@ class AiAgentMcpService
         }
       }
 
-      EXAMPLES:
-
-      Request: "roadshow planning for San Francisco, New York, and Austin"
-      Response must have 3 sublists (one per city):
-      {
-        "main_list_items": [
-          {"title": "Create master presentation deck", "description": "Design slides for all stops", "priority": "high"},
-          {"title": "Book travel between cities", "description": "Flights and ground transportation", "priority": "high"}
-        ],
-        "sublists": [
-          {
-            "sublist_title": "San Francisco Stop",
-            "items": [
-              {"title": "Book venue in San Francisco", "description": "Downtown location preferred", "priority": "high"},
-              {"title": "Coordinate with SF sales team", "description": "Ensure local team participation", "priority": "medium"},
-              {"title": "Arrange local transportation", "description": "Airport pickup and venue transfer", "priority": "medium"}
-            ]
-          },
-          {
-            "sublist_title": "New York Stop",
-            "items": [
-              {"title": "Book venue in New York", "description": "Manhattan location preferred", "priority": "high"},
-              {"title": "Coordinate with NY sales team", "description": "Ensure local team participation", "priority": "medium"},
-              {"title": "Arrange local transportation", "description": "Airport pickup and venue transfer", "priority": "medium"}
-            ]
-          },
-          {
-            "sublist_title": "Austin Stop",
-            "items": [
-              {"title": "Book venue in Austin", "description": "Downtown location preferred", "priority": "high"},
-              {"title": "Coordinate with Austin sales team", "description": "Ensure local team participation", "priority": "medium"},
-              {"title": "Arrange local transportation", "description": "Airport pickup and venue transfer", "priority": "medium"}
-            ]
-          }
-        ],
-        "total_sublists": 3,
-        "total_items": 11,
-        "verification": {"sublists_in_request": 3, "sublists_in_response": 3, "all_sublists_included": true}
-      }
-
-      Request: "software launch with 4 phases: planning, development, testing, deployment"
-      Response must have 4 sublists (one per phase):
-      {
-        "main_list_items": [
-          {"title": "Kickoff meeting with all stakeholders", "priority": "high"},
-          {"title": "Set up project tracking system", "priority": "high"}
-        ],
-        "sublists": [
-          {
-            "sublist_title": "Planning Phase",
-            "items": [
-              {"title": "Define product requirements", "priority": "high"},
-              {"title": "Create technical architecture", "priority": "high"},
-              {"title": "Estimate timeline and resources", "priority": "medium"}
-            ]
-          },
-          {
-            "sublist_title": "Development Phase",
-            "items": [
-              {"title": "Set up development environment", "priority": "high"},
-              {"title": "Implement core features", "priority": "high"},
-              {"title": "Code reviews and refactoring", "priority": "medium"}
-            ]
-          },
-          {
-            "sublist_title": "Testing Phase",
-            "items": [
-              {"title": "Write automated tests", "priority": "high"},
-              {"title": "Conduct user acceptance testing", "priority": "high"},
-              {"title": "Fix bugs and issues", "priority": "high"}
-            ]
-          },
-          {
-            "sublist_title": "Deployment Phase",
-            "items": [
-              {"title": "Deploy to production", "priority": "high"},
-              {"title": "Monitor performance and errors", "priority": "high"},
-              {"title": "Gather user feedback", "priority": "medium"}
-            ]
-          }
-        ],
-        "total_sublists": 4,
-        "total_items": 14,
-        "verification": {"sublists_in_request": 4, "sublists_in_response": 4, "all_sublists_included": true}
-      }
-
       Be flexible and creative. Generate appropriate sublists and items for whatever domain the user requests.
     PROMPT
 
-    response = call_ai_step("hierarchical_extraction", prompt, temperature: 0.2, max_tokens: 4000)
+    response = call_ai_step("hierarchical_extraction", prompt)
     return nil unless response
 
     result = parse_json_response(response, "hierarchical extraction")
@@ -627,20 +522,13 @@ class AiAgentMcpService
     log_debug "\n--- STEP 5: EXECUTION ---"
     log_debug "Creating lists and items in database..."
 
-    lists_created = []
-    items_created = []
-
     if structure["structure_type"] == "hierarchical" || structure["needs_sublists"]
       # Create main list + sublists
-      result = create_hierarchical_lists(categorization, items_data)
+      create_hierarchical_lists(categorization, items_data)
     else
       # Create simple flat list
-      result = create_simple_list(categorization, items_data)
+      create_simple_list(categorization, items_data)
     end
-
-    log_debug "Execution complete: #{result[:lists_created].count} lists, #{result[:items_created].count} items"
-
-    result
   end
 
   # Create a simple flat list with items
@@ -653,7 +541,7 @@ class AiAgentMcpService
     # Create the main list
     list = @user.lists.create!(
       title: categorization["suggested_title"] || "New List",
-      description: "Created via AI assistant",
+      description: categorization["domain"] || "Created via AI assistant",
       status: "active",
       list_type: categorization["list_type"] || "personal"
     )
@@ -670,7 +558,7 @@ class AiAgentMcpService
           title: item_data["title"],
           completed: false,
           priority: item_data["priority"] || "medium",
-          item_type: infer_item_type(categorization["category"]),
+          item_type: "task", # Generic type for all domains
           position: index
         )
         items_created << item
@@ -698,7 +586,7 @@ class AiAgentMcpService
     # Create main list
     main_list = @user.lists.create!(
       title: categorization["suggested_title"] || "Project Planning",
-      description: "Created via AI assistant",
+      description: categorization["domain"] || "Created via AI assistant",
       status: "active",
       list_type: categorization["list_type"] || "professional"
     )
@@ -715,7 +603,7 @@ class AiAgentMcpService
           title: item_data["title"],
           completed: false,
           priority: item_data["priority"] || "medium",
-          item_type: infer_item_type(categorization["category"]),
+          item_type: "task", # Generic type for all domains
           position: index
         )
         items_created << item
@@ -750,7 +638,7 @@ class AiAgentMcpService
               title: item_data["title"],
               completed: false,
               priority: item_data["priority"] || "medium",
-              item_type: infer_item_type(categorization["category"]),
+              item_type: "task", # Generic type for all domains
               position: item_idx
             )
             items_created << item
@@ -763,6 +651,8 @@ class AiAgentMcpService
         log_error "  ✗ Failed to create sublist: #{e.message}"
       end
     end
+
+    log_debug "Execution complete: #{lists_created.count} lists, #{items_created.count} items"
 
     {
       success: true,
@@ -777,23 +667,22 @@ class AiAgentMcpService
   # ============================================================================
 
   # Make an AI call for a specific step with retry logic
-  def call_ai_step(step_name, prompt, temperature: 0.3, max_tokens: 2000, max_retries: 2)
+  # Note: RubyLLM 1.8+ API doesn't accept max_tokens/temperature per request
+  # These should be configured at the chat/model level
+  def call_ai_step(step_name, prompt, max_retries: 2)
     retry_count = 0
 
     begin
       log_debug "Calling AI for #{step_name} (attempt #{retry_count + 1}/#{max_retries + 1})..."
 
-      response = @chat.ask(
-        [
-          {
-            role: "system",
-            content: "You are a precise task management expert. Always respond with complete, valid JSON only. No markdown formatting, no extra text. Be flexible and handle any domain or type of list the user requests."
-          },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: max_tokens,
-        temperature: temperature
-      )
+      # RubyLLM 1.8+ API: chat.ask only accepts messages array
+      response = @chat.ask([
+        {
+          role: "system",
+          content: "You are a precise task management expert. Always respond with complete, valid JSON only. No markdown formatting, no extra text. Be flexible and handle any domain or type of list the user requests."
+        },
+        { role: "user", content: prompt }
+      ])
 
       log_debug "AI response received (#{response.content.length} chars)"
       response.content
@@ -935,7 +824,7 @@ class AiAgentMcpService
     PROMPT
 
     begin
-      response = call_ai_step("fallback", prompt, temperature: 0.4, max_tokens: 1500)
+      response = call_ai_step("fallback", prompt)
       return { success: false } unless response
 
       data = parse_json_response(response, "fallback")
