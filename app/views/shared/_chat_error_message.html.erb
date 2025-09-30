@@ -1,0 +1,13 @@
+<!-- app/views/shared/_chat_error_message.html.erb -->
+<div class="flex items-start gap-3 mb-4" data-error-message>
+  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+  </div>
+  <div class="bg-red-50 border border-red-200 text-red-900 rounded-lg px-4 py-2 max-w-[80%]">
+    <p class="font-medium">Sorry, I encountered an error</p>
+    <p class="text-sm mt-1"><%= error_message %></p>
+  </div>
+</div>
