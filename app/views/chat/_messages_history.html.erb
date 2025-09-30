@@ -14,6 +14,8 @@
   </div>
   <!-- Chat History -->
   <% messages.each do |message| %>
+    <% next unless message.content.present? %>  <%# Add this line %>
+    <% next unless ['user', 'assistant'].include?(message.role) %>  <%# Add this line %>
     <% if message.is_from_user? %>
       <!-- User Message -->
       <div class="flex items-start space-x-3 mb-4 justify-end">

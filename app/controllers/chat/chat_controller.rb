@@ -50,7 +50,11 @@ class Chat::ChatController < ApplicationController
       Rails.logger.error "Chat controller error: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
 
-      error_message = "I encountered an error processing your request. Please try again."
+      error_message = if Rails.env.development?
+        "Error: #{e.message}"
+      else
+        "I encountered an issue. Please try again."
+      end
 
       respond_to do |format|
         format.turbo_stream do
