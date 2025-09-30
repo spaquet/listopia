@@ -19,6 +19,8 @@
 #  reminder_at         :datetime
 #  skip_notifications  :boolean          default(FALSE), not null
 #  start_date          :datetime         not null
+#  status              :integer          default("pending"), not null
+#  status_changed_at   :datetime
 #  title               :string           not null
 #  total_tracked_time  :decimal(10, 2)   default(0.0), not null
 #  url                 :string

@@ -54,8 +54,6 @@ class List < ApplicationRecord
   before_update :track_status_change
   after_update :notify_status_change
   after_create :create_default_board_columns
-  after_create :track_creation_context
-  after_update :track_update_context, if: :saved_changes?
 
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
@@ -253,37 +251,6 @@ class List < ApplicationRecord
 
     default_columns.each do |column_attrs|
       board_columns.create!(column_attrs)
-    end
-  end
-
-  def track_creation_context
-    if Current.user
-      ConversationContext.track_action(
-        user: Current.user,
-        action: "list_created",
-        entity: self,
-        metadata: {
-          list_type: list_type,
-          auto_tracked: true
-        }
-      )
-    end
-  end
-
-  def track_update_context
-    if Current.user
-      changes_summary = saved_changes.keys.reject { |k| k == "updated_at" }
-      return if changes_summary.empty?
-
-      ConversationContext.track_action(
-        user: Current.user,
-        action: "list_updated",
-        entity: self,
-        metadata: {
-          changed_fields: changes_summary,
-          auto_tracked: true
-        }
-      )
     end
   end
 end

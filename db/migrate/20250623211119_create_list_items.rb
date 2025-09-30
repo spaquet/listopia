@@ -10,9 +10,13 @@ class CreateListItems < ActiveRecord::Migration[8.0]
       t.integer :item_type, default: 0, null: false
       t.integer :priority, default: 1, null: false
 
-      # Completion tracking
+      # Completion tracking - completed boolean should be removed in future
+      # and replaced with status enum below.
       t.boolean :completed, default: false
       t.datetime :completed_at
+
+      t.integer :status, default: 0, null: false
+      t.datetime :status_changed_at
 
       # Scheduling
       t.datetime :due_date

@@ -101,47 +101,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
 
-  create_table "conversation_checkpoints", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "chat_id", null: false
-    t.string "checkpoint_name", null: false
-    t.integer "message_count", default: 0, null: false
-    t.integer "tool_calls_count", default: 0, null: false
-    t.string "conversation_state", default: "stable"
-    t.text "messages_snapshot"
-    t.text "context_data"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["chat_id", "checkpoint_name"], name: "index_conversation_checkpoints_on_chat_id_and_checkpoint_name", unique: true
-    t.index ["chat_id"], name: "index_conversation_checkpoints_on_chat_id"
-    t.index ["created_at"], name: "index_conversation_checkpoints_on_created_at"
-  end
-
-  create_table "conversation_contexts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.uuid "user_id", null: false
-    t.uuid "chat_id"
-    t.string "action", limit: 50, null: false
-    t.string "entity_type", limit: 50, null: false
-    t.uuid "entity_id", null: false
-    t.jsonb "entity_data", default: {}, null: false
-    t.jsonb "metadata", default: {}, null: false
-    t.integer "relevance_score", default: 100, null: false
-    t.datetime "expires_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["chat_id", "created_at"], name: "index_conversation_contexts_on_chat_id_and_created_at", order: { created_at: :desc }, where: "(chat_id IS NOT NULL)"
-    t.index ["chat_id"], name: "index_conversation_contexts_on_chat_id"
-    t.index ["entity_data"], name: "index_conversation_contexts_on_entity_data", using: :gin
-    t.index ["expires_at"], name: "index_conversation_contexts_on_expires_at", where: "(expires_at IS NOT NULL)"
-    t.index ["metadata"], name: "index_conversation_contexts_on_metadata", using: :gin
-    t.index ["user_id", "action", "created_at"], name: "idx_on_user_id_action_created_at_a6d0f1b259", order: { created_at: :desc }
-    t.index ["user_id", "created_at"], name: "index_conversation_contexts_on_user_id_and_created_at", order: { created_at: :desc }
-    t.index ["user_id", "entity_type", "created_at"], name: "idx_on_user_id_entity_type_created_at_d22f14e09a", order: { created_at: :desc }
-    t.index ["user_id", "entity_type", "entity_id", "created_at"], name: "idx_contexts_user_entity_time", order: { created_at: :desc }
-    t.index ["user_id"], name: "index_conversation_contexts_on_user_id"
-    t.check_constraint "action::text = ANY (ARRAY['list_viewed'::character varying, 'list_created'::character varying, 'list_updated'::character varying, 'list_deleted'::character varying, 'list_status_changed'::character varying, 'list_visibility_changed'::character varying, 'list_duplicated'::character varying, 'list_share_viewed'::character varying, 'list_ai_context_requested'::character varying, 'item_added'::character varying, 'item_updated'::character varying, 'item_completed'::character varying, 'item_deleted'::character varying, 'item_assigned'::character varying, 'item_uncompleted'::character varying, 'collaboration_added'::character varying, 'collaboration_removed'::character varying, 'chat_started'::character varying, 'chat_switched'::character varying, 'chat_message_sent'::character varying, 'chat_error'::character varying, 'page_visited'::character varying, 'dashboard_viewed'::character varying, 'lists_index_viewed'::character varying]::text[])", name: "valid_actions"
-    t.check_constraint "entity_type::text = ANY (ARRAY['List'::character varying, 'ListItem'::character varying, 'User'::character varying, 'Chat'::character varying, 'Page'::character varying]::text[])", name: "valid_entity_types"
-  end
-
   create_table "currents", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -177,6 +136,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.integer "priority", default: 1, null: false
     t.boolean "completed", default: false
     t.datetime "completed_at"
+    t.integer "status", default: 0, null: false
+    t.datetime "status_changed_at"
     t.datetime "due_date"
     t.datetime "reminder_at"
     t.boolean "skip_notifications", default: false, null: false
@@ -495,9 +456,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
   add_foreign_key "chats", "users"
   add_foreign_key "collaborators", "users"
   add_foreign_key "comments", "users"
-  add_foreign_key "conversation_checkpoints", "chats"
-  add_foreign_key "conversation_contexts", "chats"
-  add_foreign_key "conversation_contexts", "users"
   add_foreign_key "invitations", "users"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "list_items", "board_columns"

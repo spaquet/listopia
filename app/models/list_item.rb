@@ -19,6 +19,8 @@
 #  reminder_at         :datetime
 #  skip_notifications  :boolean          default(FALSE), not null
 #  start_date          :datetime         not null
+#  status              :integer          default("pending"), not null
+#  status_changed_at   :datetime
 #  title               :string           not null
 #  total_tracked_time  :decimal(10, 2)   default(0.0), not null
 #  url                 :string
@@ -115,6 +117,11 @@ class ListItem < ApplicationRecord
     urgent: 3
   }, prefix: true
 
+  enum :status, {
+    pending: 0,
+    in_progress: 1,
+    completed: 2 }, prefix: true
+
   # Scopes
   scope :completed, -> { where(completed: true) }
   scope :pending, -> { where(completed: false) }
@@ -129,9 +136,6 @@ class ListItem < ApplicationRecord
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
   after_create :assign_default_board_column
-  after_create :track_creation_context
-  after_update :track_update_context, if: :saved_changes?
-
 
   # Methods
 
@@ -159,44 +163,6 @@ class ListItem < ApplicationRecord
   end
 
   private
-
-  def track_creation_context
-    if Current.user
-      ConversationContext.track_action(
-        user: Current.user,
-        action: "item_added",
-        entity: self,
-        metadata: {
-          list_id: list_id,
-          priority: priority,
-          auto_tracked: true
-        }
-      )
-    end
-  end
-
-  def track_update_context
-    if Current.user
-      action = if saved_change_to_completed? && completed?
-        "item_completed"
-      elsif saved_change_to_assigned_user_id?
-        "item_assigned"
-      else
-        "item_updated"
-      end
-
-      ConversationContext.track_action(
-        user: Current.user,
-        action: action,
-        entity: self,
-        metadata: {
-          list_id: list_id,
-          changes: saved_changes.keys,
-          auto_tracked: true
-        }
-      )
-    end
-  end
 
   # Set completed_at timestamp when item is marked as completed
   def set_completed_at
