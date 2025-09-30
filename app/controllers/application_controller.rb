@@ -30,9 +30,12 @@ class ApplicationController < ActionController::Base
 
   # Require user to be authenticated
   def authenticate_user!
-    unless user_signed_in?
-      store_location
-      redirect_to new_session_path, alert: "Please sign in to continue."
+    unless current_user
+      respond_to do |format|
+        format.html { redirect_to sign_in_path, alert: "Please sign in to continue" }
+        format.json { render json: { error: "Authentication required" }, status: :unauthorized }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash_messages"), status: :unauthorized }
+      end
     end
   end
 
