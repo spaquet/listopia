@@ -35,12 +35,9 @@ class Chat::ChatController < ApplicationController
             turbo_stream.append("chat-messages",
               partial: "chat/message",
               locals: { message: result[:message] }
-            ),
+            )
             # NOTE: We don't need manual lists_turbo_streams anymore because
             # broadcast_list_creation handles real-time updates to all connected users
-
-            # Show success notification if items were created
-            *success_notification_streams(result)
           ]
         end
         format.json { render json: result }
@@ -89,35 +86,6 @@ class Chat::ChatController < ApplicationController
         # Use permit! carefully for dynamic context (as noted in original code)
         **params.fetch(:context, {}).permit!.to_h
       }
-    end
-
-    def success_notification_streams(result)
-      streams = []
-
-      lists_count = result[:lists_created]&.count || 0
-      items_count = result[:items_created]&.count || 0
-
-      # Build success message
-      message_parts = []
-      message_parts << "#{lists_count} #{'list'.pluralize(lists_count)}" if lists_count > 0
-      message_parts << "#{items_count} #{'item'.pluralize(items_count)}" if items_count > 0
-
-      success_message = if message_parts.any?
-        "Created #{message_parts.join(' with ')}"
-      else
-        "Task completed"
-      end
-
-      streams << turbo_stream.prepend(
-        "chat-messages",
-        partial: "shared/success_notification",
-        locals: {
-          message: success_message,
-          details: result[:message]
-        }
-      )
-
-      streams
     end
 
     def build_success_message(result)

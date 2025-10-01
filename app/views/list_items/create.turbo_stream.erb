@@ -16,7 +16,9 @@
 <% end %>
 <!-- Replace the form with a fresh one (this clears any error messages) -->
 <%= turbo_stream.replace "new_list_item" do %>
-  <%= render "list_items/quick_add_form", list: @list, list_item: @list.list_items.build %>
+  <% if can_edit_list?(@list, current_user) %>
+    <%= render "list_items/quick_add_form", list: @list, list_item: @list.list_items.build %>
+  <% end %>
 <% end %>
 <!-- Clear any flash messages since this was successful -->
 <%= turbo_stream.update "flash-messages" do %>

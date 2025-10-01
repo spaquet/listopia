@@ -227,7 +227,9 @@
   <% if current_user && can_access_list?(@list, current_user) %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <%= turbo_frame_tag "new_list_item" do %>
-        <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
+        <% if can_edit_list?(@list, current_user) %>
+          <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
+        <% end %>
       <% end %>
     </div>
   <% end %>
