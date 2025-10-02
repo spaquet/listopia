@@ -134,8 +134,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.text "description"
     t.integer "item_type", default: 0, null: false
     t.integer "priority", default: 1, null: false
-    t.boolean "completed", default: false
-    t.datetime "completed_at"
     t.integer "status", default: 0, null: false
     t.datetime "status_changed_at"
     t.datetime "due_date"
@@ -153,21 +151,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "board_column_id"
-    t.index ["assigned_user_id", "completed"], name: "index_list_items_on_assigned_user_id_and_completed"
+    t.index ["assigned_user_id", "status"], name: "index_list_items_on_assigned_user_id_and_status"
     t.index ["assigned_user_id"], name: "index_list_items_on_assigned_user_id"
     t.index ["board_column_id"], name: "index_list_items_on_board_column_id"
-    t.index ["completed"], name: "index_list_items_on_completed"
     t.index ["created_at"], name: "index_list_items_on_created_at"
-    t.index ["due_date", "completed"], name: "index_list_items_on_due_date_and_completed"
+    t.index ["due_date", "status"], name: "index_list_items_on_due_date_and_status"
     t.index ["due_date"], name: "index_list_items_on_due_date"
     t.index ["item_type"], name: "index_list_items_on_item_type"
-    t.index ["list_id", "completed"], name: "index_list_items_on_list_id_and_completed"
     t.index ["list_id", "position"], name: "index_list_items_on_list_id_and_position", unique: true
     t.index ["list_id", "priority"], name: "index_list_items_on_list_id_and_priority"
+    t.index ["list_id", "status"], name: "index_list_items_on_list_id_and_status"
     t.index ["list_id"], name: "index_list_items_on_list_id"
     t.index ["position"], name: "index_list_items_on_position"
     t.index ["priority"], name: "index_list_items_on_priority"
     t.index ["skip_notifications"], name: "index_list_items_on_skip_notifications"
+    t.index ["status"], name: "index_list_items_on_status"
   end
 
   create_table "lists", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
