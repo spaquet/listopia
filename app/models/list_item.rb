@@ -123,8 +123,9 @@ class ListItem < ApplicationRecord
     completed: 2 }, prefix: true
 
   # Scopes
-  scope :completed, -> { where(completed: true) }
-  scope :pending, -> { where(completed: false) }
+  scope :completed, -> { where(status: 2) }      # completed enum value
+  scope :pending, -> { where(status: 0) }        # pending enum value
+  scope :in_progress, -> { where(status: 1) }    # in_progress enum value
   scope :assigned_to, ->(user) { where(assigned_user: user) }
   scope :by_priority, -> { order(:priority) }
   scope :recent, -> { order(created_at: :desc) }
