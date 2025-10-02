@@ -151,7 +151,6 @@ export default class extends Controller {
     this.messageInputTarget.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
-  // New method to handle sending with specific text
   async sendMessageWithText(message) {
     if (!message || !this.hasMessagesContainerTarget) return
 

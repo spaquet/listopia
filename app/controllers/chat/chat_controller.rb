@@ -6,13 +6,13 @@ class Chat::ChatController < ApplicationController
 
   def create_message
     message_content = params[:message]
-    current_page = params[:current_page]
+    # current_page = params[:current_page]
     context = params[:context] || {}
 
     # Use the AI Agent service with moderation
     service = AiAgentMcpService.new(
       user: current_user,
-      context: build_chat_context.merge(context)
+      context: build_chat_context.merge(context.to_unsafe_h) # FIX 1: Convert ActionController::Parameters to hash
     )
 
     result = service.process_message(message_content)
@@ -25,15 +25,14 @@ class Chat::ChatController < ApplicationController
       end
     end
 
-    # CRITICAL FIX: Get BOTH messages from the result
-    # The service returns the chat which has both messages
+    # Get BOTH messages from the chat
     chat = service.chat
-    user_message = chat.messages.where(role: "user", content: message_content).order(created_at: :desc).first
+    user_message = chat.messages.where(role: "user", content: message_content)
+                       .order(created_at: :desc).first
     assistant_message = result[:message]
 
     respond_to do |format|
       format.turbo_stream do
-        # Render BOTH the user message and assistant response
         streams = []
 
         # Append user message first
@@ -59,7 +58,7 @@ class Chat::ChatController < ApplicationController
     Rails.logger.error "Chat controller error: #{e.message}"
     Rails.logger.error e.backtrace.join("\n")
 
-    error_message = if Rails.env.development?
+    error_text = if Rails.env.development?
       "Error: #{e.message}"
     else
       "I encountered an issue. Please try again."
@@ -69,10 +68,10 @@ class Chat::ChatController < ApplicationController
       format.turbo_stream do
         render turbo_stream: turbo_stream.append("chat-messages",
           partial: "chat/error_message",
-          locals: { error: error_message }
+          locals: { error_message: error_text } # FIX 2: Use error_message, not error
         )
       end
-      format.json { render json: { error: error_message }, status: :unprocessable_entity }
+      format.json { render json: { error: error_text }, status: :unprocessable_entity }
     end
   end
 
