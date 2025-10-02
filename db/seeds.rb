@@ -1,4 +1,4 @@
-# db/seeds.rb - Updated to use status enum instead of completed boolean
+# db/seeds.rb - Using status enum only (no completed boolean)
 
 # Clear existing data (optional - comment out if you want to keep existing data)
 puts "🧹 Cleaning existing data..."
@@ -116,9 +116,22 @@ alex_startup = alex.lists.create!(
 puts "✓ Created list: #{alex_startup.title}"
 
 # ============================================================================
-# LIST ITEMS - Using status enum (pending/in_progress/completed)
+# LIST ITEMS - Using status enum (pending/in_progress/completed) ONLY
 # ============================================================================
 puts "\n✅ Creating list items..."
+
+# Helper method to create items without triggering callbacks that might interfere
+def create_list_item_with_position(list, item_attrs, position)
+  # Skip notifications and callbacks during seeding
+  item_attrs_with_position = item_attrs.merge(
+    position: position,
+    skip_notifications: true
+  )
+
+  item = list.list_items.new(item_attrs_with_position)
+  item.save!(validate: false) # Skip validations to avoid callback issues
+  item
+end
 
 # Mike's work items
 mike_work_items = [
@@ -130,18 +143,14 @@ mike_work_items = [
   { title: "Customer feedback analysis", description: "Review Q3 surveys and NPS scores", item_type: "task", priority: "medium", status: "pending" }
 ]
 
-mike_work_items.each do |item_attrs|
-  item = mike_work.list_items.create!(item_attrs)
+mike_work_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(mike_work, item_attrs, index)
 
-  # Set status_changed_at and completed_at for completed items
+  # Set status_changed_at timestamp based on status
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..10).days.ago,
-      completed_at: rand(1..10).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..10).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..5).days.ago)
+    item.update_column(:status_changed_at, rand(1..5).days.ago)
   end
 end
 puts "✓ Created #{mike_work_items.count} items for #{mike_work.title}"
@@ -155,17 +164,13 @@ mike_personal_items = [
   { title: "Temporary kitchen setup", description: "Set up microwave and mini-fridge in garage", item_type: "home", priority: "low", status: "pending" }
 ]
 
-mike_personal_items.each do |item_attrs|
-  item = mike_personal.list_items.create!(item_attrs)
+mike_personal_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(mike_personal, item_attrs, index)
 
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..10).days.ago,
-      completed_at: rand(1..10).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..10).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..5).days.ago)
+    item.update_column(:status_changed_at, rand(1..5).days.ago)
   end
 end
 puts "✓ Created #{mike_personal_items.count} items for #{mike_personal.title}"
@@ -181,17 +186,13 @@ emma_travel_items = [
   { title: "Notify bank of travel dates", description: "Call to avoid card being blocked", item_type: "finance", priority: "high", status: "pending", due_date: 1.week.from_now }
 ]
 
-emma_travel_items.each do |item_attrs|
-  item = emma_travel.list_items.create!(item_attrs)
+emma_travel_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(emma_travel, item_attrs, index)
 
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..15).days.ago,
-      completed_at: rand(1..15).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..15).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..7).days.ago)
+    item.update_column(:status_changed_at, rand(1..7).days.ago)
   end
 end
 puts "✓ Created #{emma_travel_items.count} items for #{emma_travel.title}"
@@ -205,11 +206,11 @@ emma_blog_items = [
   { title: "Schedule social media posts", description: "Queue up content for next 2 weeks", item_type: "task", priority: "low", status: "pending" }
 ]
 
-emma_blog_items.each do |item_attrs|
-  item = emma_blog.list_items.create!(item_attrs)
+emma_blog_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(emma_blog, item_attrs, index)
 
   if item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..3).days.ago)
+    item.update_column(:status_changed_at, rand(1..3).days.ago)
   end
 end
 puts "✓ Created #{emma_blog_items.count} items for #{emma_blog.title}"
@@ -224,17 +225,13 @@ sarah_fitness_items = [
   { title: "Buy new running shoes", description: "Visit running store for gait analysis", item_type: "shopping", priority: "medium", status: "pending" }
 ]
 
-sarah_fitness_items.each do |item_attrs|
-  item = sarah_fitness.list_items.create!(item_attrs)
+sarah_fitness_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(sarah_fitness, item_attrs, index)
 
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..3).days.ago,
-      completed_at: rand(1..3).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..3).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: 1.day.ago)
+    item.update_column(:status_changed_at, 1.day.ago)
   end
 end
 puts "✓ Created #{sarah_fitness_items.count} items for #{sarah_fitness.title}"
@@ -249,17 +246,13 @@ sarah_learning_items = [
   { title: "Join Rails Discord community", description: "Get help and share knowledge", item_type: "social", priority: "low", status: "completed" }
 ]
 
-sarah_learning_items.each do |item_attrs|
-  item = sarah_learning.list_items.create!(item_attrs)
+sarah_learning_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(sarah_learning, item_attrs, index)
 
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..7).days.ago,
-      completed_at: rand(1..7).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..7).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..4).days.ago)
+    item.update_column(:status_changed_at, rand(1..4).days.ago)
   end
 end
 puts "✓ Created #{sarah_learning_items.count} items for #{sarah_learning.title}"
@@ -276,17 +269,13 @@ alex_startup_items = [
   { title: "Line up beta testers", description: "Recruit 50 users for feedback", item_type: "task", priority: "high", status: "pending", due_date: 1.week.from_now }
 ]
 
-alex_startup_items.each do |item_attrs|
-  item = alex_startup.list_items.create!(item_attrs)
+alex_startup_items.each_with_index do |item_attrs, index|
+  item = create_list_item_with_position(alex_startup, item_attrs, index)
 
   if item.status_completed?
-    item.update_columns(
-      status_changed_at: rand(1..14).days.ago,
-      completed_at: rand(1..14).days.ago,
-      completed: true
-    )
+    item.update_column(:status_changed_at, rand(1..14).days.ago)
   elsif item.status_in_progress?
-    item.update_columns(status_changed_at: rand(1..5).days.ago)
+    item.update_column(:status_changed_at, rand(1..5).days.ago)
   end
 end
 puts "✓ Created #{alex_startup_items.count} items for #{alex_startup.title}"
@@ -299,32 +288,28 @@ puts "\n🤝 Creating collaborations..."
 # Emma collaborates on Mike's work list
 mike_work.collaborators.create!(
   user: emma,
-  permission: "edit",
-  invited_by: mike
+  permission: "write"
 )
 puts "✓ Added Emma as collaborator on #{mike_work.title}"
 
 # Sarah collaborates on Mike's personal list
 mike_personal.collaborators.create!(
   user: sarah,
-  permission: "read",
-  invited_by: mike
+  permission: "read"
 )
 puts "✓ Added Sarah as collaborator on #{mike_personal.title}"
 
 # Mike collaborates on Emma's travel list
 emma_travel.collaborators.create!(
   user: mike,
-  permission: "edit",
-  invited_by: emma
+  permission: "write"
 )
 puts "✓ Added Mike as collaborator on #{emma_travel.title}"
 
 # Alex collaborates on Sarah's learning list
 sarah_learning.collaborators.create!(
   user: alex,
-  permission: "edit",
-  invited_by: sarah
+  permission: "write"
 )
 puts "✓ Added Alex as collaborator on #{sarah_learning.title}"
 
@@ -337,9 +322,9 @@ Invitation.create!(
   invitable: alex_startup,
   email: "investor@venture.com",
   invited_by: alex,
-  permission: "read",
-  status: "pending",
-  token: SecureRandom.urlsafe_base64(32)
+  permission: "read"
+  # invitation_token will be auto-generated by before_create callback
+  # user_id is nil, making this a pending invitation
 )
 puts "✓ Created invitation for investor@venture.com to #{alex_startup.title}"
 
@@ -347,9 +332,9 @@ Invitation.create!(
   invitable: emma_blog,
   email: "editor@techblog.com",
   invited_by: emma,
-  permission: "edit",
-  status: "pending",
-  token: SecureRandom.urlsafe_base64(32)
+  permission: "write"
+  # invitation_token will be auto-generated by before_create callback
+  # user_id is nil, making this a pending invitation
 )
 puts "✓ Created invitation for editor@techblog.com to #{emma_blog.title}"
 
@@ -366,11 +351,11 @@ puts "  - Professional lists: #{List.where(list_type: 'professional').count}"
 puts "  - Personal lists: #{List.where(list_type: 'personal').count}"
 puts "  - Public lists: #{List.where(is_public: true).count}"
 puts "List items created: #{ListItem.count}"
-puts "  - Completed items: #{ListItem.where(status: :completed).count}"
-puts "  - In Progress items: #{ListItem.where(status: :in_progress).count}"
-puts "  - Pending items: #{ListItem.where(status: :pending).count}"
+puts "  - Completed items: #{ListItem.status_completed.count}"
+puts "  - In Progress items: #{ListItem.status_in_progress.count}"
+puts "  - Pending items: #{ListItem.status_pending.count}"
 puts "Collaborations: #{Collaborator.count}"
-puts "Pending invitations: #{Invitation.where(status: 'pending').count}"
+puts "Pending invitations: #{Invitation.pending.count}"
 puts "\n👥 USER ACCESS:"
 puts "• Mike (mike@listopia.com): 2 lists + collaborator on 2 others"
 puts "• Emma (emma@listopia.com): 2 lists (1 public) + 1 collaboration"
@@ -378,4 +363,4 @@ puts "• Sarah (sarah@listopia.com): 2 lists + collaborator on 1 other"
 puts "• Alex (alex@listopia.com): 1 list"
 puts "\n🔐 All user passwords: password123"
 puts "🌐 Public list: #{emma_travel.title}"
-puts "\n✨ Ready to explore Listopia with status-based completion tracking!"
+puts "\n✨ Ready to explore Listopia with status-based tracking!"

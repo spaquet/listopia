@@ -191,23 +191,4 @@ module ApplicationHelper
       stats: calculate_dashboard_stats_for_user(user)
     }
   end
-
-  # Calculate statistics for dashboard display
-  def calculate_dashboard_stats_for_user(user)
-    # Get the accessible lists as actual records, not grouped results
-    accessible_lists_ids = user.accessible_lists.pluck(:id)
-
-    # Use the IDs to build proper queries
-    accessible_lists = List.where(id: accessible_lists_ids)
-
-    {
-      total_lists: accessible_lists.count,
-      active_lists: accessible_lists.status_active.count,
-      completed_lists: accessible_lists.status_completed.count,
-      total_items: ListItem.joins(:list).where(list_id: accessible_lists_ids).count,
-      completed_items: ListItem.joins(:list).where(list_id: accessible_lists_ids, completed: true).count,
-      overdue_items: ListItem.joins(:list).where(list_id: accessible_lists_ids)
-                            .where("due_date < ? AND completed = false", Time.current).count
-    }
-  end
 end

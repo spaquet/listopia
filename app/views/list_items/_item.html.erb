@@ -7,13 +7,13 @@
     <!-- Completion Checkbox -->
     <% if user && can_access_list?(item.list, user, :edit) %>
       <% checkbox_classes = "flex-shrink-0 w-5 h-5 border-2 rounded hover:border-blue-500 transition-colors duration-200 cursor-pointer" %>
-      <% checkbox_classes += item.completed? ? " bg-blue-500 border-blue-500" : " border-gray-300 bg-transparent" %>
+      <% checkbox_classes += item.status_completed? ? " bg-blue-500 border-blue-500" : " border-gray-300 bg-transparent" %>
       <%= button_to toggle_completion_list_list_item_path(item.list, item),
                     method: :patch,
                     data: { turbo_stream: true },
                     form: { class: "mt-1" },
                     class: checkbox_classes do %>
-        <% if item.completed? %>
+        <% if item.status_completed? %>
           <svg class="w-3 h-3 text-white m-auto" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
           </svg>
@@ -22,9 +22,9 @@
     <% else %>
       <!-- Read-only checkbox for users without edit permissions -->
       <% readonly_classes = "flex-shrink-0 w-5 h-5 border-2 rounded mt-1" %>
-      <% readonly_classes += item.completed? ? " bg-blue-500 border-blue-500" : " border-gray-300" %>
+      <% readonly_classes += item.status_completed? ? " bg-blue-500 border-blue-500" : " border-gray-300" %>
       <div class="<%= readonly_classes %>">
-        <% if item.completed? %>
+        <% if item.status_completed? %>
           <svg class="w-3 h-3 text-white m-auto" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
           </svg>

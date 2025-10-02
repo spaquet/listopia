@@ -52,48 +52,37 @@
 #  fk_rails_...  (board_column_id => board_columns.id)
 #  fk_rails_...  (list_id => lists.id)
 #
+# app/models/list_item.rb
 class ListItem < ApplicationRecord
-  # Track changes for notifications
-  attribute :previous_title_value
-  attribute :skip_notifications, :boolean, default: false
+  include Turbo::Broadcastable
+
+  attr_accessor :skip_notifications, :previous_title_value
 
   # Associations
-  belongs_to :list, counter_cache: true
+  belongs_to :list
   belongs_to :assigned_user, class_name: "User", optional: true
+  belongs_to :board_column, optional: true
 
   has_many :time_entries, dependent: :destroy
-  has_many :collaborators, as: :collaboratable, dependent: :destroy
-  has_many :collaborator_users, through: :collaborators, source: :user
-  has_many :invitations, as: :invitable, dependent: :destroy
-  has_many :comments, as: :commentable, dependent: :destroy
-  belongs_to :board_column, optional: true
-  has_many :parent_relationships, as: :parent, class_name: "Relationship", dependent: :destroy
-  has_many :child_relationships, as: :child, class_name: "Relationship", dependent: :destroy
-  has_many :children, through: :parent_relationships, source: :child, source_type: [ "ListItem", "List" ]
-  has_many :parents, through: :child_relationships, source: :parent, source_type: [ "ListItem", "List" ]
-  has_many :dependencies, -> { where(relationship_type: :dependency_finish_to_start) }, as: :child, class_name: "Relationship", dependent: :destroy
-  has_many :dependents, -> { where(relationship_type: :dependency_finish_to_start) }, as: :parent, class_name: "Relationship", dependent: :destroy
-
 
   # Validations
   validates :title, presence: true, length: { maximum: 255 }
-  validates :description, length: { maximum: 1000 }
   validates :item_type, presence: true
   validates :priority, presence: true
+  validates :status, presence: true
+  validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
   # Enums
   enum :item_type, {
-    # Core Planning Types
-    task: 0,          # Basic actionable item ✓
-    goal: 1,          # Objectives and targets 🎯
-    milestone: 2,     # Key deadlines and achievements 🏆
-    action_item: 3,   # Specific next actions ⚡
-    waiting_for: 4,   # Blocked items awaiting others ⏳
-    reminder: 5,      # Time-based notifications ⏰
-
-    # Knowledge & Ideas
-    idea: 6,          # Brainstorming and concepts 💡
-    note: 7,          # Information and documentation 📝
+    # Work & Projects
+    task: 0,          # General to-do items ✓
+    milestone: 1,     # Key achievements 🎯
+    feature: 2,       # Product features 🚀
+    bug: 3,           # Issues to fix 🐛
+    decision: 4,      # Choices to make 🤔
+    meeting: 5,       # Scheduled meetings 📅
+    reminder: 6,      # Time-based alerts ⏰
+    note: 7,          # Information capture 📝
     reference: 8,     # Links and resources 🔗
 
     # Personal Life Management
@@ -118,20 +107,20 @@ class ListItem < ApplicationRecord
   enum :status, {
     pending: 0,
     in_progress: 1,
-    completed: 2 }, prefix: true
+    completed: 2
+  }, prefix: true
 
   # Scopes
-  scope :completed, -> { where(status: 2) }      # completed enum value
-  scope :pending, -> { where(status: 0) }        # pending enum value
-  scope :in_progress, -> { where(status: 1) }    # in_progress enum value
+  scope :completed, -> { where(status: :completed) }
+  scope :pending, -> { where(status: :pending) }
+  scope :in_progress, -> { where(status: :in_progress) }
   scope :assigned_to, ->(user) { where(assigned_user: user) }
-  scope :by_priority, -> { order(:priority) }
+  scope :by_priority, -> { order(priority: :desc) }
   scope :recent, -> { order(created_at: :desc) }
 
   # Callbacks - Use after_commit to avoid issues during transactions
   before_destroy :notify_item_destroyed
-  before_save :set_completed_at
-  before_update :track_title_change
+  before_save :track_status_change, :track_title_change
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
   after_create :assign_default_board_column
@@ -139,19 +128,14 @@ class ListItem < ApplicationRecord
   # Methods
 
   # Toggle completion status
-  def toggle_completion!
-    update!(completed: !completed)
-  end
-
-  # Toggle completion with optional notification skipping
   def toggle_completion!(skip_notifications: false)
     self.skip_notifications = skip_notifications
-    update!(completed: !completed)
+    new_status = status_completed? ? :pending : :completed
+    update!(status: new_status, status_changed_at: Time.current)
   end
 
-  # Check if item is overdue (if due_date is set)
   def overdue?
-    due_date.present? && due_date < Time.current && !completed?
+    due_date.present? && due_date < Time.current && !status_completed?
   end
 
   # Check if user can edit this item
@@ -163,10 +147,11 @@ class ListItem < ApplicationRecord
 
   private
 
-  # Set completed_at timestamp when item is marked as completed
-  def set_completed_at
-    if completed_changed?
-      self.completed_at = completed? ? Time.current : nil
+  # Track status changes for notifications
+  def track_status_change
+    if status_changed?
+      @previous_status_value = status_was
+      self.status_changed_at = Time.current
     end
   end
 
@@ -187,11 +172,22 @@ class ListItem < ApplicationRecord
   def notify_item_updated
     return if skip_notifications || !Current.user
 
-    if saved_change_to_completed?
-      action = completed? ? "completed" : "uncompleted"
+    if @previous_status_value && @previous_status_value != status
+      # Notify about status changes
+      action = case status
+      when "completed"
+                 "completed"
+      when "in_progress"
+                 "started"
+      when "pending"
+                 "reopened"
+      else
+                 "updated"
+      end
+
       NotificationService.new(Current.user)
                         .notify_item_activity(self, action, previous_title_value)
-    elsif saved_changes.except("updated_at", "completed_at").any?
+    elsif saved_changes.except("updated_at", "status_changed_at").any?
       NotificationService.new(Current.user)
                         .notify_item_activity(self, "updated", previous_title_value)
     end
@@ -211,6 +207,9 @@ class ListItem < ApplicationRecord
 
   # Assign default board column after creation
   def assign_default_board_column
-    update(board_column: list.board_columns.find_by(name: "To Do"))
+    return if board_column.present?
+
+    default_column = list.board_columns.find_by(name: "To Do")
+    update_column(:board_column_id, default_column&.id) if default_column
   end
 end

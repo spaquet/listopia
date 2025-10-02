@@ -143,7 +143,7 @@ class ApplicationController < ActionController::Base
         list_id: @list.id,
         list_title: @list.title,
         items_count: @list.list_items.count,
-        completed_count: @list.list_items.where(completed: true).count,
+        completed_count: @list.list_items.where(status: :completed).count,
         is_owner: @list.user_id == current_user&.id,
         can_collaborate: @list.user_id == current_user&.id || @list.can_collaborate?(current_user)
       )

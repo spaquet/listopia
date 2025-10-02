@@ -105,13 +105,18 @@ FactoryBot.define do
 
     # Traits for completion status
     trait :completed do
-      completed { true }
-      completed_at { 1.hour.ago }
+      status { :completed }
+      status_changed_at { 1.hour.ago }
     end
 
     trait :pending do
-      completed { false }
-      completed_at { nil }
+      status { :pending }
+      status_changed_at { nil }
+    end
+
+    trait :in_progress do
+      status { :in_progress }
+      status_changed_at { 1.hour.ago }
     end
 
     # Traits for due dates

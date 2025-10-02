@@ -8,7 +8,7 @@
       <% items.each do |item| %>
         <div class="flex items-start space-x-3">
           <div class="flex-shrink-0">
-            <% if item.completed? %>
+            <% if item.status_completed? %>
               <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
             <% else %>
               <div class="w-2 h-2 bg-gray-300 rounded-full mt-2"></div>

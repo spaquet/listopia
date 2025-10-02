@@ -183,8 +183,8 @@ class List < ApplicationRecord
     total_items = total_items_count
     return 0 if total_items.zero?
 
-    completed_items = list_items.completed.count
-    sub_lists.each { |sub_list| completed_items += sub_list.list_items.completed.count }
+    completed_items = list_items.status_completed.count
+    sub_lists.each { |sub_list| completed_items += sub_list.list_items.status_completed.count }
 
     ((completed_items.to_f / total_items) * 100).round
   end
