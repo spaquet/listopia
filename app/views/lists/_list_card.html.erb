@@ -26,8 +26,9 @@
     <!-- Parent list indicator -->
     <% if list.parent_list.present? %>
       <%= link_to list_path(list.parent_list), 
-                  class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors",
-                  title: "Part of: #{list.parent_list.title}" do %>
+            data: { turbo: false },
+            class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors",
+            title: "Part of: #{list.parent_list.title}" do %>
         ↳ <%= list.parent_list.title.truncate(15) %>
       <% end %>
     <% end %>
