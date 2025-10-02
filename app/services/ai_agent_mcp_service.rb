@@ -27,7 +27,6 @@ class AiAgentMcpService
     if moderation_result[:blocked]
       log_debug "MODERATION: Content blocked - #{moderation_result[:categories].join(', ')}"
 
-      # Save assistant's moderation response
       assistant_message = @chat.messages.create!(
         role: "assistant",
         content: moderation_result[:message],
@@ -35,9 +34,10 @@ class AiAgentMcpService
       )
 
       return {
-        message: assistant_message,  # Return Message object
+        message: assistant_message,
         lists_created: [],
-        items_created: []
+        items_created: [],
+        message_type: "error"  # NEW: specify message type
       }
     end
     log_debug "MODERATION: Content passed"
@@ -55,10 +55,18 @@ class AiAgentMcpService
       user: nil
     )
 
+    # NEW: Determine message type based on results
+    message_type = if result[:lists_created].any? || result[:items_created].any?
+      "success"
+    else
+      "regular"
+    end
+
     {
-      message: assistant_message,  # Return Message object instead of string
+      message: assistant_message,
       lists_created: result[:lists_created],
-      items_created: result[:items_created]
+      items_created: result[:items_created],
+      message_type: message_type  # NEW: include message type
     }
 
   rescue => e
@@ -67,7 +75,6 @@ class AiAgentMcpService
 
     error_text = "I encountered an error processing your request. Please try again."
 
-    # Save error message
     error_message = @chat.messages.create!(
       role: "assistant",
       content: error_text,
@@ -78,9 +85,83 @@ class AiAgentMcpService
       message: error_message,
       lists_created: [],
       items_created: [],
-      error: e.message
+      error: e.message,
+      message_type: "error"  # NEW: specify error type
     }
   end
+
+  # def process_message(message_content)
+  #   @current_message = message_content
+  #   log_debug "=" * 80
+  #   log_debug "NEW MESSAGE: #{message_content}"
+  #   log_debug "=" * 80
+
+  #   # SAVE USER MESSAGE to database
+  #   @chat.messages.create!(
+  #     role: "user",
+  #     content: message_content,
+  #     user: @user
+  #   )
+
+  #   # STEP 1: Content moderation
+  #   moderation_result = moderate_content(message_content)
+  #   if moderation_result[:blocked]
+  #     log_debug "MODERATION: Content blocked - #{moderation_result[:categories].join(', ')}"
+
+  #     # Save assistant's moderation response
+  #     assistant_message = @chat.messages.create!(
+  #       role: "assistant",
+  #       content: moderation_result[:message],
+  #       user: nil
+  #     )
+
+  #     return {
+  #       message: assistant_message,  # Return Message object
+  #       lists_created: [],
+  #       items_created: []
+  #     }
+  #   end
+  #   log_debug "MODERATION: Content passed"
+
+  #   # Execute multi-step AI workflow
+  #   result = execute_multi_step_workflow
+
+  #   # Build assistant response text
+  #   assistant_text = build_assistant_response(result)
+
+  #   # SAVE ASSISTANT MESSAGE to database
+  #   assistant_message = @chat.messages.create!(
+  #     role: "assistant",
+  #     content: assistant_text,
+  #     user: nil
+  #   )
+
+  #   {
+  #     message: assistant_message,  # Return Message object instead of string
+  #     lists_created: result[:lists_created],
+  #     items_created: result[:items_created]
+  #   }
+
+  # rescue => e
+  #   Rails.logger.error "AI Agent error: #{e.message}"
+  #   Rails.logger.error e.backtrace.join("\n")
+
+  #   error_text = "I encountered an error processing your request. Please try again."
+
+  #   # Save error message
+  #   error_message = @chat.messages.create!(
+  #     role: "assistant",
+  #     content: error_text,
+  #     user: nil
+  #   )
+
+  #   {
+  #     message: error_message,
+  #     lists_created: [],
+  #     items_created: [],
+  #     error: e.message
+  #   }
+  # end
 
   private
 

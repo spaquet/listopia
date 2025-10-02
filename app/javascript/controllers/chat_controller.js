@@ -156,7 +156,6 @@ export default class extends Controller {
     if (!message || !this.hasMessagesContainerTarget) return
 
     this.setInputState(false)
-    this.addUserMessage(message)
     this.showTypingIndicator()
 
     try {
@@ -246,50 +245,71 @@ export default class extends Controller {
     this.scrollToBottom();
   }
 
+  addSuccessMessage(message) {
+    if (!this.hasMessagesContainerTarget) {
+      console.warn("Cannot add success message: messagesContainer target missing");
+      return;
+    }
+    const messageElement = this.createMessageElement(message, 'success');
+    this.messagesContainerTarget.appendChild(messageElement);
+    this.scrollToBottom();
+  }
+
   createMessageElement(message, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex items-start space-x-3 mb-4';
     
     const isUser = type === 'user';
     const isError = type === 'error';
+    const isSuccess = type === 'success';  // NEW
     
     if (isUser) {
       messageDiv.classList.add('justify-end');
     }
 
     const avatarDiv = document.createElement('div');
-    avatarDiv.className = `flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isUser ? 'order-2' : ''}`;
-    
-    if (isUser) {
-      avatarDiv.className += ' bg-blue-600';
+    // Updated to handle success type
+    avatarDiv.className = `flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+      isUser ? 'bg-blue-600' : 
+      isError ? 'bg-red-500' : 
+      isSuccess ? 'bg-green-500' :  // NEW
+      'bg-gray-400'
+    }`;
+
+    // Icon for success
+    if (isSuccess) {
       avatarDiv.innerHTML = `
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       `;
+    } else if (isUser) {
+      // existing user icon
+      avatarDiv.innerHTML = `...`;
     } else if (isError) {
-      avatarDiv.className += ' bg-red-500';
-      avatarDiv.innerHTML = `
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-        </svg>
-      `;
+      // existing error icon
+      avatarDiv.innerHTML = `...`;
     } else {
-      avatarDiv.className += ' bg-gradient-to-r from-purple-500 to-pink-500';
-      avatarDiv.innerHTML = `
-        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-        </svg>
-      `;
+      // existing AI icon
+      avatarDiv.innerHTML = `...`;
     }
 
     const messageContentDiv = document.createElement('div');
-    messageContentDiv.className = `rounded-lg px-4 py-2.5 max-w-[75%] shadow-sm ${isUser ? 
-      'bg-blue-600 text-white order-1' : 
-      isError ? 'bg-red-100 border border-red-200' : 'bg-gray-50 border'}`;
+    messageContentDiv.className = `rounded-lg px-4 py-2 max-w-[80%] ${
+      isUser ? 'bg-blue-600 text-white order-1' : 
+      isError ? 'bg-red-100 border border-red-200 text-red-700' : 
+      isSuccess ? 'bg-green-50 border border-green-200 text-green-900' :  // NEW
+      'bg-gray-50 border text-gray-700'
+    }`;
 
     const messageText = document.createElement('p');
-    messageText.className = `text-sm leading-relaxed ${isUser ? 'text-white' : isError ? 'text-red-700' : 'text-gray-700'}`;
+    messageText.className = `text-sm leading-relaxed ${
+      isUser ? 'text-white' : 
+      isError ? 'text-red-700' : 
+      isSuccess ? 'text-green-900' :  // NEW
+      'text-gray-700'
+    }`;
     messageText.textContent = message;
 
     messageContentDiv.appendChild(messageText);
