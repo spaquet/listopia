@@ -519,7 +519,7 @@ class AiAgentMcpService
       item = list.list_items.create!(
         title: item_data["title"],
         description: item_data["description"],
-        completed: false,
+        status: :pending,
         priority: item_data["priority"] || "medium",
         item_type: "task",
         position: index
@@ -556,7 +556,7 @@ class AiAgentMcpService
       item = main_list.list_items.create!(
         title: item_data["title"],
         description: item_data["description"],
-        completed: false,
+        status: :pending,
         priority: item_data["priority"] || "medium",
         item_type: "task",
         position: index
@@ -580,7 +580,7 @@ class AiAgentMcpService
         item = sublist.list_items.create!(
           title: item_data["title"],
           description: item_data["description"],
-          completed: false,
+          status: :pending,
           priority: item_data["priority"] || "medium",
           item_type: "task",
           position: idx

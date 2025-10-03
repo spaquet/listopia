@@ -59,7 +59,7 @@ class ListItem < ApplicationRecord
   attr_accessor :skip_notifications, :previous_title_value
 
   # Associations
-  belongs_to :list
+  belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true
   belongs_to :board_column, optional: true
 
