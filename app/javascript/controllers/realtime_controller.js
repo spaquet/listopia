@@ -127,28 +127,54 @@ export default class extends Controller {
   }
 
   showNotification(message) {
+    // Create elements programmatically to avoid XSS
     const notification = document.createElement('div')
     notification.className = 'fixed top-20 right-4 z-50 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg shadow-md max-w-md'
-    notification.innerHTML = `
-      <div class="flex items-center space-x-3">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-        </svg>
-        <span class="flex-1">${message}</span>
-        <button onclick="this.parentElement.parentElement.remove()" 
-                class="text-current hover:opacity-70">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-          </svg>
-        </button>
-      </div>
-    `
     
+    // Create container
+    const container = document.createElement('div')
+    container.className = 'flex items-center space-x-3'
+    
+    // Create and add info icon
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    icon.setAttribute('class', 'w-5 h-5')
+    icon.setAttribute('fill', 'currentColor')
+    icon.setAttribute('viewBox', '0 0 20 20')
+    icon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>'
+    
+    // Create message span with text content (NOT innerHTML)
+    const messageSpan = document.createElement('span')
+    messageSpan.className = 'flex-1'
+    messageSpan.textContent = message // SAFE: Uses textContent instead of innerHTML
+    
+    // Create close button
+    const closeButton = document.createElement('button')
+    closeButton.className = 'text-current hover:opacity-70'
+    closeButton.setAttribute('aria-label', 'Close notification')
+    closeButton.addEventListener('click', () => notification.remove())
+    
+    const closeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    closeIcon.setAttribute('class', 'w-4 h-4')
+    closeIcon.setAttribute('fill', 'currentColor')
+    closeIcon.setAttribute('viewBox', '0 0 20 20')
+    closeIcon.innerHTML = '<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>'
+    
+    closeButton.appendChild(closeIcon)
+    
+    // Assemble the notification
+    container.appendChild(icon)
+    container.appendChild(messageSpan)
+    container.appendChild(closeButton)
+    notification.appendChild(container)
+    
+    // Add to document
     document.body.appendChild(notification)
     
     // Auto-remove after 5 seconds
     setTimeout(() => {
-      notification.remove()
+      notification.style.transition = 'opacity 0.3s'
+      notification.style.opacity = '0'
+      setTimeout(() => notification.remove(), 300)
     }, 5000)
   }
 }
