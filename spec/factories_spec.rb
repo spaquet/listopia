@@ -71,7 +71,7 @@ RSpec.describe "FactoryBot factories" do
       it "creates completed items with timestamps" do
         item = create(:list_item, :completed)
         expect(item.completed?).to be true
-        expect(item.completed_at).to be_present
+        expect(item.status_changed_at).to be_present
       end
 
       it "creates overdue items" do

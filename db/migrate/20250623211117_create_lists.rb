@@ -43,5 +43,9 @@ class CreateLists < ActiveRecord::Migration[8.0]
     add_index :lists, [ :user_id, :status ], name: "index_lists_on_user_status"
     add_index :lists, [ :user_id, :list_type ], name: "index_lists_on_user_list_type"
     add_index :lists, [ :user_id, :parent_list_id ], name: "index_lists_on_user_parent"
+
+    # Indexes for list queries
+    add_index :lists, [ :user_id, :status ]
+    add_index :lists, [ :user_id, :created_at ]
   end
 end

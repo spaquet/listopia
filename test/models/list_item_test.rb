@@ -3,8 +3,6 @@
 # Table name: list_items
 #
 #  id                  :uuid             not null, primary key
-#  completed           :boolean          default(FALSE)
-#  completed_at        :datetime
 #  description         :text
 #  due_date            :datetime
 #  duration_days       :integer          default(0), not null
@@ -18,6 +16,8 @@
 #  reminder_at         :datetime
 #  skip_notifications  :boolean          default(FALSE), not null
 #  start_date          :datetime         not null
+#  status              :integer          default("pending"), not null
+#  status_changed_at   :datetime
 #  title               :string           not null
 #  total_tracked_time  :decimal(10, 2)   default(0.0), not null
 #  url                 :string
@@ -29,21 +29,21 @@
 #
 # Indexes
 #
-#  index_list_items_on_assigned_user_id                (assigned_user_id)
-#  index_list_items_on_assigned_user_id_and_completed  (assigned_user_id,completed)
-#  index_list_items_on_board_column_id                 (board_column_id)
-#  index_list_items_on_completed                       (completed)
-#  index_list_items_on_created_at                      (created_at)
-#  index_list_items_on_due_date                        (due_date)
-#  index_list_items_on_due_date_and_completed          (due_date,completed)
-#  index_list_items_on_item_type                       (item_type)
-#  index_list_items_on_list_id                         (list_id)
-#  index_list_items_on_list_id_and_completed           (list_id,completed)
-#  index_list_items_on_list_id_and_position            (list_id,position) UNIQUE
-#  index_list_items_on_list_id_and_priority            (list_id,priority)
-#  index_list_items_on_position                        (position)
-#  index_list_items_on_priority                        (priority)
-#  index_list_items_on_skip_notifications              (skip_notifications)
+#  index_list_items_on_assigned_user_id             (assigned_user_id)
+#  index_list_items_on_assigned_user_id_and_status  (assigned_user_id,status)
+#  index_list_items_on_board_column_id              (board_column_id)
+#  index_list_items_on_created_at                   (created_at)
+#  index_list_items_on_due_date                     (due_date)
+#  index_list_items_on_due_date_and_status          (due_date,status)
+#  index_list_items_on_item_type                    (item_type)
+#  index_list_items_on_list_id                      (list_id)
+#  index_list_items_on_list_id_and_position         (list_id,position) UNIQUE
+#  index_list_items_on_list_id_and_priority         (list_id,priority)
+#  index_list_items_on_list_id_and_status           (list_id,status)
+#  index_list_items_on_position                     (position)
+#  index_list_items_on_priority                     (priority)
+#  index_list_items_on_skip_notifications           (skip_notifications)
+#  index_list_items_on_status                       (status)
 #
 # Foreign Keys
 #

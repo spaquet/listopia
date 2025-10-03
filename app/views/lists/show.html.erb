@@ -171,7 +171,7 @@
                     <div class="flex items-center space-x-3">
                       <span><%= sub_list.list_items_count %> items</span>
                       <% if sub_list.list_items_count > 0 %>
-                        <span><%= ((sub_list.list_items.completed.count.to_f / sub_list.list_items_count) * 100).round %>% complete</span>
+                        <span><%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>% complete</span>
                       <% end %>
                     </div>
                     <!-- Status Badge -->
@@ -193,7 +193,7 @@
                   <% if sub_list.list_items_count > 0 %>
                     <div class="w-full bg-gray-200 rounded-full h-1.5">
                       <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                           style="width: <%= ((sub_list.list_items.completed.count.to_f / sub_list.list_items_count) * 100).round %>%"></div>
+                           style="width: <%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>%"></div>
                     </div>
                   <% end %>
                 <% end %>
@@ -227,7 +227,9 @@
   <% if current_user && can_access_list?(@list, current_user) %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <%= turbo_frame_tag "new_list_item" do %>
-        <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
+        <% if can_edit_list?(@list, current_user) %>
+          <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
+        <% end %>
       <% end %>
     </div>
   <% end %>

@@ -1,4 +1,51 @@
 # app/models/list.rb
+# == Schema Information
+#
+# Table name: lists
+#
+#  id                        :uuid             not null, primary key
+#  color_theme               :string           default("blue")
+#  description               :text
+#  is_public                 :boolean          default(FALSE), not null
+#  list_collaborations_count :integer          default(0), not null
+#  list_items_count          :integer          default(0), not null
+#  list_type                 :integer          default("personal"), not null
+#  metadata                  :json
+#  public_permission         :integer          default("public_read"), not null
+#  public_slug               :string
+#  status                    :integer          default("draft"), not null
+#  title                     :string           not null
+#  created_at                :datetime         not null
+#  updated_at                :datetime         not null
+#  parent_list_id            :uuid
+#  user_id                   :uuid             not null
+#
+# Indexes
+#
+#  index_lists_on_created_at                     (created_at)
+#  index_lists_on_is_public                      (is_public)
+#  index_lists_on_list_collaborations_count      (list_collaborations_count)
+#  index_lists_on_list_items_count               (list_items_count)
+#  index_lists_on_list_type                      (list_type)
+#  index_lists_on_parent_list_id                 (parent_list_id)
+#  index_lists_on_parent_list_id_and_created_at  (parent_list_id,created_at)
+#  index_lists_on_public_permission              (public_permission)
+#  index_lists_on_public_slug                    (public_slug) UNIQUE
+#  index_lists_on_status                         (status)
+#  index_lists_on_user_id                        (user_id)
+#  index_lists_on_user_id_and_created_at         (user_id,created_at)
+#  index_lists_on_user_id_and_status             (user_id,status)
+#  index_lists_on_user_is_public                 (user_id,is_public)
+#  index_lists_on_user_list_type                 (user_id,list_type)
+#  index_lists_on_user_parent                    (user_id,parent_list_id)
+#  index_lists_on_user_status                    (user_id,status)
+#  index_lists_on_user_status_list_type          (user_id,status,list_type)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (parent_list_id => lists.id)
+#  fk_rails_...  (user_id => users.id)
+#
 class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
@@ -7,8 +54,6 @@ class List < ApplicationRecord
   before_update :track_status_change
   after_update :notify_status_change
   after_create :create_default_board_columns
-  after_create :track_creation_context
-  after_update :track_update_context, if: :saved_changes?
 
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
@@ -138,8 +183,8 @@ class List < ApplicationRecord
     total_items = total_items_count
     return 0 if total_items.zero?
 
-    completed_items = list_items.completed.count
-    sub_lists.each { |sub_list| completed_items += sub_list.list_items.completed.count }
+    completed_items = list_items.status_completed.count
+    sub_lists.each { |sub_list| completed_items += sub_list.list_items.status_completed.count }
 
     ((completed_items.to_f / total_items) * 100).round
   end
@@ -206,37 +251,6 @@ class List < ApplicationRecord
 
     default_columns.each do |column_attrs|
       board_columns.create!(column_attrs)
-    end
-  end
-
-  def track_creation_context
-    if Current.user
-      ConversationContext.track_action(
-        user: Current.user,
-        action: "list_created",
-        entity: self,
-        metadata: {
-          list_type: list_type,
-          auto_tracked: true
-        }
-      )
-    end
-  end
-
-  def track_update_context
-    if Current.user
-      changes_summary = saved_changes.keys.reject { |k| k == "updated_at" }
-      return if changes_summary.empty?
-
-      ConversationContext.track_action(
-        user: Current.user,
-        action: "list_updated",
-        entity: self,
-        metadata: {
-          changed_fields: changes_summary,
-          auto_tracked: true
-        }
-      )
     end
   end
 end

@@ -95,7 +95,8 @@ class Chat < ApplicationRecord
 
   # Get latest messages for chat history loading with performance optimization
   def latest_messages_with_includes(limit = 50)
-    messages.includes(:user, :tool_calls)
+    messages.displayable
+            .includes(:user, :tool_calls)
             .order(created_at: :desc)
             .limit(limit)
             .reverse

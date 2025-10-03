@@ -74,6 +74,7 @@ class Message < ApplicationRecord
     tool_result: "tool_result"
   }, prefix: true
 
+  scope :displayable, -> { conversation.where.not(content: [ nil, "" ]) }
   scope :conversation, -> { where(role: [ "user", "assistant" ]) }
   scope :recent, -> { order(created_at: :desc) }
   scope :for_chat, ->(chat) { where(chat: chat) }

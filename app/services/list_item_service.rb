@@ -86,7 +86,7 @@ class ListItemService
       return ApplicationService::Result.failure(errors: "You don't have permission to modify items in this list")
     end
 
-    if item.update(completed: true, completed_at: Time.current)
+    if item.update(completed: true, status_changed_at: Time.current)
       @list.reload
       broadcast_item_completion(item)
       ApplicationService::Result.success(data: item)
@@ -168,7 +168,7 @@ class ListItemService
         item = find_item(item_id)
         next unless item
 
-        if item.update(completed: true, completed_at: Time.current)
+        if item.update(completed: true, status_changed_at: Time.current)
           completed_items << item
         end
       end

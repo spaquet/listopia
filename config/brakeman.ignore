@@ -1,25 +1,25 @@
 {
   "ignored_warnings": [
     {
-      "warning_type": "Mass Assignment",
-      "warning_code": 70,
-      "fingerprint": "58d91f0ea34bc5cb5fbc1eeab2d78e7086c42be50f67ae719e4c63d2a8ee2a1b",
-      "check_name": "MassAssignment",
-      "message": "Specify exact keys allowed for mass assignment instead of using `permit!` which allows any keys",
-      "file": "app/controllers/chat/chat_controller.rb",
-      "line": 59,
-      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
-      "code": "params.fetch(:context, {}).permit!",
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "322a18faacf7dc746ae5f6ac3352735206ae00ad388f65a8e9f5649064775fed",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/controllers/list_items_controller.rb",
+      "line": 162,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "List.find(params[:list_id]).list_items.where(:id => ((params[:item_ids] or []))).update_all((params[:updates] or {}).permit(:status, :priority, :assigned_user_id))",
       "render_path": null,
       "location": {
         "type": "method",
-        "class": "Chat::ChatController",
-        "method": "build_chat_context"
+        "class": "ListItemsController",
+        "method": "bulk_update"
       },
-      "user_input": null,
-      "confidence": "Medium",
+      "user_input": "params[:updates]",
+      "confidence": "High",
       "cwe_id": [
-        915
+        89
       ],
       "note": ""
     }

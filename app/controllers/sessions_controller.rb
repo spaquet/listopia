@@ -5,6 +5,11 @@ class SessionsController < ApplicationController
   # Show login form
   def new
     @user = User.new
+
+    respond_to do |format|
+      format.html
+      format.json { render json: { error: "Authentication required" }, status: :unauthorized }
+    end
   end
 
   # Handle login

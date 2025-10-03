@@ -26,8 +26,9 @@
     <!-- Parent list indicator -->
     <% if list.parent_list.present? %>
       <%= link_to list_path(list.parent_list), 
-                  class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors",
-                  title: "Part of: #{list.parent_list.title}" do %>
+            data: { turbo: false },
+            class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors",
+            title: "Part of: #{list.parent_list.title}" do %>
         ↳ <%= list.parent_list.title.truncate(15) %>
       <% end %>
     <% end %>
@@ -115,7 +116,7 @@
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
-          <span><%= list.list_items_count %> items</span>
+          <span><%= pluralize(list.list_items_count, 'item') %></span>
         </div>
         <!-- Collaborators count -->
         <% if list.collaborators.any? %>
@@ -138,12 +139,12 @@
         <div class="flex items-center justify-between text-sm mb-1">
           <span class="text-gray-600">Progress</span>
           <span class="text-gray-900 font-medium">
-            <%= ((list.list_items.completed.count.to_f / list.list_items_count) * 100).round %>%
+            <%= ((list.list_items.status_completed.count.to_f / list.list_items_count) * 100).round %>%
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2">
           <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-               style="width: <%= ((list.list_items.completed.count.to_f / list.list_items_count) * 100).round %>%"></div>
+               style="width: <%= ((list.list_items.status_completed.count.to_f / list.list_items_count) * 100).round %>%"></div>
         </div>
       </div>
     <% end %>

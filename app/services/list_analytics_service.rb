@@ -36,7 +36,7 @@ class ListAnalyticsService < ApplicationService
   def activity_timeline
     30.days.ago.to_date.upto(Date.current).map do |date|
       items_created = @list.list_items.where(created_at: date.all_day).count
-      items_completed = @list.list_items.where(completed_at: date.all_day).count
+      items_completed = @list.list_items.where(status_changed_at: date.all_day).count
 
       {
         date: date,
@@ -101,7 +101,7 @@ class ListAnalyticsService < ApplicationService
   def collaborator_contributions
     @list.list_items.joins(:assigned_user)
          .group("users.name")
-         .group("list_items.completed")
+         .group("list_items.status_completed")
          .count
          .transform_keys { |key| { user: key[0], completed: key[1] } }
   end

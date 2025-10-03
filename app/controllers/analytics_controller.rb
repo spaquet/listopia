@@ -62,10 +62,10 @@ class AnalyticsController < ApplicationController
 
     {
       total_items: items.count,
-      completed_items: items.completed.count,
-      pending_items: items.pending.count,
+      completed_items: items.status_completed.count,
+      pending_items: items.status_pending.count,
       completion_rate: calculate_completion_rate(items),
-      overdue_items: items.where("due_date < ? AND completed = false", Time.current).count,
+      overdue_items: items.where("due_date < ? AND status != ?", Time.current, ListItem.statuses[:completed]).count,
       items_with_due_dates: items.where.not(due_date: nil).count,
       assigned_items: items.where.not(assigned_user_id: nil).count
     }
@@ -73,21 +73,20 @@ class AnalyticsController < ApplicationController
 
   def completion_analytics
     items = @list.list_items
-    completed_items = items.completed.where.not(completed_at: nil)
+    completed_items = items.status_completed.where.not(status_changed_at: nil)
 
-    # Calculate average completion time
+    # Calculate average completion time using status_changed_at
     completion_times = completed_items.map do |item|
-      next unless item.completed_at && item.created_at
-      (item.completed_at - item.created_at) / 1.hour # in hours
+      next unless item.status_changed_at && item.created_at
+      (item.status_changed_at - item.created_at) / 1.hour # in hours
     end.compact
 
     {
-      avg_completion_time_hours: completion_times.any? ? completion_times.sum / completion_times.size : 0,
-      fastest_completion_hours: completion_times.min || 0,
-      slowest_completion_hours: completion_times.max || 0,
+      avg_completion_time_hours: completion_times.any? ? (completion_times.sum / completion_times.size).round(2) : 0,
+      median_completion_time_hours: completion_times.any? ? completion_times.sort[completion_times.size / 2].round(2) : 0,
       completion_by_priority: completion_by_priority,
       completion_by_type: completion_by_item_type,
-      recent_completion_trend: recent_completion_trend
+      completion_trend: completion_trend_last_30_days
     }
   end
 
@@ -97,7 +96,7 @@ class AnalyticsController < ApplicationController
     {
       most_productive_day: most_productive_day_of_week,
       items_created_last_30_days: items.where(created_at: 30.days.ago..).count,
-      items_completed_last_30_days: items.completed.where(completed_at: 30.days.ago..).count,
+      items_completed_last_30_days: items.completed.where(status_changed_at: 30.days.ago..).count,
       overdue_rate: calculate_overdue_rate,
       assignment_completion_rate: assignment_completion_rate,
       velocity_trend: velocity_trend # items completed per week over time
@@ -123,7 +122,7 @@ class AnalyticsController < ApplicationController
     # Daily activity for the last 30 days
     30.days.ago.to_date.upto(Date.current).map do |date|
       items_created = @list.list_items.where(created_at: date.all_day).count
-      items_completed = @list.list_items.where(completed_at: date.all_day).count
+      items_completed = @list.list_items.where(status_changed_at: date.all_day).count
 
       {
         date: date,
@@ -200,9 +199,9 @@ class AnalyticsController < ApplicationController
   end
 
   def most_productive_day_of_week
-    completed_by_day = @list.list_items.completed
-                           .where.not(completed_at: nil)
-                           .group("EXTRACT(DOW FROM completed_at)")
+    completed_by_day = @list.list_items.status_completed
+                           .where.not(status_changed_at: nil)
+                           .group("EXTRACT(DOW FROM status_changed_at)")
                            .count
 
     day_names = %w[Sunday Monday Tuesday Wednesday Thursday Friday Saturday]
@@ -216,7 +215,7 @@ class AnalyticsController < ApplicationController
     items_with_due_dates = @list.list_items.where.not(due_date: nil)
     return 0 if items_with_due_dates.count.zero?
 
-    overdue_count = items_with_due_dates.where("due_date < ? AND completed = false", Time.current).count
+    overdue_count = items_with_due_dates.where("due_date < ? AND status != ListItem.statuses[:completed]", Time.current).count
     (overdue_count.to_f / items_with_due_dates.count * 100).round(2)
   end
 
@@ -228,7 +227,7 @@ class AnalyticsController < ApplicationController
   def contributor_activity
     @list.list_items.joins(:assigned_user)
          .group("users.name")
-         .group("list_items.completed")
+         .group("list_items.status_completed")
          .count
          .each_with_object({}) do |((name, completed), count), hash|
            hash[name] ||= { completed: 0, pending: 0 }
@@ -245,7 +244,7 @@ class AnalyticsController < ApplicationController
   def recent_completion_trend
     # Last 7 days completion trend
     7.days.ago.to_date.upto(Date.current).map do |date|
-      completed = @list.list_items.where(completed_at: date.all_day).count
+      completed = @list.list_items.where(status_changed_at: date.all_day).count
       [ date.strftime("%a"), completed ]
     end.to_h
   end
@@ -255,7 +254,7 @@ class AnalyticsController < ApplicationController
     8.times.map do |weeks_ago|
       week_start = weeks_ago.weeks.ago.beginning_of_week
       week_end = weeks_ago.weeks.ago.end_of_week
-      completed = @list.list_items.where(completed_at: week_start..week_end).count
+      completed = @list.list_items.where(status_changed_at: week_start..week_end).count
 
       {
         week: "#{week_start.strftime('%m/%d')} - #{week_end.strftime('%m/%d')}",
@@ -309,11 +308,11 @@ class AnalyticsController < ApplicationController
   end
 
   def avg_completion_time_for_items(items)
-    completed_items = items.completed.where.not(completed_at: nil)
+    completed_items = items.completed.where.not(status_changed_at: nil)
 
     completion_times = completed_items.map do |item|
-      next unless item.completed_at && item.created_at
-      (item.completed_at - item.created_at) / 1.hour
+      next unless item.status_changed_at && item.created_at
+      (item.status_changed_at - item.created_at) / 1.hour
     end.compact
 
     completion_times.any? ? (completion_times.sum / completion_times.size).round(2) : 0

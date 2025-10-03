@@ -271,7 +271,7 @@ class ListsController < ApplicationController
         title: @list.title,
         status: @list.status,
         items_count: @list.list_items.count,
-        completed_count: @list.list_items.completed.count,
+        completed_count: @list.list_items.status_completed.count,
         list_type: @list.list_type,
         is_public: @list.is_public?
       },

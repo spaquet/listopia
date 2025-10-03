@@ -1,9 +1,8 @@
-<!-- app/views/list_items/toggle_completion.turbo_stream.erb -->
+<%# app/views/list_items/toggle_completion.turbo_stream.erb %>
 <!-- Simply replace the item with updated state -->
-<%= turbo_stream.replace "list_item_<%= @list_item.id %>" do %>
+<%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
   <%= render "list_items/item", item: @list_item, list: @list %>
 <% end %>
-
 <!-- Update list completion stats -->
 <%= turbo_stream.replace "list-stats" do %>
   <% stats = list_completion_stats(@list) %>
@@ -18,9 +17,8 @@
     <span class="font-medium"><%= stats[:percentage] %>%</span>
   </div>
 <% end %>
-
 <!-- Animate completion if item was just completed -->
-<% if @list_item.completed? %>
+<% if @list_item.status_completed? %>
   <%= turbo_stream.append "body" do %>
     <div id="completion-animation" class="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
       <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-bounce">

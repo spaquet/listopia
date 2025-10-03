@@ -10,9 +10,9 @@ class CreateListItems < ActiveRecord::Migration[8.0]
       t.integer :item_type, default: 0, null: false
       t.integer :priority, default: 1, null: false
 
-      # Completion tracking
-      t.boolean :completed, default: false
-      t.datetime :completed_at
+      # Completion and status tracking
+      t.integer :status, default: 0, null: false
+      t.datetime :status_changed_at
 
       # Scheduling
       t.datetime :due_date
@@ -46,11 +46,17 @@ class CreateListItems < ActiveRecord::Migration[8.0]
     # Only add indexes that aren't automatically created by t.references
     add_index :list_items, :item_type
     add_index :list_items, :priority
-    add_index :list_items, :completed
+    add_index :list_items, :status
     add_index :list_items, :due_date
     add_index :list_items, :position
     add_index :list_items, :skip_notifications
     add_index :list_items, :created_at
     add_index :list_items, [ :list_id, :position ], unique: true, name: 'index_list_items_on_list_id_and_position'
+
+    # Composite indexes for common queries
+    add_index :list_items, [ :list_id, :status ]
+    add_index :list_items, [ :list_id, :priority ]
+    add_index :list_items, [ :assigned_user_id, :status ]
+    add_index :list_items, [ :due_date, :status ]
   end
 end
