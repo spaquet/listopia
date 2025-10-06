@@ -13,9 +13,6 @@ application.register("chat", ChatController)
 import ChatKeyboardController from "./chat_keyboard_controller"
 application.register("chat-keyboard", ChatKeyboardController)
 
-import ChatScrollController from "./chat_scroll_controller"
-application.register("chat-scroll", ChatScrollController)
-
 import ClipboardController from "./clipboard_controller"
 application.register("clipboard", ClipboardController)
 
@@ -28,8 +25,11 @@ application.register("connection-status", ConnectionStatusController)
 import CustomSelectController from "./custom_select_controller"
 application.register("custom-select", CustomSelectController)
 
-import DashboardChatController from "./dashboard_chat_controller"
-application.register("dashboard-chat", DashboardChatController)
+import DashboardChatInputController from "./dashboard_chat_input_controller"
+application.register("dashboard-chat-input", DashboardChatInputController)
+
+import DashboardChatScrollController from "./dashboard_chat_scroll_controller"
+application.register("dashboard-chat-scroll", DashboardChatScrollController)
 
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
