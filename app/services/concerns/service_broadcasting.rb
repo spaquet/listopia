@@ -36,23 +36,6 @@ module ServiceBroadcasting
         )
 
         # Broadcast appropriate lists section based on relationship to list
-        if user.id == list.owner.id
-          # Update owner's "my lists" section
-          Turbo::StreamsChannel.broadcast_replace_to(
-            "user_dashboard_#{user.id}",
-            target: "dashboard-my-lists",
-            partial: "dashboard/my_lists",
-            locals: { lists: user_data[:my_lists], current_user: user }
-          )
-        else
-          # Update collaborator's "collaborated lists" section
-          Turbo::StreamsChannel.broadcast_replace_to(
-            "user_dashboard_#{user.id}",
-            target: "dashboard-collaborated-lists",
-            partial: "dashboard/collaborated_lists",
-            locals: { lists: user_data[:collaborated_lists], current_user: user }
-          )
-        end
 
         # Update recent activity for all affected users
         Turbo::StreamsChannel.broadcast_replace_to(
@@ -69,7 +52,7 @@ module ServiceBroadcasting
     end
   end
 
-  # NEW: Updated lists index broadcasting with Turbo Frame support
+  # Updated lists index broadcasting with Turbo Frame support
   def broadcast_lists_index_updates(list, action: :update)
     affected_users = [ list.owner ]
 
@@ -137,8 +120,6 @@ module ServiceBroadcasting
 
     {
       stats: calculate_dashboard_stats_for_user(user, accessible_list_ids),
-      my_lists: user.lists.order(updated_at: :desc).limit(10),
-      collaborated_lists: user.collaborated_lists.includes(:owner).order(updated_at: :desc).limit(10),
       recent_items: ListItem.joins(:list)
                            .where(list_id: accessible_list_ids)
                            .includes(:list)

@@ -28,7 +28,9 @@
     <%= turbo_frame_tag "modal" %>
     <!-- Persistent Chat Component (only for authenticated users) -->
     <% if user_signed_in? %>
-      <%= render "chat/persistent_chat" %>
+      <% unless controller_name == 'dashboard' && action_name == 'index' %>
+        <%= render "chat/persistent_chat" %>
+      <% end %>
     <% end %>
   </body>
 </html>

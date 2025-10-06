@@ -16,12 +16,7 @@ module ListBroadcasting
       locals: { stats: owner_data[:stats] }
     )
 
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "user_dashboard_#{list.owner.id}",
-      target: "dashboard-my-lists",
-      partial: "dashboard/my_lists",
-      locals: { lists: owner_data[:my_lists], current_user: list.owner }
-    )
+    # REMOVE: No longer broadcasting my_lists
 
     Turbo::StreamsChannel.broadcast_replace_to(
       "user_dashboard_#{list.owner.id}",
@@ -43,13 +38,6 @@ module ListBroadcasting
 
       Turbo::StreamsChannel.broadcast_replace_to(
         "user_dashboard_#{collaborator.id}",
-        target: "dashboard-collaborated-lists",
-        partial: "dashboard/collaborated_lists",
-        locals: { lists: collaborator_data[:collaborated_lists], current_user: collaborator }
-      )
-
-      Turbo::StreamsChannel.broadcast_replace_to(
-        "user_dashboard_#{collaborator.id}",
         target: "dashboard-recent-activity",
         partial: "dashboard/recent_activity",
         locals: { items: collaborator_data[:recent_items] }
@@ -57,7 +45,7 @@ module ListBroadcasting
     end
   end
 
-  # NEW: Broadcast specific list card creation (for create actions)
+  # Broadcast specific list card creation (for create actions)
   def broadcast_list_creation(list = @list)
     affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
@@ -79,7 +67,7 @@ module ListBroadcasting
     end
   end
 
-  # NEW: Broadcast specific list card updates (for update actions)
+  # Broadcast specific list card updates (for update actions)
   def broadcast_list_update(list = @list)
     affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
@@ -95,7 +83,7 @@ module ListBroadcasting
     end
   end
 
-  # NEW: Broadcast specific list card removal (for destroy actions)
+  # Broadcast specific list card removal (for destroy actions)
   def broadcast_list_deletion(list = @list, user_lists_count = nil)
     affected_users = [ list.owner ]
     affected_users.concat(list.collaborators) if list.collaborators.any?
@@ -116,12 +104,6 @@ module ListBroadcasting
         )
       end
     end
-  end
-
-  # DEPRECATED: Keep for backward compatibility but prefer specific methods above
-  def broadcast_lists_index_updates(list = @list)
-    # For backward compatibility, just call the update method
-    broadcast_list_update(list)
   end
 
   # Updated to use specific broadcasting methods

@@ -4,7 +4,8 @@
      data-chat-user-id-value="<%= current_user.id %>"
      data-chat-expanded-value="false"
      data-chat-context-value="<%= chat_context.to_json %>"
-     data-chat-current-page-value="<%= controller_name %>#<%= action_name %>">
+     data-chat-current-page-value="<%= controller_name %>#<%= action_name %>"
+     data-chat-on-dashboard-value="<%= controller_name == 'dashboard' && action_name == 'index' %>">
   <!-- Chat Toggle Button (when minimized) -->
   <div data-chat-target="toggleButton" 
        class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full p-4 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-105">
