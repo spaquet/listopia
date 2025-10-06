@@ -58,12 +58,19 @@ export default class extends Controller {
       const formData = new FormData()
       formData.append('message', userMessage)
       formData.append('current_page', 'dashboard#index')
-      formData.append('context', JSON.stringify({
-        ...this.contextValue,
-        timestamp: new Date().toISOString()
-      }))
+      
+      // Add context
+      if (this.contextValue) {
+        Object.keys(this.contextValue).forEach(key => {
+          if (typeof this.contextValue[key] === 'object') {
+            formData.append(`context[${key}]`, JSON.stringify(this.contextValue[key]))
+          } else {
+            formData.append(`context[${key}]`, this.contextValue[key])
+          }
+        })
+      }
 
-      const response = await fetch('/chat/create_message', {
+      const response = await fetch('/chat/messages', {  // ✅ CORRECTED ROUTE
         method: 'POST',
         headers: {
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
@@ -126,5 +133,6 @@ export default class extends Controller {
   showError(message) {
     // You can implement a toast notification here
     console.error(message)
+    alert(message) // Temporary - replace with a nicer toast notification
   }
 }

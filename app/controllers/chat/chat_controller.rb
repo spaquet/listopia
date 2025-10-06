@@ -6,13 +6,17 @@ class Chat::ChatController < ApplicationController
 
   def create_message
     message_content = params[:message]
-    # current_page = params[:current_page]
+    current_page = params[:current_page]
     context = params[:context] || {}
+
+    # Determine if this is from dashboard
+    from_dashboard = current_page == "dashboard#index"
+    target_id = from_dashboard ? "dashboard-chat-messages" : "chat-messages"
 
     # Use the AI Agent service with moderation
     service = AiAgentMcpService.new(
       user: current_user,
-      context: build_chat_context.merge(context.to_unsafe_h) # FIX 1: Convert ActionController::Parameters to hash
+      context: build_chat_context.merge(context.to_unsafe_h)
     )
 
     result = service.process_message(message_content)
@@ -28,8 +32,11 @@ class Chat::ChatController < ApplicationController
     # Get BOTH messages from the chat
     chat = service.chat
     user_message = chat.messages.where(role: "user", content: message_content)
-                       .order(created_at: :desc).first
+                      .order(created_at: :desc).first
     assistant_message = result[:message]
+
+    # Choose the appropriate message partial based on source
+    message_partial = from_dashboard ? "dashboard/chat_message" : "chat/message"
 
     respond_to do |format|
       format.turbo_stream do
@@ -37,15 +44,15 @@ class Chat::ChatController < ApplicationController
 
         # Append user message first
         if user_message
-          streams << turbo_stream.append("chat-messages",
-            partial: "chat/message",
+          streams << turbo_stream.append(target_id,
+            partial: message_partial,
             locals: { message: user_message }
           )
         end
 
         # Then append assistant response
-        streams << turbo_stream.append("chat-messages",
-          partial: "chat/message",
+        streams << turbo_stream.append(target_id,
+          partial: message_partial,
           locals: { message: assistant_message }
         )
 
@@ -66,9 +73,9 @@ class Chat::ChatController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.append("chat-messages",
+        render turbo_stream: turbo_stream.append(target_id,
           partial: "chat/error_message",
-          locals: { error_message: error_text } # FIX 2: Use error_message, not error
+          locals: { error_message: error_text }
         )
       end
       format.json { render json: { error: error_text }, status: :unprocessable_entity }
