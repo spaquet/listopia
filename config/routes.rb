@@ -57,6 +57,7 @@ Rails.application.routes.draw do
     get :ai_context
     get "export", to:  "exports#show"
     get "history", to: "chat#load_history"
+    get "dashboard_history", to: "chat#load_dashboard_history"
   end
   # post "/chat/messages", to: "chat/chat#create_message", as: :chat_messages
 

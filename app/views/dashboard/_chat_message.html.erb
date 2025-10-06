@@ -1,0 +1,53 @@
+<!-- app/views/dashboard/_chat_message.html.erb -->
+<div class="flex gap-4 <%= message.role == 'user' ? 'justify-end' : '' %>" data-message-id="<%= message.id %>">
+  <% if message.role_assistant? %>
+    <!-- Assistant Avatar -->
+    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+      </svg>
+    </div>
+  <% end %>
+  <!-- Message Content -->
+  <div class="max-w-[80%]">
+    <div class="<%= message.role == 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900' %> rounded-2xl px-4 py-3">
+      <div class="prose prose-sm max-w-none <%= message.role == 'user' ? 'prose-invert' : '' %>">
+        <%= simple_format(message.content, class: "mb-0") %>
+      </div>
+      <!-- Show created lists if any -->
+      <% if defined?(lists_created) && lists_created.present? %>
+        <div class="mt-3 pt-3 border-t <%= message.role == 'user' ? 'border-blue-500' : 'border-gray-300' %>">
+          <div class="text-xs font-semibold mb-2 <%= message.role == 'user' ? 'text-blue-100' : 'text-gray-600' %>">
+            <%= lists_created.count == 1 ? 'Created list:' : "Created #{lists_created.count} lists:" %>
+          </div>
+          <div class="space-y-1.5">
+            <% lists_created.each do |list| %>
+              <%= link_to list_path(list), 
+                          class: "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors #{message.role == 'user' ? 'bg-blue-500 hover:bg-blue-400 text-white' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'}" do %>
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span class="text-sm font-medium flex-1"><%= list.title %></span>
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <!-- Timestamp -->
+    <div class="text-xs text-gray-500 mt-1 <%= message.role == 'user' ? 'text-right' : '' %>">
+      <%= time_ago_in_words(message.created_at) %> ago
+    </div>
+  </div>
+  <% if message.role_user? %>
+    <!-- User Avatar -->
+    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white text-sm font-medium">
+      <%= message.user&.name&.first&.upcase || 'U' %>
+    </div>
+  <% end %>
+</div>

@@ -11,6 +11,24 @@ export default class extends Controller {
   connect() {
     this.maxLength = 2000
     this.adjustTextareaHeight()
+    this.loadChatHistory()
+  }
+
+  async loadChatHistory() {
+    try {
+      const response = await fetch('/chat/dashboard_history', {
+        headers: {
+          'Accept': 'text/vnd.turbo-stream.html',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      })
+      
+      if (response.ok) {
+        // Turbo will handle the stream response automatically
+      }
+    } catch (error) {
+      console.error("Error loading chat history:", error)
+    }
   }
 
   handleInput(event) {
@@ -42,9 +60,8 @@ export default class extends Controller {
     this.inputTarget.disabled = true
     this.sendButtonTarget.disabled = true
     
-    // Hide welcome message if it exists
-    const welcome = document.querySelector('[data-dashboard-chat-welcome]')
-    if (welcome) welcome.remove()
+    // Hide welcome message and show compact suggestions
+    this.transitionToCompactMode()
 
     // Show typing indicator
     this.showTypingIndicator()
@@ -70,7 +87,7 @@ export default class extends Controller {
         })
       }
 
-      const response = await fetch('/chat/messages', {  // ✅ CORRECTED ROUTE
+      const response = await fetch('/chat/messages', {
         method: 'POST',
         headers: {
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
@@ -92,6 +109,20 @@ export default class extends Controller {
       this.hideTypingIndicator()
       this.inputTarget.disabled = false
       this.inputTarget.focus()
+    }
+  }
+
+  transitionToCompactMode() {
+    // Remove welcome message if it exists
+    const welcome = document.querySelector('[data-dashboard-chat-welcome]')
+    if (welcome) {
+      welcome.remove()
+    }
+    
+    // Show compact suggestions bar
+    const suggestionsBar = document.getElementById('dashboard-suggestions-compact')
+    if (suggestionsBar) {
+      suggestionsBar.classList.remove('hidden')
     }
   }
 
@@ -131,8 +162,7 @@ export default class extends Controller {
   }
 
   showError(message) {
-    // You can implement a toast notification here
     console.error(message)
-    alert(message) // Temporary - replace with a nicer toast notification
+    alert(message) // Replace with a nicer toast notification later
   }
 }

@@ -46,14 +46,20 @@ class Chat::ChatController < ApplicationController
         if user_message
           streams << turbo_stream.append(target_id,
             partial: message_partial,
-            locals: { message: user_message }
+            locals: {
+              message: user_message,
+              lists_created: []  # User messages don't create lists
+            }
           )
         end
 
-        # Then append assistant response
+        # Then append assistant response with any created lists
         streams << turbo_stream.append(target_id,
           partial: message_partial,
-          locals: { message: assistant_message }
+          locals: {
+            message: assistant_message,
+            lists_created: result[:lists_created]  # Pass created lists to partial
+          }
         )
 
         render turbo_stream: streams
@@ -79,6 +85,44 @@ class Chat::ChatController < ApplicationController
         )
       end
       format.json { render json: { error: error_text }, status: :unprocessable_entity }
+    end
+  end
+
+  def load_dashboard_history
+    @chat = current_user.current_chat
+
+    # Inline the query - no need for tool_calls in dashboard view
+    @messages = if @chat
+      @chat.messages.displayable
+          .includes(:user)
+          .order(created_at: :desc)
+          .limit(50)
+          .reverse
+    else
+      []
+    end
+
+    respond_to do |format|
+      format.turbo_stream do
+        streams = []
+
+        # Replace the messages container content
+        streams << turbo_stream.replace("dashboard-chat-messages",
+          partial: "dashboard/chat_history",
+          locals: { messages: @messages }
+        )
+
+        # Show compact suggestions if there are messages
+        if @messages.any?
+          streams << turbo_stream.update("dashboard-suggestions-compact",
+            "<div id='dashboard-suggestions-compact' class='flex-shrink-0 px-6 py-3 border-t border-gray-100 bg-gray-50'>
+              <!-- suggestions content will be rendered by the partial -->
+            </div>")
+          streams << turbo_stream.remove("dashboard-chat-welcome") if @messages.any?
+        end
+
+        render turbo_stream: streams
+      end
     end
   end
 
