@@ -1,26 +1,28 @@
 <!-- app/views/dashboard/_embedded_chat.html.erb -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col" style="height: 600px;">
-  <!-- Header - Minimal and Clean -->
-  <div class="flex-shrink-0 border-b border-gray-200 px-6 py-4">
-    <div class="flex items-center justify-end">
-      <%= link_to "/chat/export", 
-                  class: "p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
-                  title: "Export chat" do %>
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
-      <% end %>
-    </div>
+  <!-- Header with Export -->
+  <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200 flex items-center justify-end">
+    <%= link_to "/chat/export", 
+                class: "p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors",
+                title: "Export chat" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+    <% end %>
+  </div>
+  <!-- Compact Suggestions Bar (Turbo Stream target) -->
+  <div id="dashboard-suggestions-compact" class="hidden flex-shrink-0">
+    <!-- Content will be inserted here by Turbo Stream -->
   </div>
   <!-- Messages Container -->
   <div id="dashboard-chat-messages" 
        class="flex-1 overflow-y-auto px-6 py-6 space-y-6"
        data-controller="dashboard-chat-scroll"
        data-dashboard-chat-scroll-target="container">
-    <!-- This will be populated by load_dashboard_history or remain empty -->
+    <!-- This will be populated by load_dashboard_history -->
   </div>
-  <!-- Typing Indicator (hidden by default) -->
+  <!-- Typing Indicator -->
   <div id="dashboard-typing-indicator" class="hidden px-6 py-2">
     <div class="flex items-center gap-2 text-gray-500">
       <div class="flex gap-1">
@@ -31,7 +33,7 @@
       <span class="text-sm">Thinking...</span>
     </div>
   </div>
-  <!-- Input Area - Clean and Modern -->
+  <!-- Input Area -->
   <div class="flex-shrink-0 border-t border-gray-200 px-6 py-4">
     <div data-controller="dashboard-chat-input" 
          data-dashboard-chat-input-context-value="<%= { page: 'dashboard#index' }.to_json %>">

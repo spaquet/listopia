@@ -1,7 +1,6 @@
 // app/javascript/controllers/dashboard_chat_input_controller.js
 import { Controller } from "@hotwired/stimulus"
 
-// Connects to data-controller="dashboard-chat-input"
 export default class extends Controller {
   static targets = ["input", "sendButton", "charCount"]
   static values = {
@@ -9,12 +8,14 @@ export default class extends Controller {
   }
 
   connect() {
+    console.log("Dashboard chat input connected")
     this.maxLength = 2000
     this.adjustTextareaHeight()
     this.loadChatHistory()
   }
 
   async loadChatHistory() {
+    console.log("Loading dashboard chat history...")
     try {
       const response = await fetch('/chat/dashboard_history', {
         headers: {
@@ -24,7 +25,19 @@ export default class extends Controller {
       })
       
       if (response.ok) {
-        // Turbo will handle the stream response automatically
+        const html = await response.text()
+        console.log("Dashboard chat history received, length:", html.length)
+        
+        // CRITICAL: Manually render the Turbo Stream
+        if (typeof Turbo !== 'undefined' && Turbo.renderStreamMessage) {
+          console.log("Rendering Turbo Stream manually...")
+          Turbo.renderStreamMessage(html)
+          console.log("✅ Turbo Stream rendered")
+        } else {
+          console.error("❌ Turbo.renderStreamMessage not available!")
+        }
+      } else {
+        console.error("Failed to load dashboard chat history:", response.status)
       }
     } catch (error) {
       console.error("Error loading chat history:", error)
@@ -38,7 +51,6 @@ export default class extends Controller {
   }
 
   handleKeydown(event) {
-    // Send on Enter (without Shift)
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       this.sendMessage()
@@ -47,6 +59,7 @@ export default class extends Controller {
 
   useSuggestion(event) {
     const suggestion = event.currentTarget.dataset.suggestion
+    console.log("Using suggestion:", suggestion)
     this.inputTarget.value = suggestion
     this.handleInput()
     this.inputTarget.focus()
@@ -56,17 +69,12 @@ export default class extends Controller {
     const message = this.inputTarget.value.trim()
     if (!message || message.length > this.maxLength) return
 
-    // Disable input while processing
+    console.log("Sending dashboard message:", message)
+
     this.inputTarget.disabled = true
     this.sendButtonTarget.disabled = true
-    
-    // Hide welcome message and show compact suggestions
-    this.transitionToCompactMode()
-
-    // Show typing indicator
     this.showTypingIndicator()
 
-    // Clear input
     const userMessage = message
     this.inputTarget.value = ''
     this.handleInput()
@@ -76,7 +84,6 @@ export default class extends Controller {
       formData.append('message', userMessage)
       formData.append('current_page', 'dashboard#index')
       
-      // Add context
       if (this.contextValue) {
         Object.keys(this.contextValue).forEach(key => {
           if (typeof this.contextValue[key] === 'object') {
@@ -100,29 +107,26 @@ export default class extends Controller {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      // Turbo Streams will handle the response
+      // CRITICAL: Manually render the Turbo Stream response
+      const html = await response.text()
+      console.log("Message response received, rendering Turbo Stream...")
+      
+      if (typeof Turbo !== 'undefined' && Turbo.renderStreamMessage) {
+        Turbo.renderStreamMessage(html)
+        console.log("✅ Message Turbo Stream rendered")
+      } else {
+        console.error("❌ Turbo.renderStreamMessage not available!")
+      }
       
     } catch (error) {
       console.error('Error sending message:', error)
       this.showError('Failed to send message. Please try again.')
+      this.inputTarget.value = userMessage
+      this.handleInput()
     } finally {
       this.hideTypingIndicator()
       this.inputTarget.disabled = false
       this.inputTarget.focus()
-    }
-  }
-
-  transitionToCompactMode() {
-    // Remove welcome message if it exists
-    const welcome = document.querySelector('[data-dashboard-chat-welcome]')
-    if (welcome) {
-      welcome.remove()
-    }
-    
-    // Show compact suggestions bar
-    const suggestionsBar = document.getElementById('dashboard-suggestions-compact')
-    if (suggestionsBar) {
-      suggestionsBar.classList.remove('hidden')
     }
   }
 
@@ -153,16 +157,22 @@ export default class extends Controller {
 
   showTypingIndicator() {
     const indicator = document.getElementById('dashboard-typing-indicator')
-    if (indicator) indicator.classList.remove('hidden')
+    if (indicator) {
+      indicator.classList.remove('hidden')
+      console.log("Showing typing indicator")
+    }
   }
 
   hideTypingIndicator() {
     const indicator = document.getElementById('dashboard-typing-indicator')
-    if (indicator) indicator.classList.add('hidden')
+    if (indicator) {
+      indicator.classList.add('hidden')
+      console.log("Hiding typing indicator")
+    }
   }
 
   showError(message) {
     console.error(message)
-    alert(message) // Replace with a nicer toast notification later
+    alert(message)
   }
 }
