@@ -20,31 +20,6 @@
        data-dashboard-chat-scroll-target="container">
     <!-- This will be populated by load_dashboard_history or remain empty -->
   </div>
-  <!-- Suggestions Bar - Shows when chat has messages -->
-  <div id="dashboard-suggestions-compact" 
-       class="hidden flex-shrink-0 px-6 py-3 border-t border-gray-100 bg-gray-50">
-    <div class="flex items-center gap-2 overflow-x-auto">
-      <span class="text-xs text-gray-500 font-medium whitespace-nowrap mr-2">Try:</span>
-      <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
-        data-suggestion="Show me my active lists"
-        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-        Show my active lists
-      </button>
-      <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
-        data-suggestion="Help me plan my week"
-        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-        Help me plan my week
-      </button>
-      <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
-        data-suggestion="What tasks should I prioritize today?"
-        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-        What should I prioritize?
-      </button>
-    </div>
-  </div>
   <!-- Typing Indicator (hidden by default) -->
   <div id="dashboard-typing-indicator" class="hidden px-6 py-2">
     <div class="flex items-center gap-2 text-gray-500">

@@ -42,6 +42,17 @@ class Chat::ChatController < ApplicationController
       format.turbo_stream do
         streams = []
 
+        # For dashboard, handle welcome message removal and compact suggestions
+        if from_dashboard
+          # Remove welcome message if it exists
+          streams << turbo_stream.remove("dashboard-chat-welcome")
+
+          # Show compact suggestions bar
+          streams << turbo_stream.update("dashboard-suggestions-compact",
+            partial: "dashboard/compact_suggestions"
+          )
+        end
+
         # Append user message first
         if user_message
           streams << turbo_stream.append(target_id,
@@ -91,7 +102,7 @@ class Chat::ChatController < ApplicationController
   def load_dashboard_history
     @chat = current_user.current_chat
 
-    # Inline the query - no need for tool_calls in dashboard view
+    # Get displayable messages
     @messages = if @chat
       @chat.messages.displayable
           .includes(:user)
@@ -102,23 +113,29 @@ class Chat::ChatController < ApplicationController
       []
     end
 
+    has_messages = @messages.any?
+
     respond_to do |format|
       format.turbo_stream do
         streams = []
 
-        # Replace the messages container content
-        streams << turbo_stream.replace("dashboard-chat-messages",
+        # Update (not replace) the messages container content
+        streams << turbo_stream.update("dashboard-chat-messages",
           partial: "dashboard/chat_history",
           locals: { messages: @messages }
         )
 
-        # Show compact suggestions if there are messages
-        if @messages.any?
+        # Handle UI state transitions
+        if has_messages
+          # Show compact suggestions bar
           streams << turbo_stream.update("dashboard-suggestions-compact",
-            "<div id='dashboard-suggestions-compact' class='flex-shrink-0 px-6 py-3 border-t border-gray-100 bg-gray-50'>
-              <!-- suggestions content will be rendered by the partial -->
-            </div>")
-          streams << turbo_stream.remove("dashboard-chat-welcome") if @messages.any?
+            partial: "dashboard/compact_suggestions"
+          )
+        else
+          # Hide compact suggestions when no messages
+          streams << turbo_stream.update("dashboard-suggestions-compact",
+            '<div id="dashboard-suggestions-compact" class="hidden"></div>'
+          )
         end
 
         render turbo_stream: streams

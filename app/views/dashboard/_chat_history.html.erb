@@ -1,7 +1,8 @@
 <!-- app/views/dashboard/_chat_history.html.erb -->
+<%# DO NOT wrap in dashboard-chat-messages - that's the target being replaced %>
 <% if messages.blank? %>
   <!-- Empty State / Welcome Message -->
-  <div class="flex flex-col items-center justify-center h-full text-center" data-dashboard-chat-welcome>
+  <div id="dashboard-chat-welcome" class="flex flex-col items-center justify-center h-full text-center">
     <h3 class="text-xl font-semibold text-gray-900 mb-2">How can I help you today?</h3>
     <p class="text-gray-500 max-w-md">
       I can help you create lists, manage tasks, add items, and organize your work. Just ask!
@@ -9,7 +10,7 @@
     <!-- Suggested Prompts - Full Size -->
     <div class="grid grid-cols-1 gap-3 mt-8 w-full max-w-2xl">
       <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
+                data-action="click->dashboard-chat-input#useSuggestion"
         data-suggestion="Show me my active lists"
         class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
         <div class="flex items-start gap-3">
@@ -23,7 +24,7 @@
         </div>
       </button>
       <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
+                data-action="click->dashboard-chat-input#useSuggestion"
         data-suggestion="Help me plan my week"
         class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
         <div class="flex items-start gap-3">
@@ -37,7 +38,7 @@
         </div>
       </button>
       <button type="button"
-              data-action="click->dashboard-chat-input#useSuggestion"
+                data-action="click->dashboard-chat-input#useSuggestion"
         data-suggestion="What tasks should I prioritize today?"
         class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
         <div class="flex items-start gap-3">
@@ -53,10 +54,11 @@
     </div>
   </div>
 <% else %>
-  <!-- Chat History -->
+  <!-- Chat History - messages exist -->
   <% messages.each do |message| %>
     <% next unless message.content.present? %>
     <% next unless ['user', 'assistant'].include?(message.role) %>
     <%= render "dashboard/chat_message", message: message, lists_created: [] %>
   <% end %>
 <% end %>
+</div>
