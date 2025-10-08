@@ -112,6 +112,20 @@ Rails.application.routes.draw do
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 
+  # User management routes, used by admins
+  resources :users, only: [ :index, :show, :destroy ] do
+    member do
+      # Admin actions only (settings routes already defined above for current user)
+      post "suspend", to: "users#suspend"
+      post "unsuspend", to: "users#unsuspend"
+      post "deactivate", to: "users#deactivate"
+      post "reactivate", to: "users#reactivate"
+      post "grant_admin", to: "users#grant_admin"
+      post "revoke_admin", to: "users#revoke_admin"
+      patch "update_admin_notes", to: "users#update_admin_notes"
+    end
+  end
+
   # Admin routes (future)
   namespace :admin do
     root "dashboard#index"

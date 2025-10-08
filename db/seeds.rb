@@ -20,7 +20,8 @@ mike = User.create!(
   name: "Mike Johnson",
   email_verified_at: Time.current
 )
-puts "✓ Created user: #{mike.email}"
+mike.add_role(:admin)
+puts "✓ Created user: #{mike.email} (Admin)"
 
 emma = User.create!(
   email: "emma@listopia.com",
@@ -357,7 +358,7 @@ puts "  - Pending items: #{ListItem.status_pending.count}"
 puts "Collaborations: #{Collaborator.count}"
 puts "Pending invitations: #{Invitation.pending.count}"
 puts "\n👥 USER ACCESS:"
-puts "• Mike (mike@listopia.com): 2 lists + collaborator on 2 others"
+puts "• Mike (mike@listopia.com): ADMIN - 2 lists + collaborator on 2 others"
 puts "• Emma (emma@listopia.com): 2 lists (1 public) + 1 collaboration"
 puts "• Sarah (sarah@listopia.com): 2 lists + collaborator on 1 other"
 puts "• Alex (alex@listopia.com): 1 list"
