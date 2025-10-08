@@ -1,5 +1,7 @@
 <!-- app/views/dashboard/_chat_message.html.erb -->
-<div class="flex gap-4 <%= message.role == 'user' ? 'justify-end' : '' %>" data-message-id="<%= message.id %>">
+<div class="flex gap-4 <%= message.role == 'user' ? 'justify-end' : '' %>" 
+     data-message-id="<%= message.id %>"
+     data-controller="markdown-message">
   <% if message.role_assistant? %>
     <!-- Assistant Avatar -->
     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -12,7 +14,9 @@
   <!-- Message Content -->
   <div class="max-w-[80%]">
     <div class="<%= message.role == 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900' %> rounded-2xl px-4 py-3">
-      <div class="prose prose-sm max-w-none <%= message.role == 'user' ? 'prose-invert' : '' %>">
+      <div class="prose prose-sm max-w-none <%= message.role == 'user' ? 'prose-invert' : '' %>"
+            data-markdown-message-target="content"
+            data-markdown="<%= message.content %>">
         <%= simple_format(message.content, class: "mb-0") %>
       </div>
       <!-- Show created lists if any -->

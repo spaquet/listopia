@@ -49,6 +49,12 @@ application.register("inline-edit", InlineEditController)
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
 
+import MarkdownController from "./markdown_controller"
+application.register("markdown", MarkdownController)
+
+import MarkdownMessageController from "./markdown_message_controller"
+application.register("markdown-message", MarkdownMessageController)
+
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
 
