@@ -30,6 +30,9 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.string :last_sign_in_ip
       t.integer :sign_in_count, default: 0, null: false
 
+      # Soft delete flag
+      t.datetime :discarded_at
+
       # Suspension fields
       t.datetime :suspended_at
       t.text :suspended_reason
@@ -58,6 +61,7 @@ class CreateUsers < ActiveRecord::Migration[8.0]
     add_index :users, :last_sign_in_at
     add_index :users, :suspended_at
     add_index :users, :deactivated_at
+    add_index :users, :discarded_at
     add_index :users, :account_metadata, using: :gin
 
     # Foreign key for suspended_by

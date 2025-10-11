@@ -50,6 +50,12 @@ class User < ApplicationRecord
   rolify
   has_secure_password
 
+  # Logidzy for auditing changes
+  has_logidze
+
+  # Soft delete using Discard gem
+  include Discard::Model
+
   # Rails 8 token generation for magic links and email verification
   generates_token_for :magic_link, expires_in: 15.minutes
   generates_token_for :email_verification, expires_in: 24.hours

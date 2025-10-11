@@ -24,6 +24,9 @@ module Listopia
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Logidze uses DB functions and triggers, hence you need to use SQL format for a schema dump
+    # Other Logidze-related config options can be set in the initializer in config/initializers/logidze.rb
+    config.active_record.schema_format = :sql
 
     config.complexity_analysis = ActiveSupport::OrderedOptions.new
     config.complexity_analysis.enabled = ENV.fetch("COMPLEXITY_ANALYSIS_ENABLED", "false") == "true"

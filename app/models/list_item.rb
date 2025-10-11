@@ -58,6 +58,9 @@ class ListItem < ApplicationRecord
 
   attr_accessor :skip_notifications, :previous_title_value
 
+  # Logidzy for auditing changes
+  has_logidze
+
   # Associations
   belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true

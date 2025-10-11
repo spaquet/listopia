@@ -23,6 +23,9 @@
 
 # app/models/collaborator.rb
 class Collaborator < ApplicationRecord
+  # Logidzy for auditing changes
+  has_logidze
+
   belongs_to :collaboratable, polymorphic: true
   belongs_to :user
 
