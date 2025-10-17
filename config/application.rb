@@ -17,17 +17,6 @@ RubyLLM.configure do |config|
   # Rest of the configuration in config/initializers/ruby_llm.rb
 end
 
-# Debug logging only in development
-if Rails.env.development?
-  puts "=" * 80
-  puts "RubyLLM Configuration Debug:"
-  puts "OPENAI_API_KEY present: #{ENV['OPENAI_API_KEY'].present?}"
-  puts "OPENAI_API_KEY first 10 chars: #{ENV['OPENAI_API_KEY']&.slice(0, 10)}..." if ENV["OPENAI_API_KEY"].present?
-  puts "LLM_PROVIDER: #{ENV.fetch('LLM_PROVIDER', 'openai')}"
-  puts "LLM_MODEL: #{ENV.fetch('LLM_MODEL', 'gpt-4o-mini')}"
-  puts "=" * 80
-end
-
 module Listopia
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
