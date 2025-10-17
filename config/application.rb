@@ -6,6 +6,28 @@ require "rails/all"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Configure RubyLLM BEFORE Rails::Application is inherited
+# This ensures acts_as_model, acts_as_chat, acts_as_message are available when models load
+require "ruby_llm"
+
+RubyLLM.configure do |config|
+  # Use modern RubyLLM 1.8 features
+  config.use_new_acts_as = true
+
+  # Rest of the configuration in config/initializers/ruby_llm.rb
+end
+
+# Debug logging only in development
+if Rails.env.development?
+  puts "=" * 80
+  puts "RubyLLM Configuration Debug:"
+  puts "OPENAI_API_KEY present: #{ENV['OPENAI_API_KEY'].present?}"
+  puts "OPENAI_API_KEY first 10 chars: #{ENV['OPENAI_API_KEY']&.slice(0, 10)}..." if ENV["OPENAI_API_KEY"].present?
+  puts "LLM_PROVIDER: #{ENV.fetch('LLM_PROVIDER', 'openai')}"
+  puts "LLM_MODEL: #{ENV.fetch('LLM_MODEL', 'gpt-4o-mini')}"
+  puts "=" * 80
+end
+
 module Listopia
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -24,10 +46,16 @@ module Listopia
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
 
+    # Use UUIDs for primary keys
+    config.generators do |g|
+      g.orm :active_record, primary_key_type: :uuid
+    end
+
     # Logidze uses DB functions and triggers, hence you need to use SQL format for a schema dump
     # Other Logidze-related config options can be set in the initializer in config/initializers/logidze.rb
     config.active_record.schema_format = :sql
 
+    # Complexity Analysis configuration (existing)
     config.complexity_analysis = ActiveSupport::OrderedOptions.new
     config.complexity_analysis.enabled = ENV.fetch("COMPLEXITY_ANALYSIS_ENABLED", "false") == "true"
     config.complexity_analysis.method = ENV.fetch("COMPLEXITY_ANALYSIS_METHOD", "llm_primary")

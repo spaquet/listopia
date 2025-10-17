@@ -129,7 +129,14 @@ Rails.application.routes.draw do
   # Admin routes (future)
   namespace :admin do
     root "dashboard#index"
-    resources :users
-    resources :lists
+
+    resources :users do
+      member do
+        post :toggle_admin
+        post :toggle_status
+      end
+    end
+
+    resources :lists, only: [ :index, :show, :destroy ]
   end
 end
