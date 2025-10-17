@@ -14,7 +14,7 @@
     "@stimulus-components/scroll-to": "^5.0.1",
     "@tailwindcss/cli": "^4.1.14",
     "highlight.js": "^11.11.1",
-    "marked": "^16.4.0",
+    "marked": "^16.4.1",
     "sortablejs": "^1.15.6",
     "stimulus-textarea-autogrow": "^4.1.0",
     "tailwindcss": "^4.1.14"
