@@ -1,41 +1,24 @@
 <!DOCTYPE html>
-<html lang="<%= I18n.locale %>">
+<html>
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin - Listopia</title>
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
+    <title><%= content_for(:title) || "Listopia - Admin" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
+    <%# Add this meta tag to block search engines %>
+    <meta name="robots" content="noindex, nofollow">
   </head>
   <body class="bg-gray-50 min-h-screen">
     <%= render "shared/navigation" %>
     <div class="py-6">
-      <% if notice %>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <p class="text-green-800"><%= notice %></p>
-            </div>
-          </div>
-        </div>
-      <% end %>
-      <% if alert %>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <p class="text-red-800"><%= alert %></p>
-            </div>
-          </div>
-        </div>
-      <% end %>
       <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <%= yield %>
       </main>

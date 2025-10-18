@@ -1,0 +1,134 @@
+<!-- app/views/admin/users/show.html.erb -->
+<div class="max-w-4xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <%= user_avatar_initials(@user, size: 'w-16 h-16 text-xl') %>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900"><%= @user.name %></h1>
+        <p class="text-gray-600"><%= @user.email %></p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <%= link_to admin_users_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors duration-200" do %>
+        Back to Users
+      <% end %>
+      <%= link_to edit_admin_user_path(@user), class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200" do %>
+        Edit User
+      <% end %>
+    </div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200">
+    <div class="p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">User Information</h2>
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Full Name</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.name %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Email</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.email %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Status</dt>
+          <dd class="mt-1">
+            <% if @user.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+            <% elsif @user.suspended? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Suspended</span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"><%= @user.status.titleize %></span>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Role</dt>
+          <dd class="mt-1">
+            <% if @user.admin? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Admin</span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">User</span>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Email Verified</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.email_verified? ? '✓ Yes' : '✗ No' %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Locale</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.locale %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Timezone</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.timezone %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Joined</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.created_at.strftime('%B %d, %Y') %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Last Sign In</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.last_sign_in_at ? @user.last_sign_in_at.strftime('%B %d, %Y at %H:%M') : 'Never' %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Sign In Count</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.sign_in_count %></dd>
+        </div>
+      </dl>
+      <% if @user.bio.present? %>
+        <div class="mt-4">
+          <dt class="text-sm font-medium text-gray-500">Bio</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= @user.bio %></dd>
+        </div>
+      <% end %>
+    </div>
+    <div class="p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
+      <dl class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Lists Created</dt>
+          <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user.lists.count %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Collaborations</dt>
+          <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user.list_collaborations.count %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Messages</dt>
+          <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user.messages.count %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+  <% unless @user == current_user %>
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Admin Actions</h2>
+      <div class="flex flex-wrap gap-3">
+        <%= button_to toggle_admin_admin_user_path(@user), method: :post,
+                      class: "px-4 py-2 rounded-lg border transition-colors duration-200 #{@user.admin? ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-purple-300 text-purple-600 hover:bg-purple-50'}" do %>
+          <%= @user.admin? ? 'Revoke Admin' : 'Grant Admin' %>
+        <% end %>
+        <%= button_to toggle_status_admin_user_path(@user), method: :post,
+                      class: "px-4 py-2 rounded-lg border transition-colors duration-200 #{@user.suspended? ? 'border-green-300 text-green-600 hover:bg-green-50' : 'border-red-300 text-red-600 hover:bg-red-50'}" do %>
+          <%= @user.suspended? ? 'Reactivate User' : 'Suspend User' %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <% unless @user == current_user %>
+    <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+      <h2 class="text-lg font-semibold text-red-900 mb-4">Danger Zone</h2>
+      <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+        <div>
+          <h3 class="text-sm font-medium text-red-900">Delete User</h3>
+          <p class="text-sm text-red-700">Permanently delete this user and all their data</p>
+        </div>
+        <%= button_to 'Delete User', admin_user_path(@user), 
+                      method: :delete,
+                      data: { turbo_confirm: 'Are you sure? This action cannot be undone.' },
+                      class: "bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200" %>
+      </div>
+    </div>
+  <% end %>
+</div>
