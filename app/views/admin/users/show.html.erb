@@ -92,7 +92,7 @@
         </div>
         <div>
           <dt class="text-sm font-medium text-gray-500">Collaborations</dt>
-          <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user.list_collaborations.count %></dd>
+          <dd class="mt-1 text-2xl font-semibold text-gray-900"><%= @user.collaborators.where(collaboratable_type: "List").count %></dd>
         </div>
         <div>
           <dt class="text-sm font-medium text-gray-500">Messages</dt>

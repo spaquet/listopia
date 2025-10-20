@@ -75,6 +75,21 @@ class UserPolicy < ApplicationPolicy
     user.admin? && record != user && record.admin?
   end
 
+  # Admin can create users
+  def create?
+    user.admin?
+  end
+
+  # Admin can toggle admin status
+  def toggle_admin?
+    user.admin? && record != user
+  end
+
+  # Admin can toggle user status (suspend/unsuspend)
+  def toggle_status?
+    user.admin? && record != user
+  end
+
   # Define which attributes can be updated based on user role
   def permitted_attributes
     if user.admin?
