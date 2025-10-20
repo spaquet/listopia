@@ -1,5 +1,10 @@
 # app/policies/user_policy.rb
 class UserPolicy < ApplicationPolicy
+  # User viewing their own settings page
+  def settings?
+    record == user
+  end
+
   # Admin can view user list
   def index?
     user.admin?
@@ -18,6 +23,21 @@ class UserPolicy < ApplicationPolicy
   # Users can update their own profile, admins can update any profile
   def update?
     user.admin? || record == user
+  end
+
+  # Users can change their own password
+  def update_password?
+    record == user
+  end
+
+  # Users can update their own preferences
+  def update_preferences?
+    record == user
+  end
+
+  # Users can update their own notification settings
+  def update_notification_settings?
+    record == user
   end
 
   # Only admins can delete users, and they cannot delete themselves

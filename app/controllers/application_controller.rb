@@ -12,10 +12,11 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   # Helper methods available in views
-  helper_method :current_user, :user_signed_in?
+  helper_method :current_user, :user_signed_in?, :chat_context
 
   # Before actions
   before_action :set_current_user
+  before_action :store_location
 
   # AUTHENTICATION METHODS
 
@@ -44,7 +45,7 @@ class ApplicationController < ActionController::Base
   def sign_in(user)
     reset_session # Prevent session fixation attacks
     session[:user_id] = user.id
-    session[:user_signed_in_at] = Time.current.to_s  # Store as string
+    session[:user_signed_in_at] = Time.current.to_s
     @current_user = user
   end
 
@@ -80,26 +81,6 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Pundit authorization
-  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
-
-  protected
-
-  # Set current user for use in models and services
-  def set_current_user
-    Current.user = current_user if defined?(current_user)
-    Current.request_id = request.request_id if request.respond_to?(:request_id)
-    Current.user_agent = request.user_agent if request.respond_to?(:user_agent)
-    Current.ip_address = request.remote_ip if request.respond_to?(:remote_ip)
-  end
-
-  # Authorization helper - check if user can access resource
-  def authorize_resource_access!(resource, action = :read)
-    unless can_access?(resource, action)
-      redirect_to root_path, alert: "Access denied."
-    end
-  end
-
   # Handle Turbo Stream responses
   def respond_with_turbo_stream(&block)
     respond_to do |format|
@@ -121,17 +102,29 @@ class ApplicationController < ActionController::Base
   # Custom exception for forbidden access
   class ForbiddenError < StandardError; end
 
-  # Global error handling
+  # Global error handling and Pundit authorization
+  rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
   rescue_from ForbiddenError, with: :forbidden
 
-  private
+  protected
 
-  def chat_context
-    @chat_context ||= build_chat_context
+  # Set current user for use in models and services
+  def set_current_user
+    Current.user = current_user if defined?(current_user)
+    Current.request_id = request.request_id if request.respond_to?(:request_id)
+    Current.user_agent = request.user_agent if request.respond_to?(:user_agent)
+    Current.ip_address = request.remote_ip if request.respond_to?(:remote_ip)
   end
-  helper_method :chat_context
 
+  # Authorization helper - check if user can access resource
+  def authorize_resource_access!(resource, action = :read)
+    unless can_access?(resource, action)
+      redirect_to root_path, alert: "Access denied."
+    end
+  end
+
+  # Build chat context for AI interactions
   def build_chat_context
     context = {
       page: "#{controller_name}##{action_name}",
@@ -191,7 +184,7 @@ class ApplicationController < ActionController::Base
     user = User.find_by(id: session[:user_id])
 
     if user&.email_verified?
-      # Update session timestamp directly without calling user_signed_in?
+      # Update session timestamp on each request
       session[:user_signed_in_at] = Time.current.to_s
       user
     else
@@ -200,11 +193,35 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Handle unauthorized access
+  private
+
+  # Chat context for AI interactions - callable as helper
+  def chat_context
+    @chat_context ||= build_chat_context
+  end
+
+  # Handle unauthorized access from Pundit
   # This method is called by Pundit when a user tries to access a resource they
   # are not authorized to access.
-  def user_not_authorized
-    flash[:alert] = "You are not authorized to perform this action."
-    redirect_back(fallback_location: lists_path)
+  def user_not_authorized(exception)
+    policy_name = exception.policy.class.to_s
+    action_name = exception.query
+
+    respond_to do |format|
+      format.html do
+        flash[:alert] = "You are not authorized to #{action_name} this #{policy_name.underscore.humanize.downcase}."
+        redirect_back(fallback_location: lists_path)
+      end
+      format.json do
+        render json: { error: "Not authorized to #{action_name}" }, status: :forbidden
+      end
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "flash",
+          partial: "shared/flash_messages",
+          locals: { alert: "You are not authorized to perform this action." }
+        ), status: :forbidden
+      end
+    end
   end
 end

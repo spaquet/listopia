@@ -2,20 +2,25 @@
 class UsersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_current_user, only: [ :show, :edit, :update, :settings, :update_password, :update_preferences, :update_notification_settings ]
+  before_action :set_admin_user, only: [ :suspend, :unsuspend, :deactivate, :reactivate, :grant_admin, :revoke_admin, :update_admin_notes, :destroy ]
+  before_action :authorize_action, only: [ :settings, :update_password, :update_preferences, :update_notification_settings ]
 
   helper_method :locale_options, :timezone_options
 
   # User profile view
   def show
     # @user already set by before_action
+    authorize @user
   end
 
   def edit
     # @user already set by before_action
-    render :edit
+    authorize @user
   end
 
   def update
+    authorize @user
+
     allowed_params = user_params.select do |key, _|
       UserPolicy.new(current_user, @user).permitted_attributes.include?(key.to_sym)
     end
@@ -27,12 +32,13 @@ class UsersController < ApplicationController
     end
   end
 
-  # Settings page
+  # Settings page - users can only access their own settings
   def settings
-    # @user already set by before_action
+    # @user already set by before_action and authorized
   end
 
   def update_password
+    # @user already set and authorized by before_action
     if @user.authenticate(params[:current_password])
       if @user.update(password_params)
         redirect_to settings_user_path, notice: "Password updated successfully."
@@ -47,6 +53,7 @@ class UsersController < ApplicationController
   end
 
   def update_preferences
+    # @user already set and authorized by before_action
     if @user.update(preference_params)
       redirect_to settings_user_path, notice: "Preferences updated successfully."
     else
@@ -56,6 +63,7 @@ class UsersController < ApplicationController
   end
 
   def update_notification_settings
+    # @user already set and authorized by before_action
     notification_settings = @user.notification_preferences
 
     if notification_settings.update(notification_settings_params)
@@ -66,16 +74,14 @@ class UsersController < ApplicationController
     end
   end
 
-  # Admin actions (keep these as-is for admin user management)
+  # Admin actions
   def index
     authorize User
     @pagy, @users = pagy(policy_scope(User).order(created_at: :desc))
   end
 
   def suspend
-    set_admin_user
     authorize @user
-
     @user.suspend!(reason: params[:reason], suspended_by: current_user)
     respond_to do |format|
       format.html { redirect_to admin_user_path(@user), notice: "User suspended successfully." }
@@ -84,7 +90,6 @@ class UsersController < ApplicationController
   end
 
   def unsuspend
-    set_admin_user
     authorize @user
     @user.unsuspend!(unsuspended_by: current_user)
     respond_to do |format|
@@ -93,8 +98,52 @@ class UsersController < ApplicationController
     end
   end
 
+  def deactivate
+    authorize @user
+    @user.deactivate!(reason: params[:reason], deactivated_by: current_user)
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: "User deactivated successfully." }
+      format.turbo_stream { render :deactivated }
+    end
+  end
+
+  def reactivate
+    authorize @user
+    @user.reactivate!(reactivated_by: current_user)
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: "User reactivated successfully." }
+      format.turbo_stream { render :reactivated }
+    end
+  end
+
+  def grant_admin
+    authorize @user
+    @user.make_admin!
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: "Admin privileges granted." }
+      format.turbo_stream { render :admin_granted }
+    end
+  end
+
+  def revoke_admin
+    authorize @user
+    @user.remove_admin!
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: "Admin privileges revoked." }
+      format.turbo_stream { render :admin_revoked }
+    end
+  end
+
+  def update_admin_notes
+    authorize @user
+    @user.update_admin_notes!(params[:notes], updated_by: current_user)
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: "Admin notes updated." }
+      format.turbo_stream { render :admin_notes_updated }
+    end
+  end
+
   def destroy
-    set_admin_user
     authorize @user
     if @user.destroy
       redirect_to users_path, notice: "User deleted successfully."
@@ -107,13 +156,21 @@ class UsersController < ApplicationController
 
   def set_current_user
     @user = current_user
-    authorize @user
   end
 
   def set_admin_user
     @user = User.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to users_path, alert: "User not found."
+  end
+
+  def authorize_action
+    action_method = "#{action_name}?".to_sym
+    policy = UserPolicy.new(current_user, @user)
+
+    unless policy.public_send(action_method)
+      raise Pundit::NotAuthorizedError, policy: policy, query: action_method
+    end
   end
 
   def user_params
