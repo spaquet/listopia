@@ -1,5 +1,25 @@
 <!-- app/views/dashboard/_adaptive_sidebar.html.erb -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col" style="height: 600px;" id="dashboard-adaptive-sidebar">
+  <!-- Mode Selector Tabs -->
+  <div class="flex-shrink-0 border-b border-gray-200">
+    <div class="flex gap-1 p-2 bg-gray-50">
+      <%= link_to dashboard_focus_list_path(mode: :recommendations, format: :turbo_stream),
+                  data: { turbo_stream: true },
+                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :recommendations ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
+        Recommendations
+      <% end %>
+      <%= link_to dashboard_focus_list_path(mode: :spotlight, format: :turbo_stream),
+                  data: { turbo_stream: true },
+                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :spotlight ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
+        Spotlight
+      <% end %>
+      <%= link_to dashboard_focus_list_path(mode: :nudge, format: :turbo_stream),
+                  data: { turbo_stream: true },
+                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :nudge ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
+        Nudge
+      <% end %>
+    </div>
+  </div>
   <!-- Header with Mode Indicator -->
   <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
     <div>
@@ -24,10 +44,6 @@
     <% elsif adaptive_dashboard[:mode] == :spotlight %>
       <%= render "dashboard/adaptive_spotlight",
                   spotlight: adaptive_dashboard[:spotlight],
-                  current_user: current_user %>
-    <% elsif adaptive_dashboard[:mode] == :action %>
-      <%= render "dashboard/adaptive_actions",
-                  actions: adaptive_dashboard[:actions],
                   current_user: current_user %>
     <% elsif adaptive_dashboard[:mode] == :nudge %>
       <%= render "dashboard/adaptive_nudge",

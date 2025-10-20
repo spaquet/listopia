@@ -22,6 +22,9 @@ class DashboardAdaptiveService
 
   # Determine which mode to show based on user state
   def determine_mode
+    # Force a specific mode for testing if provided
+    return current_context[:forced_mode] if current_context[:forced_mode].present?
+
     case user_state
     when :exploring
       :recommendations
@@ -160,6 +163,13 @@ class DashboardAdaptiveService
   # Generate spotlight view for a specific list
   def generate_spotlight
     selected_list_id = current_context[:selected_list_id]
+
+    # If no list selected but in spotlight mode, use first accessible list
+    if selected_list_id.blank? && current_context[:forced_mode] == :spotlight
+      first_list = user.accessible_lists.first
+      selected_list_id = first_list&.id
+    end
+
     return {} unless selected_list_id
 
     list = user.accessible_lists.find_by(id: selected_list_id)
@@ -189,7 +199,7 @@ class DashboardAdaptiveService
         .order(:due_date, :priority == "high" ? 0 : 1, :created_at)
         .limit(3)
         .map { |item| item_summary(item) },
-      collaborators: list.collaborators.limit(5).map { |c| { id: c.id, name: c.name, avatar_url: c.avatar_url } },
+      collaborators: list.collaborators.includes(:user).limit(5).map { |c| { id: c.user.id, name: c.user.name, avatar_url: c.user.avatar_url } },
       timeline: {
         created_at: list.created_at,
         updated_at: list.updated_at,
@@ -200,81 +210,23 @@ class DashboardAdaptiveService
 
   # Generate action panel
   def generate_actions
-    selected_list_id = current_context[:selected_list_id]
-    selected_list = user.accessible_lists.find_by(id: selected_list_id) if selected_list_id
-
-    actions = []
-
-    # Always available
-    actions << {
-      type: "create_list",
-      label: "Create New List",
-      icon: "plus",
-      description: "Start a new list"
-    }
-
-    if selected_list
-      # List-specific actions
-      actions << {
-        type: "add_item",
-        label: "Add Item",
-        icon: "check",
-        description: "Add to #{selected_list.title}",
-        list_id: selected_list.id
-      }
-
-      # If list has pending items
-      if selected_list.list_items.status_pending.exists?
-        actions << {
-          type: "mark_complete",
-          label: "Mark Complete",
-          icon: "checkmark",
-          description: "Complete next item",
-          item_id: selected_list.list_items.status_pending.first.id
-        }
-      end
-
-      # If not owner, can't invite, but can see collaborators
-      if selected_list.user_id == user.id
-        actions << {
-          type: "invite_collaborator",
-          label: "Invite Collaborator",
-          icon: "users",
-          description: "Share this list"
-        }
-      end
-
-      actions << {
-        type: "view_list",
-        label: "Open List",
-        icon: "arrow-right",
-        description: "Go to full view"
-      }
-    end
-
-    # Context-aware AI suggestions
-    if current_context[:chat_available]
-      actions << {
-        type: "chat_action",
-        label: "Ask AI",
-        icon: "sparkles",
-        description: "Get AI suggestions",
-        context: "list_focus"
-      }
-    end
-
-    actions
+    {}  # Removed - not needed
   end
 
   # Helper to format item summary
   def item_summary(item)
+    days_until_due = nil
+    if item.due_date
+      days_until_due = (item.due_date.to_date - Date.current).to_i
+    end
+
     {
       id: item.id,
       title: item.title,
       priority: item.priority,
       due_date: item.due_date,
       assigned_to: item.assigned_user&.name,
-      days_until_due: item.due_date ? ((item.due_date - Date.current).to_i) : nil
+      days_until_due: days_until_due
     }
   end
 end

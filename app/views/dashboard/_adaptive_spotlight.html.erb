@@ -1,15 +1,6 @@
 <!-- app/views/dashboard/_adaptive_spotlight.html.erb -->
 <div class="space-y-4">
   <% spotlight = spotlight %>
-  <!-- Back Button -->
-  <%= link_to dashboard_path(format: :turbo_stream),
-              data: { turbo_stream: true },
-              class: "inline-flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 mb-2" do %>
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-    </svg>
-    <span>Back to Recommendations</span>
-  <% end %>
   <!-- List Header -->
   <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
     <h4 class="text-lg font-bold text-gray-900 mb-1"><%= spotlight[:list_title] %></h4>
@@ -60,7 +51,7 @@
       <h5 class="text-sm font-semibold text-gray-900 mb-3">Next Items</h5>
       <div class="space-y-2">
         <% spotlight[:next_items].each do |item| %>
-          <form method="post" action="<%= toggle_completion_list_item_path(item[:id]) %>" class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded transition-colors group">
+          <form method="post" action="<%= toggle_completion_list_list_item_path(spotlight[:list_id], item[:id]) %>" class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded transition-colors group">
             <%= hidden_field_tag :_method, :patch %>
             <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
             <button type="submit" class="flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
@@ -106,7 +97,5 @@
   <div class="space-y-2 pt-2">
     <%= link_to "Open Full List", list_path(spotlight[:list_id]), 
                 class: "block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm" %>
-    <%= link_to "Add Item", new_list_item_path(spotlight[:list_id]), 
-                class: "block w-full text-center px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm" %>
   </div>
 </div>

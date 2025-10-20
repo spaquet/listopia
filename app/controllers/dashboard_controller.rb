@@ -23,18 +23,21 @@ class DashboardController < ApplicationController
   # New action for switching focus in the sidebar
   def focus_list
     list_id = params[:list_id]
+    mode = params[:mode]&.to_sym
+
+    # Build context
+    context = {
+      selected_list_id: list_id,
+      in_chat: false,
+      chat_available: true,
+      user_id: current_user.id,
+      forced_mode: mode  # Force a specific mode for testing
+    }
+
+    @adaptive_dashboard = DashboardAdaptiveService.new(current_user, context).call
 
     respond_to do |format|
       format.turbo_stream do
-        context = {
-          selected_list_id: list_id,
-          in_chat: false,
-          chat_available: true,
-          user_id: current_user.id
-        }
-
-        @adaptive_dashboard = DashboardAdaptiveService.new(current_user, context).call
-
         render turbo_stream: turbo_stream.replace(
           "dashboard-adaptive-sidebar",
           partial: "dashboard/adaptive_sidebar",
