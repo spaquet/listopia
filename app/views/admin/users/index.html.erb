@@ -93,7 +93,11 @@
     <% end %>
   </div>
   <!-- Bulk Actions & Table -->
-  <%= form_with url: "/admin/users/bulk_action", method: :post, local: true, id: "bulk_form" do |f| %>
+  <%= form_with url: bulk_action_admin_users_path, 
+    method: :post, 
+    local: true, 
+    id: "bulk_form",
+    authenticity_token: true do |f| %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <!-- Bulk Actions Bar (visible when users selected) -->
       <div id="bulk_actions_bar" class="hidden bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center justify-between">
@@ -104,15 +108,21 @@
         </div>
         <div class="flex items-center space-x-2">
           <%= f.select :bulk_action,
-              options_for_select(
-                [["Choose action...", ""], ["Suspend", "suspend"], ["Activate", "activate"], ["Make Admin", "make_admin"], ["Remove Admin", "remove_admin"], ["Delete", "delete"]],
-                ""
-              ),
-              { include_blank: false },
-              class: "px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-              id: "bulk_action_select" %>
-          <%= f.submit "Apply", class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm", id: "bulk_action_submit" %>
-          <button type="button" onclick="clearSelection()" class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm">Cancel</button>
+            options_for_select(
+              [["Choose action...", ""], ["Suspend", "suspend"], ["Activate", "activate"], ["Make Admin", "make_admin"], ["Remove Admin", "remove_admin"], ["Delete", "delete"]],
+              ""
+            ),
+            class: "px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+            id: "bulk_action_select" %>
+          <%= f.submit "Apply", 
+            class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium", 
+            id: "bulk_action_submit",
+            data: { confirm: "Are you sure? This action cannot be undone." } %>
+          <button type="button" 
+            onclick="clearSelection()" 
+            class="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm">
+            Cancel
+          </button>
         </div>
       </div>
       <!-- Table -->
@@ -120,7 +130,10 @@
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left">
-              <input type="checkbox" id="select_all" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" onchange="toggleSelectAll(this)">
+              <input type="checkbox" 
+                id="select_all" 
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                onchange="toggleSelectAll(this)">
             </th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
@@ -136,7 +149,7 @@
             <% end %>
           <% else %>
             <tr>
-              <td colspan="7" class="px-6 py-12 text-center">
+              <td colspan="6" class="px-6 py-12 text-center">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
                 </svg>
@@ -146,10 +159,6 @@
           <% end %>
         </tbody>
       </table>
-      <!-- Pagination -->
-      <% if false %>
-        <!-- Pagination disabled for now -->
-      <% end %>
     </div>
   <% end %>
 </div>
@@ -157,12 +166,14 @@
   .hidden { display: none; }
 </style>
 <script>
+  // Bulk action form validation and submission
   const userCheckboxes = document.querySelectorAll('input[name="user_ids[]"]');
   const selectAllCheckbox = document.getElementById('select_all');
   const bulkActionsBar = document.getElementById('bulk_actions_bar');
   const selectedCountSpan = document.getElementById('selected_count');
   const bulkActionSubmit = document.getElementById('bulk_action_submit');
   const bulkActionSelect = document.getElementById('bulk_action_select');
+  const bulkForm = document.getElementById('bulk_form');
 
   function updateBulkActionsBar() {
     const selectedCount = Array.from(userCheckboxes).filter(cb => cb.checked).length;
@@ -170,9 +181,11 @@
 
     if (selectedCount > 0) {
       bulkActionsBar.classList.remove('hidden');
+      bulkActionSubmit.disabled = false;
     } else {
       bulkActionsBar.classList.add('hidden');
       selectAllCheckbox.checked = false;
+      bulkActionSubmit.disabled = true;
     }
   }
 
@@ -184,18 +197,39 @@
   function clearSelection() {
     userCheckboxes.forEach(cb => cb.checked = false);
     selectAllCheckbox.checked = false;
-    updateBulkActionsBar();
     bulkActionSelect.value = '';
+    updateBulkActionsBar();
   }
 
+  // Event listeners
   userCheckboxes.forEach(checkbox => {
     checkbox.addEventListener('change', updateBulkActionsBar);
   });
 
+  // Validate form before submission
   bulkActionSubmit.addEventListener('click', (e) => {
-    if (bulkActionSelect.value === '') {
+    const selectedCount = Array.from(userCheckboxes).filter(cb => cb.checked).length;
+    const selectedAction = bulkActionSelect.value;
+
+    if (selectedCount === 0) {
+      e.preventDefault();
+      alert('Please select at least one user');
+      return;
+    }
+
+    if (selectedAction === '') {
       e.preventDefault();
       alert('Please select an action');
+      return;
+    }
+
+    // Show confirmation for destructive actions
+    const destructiveActions = ['delete', 'suspend'];
+    if (destructiveActions.includes(selectedAction)) {
+      return confirm(`Are you sure you want to ${selectedAction} ${selectedCount} user(s)? This action cannot be undone.`);
     }
   });
+
+  // Initialize on page load
+  updateBulkActionsBar();
 </script>

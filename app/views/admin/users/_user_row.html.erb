@@ -6,10 +6,17 @@
   </td>
   <!-- User Info -->
   <td class="px-6 py-4 whitespace-nowrap">
-    <%= link_to "/admin/users/#{user.id}", class: "flex items-center hover:opacity-75 transition-opacity" do %>
+    <%= link_to admin_user_path(user), class: "flex items-center hover:opacity-75 transition-opacity" do %>
       <%= user_avatar_initials(user, size: 'w-10 h-10 text-sm') %>
       <div class="ml-4">
-        <div class="text-sm font-medium text-gray-900"><%= user.name %></div>
+        <div class="text-sm font-medium text-gray-900 flex items-center gap-2">
+          <%= user.name %>
+          <% if user == current_user %>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              You
+            </span>
+          <% end %>
+        </div>
         <div class="text-sm text-gray-500"><%= user.email %></div>
       </div>
     <% end %>
@@ -63,25 +70,25 @@
       <!-- Toggle Status Button (Suspend/Activate) -->
       <% if user != current_user %>
         <% if user.active? %>
-          <%= form_with url: "/admin/users/#{user.id}/toggle_status", method: :post, local: true, style: "display: inline;" do %>
-            <button type="submit" class="text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" title="Suspend user">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
-              </svg>
-            </button>
+          <%= button_to toggle_status_admin_user_path(user), method: :post, local: true,
+              class: "text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors",
+              title: "Suspend user" do %>
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
+            </svg>
           <% end %>
         <% elsif user.suspended? %>
-          <%= form_with url: "/admin/users/#{user.id}/toggle_status", method: :post, local: true, style: "display: inline;" do %>
-            <button type="submit" class="text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-green-50 transition-colors" title="Activate user">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"></path>
-              </svg>
-            </button>
+          <%= button_to toggle_status_admin_user_path(user), method: :post, local: true,
+              class: "text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-green-50 transition-colors",
+              title: "Activate user" do %>
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
           <% end %>
         <% end %>
       <% end %>
       <!-- Edit Button -->
-      <%= link_to "/admin/users/#{user.id}/edit",
+      <%= link_to edit_admin_user_path(user),
           class: "text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors",
           title: "Edit user" do %>
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +97,7 @@
       <% end %>
       <!-- Delete Button -->
       <% if user != current_user %>
-        <%= button_to "/admin/users/#{user.id}", method: :delete,
+        <%= button_to admin_user_path(user), method: :delete,
             class: "text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors",
             title: "Delete user",
             data: { turbo_confirm: "Are you sure? This action cannot be undone." } do %>
@@ -110,20 +117,18 @@
           <% if user != current_user %>
             <!-- Toggle Admin -->
             <% if user.admin? %>
-              <%= button_to "/admin/users/#{user.id}/toggle_admin", method: :post,
-                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg",
-                  form: { class: "w-full" } do %>
+              <%= button_to toggle_admin_admin_user_path(user), method: :post, local: true,
+                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg" do %>
                 Remove Admin
               <% end %>
             <% else %>
-              <%= button_to "/admin/users/#{user.id}/toggle_admin", method: :post,
-                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg",
-                  form: { class: "w-full" } do %>
+              <%= button_to toggle_admin_admin_user_path(user), method: :post, local: true,
+                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg" do %>
                 Make Admin
               <% end %>
             <% end %>
           <% end %>
-          <%= link_to "View Profile", "/admin/users/#{user.id}",
+          <%= link_to "View Profile", admin_user_path(user),
               class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
         </div>
       </div>
