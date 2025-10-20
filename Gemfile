@@ -47,6 +47,9 @@ gem "solid_cable"
 # Pagination
 gem "pagy"
 
+# Searching and filtering
+gem "pg_search"
+
 # Notification
 gem "noticed"
 

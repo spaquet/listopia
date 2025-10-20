@@ -12,7 +12,7 @@ class Admin::UsersController < Admin::BaseController
   def index
     authorize User
 
-    # Initialize the filter service
+    # Initialize the filter service with params
     @filter_service = UserFilterService.new(
       query: params[:query],
       status: params[:status],
@@ -21,10 +21,10 @@ class Admin::UsersController < Admin::BaseController
       sort_by: params[:sort_by]
     )
 
-    # Get filtered users with simple limit for now (no pagy due to config issues)
+    # Get filtered users
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
 
-    # Store filters in instance for view
+    # Store filters for view
     @filters = {
       query: params[:query],
       status: params[:status],
@@ -32,6 +32,22 @@ class Admin::UsersController < Admin::BaseController
       verified: params[:verified],
       sort_by: params[:sort_by]
     }
+
+    # Respond to different formats
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        # Use morph to update DOM while preserving focus on form elements
+        render turbo_stream: [
+          turbo_stream.morph("users-table", partial: "users_table", locals: { users: @users }),
+          turbo_stream.replace("results-summary", partial: "results_summary", locals: { users_count: @users.count })
+        ]
+      end
+    end
+  rescue => e
+    Rails.logger.error("User filter error: #{e.message}\n#{e.backtrace.join("\n")}")
+    flash.now[:alert] = "An error occurred while filtering users"
+    render :index, status: :unprocessable_entity
   end
 
   def show

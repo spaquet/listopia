@@ -1,5 +1,7 @@
 # app/services/user_filter_service.rb
 class UserFilterService
+  attr_reader :query, :status, :role, :verified, :sort_by
+
   def initialize(query: nil, status: nil, role: nil, verified: nil, sort_by: nil)
     @query = query&.strip
     @status = status
@@ -11,39 +13,60 @@ class UserFilterService
   def filtered_users
     users = User.all
 
-    # Search by name or email
-    users = search_users(users) if @query.present?
+    # Apply filters in order
+    users = apply_search(users)
+    users = apply_status_filter(users)
+    users = apply_role_filter(users)
+    users = apply_verification_filter(users)
+    users = apply_sorting(users)
 
-    # Filter by status
-    users = users.where(status: @status) if @status.present? && valid_status?
-
-    # Filter by role (admin)
-    if @role.present? && valid_role?
-      if @role == "admin"
-        users = users.with_role(:admin)
-      elsif @role == "user"
-        users = users.without_role(:admin)
-      end
-    end
-
-    # Filter by email verification status
-    if @verified.present? && valid_verified?
-      if @verified == "verified"
-        users = users.where.not(email_verified_at: nil)
-      elsif @verified == "unverified"
-        users = users.where(email_verified_at: nil)
-      end
-    end
-
-    # Apply sorting
-    apply_sorting(users)
+    users
   end
 
   private
 
-  def search_users(users)
-    search_term = "%#{@query}%"
-    users.where("name ILIKE ? OR email ILIKE ?", search_term, search_term)
+  def apply_search(users)
+    return users if @query.blank?
+
+    # Use PgSearch for better full-text search performance
+    users.where(
+      "LOWER(users.name) ILIKE ? OR LOWER(users.email) ILIKE ? OR users.id::text ILIKE ?",
+      "%#{sanitize_query(@query)}%",
+      "%#{sanitize_query(@query)}%",
+      "%#{sanitize_query(@query)}%"
+    )
+  end
+
+  def apply_status_filter(users)
+    return users if @status.blank? || !valid_status?(@status)
+
+    users.where(status: @status)
+  end
+
+  def apply_role_filter(users)
+    return users if @role.blank? || !valid_role?(@role)
+
+    case @role
+    when "admin"
+      users.with_role(:admin)
+    when "user"
+      users.without_role(:admin)
+    else
+      users
+    end
+  end
+
+  def apply_verification_filter(users)
+    return users if @verified.blank? || !valid_verified?(@verified)
+
+    case @verified
+    when "verified"
+      users.where.not(email_verified_at: nil)
+    when "unverified"
+      users.where(email_verified_at: nil)
+    else
+      users
+    end
   end
 
   def apply_sorting(users)
@@ -58,20 +81,25 @@ class UserFilterService
       users.order(email: :desc)
     when "oldest"
       users.order(created_at: :asc)
-    else # 'recent' is default
+    else
       users.order(created_at: :desc)
     end
   end
 
-  def valid_status?
-    [ "active", "suspended", "inactive" ].include?(@status)
+  def sanitize_query(query)
+    # Remove SQL injection attempts and special characters
+    query.gsub(/[%_\\]/, '\\\\\0')
   end
 
-  def valid_role?
-    [ "admin", "user" ].include?(@role)
+  def valid_status?(status)
+    %w[active suspended inactive].include?(status)
   end
 
-  def valid_verified?
-    [ "verified", "unverified" ].include?(@verified)
+  def valid_role?(role)
+    %w[admin user].include?(role)
+  end
+
+  def valid_verified?(verified)
+    %w[verified unverified].include?(verified)
   end
 end
