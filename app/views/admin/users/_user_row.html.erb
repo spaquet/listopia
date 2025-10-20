@@ -1,0 +1,132 @@
+<!-- app/views/admin/users/_user_row.html.erb -->
+<tr id="user_<%= user.id %>" class="hover:bg-gray-50 transition-colors">
+  <!-- Checkbox -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    <input type="checkbox" name="user_ids[]" value="<%= user.id %>" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+  </td>
+  <!-- User Info -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    <%= link_to "/admin/users/#{user.id}", class: "flex items-center hover:opacity-75 transition-opacity" do %>
+      <%= user_avatar_initials(user, size: 'w-10 h-10 text-sm') %>
+      <div class="ml-4">
+        <div class="text-sm font-medium text-gray-900"><%= user.name %></div>
+        <div class="text-sm text-gray-500"><%= user.email %></div>
+      </div>
+    <% end %>
+  </td>
+  <!-- Role -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% if user.admin? %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+        Admin
+      </span>
+    <% else %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        User
+      </span>
+    <% end %>
+  </td>
+  <!-- Status -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% if user.active? %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <span class="w-2 h-2 mr-1.5 bg-green-600 rounded-full"></span>
+        Active
+      </span>
+    <% elsif user.suspended? %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        <span class="w-2 h-2 mr-1.5 bg-red-600 rounded-full"></span>
+        Suspended
+      </span>
+    <% else %>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        <span class="w-2 h-2 mr-1.5 bg-gray-600 rounded-full"></span>
+        <%= user.status.titleize %>
+      </span>
+    <% end %>
+  </td>
+  <!-- Email Verified -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% if user.email_verified? %>
+      <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+    <% else %>
+      <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293-1.293a1 1 0 101.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+      </svg>
+    <% end %>
+  </td>
+  <!-- Actions -->
+  <td class="px-6 py-4 whitespace-nowrap text-center">
+    <div class="flex items-center justify-end space-x-2">
+      <!-- Toggle Status Button (Suspend/Activate) -->
+      <% if user != current_user %>
+        <% if user.active? %>
+          <%= form_with url: "/admin/users/#{user.id}/toggle_status", method: :post, local: true, style: "display: inline;" do %>
+            <button type="submit" class="text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" title="Suspend user">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"></path>
+              </svg>
+            </button>
+          <% end %>
+        <% elsif user.suspended? %>
+          <%= form_with url: "/admin/users/#{user.id}/toggle_status", method: :post, local: true, style: "display: inline;" do %>
+            <button type="submit" class="text-gray-600 hover:text-green-600 p-2 rounded-lg hover:bg-green-50 transition-colors" title="Activate user">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </button>
+          <% end %>
+        <% end %>
+      <% end %>
+      <!-- Edit Button -->
+      <%= link_to "/admin/users/#{user.id}/edit",
+          class: "text-gray-600 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-50 transition-colors",
+          title: "Edit user" do %>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+      <% end %>
+      <!-- Delete Button -->
+      <% if user != current_user %>
+        <%= button_to "/admin/users/#{user.id}", method: :delete,
+            class: "text-gray-600 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors",
+            title: "Delete user",
+            data: { turbo_confirm: "Are you sure? This action cannot be undone." } do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        <% end %>
+      <% end %>
+      <!-- Dropdown Menu for More Actions -->
+      <div class="relative group">
+        <button class="text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.5 1.5H9.5V.5h1v1zm0 17H9.5v-1h1v1zm0-8.5H9.5v-1h1v1zM5.5 10.5H4.5v-1h1v1zm10 0h-1v-1h1v1z"></path>
+          </svg>
+        </button>
+        <div class="absolute right-0 mt-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+          <% if user != current_user %>
+            <!-- Toggle Admin -->
+            <% if user.admin? %>
+              <%= button_to "/admin/users/#{user.id}/toggle_admin", method: :post,
+                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg",
+                  form: { class: "w-full" } do %>
+                Remove Admin
+              <% end %>
+            <% else %>
+              <%= button_to "/admin/users/#{user.id}/toggle_admin", method: :post,
+                  class: "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg",
+                  form: { class: "w-full" } do %>
+                Make Admin
+              <% end %>
+            <% end %>
+          <% end %>
+          <%= link_to "View Profile", "/admin/users/#{user.id}",
+              class: "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" %>
+        </div>
+      </div>
+    </div>
+  </td>
+</tr>

@@ -131,7 +131,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Admin routes (future)
+  # Admin routes
   namespace :admin do
     root "dashboard#index"
 
@@ -139,6 +139,9 @@ Rails.application.routes.draw do
       member do
         post :toggle_admin
         post :toggle_status
+      end
+      collection do
+        post :bulk_action
       end
     end
 

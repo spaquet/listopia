@@ -2,13 +2,36 @@
 class Admin::UsersController < Admin::BaseController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_user, only: [ :show, :edit, :update, :destroy, :toggle_admin, :toggle_status ]
+  before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
+
+  # Allow button_to POST requests
+  skip_forgery_protection only: [ :toggle_admin, :toggle_status ]
 
   helper_method :locale_options, :timezone_options
 
   def index
     authorize User
-    @pagy, @users = pagy(User.includes(:roles).order(created_at: :desc))
+
+    # Initialize the filter service
+    @filter_service = UserFilterService.new(
+      query: params[:query],
+      status: params[:status],
+      role: params[:role],
+      verified: params[:verified],
+      sort_by: params[:sort_by]
+    )
+
+    # Get filtered users with simple limit for now (no pagy due to config issues)
+    @users = @filter_service.filtered_users.includes(:roles).limit(100)
+
+    # Store filters in instance for view
+    @filters = {
+      query: params[:query],
+      status: params[:status],
+      role: params[:role],
+      verified: params[:verified],
+      sort_by: params[:sort_by]
+    }
   end
 
   def show
@@ -23,7 +46,6 @@ class Admin::UsersController < Admin::BaseController
   def create
     @user = User.new(user_params)
     @user.email_verified_at = Time.current # Auto-verify admin-created users
-
     authorize @user, :create?
 
     if @user.save
@@ -56,8 +78,16 @@ class Admin::UsersController < Admin::BaseController
       return
     end
 
-    @user.destroy
-    redirect_to admin_users_path, notice: "User deleted successfully."
+    if @user.destroy
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, notice: "User deleted successfully." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.remove("user_#{@user.id}")
+        end
+      end
+    else
+      redirect_to admin_users_path, alert: "Failed to delete user."
+    end
   end
 
   def toggle_admin
@@ -76,7 +106,13 @@ class Admin::UsersController < Admin::BaseController
       message = "Admin privileges granted."
     end
 
-    redirect_to admin_user_path(@user), notice: message
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: message }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+          partial: "user_row", locals: { user: @user })
+      end
+    end
   end
 
   def toggle_status
@@ -96,7 +132,33 @@ class Admin::UsersController < Admin::BaseController
       message = "User reactivated successfully."
     end
 
-    redirect_to admin_user_path(@user), notice: message
+    respond_to do |format|
+      format.html { redirect_to admin_user_path(@user), notice: message }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+          partial: "user_row", locals: { user: @user })
+      end
+    end
+  end
+
+  def bulk_action
+    authorize User, :index?
+
+    user_ids = params[:user_ids]&.reject(&:blank?) || []
+    action = params[:bulk_action]
+
+    if user_ids.empty?
+      redirect_to admin_users_path, alert: "Please select at least one user."
+      return
+    end
+
+    service = BulkUserActionService.new(current_user, user_ids, action)
+
+    if service.execute
+      redirect_to admin_users_path, notice: service.message
+    else
+      redirect_to admin_users_path, alert: service.error_message
+    end
   end
 
   private
@@ -114,25 +176,23 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def user_params
-    params.require(:user).permit(
-      :name,
-      :email,
-      :password,
-      :password_confirmation,
-      :bio,
-      :avatar_url,
-      :locale,
-      :timezone,
-      :admin_notes
-    )
+    params.require(:user).permit(:name, :email, :password, :password_confirmation, :status, :admin_notes, :locale, :timezone)
   end
 
   def locale_options
     [
       [ "English", "en" ],
-      [ "Français", "fr" ],
-      [ "Español", "es" ],
-      [ "Deutsch", "de" ]
+      [ "Spanish", "es" ],
+      [ "French", "fr" ],
+      [ "German", "de" ],
+      [ "Italian", "it" ],
+      [ "Portuguese", "pt" ],
+      [ "Dutch", "nl" ],
+      [ "Polish", "pl" ],
+      [ "Russian", "ru" ],
+      [ "Chinese (Simplified)", "zh-CN" ],
+      [ "Japanese", "ja" ],
+      [ "Korean", "ko" ]
     ]
   end
 
