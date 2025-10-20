@@ -21,21 +21,26 @@
     <% if recommendations.any? %>
       <% recommendations.first(3).each do |rec| %>
         <div class="group p-3 bg-gradient-to-r from-white to-gray-50 
-                    rounded-lg border-2 border-gray-200 hover:border-orange-300 cursor-pointer 
-                    transition-all hover:shadow-md"
-             data-controller="turbo-frame"
-             data-action="click->turbo-frame#navigate"
-          data-url="<%= dashboard_focus_list_path(rec[:list_id], format: :turbo_stream) %>">
+                    rounded-lg border-2 border-gray-200 hover:border-orange-300 
+                    transition-all hover:shadow-md">
           <!-- List Title -->
           <div class="flex items-start justify-between mb-2">
             <div class="flex-1">
-              <p class="font-medium text-gray-900 group-hover:text-orange-600 transition-colors truncate">
-                <%= rec[:list_title] %>
-              </p>
+              <%= link_to rec[:list_title], list_path(rec[:list_id]),
+                          class: "font-medium text-gray-900 hover:text-orange-600 transition-colors truncate" %>
               <p class="text-xs text-gray-500 mt-0.5">
                 <%= rec[:reason] %>
               </p>
             </div>
+            <!-- Spotlight Arrow -->
+            <%= link_to dashboard_focus_list_path(list_id: rec[:list_id], mode: :spotlight, format: :turbo_stream),
+                        data: { turbo_stream: true },
+                        class: "ml-2 flex-shrink-0 p-1 hover:bg-orange-50 rounded transition-all" do %>
+              <svg class="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" 
+                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            <% end %>
           </div>
           <!-- Progress Bar -->
           <div class="mb-2">
@@ -49,10 +54,6 @@
             <span>
               <span class="font-medium text-gray-900"><%= rec[:pending_count] %></span> pending items
             </span>
-            <svg class="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" 
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
           </div>
         </div>
       <% end %>

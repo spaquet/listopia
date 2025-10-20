@@ -8,11 +8,6 @@
                   class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :recommendations ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
         Recommendations
       <% end %>
-      <%= link_to dashboard_focus_list_path(mode: :spotlight, format: :turbo_stream),
-                  data: { turbo_stream: true },
-                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :spotlight ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
-        Spotlight
-      <% end %>
       <%= link_to dashboard_focus_list_path(mode: :nudge, format: :turbo_stream),
                   data: { turbo_stream: true },
                   class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :nudge ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
@@ -37,15 +32,16 @@
   </div>
   <!-- Content Area - Changes based on mode -->
   <div class="flex-1 overflow-y-auto p-6 space-y-4">
-    <% if adaptive_dashboard[:mode] == :recommendations %>
+    <% case adaptive_dashboard[:mode]
+       when :recommendations %>
       <%= render "dashboard/adaptive_recommendations", 
                   recommendations: adaptive_dashboard[:recommendations],
                   current_user: current_user %>
-    <% elsif adaptive_dashboard[:mode] == :spotlight %>
+    <% when :spotlight %>
       <%= render "dashboard/adaptive_spotlight",
                   spotlight: adaptive_dashboard[:spotlight],
                   current_user: current_user %>
-    <% elsif adaptive_dashboard[:mode] == :nudge %>
+    <% when :nudge %>
       <%= render "dashboard/adaptive_nudge",
                   recommendations: adaptive_dashboard[:recommendations],
                   current_user: current_user %>
