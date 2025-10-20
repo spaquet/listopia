@@ -36,7 +36,7 @@ Rails.application.routes.draw do
   get "authenticate/:token", to: "sessions#authenticate_magic_link", as: :authenticate_magic_link
 
   # User management
-  get "profile", to: "users#show", as: :user
+  get "profile", to: "users#show", as: :profile
   get "profile/edit", to: "users#edit", as: :edit_user
   patch "profile", to: "users#update"
   get "settings", to: "users#settings", as: :settings_user
@@ -113,7 +113,7 @@ Rails.application.routes.draw do
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 
   # User management routes, used by admins
-  resources :users, only: [ :index, :show, :destroy ] do
+  resources :users, only: [ :show, :destroy ] do
     member do
       # Admin actions only (settings routes already defined above for current user)
       post "suspend", to: "users#suspend"
