@@ -13,18 +13,20 @@
   <div id="dashboard-stats">
     <%= render "dashboard/stats_overview", stats: @stats %>
   </div>
-  <!-- Chat and Recent Activity -->
+  <!-- Chat and Adaptive Sidebar -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Embedded Chat Interface (replaces My Lists) -->
+    <!-- Embedded Chat Interface (2/3 width) -->
     <div class="lg:col-span-2">
       <div id="dashboard-chat">
         <%= render "dashboard/embedded_chat" %>
       </div>
     </div>
-    <!-- Sidebar - Only Recent Activity -->
+    <!-- Adaptive Sidebar (1/3 width) -->
     <div class="space-y-6">
-      <div id="dashboard-recent-activity">
-        <%= render "dashboard/recent_activity", items: @recent_items %>
+      <div id="dashboard-adaptive-sidebar">
+        <%= render "dashboard/adaptive_sidebar", 
+                    adaptive_dashboard: @adaptive_dashboard,
+                    current_user: current_user %>
       </div>
     </div>
   </div>

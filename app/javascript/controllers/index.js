@@ -25,6 +25,9 @@ application.register("connection-status", ConnectionStatusController)
 import CustomSelectController from "./custom_select_controller"
 application.register("custom-select", CustomSelectController)
 
+import DashboardActionController from "./dashboard_action_controller"
+application.register("dashboard-action", DashboardActionController)
+
 import DashboardChatInputController from "./dashboard_chat_input_controller"
 application.register("dashboard-chat-input", DashboardChatInputController)
 
