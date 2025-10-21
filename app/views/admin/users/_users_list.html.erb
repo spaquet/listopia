@@ -1,0 +1,4 @@
+<!-- app/views/admin/users/_users_list.html.erb -->
+<% users.each do |user| %>
+  <%= render "user_row", user: user, current_user: current_user %>
+<% end %>

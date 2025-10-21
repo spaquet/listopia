@@ -123,25 +123,23 @@
     <div id="results-summary" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <%= render "results_summary", users_count: @users.count %>
     </div>
-    <!-- Users Table Container -->
+    <!-- Users List Container - Turbo Stream target -->
     <div id="users-table">
       <% if @users.any? %>
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Role</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email Verification</th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <% @users.each do |user| %>
-              <%= render "user_row", user: user, current_user: current_user %>
-            <% end %>
-          </tbody>
-        </table>
+        <!-- Header Row (Desktop only) -->
+        <div class="hidden md:flex items-center px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-700 uppercase tracking-wider">
+          <div class="flex-1">Name</div>
+          <div class="w-32">Status</div>
+          <div class="w-24">Role</div>
+          <div class="w-32">Email Verification</div>
+          <div class="w-24 text-right">Actions</div>
+        </div>
+        <!-- Users List -->
+        <div id="users-list">
+          <% @users.each do |user| %>
+            <%= render "user_row", user: user, current_user: current_user %>
+          <% end %>
+        </div>
       <% else %>
         <div class="px-6 py-12 text-center">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

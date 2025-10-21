@@ -41,7 +41,7 @@ class Admin::UsersController < Admin::BaseController
       format.html
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.morph("users-table", partial: "users_table", locals: { users: @users }),
+          turbo_stream.replace("users-list", partial: "users_list", locals: { users: @users }),
           turbo_stream.replace("results-summary", partial: "results_summary", locals: { users_count: @users.count })
         ]
       end
