@@ -1,10 +1,13 @@
 # app/controllers/admin/users_controller.rb
 class Admin::UsersController < Admin::BaseController
-  before_action :authenticate_user!
-  before_action :authorize_admin!
+  # Admin::BaseController already has:
+  # - authenticate_user!
+  # - require_admin!
+  # - layout "admin"
+
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
 
-  # Allow Turbo Stream requests for POST actions
+  # Allow Turbo Stream requests for these actions (disable CSRF only for these)
   skip_forgery_protection only: [ :toggle_admin, :toggle_status, :destroy ]
 
   helper_method :locale_options, :timezone_options
@@ -60,7 +63,7 @@ class Admin::UsersController < Admin::BaseController
 
   def create
     @user = User.new(user_params)
-    @user.email_verified_at = Time.current # Auto-verify admin-created users
+    @user.email_verified_at = Time.current
     authorize @user, :create?
 
     if @user.save
@@ -69,7 +72,6 @@ class Admin::UsersController < Admin::BaseController
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
         format.turbo_stream do
-          # Return to users list with new user added
           redirect_to admin_users_path, status: :see_other
         end
       end
@@ -90,7 +92,7 @@ class Admin::UsersController < Admin::BaseController
         format.html { redirect_to admin_user_path(@user), notice: "User updated successfully." }
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-            partial: "user_row", locals: { user: @user })
+            partial: "user_row", locals: { user: @user, current_user: current_user })
         end
       end
     else
@@ -102,7 +104,14 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :destroy?
 
     if @user == current_user
-      redirect_to admin_users_path, alert: "You cannot delete your own account."
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, alert: "You cannot delete your own account." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+            partial: "user_row", locals: { user: @user, current_user: current_user }),
+            status: :unprocessable_entity
+        end
+      end
       return
     end
 
@@ -114,7 +123,14 @@ class Admin::UsersController < Admin::BaseController
         end
       end
     else
-      redirect_to admin_users_path, alert: "Failed to delete user."
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, alert: "Failed to delete user." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+            partial: "user_row", locals: { user: @user, current_user: current_user }),
+            status: :unprocessable_entity
+        end
+      end
     end
   end
 
@@ -122,7 +138,14 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :toggle_admin?
 
     if @user == current_user
-      redirect_to admin_users_path, alert: "You cannot modify your own admin status."
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, alert: "You cannot modify your own admin status." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+            partial: "user_row", locals: { user: @user, current_user: current_user }),
+            status: :unprocessable_entity
+        end
+      end
       return
     end
 
@@ -138,10 +161,8 @@ class Admin::UsersController < Admin::BaseController
     respond_to do |format|
       format.html { redirect_to admin_users_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.replace("user_#{@user.id}", partial: "user_row", locals: { user: @user }),
-          turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: message, type: "notice" })
-        ]
+        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+          partial: "user_row", locals: { user: @user, current_user: current_user })
       end
     end
   end
@@ -150,7 +171,14 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :toggle_status?
 
     if @user == current_user
-      redirect_to admin_users_path, alert: "You cannot suspend your own account."
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, alert: "You cannot suspend your own account." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+            partial: "user_row", locals: { user: @user, current_user: current_user }),
+            status: :unprocessable_entity
+        end
+      end
       return
     end
 
@@ -167,49 +195,13 @@ class Admin::UsersController < Admin::BaseController
     respond_to do |format|
       format.html { redirect_to admin_users_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.replace("user_#{@user.id}", partial: "user_row", locals: { user: @user }),
-          turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: message, type: "notice" })
-        ]
+        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+          partial: "user_row", locals: { user: @user, current_user: current_user })
       end
-    end
-  end
-
-  def bulk_action
-    authorize User, :index?
-
-    user_ids = params[:user_ids]&.reject(&:blank?) || []
-    action = params[:bulk_action]
-
-    if user_ids.empty?
-      redirect_to admin_users_path, alert: "Please select at least one user."
-      return
-    end
-
-    service = BulkUserActionService.new(current_user, user_ids, action)
-
-    if service.execute
-      respond_to do |format|
-        format.html { redirect_to admin_users_path, notice: service.message }
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.morph("users-table", partial: "users_table", locals: { users: User.all.includes(:roles).limit(100) }),
-            turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: service.message, type: "notice" })
-          ]
-        end
-      end
-    else
-      redirect_to admin_users_path, alert: service.error_message
     end
   end
 
   private
-
-  def authorize_admin!
-    unless current_user&.admin?
-      redirect_to root_path, alert: "You are not authorized to access this area."
-    end
-  end
 
   def set_user
     @user = User.find(params[:id])
@@ -218,6 +210,14 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :bio, :avatar_url, :locale, :timezone, :status, :admin_notes)
+    params.require(:user).permit(:name, :email, :bio, :avatar_url, :locale, :timezone, :admin_notes)
+  end
+
+  def locale_options
+    [ [ "English", "en" ], [ "Français", "fr" ], [ "Español", "es" ], [ "Deutsch", "de" ] ]
+  end
+
+  def timezone_options
+    ActiveSupport::TimeZone.all.map { |tz| [ tz.to_s, tz.name ] }
   end
 end

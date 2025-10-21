@@ -2,37 +2,49 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = [
-    "form",
-    "query",
-    "status",
-    "role",
-    "verified",
-    "sortBy",
-    "loading",
-    "clearBtn"
-  ]
+  static targets = ["form", "query", "status", "role", "verified", "sortBy", "loading", "clearBtn"]
 
   static values = {
     debounceDelay: { type: Number, default: 300 }
   }
 
   connect() {
+    console.log("[UserFilter] Controller connected")
     this.debounceTimeout = null
     this.lastSubmittedValues = this.getCurrentFormValues()
     this.updateClearButtonVisibility()
+
+    // Bind Turbo event handlers with proper context
+    this.handleTurboSubmitStart = () => {
+      console.log("[UserFilter] Turbo submit start")
+      this.setLoading(true)
+    }
+    this.handleTurboSubmitEnd = () => {
+      console.log("[UserFilter] Turbo submit end")
+      this.setLoading(false)
+    }
+
+    // Attach listeners
+    document.addEventListener("turbo:submit-start", this.handleTurboSubmitStart)
+    document.addEventListener("turbo:submit-end", this.handleTurboSubmitEnd)
   }
 
   disconnect() {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
+
+    // Clean up event listeners with proper reference
+    document.removeEventListener("turbo:submit-start", this.handleTurboSubmitStart)
+    document.removeEventListener("turbo:submit-end", this.handleTurboSubmitEnd)
   }
 
   /**
-   * Handle search input - debounced submission
+   * Handle form field changes - entry point for filters
    */
   submitForm(event) {
+    console.log("[UserFilter] submitForm called", event?.target?.name)
+
     // For search input, debounce the submission
     if (event?.target === this.queryTarget) {
       this.debounceSubmit()
@@ -46,15 +58,12 @@ export default class extends Controller {
   }
 
   /**
-   * Debounced form submission for search
+   * Debounced submission for search input (300ms delay)
    */
   debounceSubmit() {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
-
-    // Show loading indicator
-    this.setLoading(true)
 
     this.debounceTimeout = setTimeout(() => {
       this.submitNow()
@@ -62,17 +71,18 @@ export default class extends Controller {
   }
 
   /**
-   * Execute form submission immediately
+   * Submit the form only if values have changed
    */
   submitNow() {
     const currentValues = this.getCurrentFormValues()
+    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(this.lastSubmittedValues)
 
-    // Only submit if values have changed
-    if (JSON.stringify(currentValues) !== JSON.stringify(this.lastSubmittedValues)) {
+    console.log("[UserFilter] submitNow", { currentValues, valuesChanged })
+
+    if (valuesChanged) {
       this.lastSubmittedValues = currentValues
-
-      // Turbo will handle the form submission automatically
-      // and replace the results via Turbo Stream response
+      
+      // Request submit will trigger Turbo and Turbo:submit-start/end events
       this.formTarget.requestSubmit()
     }
   }
@@ -82,6 +92,7 @@ export default class extends Controller {
    */
   clearFilters(event) {
     event?.preventDefault()
+    console.log("[UserFilter] clearFilters called")
 
     // Reset all form fields
     this.queryTarget.value = ""
@@ -90,42 +101,17 @@ export default class extends Controller {
     this.verifiedTarget.value = ""
     this.sortByTarget.value = "recent"
 
-    // Update last submitted values
+    // Update tracking
     this.lastSubmittedValues = this.getCurrentFormValues()
-
-    // Update clear button
     this.updateClearButtonVisibility()
 
     // Submit form
-    this.setLoading(true)
     this.formTarget.requestSubmit()
-
-    // Keep focus on search input
     this.queryTarget.focus()
   }
 
   /**
-   * Handle keyboard shortcuts
-   */
-  handleKeydown(event) {
-    // Escape key - clear search
-    if (event.key === "Escape") {
-      event.preventDefault()
-      this.queryTarget.value = ""
-      this.updateClearButtonVisibility()
-      this.queryTarget.blur()
-    }
-
-    // Ctrl/Cmd + A - focus search
-    if ((event.ctrlKey || event.metaKey) && event.key === "a") {
-      event.preventDefault()
-      this.queryTarget.focus()
-      this.queryTarget.select()
-    }
-  }
-
-  /**
-   * Get current form values
+   * Get current form field values
    */
   getCurrentFormValues() {
     return {
@@ -138,28 +124,34 @@ export default class extends Controller {
   }
 
   /**
-   * Update clear button visibility
+   * Toggle clear button visibility based on active filters
    */
   updateClearButtonVisibility() {
     const hasFilters = this.hasActiveFilters()
-    
-    if (hasFilters) {
-      this.clearBtnTarget.classList.remove("hidden")
-    } else {
-      this.clearBtnTarget.classList.add("hidden")
+
+    try {
+      if (hasFilters) {
+        this.clearBtnTarget.classList.remove("hidden")
+      } else {
+        this.clearBtnTarget.classList.add("hidden")
+      }
+    } catch (e) {
+      // Clear button target not found, ignore
+      console.log("[UserFilter] Clear button not found")
     }
   }
 
   /**
-   * Check if any filters are active
+   * Check if any filters are currently active
    */
   hasActiveFilters() {
+    const values = this.getCurrentFormValues()
     return (
-      this.queryTarget.value.trim() !== "" ||
-      this.statusTarget.value !== "" ||
-      this.roleTarget.value !== "" ||
-      this.verifiedTarget.value !== "" ||
-      this.sortByTarget.value !== "recent"
+      values.query.trim() !== "" ||
+      values.status !== "" ||
+      values.role !== "" ||
+      values.verified !== "" ||
+      values.sortBy !== "recent"
     )
   }
 
@@ -167,18 +159,41 @@ export default class extends Controller {
    * Show/hide loading indicator
    */
   setLoading(isLoading) {
-    if (isLoading) {
-      this.loadingTarget.classList.remove("hidden")
-    } else {
-      this.loadingTarget.classList.add("hidden")
+    try {
+      const loadingEl = document.querySelector('[data-user-filter-target="loading"]')
+      if (!loadingEl) {
+        console.log("[UserFilter] Loading element not in DOM, skipping")
+        return
+      }
+
+      if (isLoading) {
+        loadingEl.classList.remove("hidden")
+      } else {
+        loadingEl.classList.add("hidden")
+      }
+    } catch (e) {
+      console.log("[UserFilter] Error setting loading state:", e.message)
     }
   }
 
   /**
-   * Hide loading when results are rendered via Turbo Stream
-   * Called automatically when Turbo Stream updates arrive
+   * Handle keyboard shortcuts
    */
-  hideLoading() {
-    this.setLoading(false)
+  handleKeydown(event) {
+    // Escape - clear search field
+    if (event.key === "Escape") {
+      event.preventDefault()
+      this.queryTarget.value = ""
+      this.updateClearButtonVisibility()
+      this.submitNow()
+      this.queryTarget.blur()
+    }
+
+    // Cmd/Ctrl + K - focus search
+    if ((event.ctrlKey || event.metaKey) && event.key === "k") {
+      event.preventDefault()
+      this.queryTarget.focus()
+      this.queryTarget.select()
+    }
   }
 }
