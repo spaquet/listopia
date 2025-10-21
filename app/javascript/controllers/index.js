@@ -40,9 +40,6 @@ application.register("dropdown", DropdownController)
 import ErrorHandlerController from "./error_handler_controller"
 application.register("error-handler", ErrorHandlerController)
 
-import FiltersController from "./filters_controller"
-application.register("filters", FiltersController)
-
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
 

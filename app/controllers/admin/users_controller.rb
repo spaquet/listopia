@@ -4,8 +4,8 @@ class Admin::UsersController < Admin::BaseController
   before_action :authorize_admin!
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
 
-  # Allow button_to POST requests
-  skip_forgery_protection only: [ :toggle_admin, :toggle_status ]
+  # Allow Turbo Stream requests for POST actions
+  skip_forgery_protection only: [ :toggle_admin, :toggle_status, :destroy ]
 
   helper_method :locale_options, :timezone_options
 
@@ -33,11 +33,10 @@ class Admin::UsersController < Admin::BaseController
       sort_by: params[:sort_by]
     }
 
-    # Respond to different formats
+    # Respond to both HTML and Turbo Stream
     respond_to do |format|
       format.html
       format.turbo_stream do
-        # Use morph to update DOM while preserving focus on form elements
         render turbo_stream: [
           turbo_stream.morph("users-table", partial: "users_table", locals: { users: @users }),
           turbo_stream.replace("results-summary", partial: "results_summary", locals: { users_count: @users.count })
@@ -66,7 +65,14 @@ class Admin::UsersController < Admin::BaseController
 
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
-      redirect_to admin_user_path(@user), notice: "User created successfully."
+
+      respond_to do |format|
+        format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
+        format.turbo_stream do
+          # Return to users list with new user added
+          redirect_to admin_users_path, status: :see_other
+        end
+      end
     else
       render :new, status: :unprocessable_entity
     end
@@ -80,7 +86,13 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :update?
 
     if @user.update(user_params)
-      redirect_to admin_user_path(@user), notice: "User updated successfully."
+      respond_to do |format|
+        format.html { redirect_to admin_user_path(@user), notice: "User updated successfully." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+            partial: "user_row", locals: { user: @user })
+        end
+      end
     else
       render :edit, status: :unprocessable_entity
     end
@@ -110,10 +122,11 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :toggle_admin?
 
     if @user == current_user
-      redirect_to admin_user_path(@user), alert: "You cannot modify your own admin status."
+      redirect_to admin_users_path, alert: "You cannot modify your own admin status."
       return
     end
 
+    # Toggle admin role
     if @user.admin?
       @user.remove_role(:admin)
       message = "Admin privileges revoked."
@@ -123,10 +136,12 @@ class Admin::UsersController < Admin::BaseController
     end
 
     respond_to do |format|
-      format.html { redirect_to admin_user_path(@user), notice: message }
+      format.html { redirect_to admin_users_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-          partial: "user_row", locals: { user: @user })
+        render turbo_stream: [
+          turbo_stream.replace("user_#{@user.id}", partial: "user_row", locals: { user: @user }),
+          turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: message, type: "notice" })
+        ]
       end
     end
   end
@@ -135,10 +150,11 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :toggle_status?
 
     if @user == current_user
-      redirect_to admin_user_path(@user), alert: "You cannot suspend your own account."
+      redirect_to admin_users_path, alert: "You cannot suspend your own account."
       return
     end
 
+    # Toggle user status
     case @user.status
     when "active"
       @user.suspend!(reason: params[:reason], suspended_by: current_user)
@@ -149,10 +165,12 @@ class Admin::UsersController < Admin::BaseController
     end
 
     respond_to do |format|
-      format.html { redirect_to admin_user_path(@user), notice: message }
+      format.html { redirect_to admin_users_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-          partial: "user_row", locals: { user: @user })
+        render turbo_stream: [
+          turbo_stream.replace("user_#{@user.id}", partial: "user_row", locals: { user: @user }),
+          turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: message, type: "notice" })
+        ]
       end
     end
   end
@@ -171,7 +189,15 @@ class Admin::UsersController < Admin::BaseController
     service = BulkUserActionService.new(current_user, user_ids, action)
 
     if service.execute
-      redirect_to admin_users_path, notice: service.message
+      respond_to do |format|
+        format.html { redirect_to admin_users_path, notice: service.message }
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.morph("users-table", partial: "users_table", locals: { users: User.all.includes(:roles).limit(100) }),
+            turbo_stream.append("flash-messages", partial: "shared/flash_message", locals: { message: service.message, type: "notice" })
+          ]
+        end
+      end
     else
       redirect_to admin_users_path, alert: service.error_message
     end
@@ -192,27 +218,6 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :password_confirmation, :status, :admin_notes, :locale, :timezone)
-  end
-
-  def locale_options
-    [
-      [ "English", "en" ],
-      [ "Spanish", "es" ],
-      [ "French", "fr" ],
-      [ "German", "de" ],
-      [ "Italian", "it" ],
-      [ "Portuguese", "pt" ],
-      [ "Dutch", "nl" ],
-      [ "Polish", "pl" ],
-      [ "Russian", "ru" ],
-      [ "Chinese (Simplified)", "zh-CN" ],
-      [ "Japanese", "ja" ],
-      [ "Korean", "ko" ]
-    ]
-  end
-
-  def timezone_options
-    ActiveSupport::TimeZone.all.map { |tz| [ tz.to_s, tz.name ] }
+    params.require(:user).permit(:name, :email, :bio, :avatar_url, :locale, :timezone, :status, :admin_notes)
   end
 end

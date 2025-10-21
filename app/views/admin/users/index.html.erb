@@ -24,7 +24,6 @@
   <!-- Filters & Search -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
        data-controller="user-filter"
-       data-user-filter-submit-url="<%= admin_users_path %>"
        data-user-filter-debounce-delay="300">
     <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4", data: { user_filter_target: "form" } do |f| %>
       <!-- Search Bar -->
@@ -38,9 +37,9 @@
               value: params[:query],
               class: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
               data: { user_filter_target: "query", action: "input->user-filter#submitForm" },
-              autocomplete: "off" %>
+              autocomplete: "off",
+              spellcheck: "false" %>
         </div>
-        <%= f.submit "Search", class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium" %>
       </div>
       <!-- Filters Row -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -70,22 +69,22 @@
         </div>
         <!-- Verification Filter -->
         <div>
-          <%= f.label :verified, "Email Verification", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.label :verified, "Email Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :verified,
               options_for_select(
-                [["All", ""], ["Verified", "verified"], ["Unverified", "unverified"]],
+                [["All Users", ""], ["Verified", "verified"], ["Unverified", "unverified"]],
                 params[:verified]
               ),
               { include_blank: false },
               class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
               data: { user_filter_target: "verified", action: "change->user-filter#submitForm" } %>
         </div>
-        <!-- Sort Filter -->
+        <!-- Sort By Filter -->
         <div>
           <%= f.label :sort_by, "Sort By", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :sort_by,
               options_for_select(
-                [["Most Recent", "recent"], ["Oldest", "oldest"], ["Name A-Z", "name_asc"], ["Name Z-A", "name_desc"], ["Email A-Z", "email_asc"], ["Email Z-A", "email_desc"]],
+                [["Most Recent", "recent"], ["Oldest", "oldest"], ["Name (A-Z)", "name_asc"], ["Name (Z-A)", "name_desc"], ["Email (A-Z)", "email_asc"], ["Email (Z-A)", "email_desc"]],
                 params[:sort_by] || "recent"
               ),
               { include_blank: false },
@@ -115,49 +114,45 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
       </div>
-      <p class="text-blue-700 font-medium">Loading results...</p>
+      <p class="text-blue-700 font-medium">Updating results...</p>
     </div>
   </div>
   <!-- Users Table -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" data-user-filter-target="resultsContainer" id="users-results">
-    <% if @users.any? %>
-      <div class="overflow-x-auto" id="users-table">
-        <table class="w-full">
-          <thead class="bg-gray-50 border-b border-gray-200">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <!-- Results Summary -->
+    <div id="results-summary" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <%= render "results_summary", users_count: @users.count %>
+    </div>
+    <!-- Users Table Container -->
+    <div id="users-table">
+      <% if @users.any? %>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Role</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Verified</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Joined</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Role</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email Verification</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Created</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
             <% @users.each do |user| %>
-              <%= render "user_row", user: user %>
+              <%= render "user_row", user: user, current_user: current_user %>
             <% end %>
           </tbody>
         </table>
-      </div>
-    <% else %>
-      <div data-user-filter-target="noResults" class="p-8 text-center" id="no-results">
-        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-        </svg>
-        <h3 class="text-lg font-medium text-gray-900 mb-1">No users found</h3>
-        <p class="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
-        <button type="button"
-                data-action="click->user-filter#clearFilters"
-          class="text-blue-600 hover:text-blue-700 font-medium">
-          Clear all filters
-        </button>
-      </div>
-    <% end %>
-  </div>
-  <!-- Results Summary -->
-  <div class="text-sm text-gray-600" id="results-summary">
-    <%= @users.any? ? "Showing #{@users.count} user#{'s' if @users.count != 1}" : "No results" %>
+      <% else %>
+        <div class="px-6 py-12 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+          <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filters.</p>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>
