@@ -65,11 +65,11 @@ module Admin::UsersHelper
 
   def suspend_toggle_button(user)
     if user.active?
-      button_to "Suspend", admin_user_toggle_status_path(user), method: :patch,
+      button_to "Suspend", toggle_status_admin_user_path(user), method: :patch,
         class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
         data: { turbo_method: :patch }
     elsif user.suspended?
-      button_to "Reactivate", admin_user_toggle_status_path(user), method: :patch,
+      button_to "Reactivate", toggle_status_admin_user_path(user), method: :patch,
         class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
         data: { turbo_method: :patch }
     end
@@ -77,11 +77,11 @@ module Admin::UsersHelper
 
   def admin_toggle_button(user)
     if user.admin?
-      button_to "Remove Admin", admin_user_toggle_admin_path(user), method: :patch,
+      button_to "Remove Admin", toggle_admin_admin_user_path(user), method: :patch,
         class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
         data: { turbo_method: :patch }
     else
-      button_to "Make Admin", admin_user_toggle_admin_path(user), method: :patch,
+      button_to "Make Admin", toggle_admin_admin_user_path(user), method: :patch,
         class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
         data: { turbo_method: :patch }
     end
