@@ -25,7 +25,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
        data-controller="user-filter"
        data-user-filter-debounce-delay="300">
-    <%= form_with url: admin_users_path, method: :get, local: false, class: "space-y-4", data: { user_filter_target: "form" } do |f| %>
+    <%= form_with url: admin_users_path, method: :get, local: false, class: "space-y-4", data: { user_filter_target: "form", turbo_stream: true } do |f| %>
       <!-- Search Bar -->
       <div class="flex items-center gap-3">
         <div class="flex-1 relative">
@@ -106,7 +106,7 @@
       </div>
     <% end %>
   </div>
-  <!-- Loading Indicator - Outside controller, queries by data attribute -->
+  <!-- Loading Indicator -->
   <div data-user-filter-target="loading" class="hidden" id="user-filter-loading">
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center space-x-3">
       <div class="animate-spin">

@@ -58,7 +58,7 @@ export default class extends Controller {
   }
 
   /**
-   * Debounced submission for search input (300ms delay)
+   * Debounced form submission for search input
    */
   debounceSubmit() {
     if (this.debounceTimeout) {
@@ -71,47 +71,28 @@ export default class extends Controller {
   }
 
   /**
-   * Submit the form only if values have changed
+   * Immediate form submission
    */
   submitNow() {
+    console.log("[UserFilter] submitNow called")
+
     const currentValues = this.getCurrentFormValues()
-    const valuesChanged = JSON.stringify(currentValues) !== JSON.stringify(this.lastSubmittedValues)
 
-    console.log("[UserFilter] submitNow", { currentValues, valuesChanged })
-
-    if (valuesChanged) {
-      this.lastSubmittedValues = currentValues
-      
-      // Request submit will trigger Turbo and Turbo:submit-start/end events
-      this.formTarget.requestSubmit()
+    // Only submit if values have actually changed
+    if (JSON.stringify(currentValues) === JSON.stringify(this.lastSubmittedValues)) {
+      console.log("[UserFilter] Values unchanged, skipping submission")
+      return
     }
-  }
 
-  /**
-   * Clear all filters and search
-   */
-  clearFilters(event) {
-    event?.preventDefault()
-    console.log("[UserFilter] clearFilters called")
+    console.log("[UserFilter] Submitting form with values:", currentValues)
 
-    // Reset all form fields
-    this.queryTarget.value = ""
-    this.statusTarget.value = ""
-    this.roleTarget.value = ""
-    this.verifiedTarget.value = ""
-    this.sortByTarget.value = "recent"
-
-    // Update tracking
-    this.lastSubmittedValues = this.getCurrentFormValues()
-    this.updateClearButtonVisibility()
-
-    // Submit form
+    // Submit the form via Turbo
     this.formTarget.requestSubmit()
-    this.queryTarget.focus()
+    this.lastSubmittedValues = currentValues
   }
 
   /**
-   * Get current form field values
+   * Get current form values
    */
   getCurrentFormValues() {
     return {
@@ -124,7 +105,29 @@ export default class extends Controller {
   }
 
   /**
-   * Toggle clear button visibility based on active filters
+   * Clear all filters and reset form
+   */
+  clearFilters(event) {
+    event.preventDefault()
+    console.log("[UserFilter] Clearing filters")
+
+    // Reset all form fields
+    this.queryTarget.value = ""
+    this.statusTarget.value = ""
+    this.roleTarget.value = ""
+    this.verifiedTarget.value = ""
+    this.sortByTarget.value = "recent"
+
+    // Reset tracking
+    this.lastSubmittedValues = this.getCurrentFormValues()
+    this.updateClearButtonVisibility()
+
+    // Submit the cleared form
+    this.submitNow()
+  }
+
+  /**
+   * Update clear button visibility based on active filters
    */
   updateClearButtonVisibility() {
     const hasFilters = this.hasActiveFilters()
@@ -160,7 +163,7 @@ export default class extends Controller {
    */
   setLoading(isLoading) {
     try {
-      const loadingEl = document.querySelector('[data-user-filter-target="loading"]')
+      const loadingEl = this.loadingTarget
       if (!loadingEl) {
         console.log("[UserFilter] Loading element not in DOM, skipping")
         return
