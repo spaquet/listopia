@@ -22,6 +22,8 @@ export default class extends Controller {
     this.handleTurboSubmitEnd = () => {
       console.log("[UserFilter] Turbo submit end")
       this.setLoading(false)
+      // Update clear button visibility after Turbo Stream updates
+      this.updateClearButtonVisibility()
     }
 
     // Attach listeners

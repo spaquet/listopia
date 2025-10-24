@@ -1,14 +1,6 @@
 <!-- app/views/admin/users/_users_list.html.erb -->
 <% if users.any? %>
-  <!-- Header Row (Desktop only) -->
-  <div class="hidden md:flex items-center px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-700 uppercase tracking-wider">
-    <div class="flex-1">Name</div>
-    <div class="w-32">Status</div>
-    <div class="w-24">Role</div>
-    <div class="w-32">Email Verification</div>
-    <div class="w-24 text-right">Actions</div>
-  </div>
-  <!-- Users List -->
+  <!-- Users List (Header is outside this partial) -->
   <div id="users-list">
     <% users.each do |user| %>
       <%= render "user_row", user: user, current_user: current_user %>

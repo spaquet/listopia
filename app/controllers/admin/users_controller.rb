@@ -41,7 +41,9 @@ class Admin::UsersController < Admin::BaseController
       format.html
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.replace("users-list", partial: "users_list", locals: { users: @users }),
+          # Update ONLY the users list container
+          turbo_stream.replace("users-table", partial: "users_list", locals: { users: @users }),
+          # Update the results summary with count
           turbo_stream.replace("results-summary", partial: "results_summary", locals: { users_count: @users.count })
         ]
       end
