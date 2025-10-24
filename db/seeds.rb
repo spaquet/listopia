@@ -2,9 +2,20 @@
 
 # Clear existing data (optional - comment out if you want to keep existing data)
 puts "🧹 Cleaning existing data..."
+
+# Disable triggers to handle self-referential foreign keys
+ActiveRecord::Base.connection.execute("ALTER TABLE users DISABLE TRIGGER ALL;") if Rails.env.development?
+
+# Delete all data safely
 ListItem.destroy_all
 List.destroy_all
+Chat.destroy_all
+Message.destroy_all
 User.destroy_all
+
+# Re-enable foreign key checks
+ActiveRecord::Base.connection.execute("ALTER TABLE users ENABLE TRIGGER ALL;") if Rails.env.development?
+
 
 puts "🌱 Seeding database..."
 
