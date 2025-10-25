@@ -13,7 +13,6 @@ class UserFilterService
   def filtered_users
     users = User.all
 
-    # Apply filters in order
     users = apply_search(users)
     users = apply_status_filter(users)
     users = apply_role_filter(users)
@@ -28,12 +27,12 @@ class UserFilterService
   def apply_search(users)
     return users if @query.blank?
 
-    # Use PgSearch for better full-text search performance
+    escaped_query = escape_search_query(@query)
+
     users.where(
-      "LOWER(users.name) ILIKE ? OR LOWER(users.email) ILIKE ? OR users.id::text ILIKE ?",
-      "%#{sanitize_query(@query)}%",
-      "%#{sanitize_query(@query)}%",
-      "%#{sanitize_query(@query)}%"
+      "LOWER(users.email) ILIKE ? OR LOWER(users.name) ILIKE ?",
+      "%#{escaped_query}%",
+      "%#{escaped_query}%"
     )
   end
 
@@ -86,8 +85,7 @@ class UserFilterService
     end
   end
 
-  def sanitize_query(query)
-    # Remove SQL injection attempts and special characters
+  def escape_search_query(query)
     query.gsub(/[%_\\]/, '\\\\\0')
   end
 

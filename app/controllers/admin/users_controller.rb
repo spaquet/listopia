@@ -1,13 +1,8 @@
 # app/controllers/admin/users_controller.rb
 class Admin::UsersController < Admin::BaseController
-  # Admin::BaseController already has:
-  # - authenticate_user!
-  # - require_admin!
-  # - layout "admin"
-
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
+  before_action :persist_filters_to_session, only: %i[index]
 
-  # Allow Turbo Stream requests for these actions (disable CSRF only for these)
   skip_forgery_protection only: [ :toggle_admin, :toggle_status, :destroy ]
 
   helper_method :locale_options, :timezone_options
@@ -15,35 +10,31 @@ class Admin::UsersController < Admin::BaseController
   def index
     authorize User
 
-    # Initialize the filter service with params
     @filter_service = UserFilterService.new(
-      query: params[:query],
-      status: params[:status],
-      role: params[:role],
-      verified: params[:verified],
-      sort_by: params[:sort_by]
+      query: params[:query] || session[:user_filter_query],
+      status: params[:status] || session[:user_filter_status],
+      role: params[:role] || session[:user_filter_role],
+      verified: params[:verified] || session[:user_filter_verified],
+      sort_by: params[:sort_by] || session[:user_filter_sort_by]
     )
 
-    # Get filtered users
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
 
-    # Store filters for view
     @filters = {
-      query: params[:query],
-      status: params[:status],
-      role: params[:role],
-      verified: params[:verified],
-      sort_by: params[:sort_by]
+      query: @filter_service.query,
+      status: @filter_service.status,
+      role: @filter_service.role,
+      verified: @filter_service.verified,
+      sort_by: @filter_service.sort_by
     }
 
-    # Respond to both HTML and Turbo Stream
+    @total_users = User.count
+
     respond_to do |format|
       format.html
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.replace("users-table", partial: "users_list", locals: { users: @users }),
-          turbo_stream.replace("results-summary", partial: "results_summary", locals: { users_count: @users.count })
-        ]
+        # Explicitly render the turbo_stream template
+        render :index
       end
     end
   rescue => e
@@ -149,7 +140,6 @@ class Admin::UsersController < Admin::BaseController
       return
     end
 
-    # Toggle admin role
     if @user.admin?
       @user.remove_role(:admin)
       message = "Admin privileges revoked."
@@ -182,7 +172,6 @@ class Admin::UsersController < Admin::BaseController
       return
     end
 
-    # Toggle user status
     case @user.status
     when "active"
       @user.suspend!(reason: params[:reason], suspended_by: current_user)
@@ -219,5 +208,19 @@ class Admin::UsersController < Admin::BaseController
 
   def timezone_options
     ActiveSupport::TimeZone.all.map { |tz| [ tz.to_s, tz.name ] }
+  end
+
+  def persist_filters_to_session
+    session[:user_filter_query] = params[:query] if params[:query].present?
+    session[:user_filter_status] = params[:status] if params[:status].present?
+    session[:user_filter_role] = params[:role] if params[:role].present?
+    session[:user_filter_verified] = params[:verified] if params[:verified].present?
+    session[:user_filter_sort_by] = params[:sort_by] if params[:sort_by].present?
+
+    session[:user_filter_query] = nil if params[:query] == ""
+    session[:user_filter_status] = nil if params[:status] == ""
+    session[:user_filter_role] = nil if params[:role] == ""
+    session[:user_filter_verified] = nil if params[:verified] == ""
+    session[:user_filter_sort_by] = nil if params[:sort_by] == ""
   end
 end

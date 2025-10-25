@@ -1,0 +1,8 @@
+<!-- app/views/admin/users/index.turbo_stream.erb -->
+<<%= turbo_stream.replace("results-summary") do %>
+  <%= render "results_summary", users_count: @users.count, total_users: @total_users %>
+<% end %>
+
+<%= turbo_stream.replace("users-table") do %>
+  <%= render "users_table", users: @users, current_user: current_user %>
+<% end %>

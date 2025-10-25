@@ -1,5 +1,6 @@
 <!-- app/views/admin/users/_results_summary.html.erb -->
 <div class="flex items-center justify-between">
+  <!-- Left: Results Count -->
   <div class="flex items-center space-x-3">
     <div class="flex items-center space-x-1">
       <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -7,8 +8,22 @@
       </svg>
       <span class="text-sm text-gray-600">
         <span class="font-semibold text-gray-900"><%= users_count %></span>
-        <span class="text-gray-600"><%= "user".pluralize(users_count) %></span>
+        <span class="text-gray-600">
+          <% if defined?(total_users) && total_users %>
+            of <%= total_users %> <%= "user".pluralize(total_users) %>
+          <% else %>
+            <%= "user".pluralize(users_count) %>
+          <% end %>
+        </span>
       </span>
     </div>
+  </div>
+  <!-- Right: Message about active filters (optional) -->
+  <div class="text-xs text-gray-500">
+    <% if users_count == 0 %>
+      <span>No results matching your search and filters</span>
+    <% elsif defined?(total_users) && total_users && users_count < total_users %>
+      <span>Showing filtered results</span>
+    <% end %>
   </div>
 </div>
