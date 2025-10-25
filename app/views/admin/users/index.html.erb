@@ -25,7 +25,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
        data-controller="user-filter"
        data-user-filter-debounce-delay="300">
-    <%= form_with url: admin_users_path, method: :get, local: false, class: "space-y-4", data: { user_filter_target: "form", turbo_stream: true } do |f| %>
+    <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4", data: { user_filter_target: "form" } do |f| %>
       <!-- Search Bar -->
       <div class="flex items-center gap-3">
         <div class="flex-1 relative">
@@ -34,9 +34,11 @@
           </svg>
           <%= f.text_field :query,
               placeholder: "Search by name, email, or ID...",
-              value: params[:query],
               class: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
-              data: { user_filter_target: "query", action: "input->user-filter#submitForm" },
+              data: { 
+                user_filter_target: "query",
+                action: "input->user-filter#searchInput"
+              },
               autocomplete: "off",
               spellcheck: "false" %>
         </div>
@@ -48,36 +50,39 @@
           <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :status,
               options_for_select(
-                [["All Statuses", ""], ["Active", "active"], ["Suspended", "suspended"], ["Inactive", "inactive"]],
-                params[:status]
+                [["All Statuses", ""], ["Active", "active"], ["Suspended", "suspended"], ["Inactive", "inactive"]]
               ),
               { include_blank: false },
               class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
-              data: { user_filter_target: "status", action: "change->user-filter#submitForm" } %>
+              data: { 
+                action: "change->user-filter#filterChange"
+              } %>
         </div>
         <!-- Role Filter -->
         <div>
           <%= f.label :role, "Role", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :role,
               options_for_select(
-                [["All Roles", ""], ["Admin", "admin"], ["User", "user"]],
-                params[:role]
+                [["All Roles", ""], ["Admin", "admin"], ["User", "user"]]
               ),
               { include_blank: false },
               class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
-              data: { user_filter_target: "role", action: "change->user-filter#submitForm" } %>
+              data: { 
+                action: "change->user-filter#filterChange"
+              } %>
         </div>
         <!-- Verification Filter -->
         <div>
           <%= f.label :verified, "Email Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
           <%= f.select :verified,
               options_for_select(
-                [["All Users", ""], ["Verified", "verified"], ["Unverified", "unverified"]],
-                params[:verified]
+                [["All Users", ""], ["Verified", "verified"], ["Unverified", "unverified"]]
               ),
               { include_blank: false },
               class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
-              data: { user_filter_target: "verified", action: "change->user-filter#submitForm" } %>
+              data: { 
+                action: "change->user-filter#filterChange"
+              } %>
         </div>
         <!-- Sort By Filter -->
         <div>
@@ -85,11 +90,13 @@
           <%= f.select :sort_by,
               options_for_select(
                 [["Most Recent", "recent"], ["Oldest", "oldest"], ["Name (A-Z)", "name_asc"], ["Name (Z-A)", "name_desc"], ["Email (A-Z)", "email_asc"], ["Email (Z-A)", "email_desc"]],
-                params[:sort_by] || "recent"
+                "recent"
               ),
               { include_blank: false },
               class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
-              data: { user_filter_target: "sortBy", action: "change->user-filter#submitForm" } %>
+              data: { 
+                action: "change->user-filter#filterChange"
+              } %>
         </div>
       </div>
       <!-- Clear Filters Button -->
@@ -106,34 +113,15 @@
       </div>
     <% end %>
   </div>
-  <!-- Loading Indicator -->
-  <div data-user-filter-target="loading" class="hidden" id="user-filter-loading">
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center space-x-3">
-      <div class="animate-spin">
-        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-        </svg>
-      </div>
-      <p class="text-blue-700 font-medium">Updating results...</p>
-    </div>
-  </div>
   <!-- Users Table -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
     <!-- Results Summary -->
     <div id="results-summary" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <%= render "results_summary", users_count: @users.count %>
     </div>
-    <!-- Header Row (Desktop only) - Outside Turbo Stream target so it doesn't repeat -->
-    <div class="hidden md:flex items-center px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-700 uppercase tracking-wider">
-      <div class="flex-1">Name</div>
-      <div class="w-32">Status</div>
-      <div class="w-24">Role</div>
-      <div class="w-32">Email Verification</div>
-      <div class="w-24 text-right">Actions</div>
-    </div>
-    <!-- Users List Container - Turbo Stream target -->
+    <!-- Users List Container - TURBO STREAM TARGET -->
     <div id="users-table">
-      <%= render "users_list", users: @users, current_user: current_user %>
+      <%= render "users_list", users: @users %>
     </div>
   </div>
 </div>

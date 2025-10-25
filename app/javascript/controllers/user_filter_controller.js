@@ -2,134 +2,101 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["form", "query", "status", "role", "verified", "sortBy", "loading", "clearBtn"]
-
-  static values = {
-    debounceDelay: { type: Number, default: 300 }
-  }
+  static targets = ["form", "query", "clearBtn"]
+  static values = { debounceDelay: { type: Number, default: 300 } }
 
   connect() {
     console.log("[UserFilter] Controller connected")
     this.debounceTimeout = null
-    this.lastSubmittedValues = this.getCurrentFormValues()
     this.updateClearButtonVisibility()
-
-    // Bind Turbo event handlers with proper context
-    this.handleTurboSubmitStart = () => {
-      console.log("[UserFilter] Turbo submit start")
-      this.setLoading(true)
-    }
-    this.handleTurboSubmitEnd = () => {
-      console.log("[UserFilter] Turbo submit end")
-      this.setLoading(false)
-      // Update clear button visibility after Turbo Stream updates
-      this.updateClearButtonVisibility()
-    }
-
-    // Attach listeners
-    document.addEventListener("turbo:submit-start", this.handleTurboSubmitStart)
-    document.addEventListener("turbo:submit-end", this.handleTurboSubmitEnd)
   }
 
   disconnect() {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
-
-    // Clean up event listeners with proper reference
-    document.removeEventListener("turbo:submit-start", this.handleTurboSubmitStart)
-    document.removeEventListener("turbo:submit-end", this.handleTurboSubmitEnd)
   }
 
   /**
-   * Handle form field changes - entry point for filters
+   * Handle search input with debounce - PREVENTS FOCUS LOSS
+   * The key: we update internal state WITHOUT submitting during typing
+   * Only submit after user stops typing for 300ms
    */
-  submitForm(event) {
-    console.log("[UserFilter] submitForm called", event?.target?.name)
-
-    // For search input, debounce the submission
-    if (event?.target === this.queryTarget) {
-      this.debounceSubmit()
-    } else {
-      // For select changes, submit immediately
-      this.submitNow()
-    }
-
-    // Update clear button visibility
-    this.updateClearButtonVisibility()
-  }
-
-  /**
-   * Debounced form submission for search input
-   */
-  debounceSubmit() {
+  searchInput(event) {
+    console.log("[UserFilter] Search input triggered, debouncing...")
+    
+    // Clear previous timeout
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
 
+    // Update clear button visibility immediately (doesn't cause Turbo requests)
+    this.updateClearButtonVisibility()
+
+    // Debounce the actual form submission
     this.debounceTimeout = setTimeout(() => {
-      this.submitNow()
+      console.log("[UserFilter] Debounce complete, submitting search")
+      this.submitForm()
     }, this.debounceDelayValue)
   }
 
   /**
-   * Immediate form submission
+   * Handle filter dropdown changes - submit immediately
    */
-  submitNow() {
-    console.log("[UserFilter] submitNow called")
-
-    const currentValues = this.getCurrentFormValues()
-
-    // Only submit if values have actually changed
-    if (JSON.stringify(currentValues) === JSON.stringify(this.lastSubmittedValues)) {
-      console.log("[UserFilter] Values unchanged, skipping submission")
-      return
+  filterChange(event) {
+    console.log("[UserFilter] Filter changed, submitting immediately")
+    
+    // Clear any pending search debounce
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout)
     }
 
-    console.log("[UserFilter] Submitting form with values:", currentValues)
+    this.updateClearButtonVisibility()
+    this.submitForm()
+  }
 
-    // Submit the form via Turbo
+  /**
+   * Submit the form via Turbo Stream
+   * This is the ONLY place where form submission happens
+   */
+  submitForm() {
+    console.log("[UserFilter] Submitting form via Turbo")
     this.formTarget.requestSubmit()
-    this.lastSubmittedValues = currentValues
   }
 
   /**
-   * Get current form values
-   */
-  getCurrentFormValues() {
-    return {
-      query: this.queryTarget.value,
-      status: this.statusTarget.value,
-      role: this.roleTarget.value,
-      verified: this.verifiedTarget.value,
-      sortBy: this.sortByTarget.value
-    }
-  }
-
-  /**
-   * Clear all filters and reset form
+   * Clear all filters and submit
+   * Uses form.reset() to properly clear all fields
    */
   clearFilters(event) {
     event.preventDefault()
-    console.log("[UserFilter] Clearing filters")
+    console.log("[UserFilter] Clear filters clicked")
 
-    // Reset all form fields
-    this.queryTarget.value = ""
-    this.statusTarget.value = ""
-    this.roleTarget.value = ""
-    this.verifiedTarget.value = ""
-    this.sortByTarget.value = "recent"
+    // Clear any pending debounce
+    if (this.debounceTimeout) {
+      clearTimeout(this.debounceTimeout)
+    }
 
-    // Reset tracking
-    this.lastSubmittedValues = this.getCurrentFormValues()
+    // Reset the entire form to defaults
+    this.formTarget.reset()
+
+    // Ensure sort_by is explicitly set to "recent"
+    const sortBySelect = this.formTarget.querySelector('select[name="sort_by"]')
+    if (sortBySelect) {
+      sortBySelect.value = "recent"
+    }
+
+    // Update button visibility
     this.updateClearButtonVisibility()
 
     // Submit the cleared form
-    this.submitNow()
+    console.log("[UserFilter] Form cleared, submitting...")
+    this.submitForm()
   }
 
   /**
-   * Update clear button visibility based on active filters
+   * Update clear button visibility
+   * This can be called without submitting the form
    */
   updateClearButtonVisibility() {
     const hasFilters = this.hasActiveFilters()
@@ -141,8 +108,7 @@ export default class extends Controller {
         this.clearBtnTarget.classList.add("hidden")
       }
     } catch (e) {
-      // Clear button target not found, ignore
-      console.log("[UserFilter] Clear button not found")
+      console.log("[UserFilter] Clear button target not found")
     }
   }
 
@@ -150,55 +116,21 @@ export default class extends Controller {
    * Check if any filters are currently active
    */
   hasActiveFilters() {
-    const values = this.getCurrentFormValues()
-    return (
-      values.query.trim() !== "" ||
-      values.status !== "" ||
-      values.role !== "" ||
-      values.verified !== "" ||
-      values.sortBy !== "recent"
+    const query = this.queryTarget.value.trim()
+    const status = this.formTarget.querySelector('select[name="status"]')?.value || ""
+    const role = this.formTarget.querySelector('select[name="role"]')?.value || ""
+    const verified = this.formTarget.querySelector('select[name="verified"]')?.value || ""
+    const sortBy = this.formTarget.querySelector('select[name="sort_by"]')?.value || "recent"
+
+    const hasFilters = (
+      query !== "" ||
+      status !== "" ||
+      role !== "" ||
+      verified !== "" ||
+      sortBy !== "recent"
     )
-  }
 
-  /**
-   * Show/hide loading indicator
-   */
-  setLoading(isLoading) {
-    try {
-      const loadingEl = this.loadingTarget
-      if (!loadingEl) {
-        console.log("[UserFilter] Loading element not in DOM, skipping")
-        return
-      }
-
-      if (isLoading) {
-        loadingEl.classList.remove("hidden")
-      } else {
-        loadingEl.classList.add("hidden")
-      }
-    } catch (e) {
-      console.log("[UserFilter] Error setting loading state:", e.message)
-    }
-  }
-
-  /**
-   * Handle keyboard shortcuts
-   */
-  handleKeydown(event) {
-    // Escape - clear search field
-    if (event.key === "Escape") {
-      event.preventDefault()
-      this.queryTarget.value = ""
-      this.updateClearButtonVisibility()
-      this.submitNow()
-      this.queryTarget.blur()
-    }
-
-    // Cmd/Ctrl + K - focus search
-    if ((event.ctrlKey || event.metaKey) && event.key === "k") {
-      event.preventDefault()
-      this.queryTarget.focus()
-      this.queryTarget.select()
-    }
+    console.log("[UserFilter] Active filters check:", { query, status, role, verified, sortBy, hasFilters })
+    return hasFilters
   }
 }
