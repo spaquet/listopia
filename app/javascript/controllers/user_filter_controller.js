@@ -6,7 +6,7 @@ export default class extends Controller {
   static values = { debounceDelay: { type: Number, default: 300 } }
 
   connect() {
-    console.log("[UserFilter] Controller connected")
+    console.log("[UserFilter] Controller connected v1.0")
     this.debounceTimeout = null
     this.updateClearButtonVisibility()
   }
@@ -45,7 +45,30 @@ export default class extends Controller {
 
   submitForm() {
     console.log("[UserFilter] Submitting form")
-    this.formTarget.requestSubmit()
+    
+    // Build FormData and clean up empty values
+    const formData = new FormData(this.formTarget)
+    
+    // Build clean params object
+    const params = {}
+    for (let [key, value] of formData.entries()) {
+      // Skip empty values
+      if (value === "") continue
+      // Skip default sort_by value
+      if (key === "sort_by" && value === "recent") continue
+      params[key] = value
+    }
+    
+    // Build URL with clean params
+    const searchParams = new URLSearchParams(params)
+    const queryString = searchParams.toString()
+    const baseUrl = this.formTarget.action.split('?')[0]
+    const url = queryString ? `${baseUrl}?${queryString}` : baseUrl
+    
+    console.log("[UserFilter] Fetching from:", url)
+    
+    // Use Turbo's visitAction to reload with the new URL
+    Turbo.visit(url, { action: 'replace' })
   }
 
   clearFilters(event) {
@@ -56,16 +79,22 @@ export default class extends Controller {
       clearTimeout(this.debounceTimeout)
     }
 
+    // Reset form
     this.formTarget.reset()
-
+    
+    // Reset all select values to empty/default
+    this.queryTarget.value = ""
     this.statusTarget.value = ""
     this.roleTarget.value = ""
     this.verifiedTarget.value = ""
     this.sortByTarget.value = "recent"
-    this.queryTarget.value = ""
 
     this.updateClearButtonVisibility()
-    this.submitForm()
+    
+    // Visit the base URL without filters
+    const baseUrl = this.formTarget.action.split('?')[0]
+    console.log("[UserFilter] Clearing filters, visiting:", baseUrl)
+    Turbo.visit(baseUrl, { action: 'replace' })
   }
 
   updateClearButtonVisibility() {

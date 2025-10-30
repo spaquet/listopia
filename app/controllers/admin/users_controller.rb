@@ -1,7 +1,6 @@
 # app/controllers/admin/users_controller.rb
 class Admin::UsersController < Admin::BaseController
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
-  before_action :persist_filters_to_session, only: %i[index]
 
   skip_forgery_protection only: [ :toggle_admin, :toggle_status, :destroy ]
 
@@ -10,12 +9,13 @@ class Admin::UsersController < Admin::BaseController
   def index
     authorize User
 
+    # Use ONLY params, no session fallback
     @filter_service = UserFilterService.new(
-      query: params[:query] || session[:user_filter_query],
-      status: params[:status] || session[:user_filter_status],
-      role: params[:role] || session[:user_filter_role],
-      verified: params[:verified] || session[:user_filter_verified],
-      sort_by: params[:sort_by] || session[:user_filter_sort_by]
+      query: params[:query],
+      status: params[:status],
+      role: params[:role],
+      verified: params[:verified],
+      sort_by: params[:sort_by]
     )
 
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
@@ -33,7 +33,6 @@ class Admin::UsersController < Admin::BaseController
     respond_to do |format|
       format.html
       format.turbo_stream do
-        # Explicitly render the turbo_stream template
         render :index
       end
     end
@@ -208,19 +207,5 @@ class Admin::UsersController < Admin::BaseController
 
   def timezone_options
     ActiveSupport::TimeZone.all.map { |tz| [ tz.to_s, tz.name ] }
-  end
-
-  def persist_filters_to_session
-    session[:user_filter_query] = params[:query] if params[:query].present?
-    session[:user_filter_status] = params[:status] if params[:status].present?
-    session[:user_filter_role] = params[:role] if params[:role].present?
-    session[:user_filter_verified] = params[:verified] if params[:verified].present?
-    session[:user_filter_sort_by] = params[:sort_by] if params[:sort_by].present?
-
-    session[:user_filter_query] = nil if params[:query] == ""
-    session[:user_filter_status] = nil if params[:status] == ""
-    session[:user_filter_role] = nil if params[:role] == ""
-    session[:user_filter_verified] = nil if params[:verified] == ""
-    session[:user_filter_sort_by] = nil if params[:sort_by] == ""
   end
 end

@@ -26,7 +26,7 @@
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
        data-controller="user-filter"
        data-user-filter-debounce-delay="300">
-    <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4", data: { user_filter_target: "form", turbo_stream: true }, id: "user-filter-form" do |f| %>
+    <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4", data: { user_filter_target: "form" }, id: "user-filter-form" do |f| %>
       <!-- Search Bar -->
       <div class="flex items-center gap-3">
         <div class="flex-1 relative">
@@ -125,11 +125,11 @@
   <!-- Users Table Container -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
     <!-- Results Summary -->
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+    <div id="results-summary" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
       <%= render "results_summary", users_count: @users.count, total_users: @total_users %>
     </div>
     <!-- Users Table -->
-    <div>
+    <div id="users-table">
       <%= render "users_table", users: @users, current_user: current_user %>
     </div>
   </div>
