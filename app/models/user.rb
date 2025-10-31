@@ -335,6 +335,22 @@ class User < ApplicationRecord
     account_metadata["admin_actions"] || []
   end
 
+  # User during user creation by an admin
+  # either when the user is created via the chat or admin panel
+  def generate_temp_password
+    SecureRandom.random_bytes(16)
+  end
+
+  def send_admin_invitation!
+    # Mark this user as admin-invited (not self-registered)
+    self.invited_by_admin = true
+    self.save!
+
+    token = generate_email_verification_token
+    AdminMailer.user_invitation(self, token).deliver_later
+  end
+
+
   private
 
   def set_defaults

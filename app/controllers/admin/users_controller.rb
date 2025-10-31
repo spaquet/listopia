@@ -53,17 +53,25 @@ class Admin::UsersController < Admin::BaseController
 
   def create
     @user = User.new(user_params)
-    @user.email_verified_at = Time.current
     authorize @user, :create?
+
+    # Generate temporary password (won't be used - just for has_secure_password)
+    temp_password = @user.generate_temp_password
+    @user.password = temp_password
+    @user.password_confirmation = temp_password
+
+    @user.email_verified_at = nil  # NOT verified yet - will be verified when they set password
+    @user.invited_by_admin = true
 
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
 
+      # Send invitation email
+      @user.send_admin_invitation!
+
       respond_to do |format|
-        format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
-        format.turbo_stream do
-          redirect_to admin_users_path, status: :see_other
-        end
+        format.html { redirect_to admin_users_path, notice: "User created successfully. Invitation email sent to #{@user.email}." }
+        format.turbo_stream { redirect_to admin_users_path, status: :see_other }
       end
     else
       render :new, status: :unprocessable_entity

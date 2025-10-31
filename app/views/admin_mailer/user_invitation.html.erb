@@ -1,0 +1,16 @@
+<!-- app/views/admin_mailer/user_invitation.html.erb -->
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2>Welcome to Listopia, <%= @user.name %>!</h2>
+  <p>An administrator has created an account for you. Click the link below to set your password and get started:</p>
+  <p style="margin: 20px 0;">
+    <a href="<%= @setup_url %>" 
+       style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+      Set Your Password
+    </a>
+  </p>
+  <p>Or copy and paste this link in your browser:</p>
+  <p><%= @setup_url %></p>
+  <p style="margin-top: 30px; color: #666; font-size: 12px;">
+    This link will expire in 24 hours.
+  </p>
+</div>

@@ -131,6 +131,10 @@ Rails.application.routes.draw do
     end
   end
 
+  # Admin user invitation setup
+  get "setup_password/:token", to: "registrations#setup_password", as: :setup_password_registration
+  post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
+
   # Admin routes
   namespace :admin do
     root "dashboard#index"

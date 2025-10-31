@@ -33,6 +33,9 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       # Soft delete flag
       t.datetime :discarded_at
 
+      # Invitation
+      t.boolean :invited_by_admin, default: false
+
       # Suspension fields
       t.datetime :suspended_at
       t.text :suspended_reason
@@ -63,6 +66,7 @@ class CreateUsers < ActiveRecord::Migration[8.0]
     add_index :users, :deactivated_at
     add_index :users, :discarded_at
     add_index :users, :account_metadata, using: :gin
+    add_index :users, :invited_by_admin
 
     # Foreign key for suspended_by
     add_foreign_key :users, :users, column: :suspended_by_id

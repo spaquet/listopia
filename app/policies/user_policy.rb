@@ -93,7 +93,6 @@ class UserPolicy < ApplicationPolicy
   # Define which attributes can be updated based on user role
   def permitted_attributes
     if user.admin?
-      # Admins can update more fields
       [
         :name,
         :email,
@@ -104,8 +103,8 @@ class UserPolicy < ApplicationPolicy
         :status,
         :admin_notes
       ]
+      # NOTE: Password is NOT in this list - it's handled specially in the controller
     elsif record == user
-      # Regular users can only update their own basic profile fields
       [
         :name,
         :bio,

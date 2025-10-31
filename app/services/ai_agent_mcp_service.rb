@@ -93,6 +93,38 @@ class AiAgentMcpService
 
   private
 
+  def create_user_from_analysis(params)
+    # Validate permissions
+    return error_response unless @user.admin?
+
+    # Create user
+    user = User.new(
+      name: params["name"],
+      email: params["email"]
+    )
+
+    # Generate temporary password
+    temp_password = user.generate_temp_password
+    user.password = temp_password
+    user.password_confirmation = temp_password
+    user.email_verified_at = Time.current
+
+    if user.save
+      # Add admin role if requested
+      user.add_role(:admin) if params["make_admin"] == true
+
+      # Send invitation email
+      user.send_admin_invitation!
+
+      success_response({
+        user: user,
+        message: "User #{user.email} created successfully. Invitation email sent."
+      })
+    else
+      error_response(user.errors.full_messages)
+    end
+  end
+
   def find_or_create_chat
     existing = @user.chats.where(status: "active")
                          .order(last_message_at: :desc, created_at: :desc)
@@ -646,12 +678,7 @@ class AiAgentMcpService
     when "get_user"
       @user_tools.get_user(user_id: params[:user_id])
     when "create_user"
-      @user_tools.create_user(
-        name: params[:name],
-        email: params[:email],
-        password: params[:password] || SecureRandom.hex(16),
-        make_admin: params[:make_admin] || false
-      )
+      create_user_from_analysis(params)
     when "update_user"
       # If no user_id, assume updating current user
       params[:user_id] ||= @user.id
