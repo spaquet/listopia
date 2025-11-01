@@ -1,320 +1,225 @@
-# Listopia Notification System Documentation
+# Notifications System
 
-## Supported Notification Scenarios
-
-### **List Collaboration Scenarios**
-1. **User receives invitation to collaborate** - When someone invites them to a list
-2. **User is removed from collaboration** - When they're removed from a list they were collaborating on
-3. **Invitation acceptance notification** - List owner notified when invitation is accepted
-4. **Invitation rejection notification** - List owner notified when invitation is declined
-
-### **List Activity Scenarios**
-5. **List title/description changes** - Collaborators notified when list content is updated (excluding the person making the change)
-6. **List status changes** - Collaborators notified when list status changes (draft → active → completed → archived, excluding the person making the change)
-
-### **Item Activity Scenarios**  
-7. **Item added to list** - Collaborators notified when new items are created (excluding the person adding the item)
-8. **Item modified in list** - Collaborators notified when items are updated (excluding the person making the change)
-9. **Item deleted from list** - Collaborators notified when items are removed (excluding the person deleting the item)
-
-### **Notification Preferences**
-- All scenarios respect individual user notification preferences
-- Users can control delivery channels (email, SMS, push)
-- Users can control notification types (collaboration, list activity, item activity, status changes)
-- Users can set frequency (immediate, daily digest, weekly digest, disabled)
-
-## Overview
-
-Listopia uses the **Noticed gem** with custom notification preferences to provide users with real-time updates about list activities, collaborations, and status changes. The system respects user preferences and supports multiple delivery channels.
+Listopia uses the **[Noticed gem](https://github.com/excid3/noticed)** to manage notifications with user preference controls. The system automatically notifies collaborators about list and item activity while respecting individual user preferences.
 
 ## Architecture
 
 ### Core Components
 
-1. **Noticed Gem** - Handles notification delivery and storage
-2. **NotificationSetting Model** - Stores user preferences
-3. **ApplicationNotifier** - Base class for all notifications
-4. **Model Callbacks** - Automatic notification triggers
-5. **Controller Actions** - Manual notification triggers for user actions
+- **[Noticed Gem](https://rubygems.org/gems/noticed)** - Notification delivery engine
+- **[NotificationSetting](../app/models/notification_setting.rb)** - User preferences (channels, types, frequency)
+- **ApplicationNotifier** - Base notifier class for all custom notifiers
+- **Model Callbacks** - Automatic notification triggers on data changes
+- **[NotificationsController](../app/controllers/notifications_controller.rb)** - View/manage notifications
 
-## When to Use Models vs Controllers
+### Database Tables
 
-### **Use Model Callbacks** ✅ (Primary Strategy)
+- **noticed_notifications** - Stored notifications for each user
+- **noticed_events** - Event records that trigger notifications
+- **notification_settings** - User preference configuration
 
-**When to use:**
-- Automatic notifications when data changes
-- Business logic that should trigger regardless of how the change occurs
-- Consistent behavior across console, API, web interface, background jobs
+See [NotificationSetting model](../app/models/notification_setting.rb) for schema details.
 
-**Examples:**
+## Notification Types
+
+Listopia triggers notifications for:
+
+### Collaboration Events
+- User receives collaboration invitation
+- Collaboration invitation accepted
+- User removed from list collaboration
+
+### List Activity
 - List title/description changes
-- List status changes (draft → active → completed)
-- Item creation/updates/deletion
-- Collaboration creation/removal
+- List status changes (draft → active → completed → archived)
 
-**Benefits:**
-- Consistency - notifications fire regardless of entry point
-- Single responsibility - models handle business logic
-- DRY principle - no duplication across controllers
-- Testability - easier to test in isolation
+### Item Activity
+- New item added to list
+- Item content/priority/due date updated
+- Item marked complete or uncompleted
+- Item deleted from list
+
+## User Preferences
+
+Each user has a [NotificationSetting](../app/models/notification_setting.rb) with controls for:
+
+### Delivery Channels
+- `email_notifications` (default: true)
+- `sms_notifications` (default: false)
+- `push_notifications` (default: true)
+
+### Notification Types
+- `collaboration_notifications` - Invitations, collaborators added/removed
+- `list_activity_notifications` - Title, description, status changes
+- `item_activity_notifications` - Item creation, updates, deletion
+- `status_change_notifications` - Completion/uncompleted status
+
+### Frequency Control
+- `notification_frequency` - 'immediate', 'daily_digest', 'weekly_digest', 'disabled'
+- `quiet_hours_start` / `quiet_hours_end` - Time-based suppression
+- `timezone` - User's timezone for delivery scheduling
+
+## How Notifications Work
+
+### Trigger Pattern (Model Callbacks)
 
 ```ruby
 # app/models/list.rb
 class List < ApplicationRecord
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
-  after_commit :notify_status_change, on: :update, if: :saved_change_to_status?
 
   private
 
   def notify_title_change
-    return unless Current.user
-    recipients = collaborators.where.not(id: Current.user.id)
-    ListTitleChangedNotifier.with(actor_id: Current.user.id, list_id: id)
-                           .deliver_to_enabled_users(recipients)
-  end
-end
-```
-
-### **Use Controller Actions** ⚠️ (Limited Cases)
-
-**When to use:**
-- Explicit user actions that don't map to model changes
-- Complex multi-step operations
-- When you need additional context beyond model data
-
-**Examples:**
-- Invitation acceptance/rejection responses
-- Bulk operations
-- User-initiated sharing actions
-
-```ruby
-# app/controllers/collaborations_controller.rb
-def accept_invitation
-  @collaboration.update!(status: 'accepted')
-  
-  # Notify the list owner about acceptance
-  InvitationAcceptedNotifier.with(
-    actor_id: current_user.id,
-    list_id: @collaboration.list_id
-  ).deliver_to_enabled_users([@collaboration.list.owner])
-end
-```
-
-## Notification Types & Configuration
-
-### Notification Categories
-
-| Category | Description | User Setting |
-|----------|-------------|--------------|
-| `collaboration` | Invitations, user additions/removals | `collaboration_notifications` |
-| `list_activity` | Title, description changes | `list_activity_notifications` |
-| `item_activity` | Item creation, updates, deletion | `item_activity_notifications` |
-| `status_change` | List status transitions | `status_change_notifications` |
-
-### Delivery Channels
-
-| Channel | Description | User Setting |
-|---------|-------------|--------------|
-| Database | Always enabled (for in-app notifications) | N/A |
-| Email | Email notifications | `email_notifications` |
-| SMS | Text message notifications | `sms_notifications` |
-| Push | Browser/mobile push notifications | `push_notifications` |
-
-### Frequency Options
-
-| Frequency | Description | Behavior |
-|-----------|-------------|----------|
-| `immediate` | Send notifications right away | Respects quiet hours |
-| `daily_digest` | Bundle into daily summary | Sent once per day |
-| `weekly_digest` | Bundle into weekly summary | Sent once per week |
-| `disabled` | No notifications | User receives no notifications |
-
-## Creating Notifiers
-
-### Basic Notifier Structure
-
-```ruby
-# app/notifiers/example_notifier.rb
-class ExampleNotifier < ApplicationNotifier
-  # Required: Define notification type for user preferences
-  def notification_type
-    "collaboration"  # or "list_activity", "item_activity", "status_change"
-  end
-
-  # Required: Notification title
-  def title
-    "Short descriptive title"
-  end
-
-  # Required: Notification message
-  def message
-    "#{actor_name} performed an action on #{target_list&.title}"
-  end
-
-  # Optional: Custom icon
-  def icon
-    "user-plus"  # Lucide icon name
-  end
-
-  # Optional: Custom URL
-  def url
-    Rails.application.routes.url_helpers.list_path(target_list)
-  end
-end
-```
-
-### Using Notifier Parameters
-
-Access parameters passed via `.with()`:
-
-```ruby
-class ListStatusChangedNotifier < ApplicationNotifier
-  def notification_type
-    "status_change"
-  end
-
-  def title
-    "List status changed to #{params[:new_status]}"
-  end
-
-  def message
-    "#{actor_name} changed \"#{target_list&.title}\" from #{params[:previous_status]} to #{params[:new_status]}"
-  end
-
-  def icon
-    case params[:new_status]
-    when "active" then "play"
-    when "completed" then "check-circle"
-    when "archived" then "archive"
-    else "circle"
-    end
-  end
-end
-```
-
-## Model Implementation Patterns
-
-### Callback Timing Guide
-
-| Callback | Use Case | Example |
-|----------|----------|---------|
-| `after_commit :method, on: :create` | Object creation | New item added |
-| `after_commit :method, on: :update, if: :condition` | Specific field changes | Title updated |
-| `before_destroy :method` | Object deletion | Item deleted (need object data) |
-
-### Conditional Callbacks
-
-Use Rails' built-in change detection:
-
-```ruby
-class List < ApplicationRecord
-  # Only notify when title OR description changes
-  after_commit :notify_content_change, on: :update, if: :title_or_description_changed?
-
-  private
-
-  def title_or_description_changed?
-    saved_change_to_title? || saved_change_to_description?
-  end
-
-  def notify_content_change
-    return unless Current.user
+    return unless Current.user  # Only notify if user context exists
     
+    # Get recipients (exclude the person who made the change)
     recipients = collaborators.where.not(id: Current.user.id)
     return if recipients.empty?
 
+    # Send notification with context
     ListTitleChangedNotifier.with(
       actor_id: Current.user.id,
       list_id: id,
       previous_title: title_before_last_save,
-      new_title: title,
-      previous_description: description_before_last_save,
-      new_description: description
+      new_title: title
     ).deliver_to_enabled_users(recipients)
   end
 end
 ```
 
-### Recipient Filtering Pattern
-
-Standard pattern for getting notification recipients:
+### Custom Notifier Example
 
 ```ruby
-def list_notification_recipients
-  recipients = []
-  
-  # Add list owner (unless they're the actor)
-  recipients << list.owner unless list.owner.id == Current.user.id
-  
-  # Add collaborators (except the actor)
-  collaborators_to_notify = list.collaborators.where.not(id: Current.user.id)
-  recipients.concat(collaborators_to_notify)
-  
-  recipients.uniq.compact
-end
-```
+# app/notifiers/list_title_changed_notifier.rb
+class ListTitleChangedNotifier < ApplicationNotifier
+  deliver_by :database
+  deliver_by :email, mailer: "NotificationMailer"
 
-## Delivery Methods
+  def message
+    "#{actor.name} renamed list from '#{params[:previous_title]}' to '#{params[:new_title]}'"
+  end
 
-### Standard Delivery (Respects Preferences)
-
-```ruby
-# Filters recipients based on their notification preferences
-NotifierClass.with(params).deliver_to_enabled_users(recipients)
-```
-
-### Immediate Delivery (Bypasses Preferences)
-
-```ruby
-# Sends to all recipients regardless of preferences (use sparingly)
-NotifierClass.with(params).deliver_later(recipients)
-```
-
-### Background Delivery
-
-All notifications are delivered via background jobs using Rails' Solid Queue by default.
-
-## User Preference Integration
-
-### Checking User Preferences
-
-```ruby
-# Check if user wants this notification type
-user.wants_notification?("collaboration")
-
-# Check specific channel
-user.wants_notification?("item_activity", :email)
-
-# Check if user wants immediate notifications
-user.wants_immediate_notifications?
-```
-
-### Setting Up Default Preferences
-
-New users automatically get default notification settings via the User model callback:
-
-```ruby
-# app/models/user.rb
-class User < ApplicationRecord
-  after_create :create_default_notification_settings
+  def notification_type
+    "list_activity"
+  end
 
   private
 
-  def create_default_notification_settings
-    build_notification_settings.save! unless notification_settings
-    notification_settings
+  def actor
+    User.find(params[:actor_id])
   end
 end
 ```
 
+### View Notifications
+
+Users can view notifications via [NotificationsController](../app/controllers/notifications_controller.rb):
+
+```ruby
+GET /notifications             # List all notifications
+GET /notifications/:id         # View specific notification
+PATCH /notifications/:id/mark_as_read
+PATCH /notifications/mark_all_as_read
+```
+
+## Checking Preferences
+
+### User Preference Helpers
+
+```ruby
+# Check if user wants a notification type
+user.wants_notification?("collaboration")           # => true/false
+user.wants_notification?("item_activity", :email)   # => true/false
+
+# Check specific channels
+user.notification_preferences.email_notifications?  # => true/false
+user.notification_preferences.push_notifications?   # => true/false
+
+# Check delivery frequency
+user.notification_preferences.notification_frequency # => "immediate"
+```
+
+### Preference Filtering in Code
+
+```ruby
+# Always use this pattern for notifications
+recipients = list.collaborators.where.not(id: Current.user.id)
+return if recipients.empty?
+
+NotifyCollaborators.with(params).deliver_to_enabled_users(recipients)
+# This automatically filters based on each user's preferences
+```
+
+## Common Implementation Patterns
+
+### 1. Exclude the Actor
+
+```ruby
+# ✅ Correct - collaborators minus the person making the change
+recipients = list.collaborators.where.not(id: Current.user.id)
+
+# ❌ Wrong - would send notification to the actor
+recipients = list.collaborators
+```
+
+### 2. Check Current.user Context
+
+```ruby
+def notify_change
+  # ✅ Correct - prevents notifications from console/seeds/migrations
+  return unless Current.user
+  
+  # ❌ Wrong - triggers in background jobs without user context
+  # (missing the check)
+end
+```
+
+### 3. Conditional Callbacks
+
+```ruby
+# ✅ Correct - only notify on relevant changes
+after_commit :notify_change, on: :update, if: :saved_change_to_title?
+
+def saved_change_to_title?
+  saved_changes.key?("title")
+end
+
+# ❌ Wrong - notifies on any change (including timestamps)
+after_commit :notify_change, on: :update
+```
+
+### 4. Only Notify When Recipients Exist
+
+```ruby
+def notify_collaborators
+  recipients = list.collaborators.where.not(id: Current.user.id)
+  
+  # ✅ Correct - don't create notifications with no recipients
+  return if recipients.empty?
+  
+  # Proceed with notification
+end
+```
+
+### 5. Deletion Notifications
+
+```ruby
+# ✅ Correct - object still exists and has data
+before_destroy :notify_deletion
+
+# ❌ Wrong - object already deleted, can't access attributes
+after_destroy :notify_deletion
+```
+
 ## Testing Notifications
 
-### Testing Model Callbacks
+### Test Model Callbacks
 
 ```ruby
 # spec/models/list_spec.rb
-RSpec.describe List, type: :model do
-  describe "notification callbacks" do
+describe List do
+  describe "#notify_title_change" do
     let(:user) { create(:user) }
     let(:list) { create(:list, owner: user) }
     let(:collaborator) { create(:user) }
@@ -330,148 +235,164 @@ RSpec.describe List, type: :model do
       }.to have_enqueued_job(Noticed::DeliveryJob)
     end
 
-    it "does not send notification when untracked field changes" do
+    it "doesn't notify when updated_at only changes" do
       expect {
-        list.update!(updated_at: Time.current)
+        list.touch  # Only updates timestamp
       }.not_to have_enqueued_job(Noticed::DeliveryJob)
     end
   end
 end
 ```
 
-### Testing Notifiers
+### Test Notifiers
 
 ```ruby
 # spec/notifiers/list_title_changed_notifier_spec.rb
-RSpec.describe ListTitleChangedNotifier do
-  let(:user) { create(:user) }
-  let(:list) { create(:list) }
-  let(:notifier) { described_class.with(actor_id: user.id, list_id: list.id) }
-
-  describe "#notification_type" do
-    it "returns list_activity" do
-      expect(notifier.notification_type).to eq("list_activity")
-    end
+describe ListTitleChangedNotifier do
+  it "generates correct message" do
+    notifier = described_class.with(
+      actor_id: user.id,
+      list_id: list.id,
+      previous_title: "Old",
+      new_title: "New"
+    )
+    
+    expect(notifier.message).to include("Old")
+    expect(notifier.message).to include("New")
   end
 
-  describe "#title" do
-    it "includes the list title" do
-      expect(notifier.title).to include(list.title)
-    end
-  end
-
-  describe "#message" do
-    it "includes the actor name" do
-      expect(notifier.message).to include(user.name)
-    end
+  it "has correct notification type" do
+    notifier = described_class.with(params)
+    expect(notifier.notification_type).to eq("list_activity")
   end
 end
 ```
 
-## Common Patterns & Best Practices
+## Notification Views
 
-### 1. Always Check for Current.user
+### User Settings
 
-```ruby
-def notify_something
-  return unless Current.user  # Prevents notifications from console/seeds
-  # ... notification logic
-end
+Users configure preferences via `/settings`:
+
+```erb
+<!-- Delivery Channels -->
+<%= f.check_box :email_notifications %>
+<%= f.check_box :sms_notifications %>
+<%= f.check_box :push_notifications %>
+
+<!-- Notification Types -->
+<%= f.check_box :collaboration_notifications %>
+<%= f.check_box :list_activity_notifications %>
+<%= f.check_box :item_activity_notifications %>
+<%= f.check_box :status_change_notifications %>
+
+<!-- Frequency -->
+<%= f.select :notification_frequency, 
+    ['immediate', 'daily_digest', 'weekly_digest', 'disabled'] %>
 ```
 
-### 2. Filter Out the Actor
+### Notification Inbox
+
+Notifications appear at `/notifications`:
 
 ```ruby
-recipients = list.collaborators.where.not(id: Current.user.id)
+# Controller loads and filters notifications
+@notifications = current_user.notifications
+  .order(created_at: :desc)
+  .includes(:event)
+  .limit(50)
+
+# Each notification delegates to its event
+notification.title
+notification.message
+notification.actor
+notification.url
 ```
 
-### 3. Use Conditional Callbacks
+## Configuration
+
+### Initializer
+
+The Noticed gem is configured in [config/initializers/noticed.rb](../config/initializers/noticed.rb):
 
 ```ruby
-after_commit :notify_change, on: :update, if: :relevant_change?
-
-def relevant_change?
-  saved_change_to_title? || saved_change_to_description?
-end
-```
-
-### 4. Handle Empty Recipients
-
-```ruby
-def notify_collaborators
-  recipients = get_recipients
-  return if recipients.empty?  # Don't create notifications with no recipients
+# Convenience methods added to Noticed::Notification
+Noticed::Notification.class_eval do
+  delegate :title, :message, :url, :notification_type, to: :event
   
-  NotifierClass.with(params).deliver_to_enabled_users(recipients)
+  def read?
+    read_at.present?
+  end
+  
+  def mark_as_read!
+    update!(read_at: Time.current)
+  end
 end
 ```
 
-### 5. Use before_destroy for Deletion Notifications
+### Delivery Methods
+
+Notifications can be delivered via multiple channels:
 
 ```ruby
-# ✅ Correct - object still exists
-before_destroy :notify_deletion
-
-# ❌ Wrong - object is already deleted
-after_commit :notify_deletion, on: :destroy
+class ApplicationNotifier < Noticed::Base
+  deliver_by :database  # Store in database
+  deliver_by :email     # Send email notification
+  # deliver_by :sms      # Send SMS (future)
+end
 ```
 
 ## Troubleshooting
 
-### Common Issues
-
-**1. Notifications not sending**
-- Check if `Current.user` is set
-- Verify recipients exist and want notifications
+**Notifications not sending?**
+- Check `Current.user` is set in ApplicationController
+- Verify recipient has `email_notifications?` true
 - Check notification type matches user preferences
+- View job queue: `Noticed::DeliveryJob.queue_adapter.enqueued_jobs`
 
-**2. Missing object data in destroy notifications**
-- Use `before_destroy` instead of `after_destroy`
-- Capture necessary data before destruction
+**Current.user not available?**
+- Set in ApplicationController: `Current.user = current_user`
+- Won't work in background jobs without explicit context
+- Won't work in console unless manually set
 
-**3. Infinite notification loops**
-- Ensure actor is excluded from recipients
-- Use conditional callbacks to prevent unnecessary triggers
+**Missing object data in destroy notifications?**
+- Use `before_destroy` not `after_destroy`
+- Capture data before object deletion
 
-**4. Missing Current.user context**
-- Add `Current.user = current_user` in ApplicationController
-- Check that authentication sets Current.user
+**Infinite notification loops?**
+- Always exclude actor from recipients: `.where.not(id: Current.user.id)`
+- Use conditional callbacks: `if: :saved_change_to_title?`
 
-### Debugging Commands
+## Debugging
 
 ```ruby
-# Check user notification preferences
+# Check user preferences
 user.notification_preferences
-
-# Check if user wants specific notification
 user.wants_notification?("collaboration")
 
 # View recent notifications
-user.notifications.recent.includes(:event)
+user.notifications.order(created_at: :desc).limit(10)
 
-# Check notification queue
+# Check queued jobs
 Noticed::DeliveryJob.queue_adapter.enqueued_jobs
+
+# Generate test token in console
+Current.user = User.first
+list = List.first
+list.update!(title: "Test") # Triggers notification
 ```
+
+## Performance Notes
+
+- Notifications are **async** via background jobs (Solid Queue)
+- Only notifications with recipients are created
+- Early exit conditions prevent unnecessary queries
+- Seen/read tracking via `seen_at` and `read_at` timestamps
 
 ## Future Enhancements
 
-### Planned Features
-
-1. **Time-based preferences** - Quiet hours, timezone support
-2. **Priority levels** - Urgent vs normal notifications  
-3. **Team settings** - Organization-level notification policies
-4. **Rich notifications** - Images, action buttons
-5. **Mobile push** - Real-time mobile notifications
-
-### Extensibility Points
-
-- Add new notification types in `NotificationSetting`
-- Create new delivery methods in `ApplicationNotifier`
-- Add custom notifier classes for specific use cases
-- Extend user preferences with custom rules
-
-## Summary
-
-The Listopia notification system provides a robust, user-friendly way to keep collaborators informed while respecting their preferences. By using model callbacks for automatic notifications and controller actions for explicit user interactions, the system maintains consistency and provides a great user experience.
-
-Remember: **Models for business logic, Controllers for user actions, Always respect user preferences.**
+1. **SMS delivery** - Add SMS channel for critical notifications
+2. **Webhooks** - External system notifications
+3. **Custom frequency** - Per-notification-type frequency settings
+4. **Rich notifications** - Attachments, action buttons, deep links
+5. **Bulk operations** - Notify about batch changes
