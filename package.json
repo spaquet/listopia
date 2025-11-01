@@ -7,14 +7,17 @@
   },
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
-    "@hotwired/turbo-rails": "^8.0.18",
+    "@hotwired/turbo-rails": "^8.0.20",
     "@stimulus-components/character-counter": "^5.1.0",
     "@stimulus-components/notification": "^3.0.0",
     "@stimulus-components/reveal": "^5.0.0",
     "@stimulus-components/scroll-to": "^5.0.1",
-    "@tailwindcss/cli": "^4.1.14",
+    "@tailwindcss/cli": "^4.1.16",
+    "highlight.js": "^11.11.1",
+    "lodash": "^4.17.21",
+    "marked": "^16.4.1",
     "sortablejs": "^1.15.6",
     "stimulus-textarea-autogrow": "^4.1.0",
-    "tailwindcss": "^4.1.14"
+    "tailwindcss": "^4.1.16"
   }
 }

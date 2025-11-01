@@ -1,16 +1,17 @@
 <!-- app/views/users/show.html.erb -->
 <div class="max-w-4xl mx-auto space-y-6">
-  <!-- Page Header -->
+  <!-- Page Header with User Avatar -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <div class="flex items-start justify-between">
       <div class="flex items-center space-x-4">
-        <%= user_avatar_initials(@user, size: 'w-16 h-16 text-xl') %>
+        <%= user_avatar_initials(current_user, size: 'w-16 h-16 text-xl') %>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900"><%= @user.name %></h1>
-          <p class="text-gray-600"><%= @user.email %></p>
-          <% if @user.bio.present? %>
-            <p class="text-sm text-gray-500 mt-2"><%= @user.bio %></p>
+          <h1 class="text-2xl font-bold text-gray-900"><%= current_user.name %></h1>
+          <p class="text-gray-600"><%= current_user.email %></p>
+          <% if current_user.bio.present? %>
+            <p class="text-sm text-gray-500 mt-2"><%= current_user.bio %></p>
           <% end %>
+          <p class="text-xs text-gray-400 mt-3">Member since <%= current_user.created_at.strftime("%B %Y") %></p>
         </div>
       </div>
       <div class="flex space-x-3">
@@ -30,72 +31,84 @@
       </div>
     </div>
   </div>
-  <!-- Account Stats -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <!-- Profile Information Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Account Info -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-            </svg>
-          </div>
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Email</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= current_user.email %></dd>
         </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Total Lists</p>
-          <p class="text-lg font-semibold text-gray-900"><%= @user.lists.count %></p>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Account Status</dt>
+          <dd class="mt-1">
+            <% if current_user.active? %>
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+            <% elsif current_user.suspended? %>
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>
+            <% else %>
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Inactive</span>
+            <% end %>
+          </dd>
         </div>
-      </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Timezone</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= current_user.timezone || "Not set" %></dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Language</dt>
+          <dd class="mt-1 text-sm text-gray-900"><%= current_user.locale&.humanize || "English" %></dd>
+        </div>
+      </dl>
     </div>
+    <!-- Activity Stats -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-          </div>
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Lists Created</dt>
+          <dd class="mt-1 text-3xl font-bold text-blue-600"><%= current_user.lists.count %></dd>
         </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Collaborations</p>
-          <p class="text-lg font-semibold text-gray-900"><%= @user.list_collaborations.count %></p>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Shared Lists</dt>
+          <dd class="mt-1 text-3xl font-bold text-purple-600"><%= current_user.collaborated_lists.count %></dd>
         </div>
-      </div>
-    </div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-          </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Last Sign In</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <% if current_user.last_sign_in_at %>
+              <%= current_user.last_sign_in_at.strftime("%B %d, %Y at %I:%M %p") %>
+            <% else %>
+              Never
+            <% end %>
+          </dd>
         </div>
-        <div class="ml-3">
-          <p class="text-sm font-medium text-gray-500">Member Since</p>
-          <p class="text-lg font-semibold text-gray-900"><%= @user.created_at.strftime("%B %Y") %></p>
-        </div>
-      </div>
+      </dl>
     </div>
   </div>
-  <!-- Recent Activity -->
+  <!-- Account Security Section -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h2>
-    <div class="space-y-3">
-      <% recent_lists = @user.lists.order(updated_at: :desc).limit(5) %>
-      <% if recent_lists.any? %>
-        <% recent_lists.each do |list| %>
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-              <%= link_to list.title, list, class: "font-medium text-gray-900 hover:text-blue-600" %>
-              <p class="text-sm text-gray-500">Updated <%= time_ago_in_words_or_date(list.updated_at) %></p>
-            </div>
-            <%= list_status_badge(list) %>
-          </div>
-        <% end %>
-      <% else %>
-        <p class="text-gray-500 text-center py-8">No recent activity</p>
-      <% end %>
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Security</h2>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+        <div>
+          <p class="text-sm font-medium text-gray-900">Password</p>
+          <p class="text-xs text-gray-500 mt-1">Manage your password</p>
+        </div>
+        <%= link_to "Change Password", settings_user_path, class: "text-blue-600 hover:text-blue-700 text-sm font-medium" %>
+      </div>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-900">Email Verification</p>
+          <% if current_user.email_verified_at %>
+            <p class="text-xs text-green-600 mt-1">✓ Email verified</p>
+          <% else %>
+            <p class="text-xs text-yellow-600 mt-1">⚠ Email not verified</p>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Import Highlight.js theme */
+@import "highlight.js/styles/github-dark.css";
+
 /* Custom Select Style */
 .custom-select-dropdown {
   @apply absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto;

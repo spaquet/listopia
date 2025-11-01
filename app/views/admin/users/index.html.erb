@@ -1,0 +1,136 @@
+<!-- app/views/admin/users/index.html.erb -->
+<%= turbo_refreshes_with method: :morph, scroll: :preserve %>
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+      <p class="text-gray-600 mt-1">Manage and monitor all users in your organization</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <%= link_to admin_root_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors" do %>
+        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back
+      <% end %>
+      <%= link_to new_admin_user_path, class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Add User
+      <% end %>
+    </div>
+  </div>
+  <!-- Filters & Search -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+       data-controller="user-filter"
+       data-user-filter-debounce-delay="300">
+    <%= form_with url: admin_users_path, method: :get, local: true, class: "space-y-4", data: { user_filter_target: "form" }, id: "user-filter-form" do |f| %>
+      <!-- Search Bar -->
+      <div class="flex items-center gap-3">
+        <div class="flex-1 relative" data-turbo-permanent id="search-field-container">
+          <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <%= f.text_field :query,
+              placeholder: "Search by name or email...",
+              class: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
+              data: { 
+                user_filter_target: "query",
+                action: "input->user-filter#searchInput"
+              },
+              autocomplete: "off",
+              spellcheck: "false",
+              value: @filters[:query] %>
+        </div>
+      </div>
+      <!-- Filters Row -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Status Filter -->
+        <div>
+          <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.select :status,
+              options_for_select(
+                [["All Statuses", ""], ["Active", "active"], ["Suspended", "suspended"], ["Inactive", "inactive"]],
+                @filters[:status]
+              ),
+              { include_blank: false },
+              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
+              data: { 
+                user_filter_target: "status",
+                action: "change->user-filter#filterChange"
+              } %>
+        </div>
+        <!-- Role Filter -->
+        <div>
+          <%= f.label :role, "Role", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.select :role,
+              options_for_select(
+                [["All Roles", ""], ["Admin", "admin"], ["User", "user"]],
+                @filters[:role]
+              ),
+              { include_blank: false },
+              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
+              data: { 
+                user_filter_target: "role",
+                action: "change->user-filter#filterChange"
+              } %>
+        </div>
+        <!-- Email Verification Filter -->
+        <div>
+          <%= f.label :verified, "Email Status", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.select :verified,
+              options_for_select(
+                [["All Users", ""], ["Verified", "verified"], ["Unverified", "unverified"]],
+                @filters[:verified]
+              ),
+              { include_blank: false },
+              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
+              data: { 
+                user_filter_target: "verified",
+                action: "change->user-filter#filterChange"
+              } %>
+        </div>
+        <!-- Sort By Filter -->
+        <div>
+          <%= f.label :sort_by, "Sort By", class: "block text-sm font-medium text-gray-700 mb-2" %>
+          <%= f.select :sort_by,
+              options_for_select(
+                [["Most Recent", "recent"], ["Oldest", "oldest"], ["Name (A-Z)", "name_asc"], ["Name (Z-A)", "name_desc"], ["Email (A-Z)", "email_asc"], ["Email (Z-A)", "email_desc"]],
+                @filters[:sort_by]
+              ),
+              { include_blank: false },
+              class: "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors",
+              data: { 
+                user_filter_target: "sortBy",
+                action: "change->user-filter#filterChange"
+              } %>
+        </div>
+      </div>
+      <!-- Clear Filters Button -->
+      <div class="flex justify-end">
+        <button type="button"
+                data-user-filter-target="clearBtn"
+                data-action="click->user-filter#clearFilters"
+          class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors text-sm font-medium hidden">
+          <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          Clear Filters
+        </button>
+      </div>
+    <% end %>
+  </div>
+  <!-- Users Table Container -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <!-- Results Summary -->
+    <div id="results-summary" class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <%= render "results_summary", users_count: @users.count, total_users: @total_users %>
+    </div>
+    <!-- Users Table -->
+    <div id="users-table">
+      <%= render "users_table", users: @users, current_user: current_user %>
+    </div>
+  </div>
+</div>

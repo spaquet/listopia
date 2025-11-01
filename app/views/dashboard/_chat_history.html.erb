@@ -1,0 +1,67 @@
+<!-- app/views/dashboard/_chat_history.html.erb -->
+<%# This partial is rendered INSIDE #dashboard-chat-messages %>
+<%# DO NOT add wrapping div with id="dashboard-chat-messages" %>
+<% if messages.blank? %>
+  <!-- Empty State / Welcome Message -->
+  <div id="dashboard-chat-welcome" 
+       class="flex flex-col items-center justify-center h-full text-center px-4">
+    <div class="max-w-2xl mx-auto">
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">How can I help you today?</h3>
+      <p class="text-gray-500 mb-8">
+        I can help you create lists, manage tasks, add items, and organize your work. Just ask!
+      </p>
+      <!-- Suggested Prompts - Full Size (only shown when no messages) -->
+      <div class="grid grid-cols-1 gap-3 w-full">
+        <button type="button"
+                data-action="click->dashboard-chat-input#useSuggestion"
+          data-suggestion="Show me my active lists"
+          class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-700 group-hover:text-blue-700">Show me my active lists</p>
+              <p class="text-xs text-gray-500 mt-1">View and manage current tasks</p>
+            </div>
+          </div>
+        </button>
+        <button type="button"
+                data-action="click->dashboard-chat-input#useSuggestion"
+          data-suggestion="Help me plan my week"
+          class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-700 group-hover:text-blue-700">Help me plan my week</p>
+              <p class="text-xs text-gray-500 mt-1">Create a weekly planning list</p>
+            </div>
+          </div>
+        </button>
+        <button type="button"
+                data-action="click->dashboard-chat-input#useSuggestion"
+          data-suggestion="What tasks should I prioritize today?"
+          class="text-left p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-700 group-hover:text-blue-700">What tasks should I prioritize today?</p>
+              <p class="text-xs text-gray-500 mt-1">Get help organizing your priorities</p>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <!-- Chat History - messages exist -->
+  <% messages.each do |message| %>
+    <% next unless message.content.present? %>
+    <% next unless ['user', 'assistant'].include?(message.role) %>
+    <%= render "dashboard/chat_message", message: message, lists_created: [] %>
+  <% end %>
+<% end %>

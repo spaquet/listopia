@@ -7,6 +7,7 @@ class AiAgentMcpService
     @context = context
     @chat = find_or_create_chat
     @extracted_data = {}
+    @user_tools = McpTools::UserManagementTools.new(user, context)
   end
 
   def process_message(message_content)
@@ -90,80 +91,39 @@ class AiAgentMcpService
     }
   end
 
-  # def process_message(message_content)
-  #   @current_message = message_content
-  #   log_debug "=" * 80
-  #   log_debug "NEW MESSAGE: #{message_content}"
-  #   log_debug "=" * 80
-
-  #   # SAVE USER MESSAGE to database
-  #   @chat.messages.create!(
-  #     role: "user",
-  #     content: message_content,
-  #     user: @user
-  #   )
-
-  #   # STEP 1: Content moderation
-  #   moderation_result = moderate_content(message_content)
-  #   if moderation_result[:blocked]
-  #     log_debug "MODERATION: Content blocked - #{moderation_result[:categories].join(', ')}"
-
-  #     # Save assistant's moderation response
-  #     assistant_message = @chat.messages.create!(
-  #       role: "assistant",
-  #       content: moderation_result[:message],
-  #       user: nil
-  #     )
-
-  #     return {
-  #       message: assistant_message,  # Return Message object
-  #       lists_created: [],
-  #       items_created: []
-  #     }
-  #   end
-  #   log_debug "MODERATION: Content passed"
-
-  #   # Execute multi-step AI workflow
-  #   result = execute_multi_step_workflow
-
-  #   # Build assistant response text
-  #   assistant_text = build_assistant_response(result)
-
-  #   # SAVE ASSISTANT MESSAGE to database
-  #   assistant_message = @chat.messages.create!(
-  #     role: "assistant",
-  #     content: assistant_text,
-  #     user: nil
-  #   )
-
-  #   {
-  #     message: assistant_message,  # Return Message object instead of string
-  #     lists_created: result[:lists_created],
-  #     items_created: result[:items_created]
-  #   }
-
-  # rescue => e
-  #   Rails.logger.error "AI Agent error: #{e.message}"
-  #   Rails.logger.error e.backtrace.join("\n")
-
-  #   error_text = "I encountered an error processing your request. Please try again."
-
-  #   # Save error message
-  #   error_message = @chat.messages.create!(
-  #     role: "assistant",
-  #     content: error_text,
-  #     user: nil
-  #   )
-
-  #   {
-  #     message: error_message,
-  #     lists_created: [],
-  #     items_created: [],
-  #     error: e.message
-  #   }
-  # end
-
   private
+
+  def create_user_from_analysis(params)
+    # Validate permissions
+    return error_response unless @user.admin?
+
+    # Create user
+    user = User.new(
+      name: params["name"],
+      email: params["email"]
+    )
+
+    # Generate temporary password
+    temp_password = user.generate_temp_password
+    user.password = temp_password
+    user.password_confirmation = temp_password
+    user.email_verified_at = Time.current
+
+    if user.save
+      # Add admin role if requested
+      user.add_role(:admin) if params["make_admin"] == true
+
+      # Send invitation email
+      user.send_admin_invitation!
+
+      success_response({
+        user: user,
+        message: "User #{user.email} created successfully. Invitation email sent."
+      })
+    else
+      error_response(user.errors.full_messages)
+    end
+  end
 
   def find_or_create_chat
     existing = @user.chats.where(status: "active")
@@ -238,6 +198,11 @@ class AiAgentMcpService
     log_debug "STARTING MULTI-STEP AI WORKFLOW"
     log_debug "=" * 80
 
+    # STEP 1: Check for user management requests
+    if user_management_request?
+      return handle_user_management_request
+    end
+
     # STEP 2: Categorize and extract everything in ONE call
     analysis = analyze_and_extract_request
     return handle_workflow_failure("analysis") if analysis.nil?
@@ -260,6 +225,10 @@ class AiAgentMcpService
   def build_assistant_response(result)
     lists_count = result[:lists_created]&.count || 0
     items_count = result[:items_created]&.count || 0
+
+    if result[:user_management_result]
+      return build_user_management_response(result[:user_management_result])
+    end
 
     if lists_count == 1 && items_count > 0
       "Created '#{result[:lists_created].first.title}' with #{items_count} items."
@@ -614,6 +583,191 @@ class AiAgentMcpService
       lists_created: [ list ],
       items_created: []
     }
+  end
+
+  # Detect if this is a user management request
+  def user_management_request?
+    user_keywords = [ "user", "users", "account", "accounts", "profile", "admin", "suspend", "deactivate" ]
+    action_keywords = [ "create", "update", "delete", "list", "show", "suspend", "unsuspend", "deactivate", "reactivate", "grant", "revoke" ]
+
+    message_lower = @current_message.downcase
+
+    user_keywords.any? { |kw| message_lower.include?(kw) } &&
+    action_keywords.any? { |kw| message_lower.include?(kw) }
+  end
+
+  # Handle user management requests
+  def handle_user_management_request
+    log_debug "Detected user management request"
+
+    # Analyze the request to determine action and parameters
+    analysis = analyze_user_management_request
+    return handle_workflow_failure("user management analysis") if analysis.nil?
+
+    # Execute the appropriate user management action
+    result = execute_user_management_action(analysis)
+
+    {
+      lists_created: [],
+      items_created: [],
+      user_management_result: result,
+      analysis: analysis
+    }
+  end
+
+  # Analyze what user management action is requested
+  def analyze_user_management_request
+    prompt = <<~PROMPT
+      Analyze this user management request and extract the action and parameters.
+
+      User message: "#{@current_message}"
+
+      Respond with JSON containing:
+      {
+        "action": "list_users|get_user|create_user|update_user|delete_user|suspend_user|unsuspend_user|deactivate_user|reactivate_user|grant_admin|revoke_admin|update_notes|get_statistics",
+        "parameters": {
+          "user_id": "optional UUID",
+          "name": "optional string",
+          "email": "optional string",
+          "password": "optional string",
+          "reason": "optional string for suspend/deactivate",
+          "notes": "optional string for admin notes",
+          "filters": {
+            "status": "optional: active|suspended|deactivated",
+            "email": "optional email search",
+            "name": "optional name search",
+            "admin": true/false
+          }
+        },
+        "requires_confirmation": true/false
+      }
+
+      Examples:
+      - "list all users" -> {"action": "list_users", "parameters": {}}
+      - "show me suspended users" -> {"action": "list_users", "parameters": {"filters": {"status": "suspended"}}}
+      - "suspend user john@example.com for violating terms" -> {"action": "suspend_user", "parameters": {"email": "john@example.com", "reason": "violating terms"}}
+      - "make user jane@example.com an admin" -> {"action": "grant_admin", "parameters": {"email": "jane@example.com"}}
+      - "update my email to newemail@example.com" -> {"action": "update_user", "parameters": {"email": "newemail@example.com"}}
+    PROMPT
+
+    response = call_ai_with_json_mode(prompt)
+    return nil unless response
+
+    parse_json_response(response, "user management analysis")
+  end
+
+  # Execute the user management action
+  def execute_user_management_action(analysis)
+    action = analysis["action"]
+    params = analysis["parameters"] || {}
+
+    # Find user by email if email provided instead of ID
+    if params["email"].present? && params["user_id"].nil?
+      target_user = User.find_by(email: params["email"])
+      params["user_id"] = target_user&.id
+    end
+
+    # Convert string keys to symbols for method calls
+    params = params.transform_keys(&:to_sym)
+
+    log_debug "Executing user management action: #{action}"
+
+    case action
+    when "list_users"
+      @user_tools.list_users(filters: params[:filters] || {})
+    when "get_user"
+      @user_tools.get_user(user_id: params[:user_id])
+    when "create_user"
+      create_user_from_analysis(params)
+    when "update_user"
+      # If no user_id, assume updating current user
+      params[:user_id] ||= @user.id
+      @user_tools.update_user(**params)
+    when "delete_user"
+      @user_tools.delete_user(user_id: params[:user_id])
+    when "suspend_user"
+      @user_tools.suspend_user(user_id: params[:user_id], reason: params[:reason])
+    when "unsuspend_user"
+      @user_tools.unsuspend_user(user_id: params[:user_id])
+    when "deactivate_user"
+      @user_tools.deactivate_user(user_id: params[:user_id], reason: params[:reason])
+    when "reactivate_user"
+      @user_tools.reactivate_user(user_id: params[:user_id])
+    when "grant_admin"
+      @user_tools.grant_admin(user_id: params[:user_id])
+    when "revoke_admin"
+      @user_tools.revoke_admin(user_id: params[:user_id])
+    when "update_notes"
+      @user_tools.update_user_notes(user_id: params[:user_id], notes: params[:notes])
+    when "get_statistics"
+      @user_tools.get_user_statistics
+    else
+      {
+        success: false,
+        error: "Unknown user management action: #{action}"
+      }
+    end
+  rescue => e
+    log_error "Error executing user management action: #{e.message}"
+    {
+      success: false,
+      error: "Failed to execute user management action: #{e.message}"
+    }
+  end
+
+  # Build response for user management actions
+  def build_user_management_response(um_result)
+    if um_result[:success]
+      response = um_result[:message] || "Action completed successfully."
+
+      # Add user details if present
+      if um_result[:user]
+        user_info = um_result[:user]
+        response += "\n\n**User Details:**\n"
+        response += "- Name: #{user_info[:name]}\n"
+        response += "- Email: #{user_info[:email]}\n"
+        response += "- Status: #{user_info[:status]}\n"
+        response += "- Admin: #{user_info[:admin] ? 'Yes' : 'No'}\n"
+        response += "- Sign-in count: #{user_info[:sign_in_count]}\n"
+        response += "- Last sign-in: #{user_info[:last_sign_in_at] ? user_info[:last_sign_in_at].strftime('%Y-%m-%d %H:%M') : 'Never'}\n"
+      end
+
+      # Add user list if present
+      if um_result[:users]
+        response += "\n\n**Users (#{um_result[:count]} of #{um_result[:total_count]}):**\n"
+        um_result[:users].each do |user_info|
+          response += "\n- #{user_info[:name]} (#{user_info[:email]})"
+          response += " - #{user_info[:status].upcase}"
+          response += " - Admin" if user_info[:admin]
+        end
+      end
+
+      # Add statistics if present
+      if um_result[:statistics]
+        stats = um_result[:statistics]
+        response += "\n\n**User Statistics:**\n"
+        response += "- Total users: #{stats[:total_users]}\n"
+        response += "- Active: #{stats[:active_users]}\n"
+        response += "- Suspended: #{stats[:suspended_users]}\n"
+        response += "- Deactivated: #{stats[:deactivated_users]}\n"
+        response += "- Pending verification: #{stats[:pending_verification]}\n"
+        response += "- Admins: #{stats[:admin_users]}\n"
+        response += "- Signed in today: #{stats[:users_signed_in_today]}\n"
+        response += "- Signed in this week: #{stats[:users_signed_in_this_week]}\n"
+      end
+
+      response
+    else
+      error_msg = um_result[:error] || "Action failed"
+
+      if um_result[:unauthorized]
+        "❌ #{error_msg}. You don't have permission to perform this action."
+      elsif um_result[:errors]
+        "❌ #{error_msg}\n\nErrors:\n" + um_result[:errors].map { |e| "- #{e}" }.join("\n")
+      else
+        "❌ #{error_msg}"
+      end
+    end
   end
 
   def log_debug(message)

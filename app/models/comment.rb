@@ -21,6 +21,9 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Comment < ApplicationRecord
+  # Logidzy for auditing changes
+  has_logidze
+
   belongs_to :commentable, polymorphic: true
   belongs_to :user
 end

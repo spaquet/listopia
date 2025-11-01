@@ -50,6 +50,9 @@ class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
 
+  # Logidzy for auditing changes
+  has_logidze
+
   # Callbacks
   before_update :track_status_change
   after_update :notify_status_change

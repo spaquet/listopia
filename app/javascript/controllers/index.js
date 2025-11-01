@@ -25,14 +25,20 @@ application.register("connection-status", ConnectionStatusController)
 import CustomSelectController from "./custom_select_controller"
 application.register("custom-select", CustomSelectController)
 
+import DashboardActionController from "./dashboard_action_controller"
+application.register("dashboard-action", DashboardActionController)
+
+import DashboardChatInputController from "./dashboard_chat_input_controller"
+application.register("dashboard-chat-input", DashboardChatInputController)
+
+import DashboardChatScrollController from "./dashboard_chat_scroll_controller"
+application.register("dashboard-chat-scroll", DashboardChatScrollController)
+
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
 
 import ErrorHandlerController from "./error_handler_controller"
 application.register("error-handler", ErrorHandlerController)
-
-import FiltersController from "./filters_controller"
-application.register("filters", FiltersController)
 
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
@@ -42,6 +48,12 @@ application.register("inline-edit", InlineEditController)
 
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
+
+import MarkdownController from "./markdown_controller"
+application.register("markdown", MarkdownController)
+
+import MarkdownMessageController from "./markdown_message_controller"
+application.register("markdown-message", MarkdownMessageController)
 
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
@@ -66,3 +78,6 @@ application.register("sortable", SortableController)
 
 import ToggleController from "./toggle_controller"
 application.register("toggle", ToggleController)
+
+import UserFilterController from "./user_filter_controller"
+application.register("user-filter", UserFilterController)

@@ -36,7 +36,7 @@ Rails.application.routes.draw do
   get "authenticate/:token", to: "sessions#authenticate_magic_link", as: :authenticate_magic_link
 
   # User management
-  get "profile", to: "users#show", as: :user
+  get "profile", to: "users#show", as: :profile
   get "profile/edit", to: "users#edit", as: :edit_user
   patch "profile", to: "users#update"
   get "settings", to: "users#settings", as: :settings_user
@@ -49,7 +49,12 @@ Rails.application.routes.draw do
   get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
 
   # Main application routes (require authentication)
+
+  # Dashboard routes
   get "dashboard", to: "dashboard#index"
+  get "dashboard/focus_list", to: "dashboard#focus_list", as: :dashboard_focus_list
+  post "dashboard/execute_action", to: "dashboard#execute_action", as: :dashboard_execute_action
+
 
   # Chat functionality
   namespace :chat do
@@ -57,6 +62,7 @@ Rails.application.routes.draw do
     get :ai_context
     get "export", to:  "exports#show"
     get "history", to: "chat#load_history"
+    get "dashboard_history", to: "chat#load_dashboard_history"
   end
   # post "/chat/messages", to: "chat/chat#create_message", as: :chat_messages
 
@@ -111,10 +117,38 @@ Rails.application.routes.draw do
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 
-  # Admin routes (future)
+  # User management routes, used by admins
+  resources :users, only: [ :show, :destroy ] do
+    member do
+      # Admin actions only (settings routes already defined above for current user)
+      post "suspend", to: "users#suspend"
+      post "unsuspend", to: "users#unsuspend"
+      post "deactivate", to: "users#deactivate"
+      post "reactivate", to: "users#reactivate"
+      post "grant_admin", to: "users#grant_admin"
+      post "revoke_admin", to: "users#revoke_admin"
+      patch "update_admin_notes", to: "users#update_admin_notes"
+    end
+  end
+
+  # Admin user invitation setup
+  get "setup_password/:token", to: "registrations#setup_password", as: :setup_password_registration
+  post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
+
+  # Admin routes
   namespace :admin do
     root "dashboard#index"
-    resources :users
-    resources :lists
+
+    resources :users do
+      member do
+        post :toggle_admin
+        post :toggle_status
+      end
+      collection do
+        post :bulk_action
+      end
+    end
+
+    resources :lists, only: [ :index, :show, :destroy ]
   end
 end

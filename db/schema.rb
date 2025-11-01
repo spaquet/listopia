@@ -10,8 +10,9 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_10_235748) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "hstore"
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
 
@@ -430,12 +431,28 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
     t.string "timezone", limit: 50, default: "UTC", null: false
     t.string "avatar_url"
     t.text "bio"
+    t.string "status", default: "active", null: false
+    t.datetime "last_sign_in_at"
+    t.string "last_sign_in_ip"
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "suspended_at"
+    t.text "suspended_reason"
+    t.uuid "suspended_by_id"
+    t.datetime "deactivated_at"
+    t.text "deactivated_reason"
+    t.text "admin_notes"
+    t.jsonb "account_metadata", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["account_metadata"], name: "index_users_on_account_metadata", using: :gin
+    t.index ["deactivated_at"], name: "index_users_on_deactivated_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["email_verification_token"], name: "index_users_on_email_verification_token", unique: true
+    t.index ["last_sign_in_at"], name: "index_users_on_last_sign_in_at"
     t.index ["locale"], name: "index_users_on_locale"
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
+    t.index ["status"], name: "index_users_on_status"
+    t.index ["suspended_at"], name: "index_users_on_suspended_at"
     t.index ["timezone"], name: "index_users_on_timezone"
   end
 
@@ -470,4 +487,5 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_10_233319) do
   add_foreign_key "sessions", "users"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tool_calls", "messages"
+  add_foreign_key "users", "users", column: "suspended_by_id"
 end

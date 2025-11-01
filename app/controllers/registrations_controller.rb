@@ -1,6 +1,6 @@
 # app/controllers/registrations_controller.rb
 class RegistrationsController < ApplicationController
-  before_action :redirect_if_authenticated
+  before_action :redirect_if_authenticated, except: [ :setup_password, :complete_setup_password ]
 
   # Show registration form
   def new
@@ -62,11 +62,63 @@ class RegistrationsController < ApplicationController
     # Just render the template
   end
 
+  # Handle admin invitation setup - user sets their password
+  def setup_password
+    token = params[:token]
+    @user = User.find_by_email_verification_token(token)
+
+    if @user.nil?
+      redirect_to new_session_path, alert: "Invalid or expired invitation link."
+      return
+    end
+
+    if @user.email_verified?
+      redirect_to new_session_path, alert: "You have already set up your password."
+      return
+    end
+
+    # Render setup_password view with @user instance variable
+    render :setup_password, locals: { token: token }
+  end
+
+  # Handle password setup submission
+  def complete_setup_password
+    token = params[:token]
+    @user = User.find_by_email_verification_token(token)
+
+    if @user.nil?
+      redirect_to new_session_path, alert: "Invalid or expired invitation link."
+      return
+    end
+
+    if @user.email_verified?
+      redirect_to new_session_path, alert: "You have already set up your password."
+      return
+    end
+
+    # Update password
+    if @user.update(password_params_setup)
+      # Now verify the email and sign them in
+      @user.verify_email!
+      sign_in(@user)
+
+      redirect_to dashboard_path, notice: "Password set successfully! Welcome to Listopia!"
+    else
+      flash.now[:alert] = @user.errors[:password].first || "Password update failed"
+      render :setup_password, status: :unprocessable_entity, locals: { token: token }
+    end
+  end
+
   private
 
   # Strong parameters for user registration
   def registration_params
     params.require(:user).permit(:name, :email, :password, :password_confirmation)
+  end
+
+  # Strong parameters for password setup (admin-invited users)
+  def password_params_setup
+    params.require(:user).permit(:password, :password_confirmation)
   end
 
   # Redirect authenticated users away from registration

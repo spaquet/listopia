@@ -1,0 +1,101 @@
+<!-- app/views/dashboard/_adaptive_spotlight.html.erb -->
+<div class="space-y-4">
+  <% spotlight = spotlight %>
+  <!-- List Header -->
+  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+    <h4 class="text-lg font-bold text-gray-900 mb-1"><%= spotlight[:list_title] %></h4>
+    <% if spotlight[:list_description] %>
+      <p class="text-sm text-gray-600 line-clamp-2"><%= spotlight[:list_description] %></p>
+    <% end %>
+  </div>
+  <!-- Main Progress Indicator -->
+  <div class="bg-white rounded-lg p-4 border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium text-gray-700">List Progress</span>
+      <span class="text-lg font-bold text-gray-900"><%= spotlight[:progress] %>%</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-3">
+      <div class="bg-gradient-to-r from-green-400 to-green-500 h-3 rounded-full transition-all" 
+           style="width: <%= spotlight[:progress] %>%"></div>
+    </div>
+  </div>
+  <!-- Quick Stats Grid -->
+  <div class="grid grid-cols-2 gap-2">
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
+      <p class="text-xs text-blue-600 font-medium">Total Items</p>
+      <p class="text-2xl font-bold text-blue-900"><%= spotlight[:stats][:total] %></p>
+    </div>
+    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
+      <p class="text-xs text-green-600 font-medium">Completed</p>
+      <p class="text-2xl font-bold text-green-900"><%= spotlight[:stats][:completed] %></p>
+    </div>
+    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-3 border border-yellow-200">
+      <p class="text-xs text-yellow-600 font-medium">Pending</p>
+      <p class="text-2xl font-bold text-yellow-900"><%= spotlight[:stats][:pending] %></p>
+    </div>
+    <% if spotlight[:stats][:overdue] > 0 %>
+      <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-3 border border-red-200">
+        <p class="text-xs text-red-600 font-medium">Overdue</p>
+        <p class="text-2xl font-bold text-red-900"><%= spotlight[:stats][:overdue] %></p>
+      </div>
+    <% else %>
+      <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
+        <p class="text-xs text-gray-600 font-medium">On Track</p>
+        <p class="text-2xl font-bold text-gray-900">✓</p>
+      </div>
+    <% end %>
+  </div>
+  <!-- Next Items to Work On -->
+  <% if spotlight[:next_items].any? %>
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <h5 class="text-sm font-semibold text-gray-900 mb-3">Next Items</h5>
+      <div class="space-y-2">
+        <% spotlight[:next_items].each do |item| %>
+          <form method="post" action="<%= toggle_completion_list_list_item_path(spotlight[:list_id], item[:id]) %>" class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded transition-colors group">
+            <%= hidden_field_tag :_method, :patch %>
+            <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+            <button type="submit" class="flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform">
+              <div class="w-4 h-4 rounded border-2 border-gray-400 hover:border-blue-500 bg-white"></div>
+            </button>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate"><%= item[:title] %></p>
+              <div class="flex items-center space-x-2 mt-1">
+                <% if item[:due_date] %>
+                  <span class="text-xs text-gray-500">
+                    <%= time_ago_in_words_or_date(item[:due_date]) %>
+                  </span>
+                <% end %>
+                <% if item[:assigned_to] %>
+                  <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                    <%= item[:assigned_to] %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </form>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <!-- Collaborators -->
+  <% if spotlight[:collaborators].any? %>
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <h5 class="text-sm font-semibold text-gray-900 mb-3">Collaborators</h5>
+      <div class="flex flex-wrap gap-2">
+        <% spotlight[:collaborators].each do |collab| %>
+          <div class="flex items-center space-x-2 px-3 py-1 bg-gray-100 rounded-full">
+            <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+              <%= collab[:name].split.map(&:first).join.upcase %>
+            </div>
+            <span class="text-xs text-gray-700"><%= collab[:name] %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <!-- Action Buttons -->
+  <div class="space-y-2 pt-2">
+    <%= link_to "Open Full List", list_path(spotlight[:list_id]), 
+                class: "block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm" %>
+  </div>
+</div>

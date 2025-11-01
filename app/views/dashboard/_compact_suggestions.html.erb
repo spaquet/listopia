@@ -1,0 +1,24 @@
+<!-- app/views/dashboard/_compact_suggestions.html.erb -->
+<div class="px-6 py-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
+  <div class="flex items-center gap-2 overflow-x-auto">
+    <span class="text-xs text-gray-600 font-semibold whitespace-nowrap mr-2">Try:</span>
+    <button type="button"
+            data-action="click->dashboard-chat-input#useSuggestion"
+      data-suggestion="Show me my active lists"
+      class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm">
+      Show my active lists
+    </button>
+    <button type="button"
+            data-action="click->dashboard-chat-input#useSuggestion"
+      data-suggestion="Help me plan my week"
+      class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm">
+      Help me plan my week
+    </button>
+    <button type="button"
+            data-action="click->dashboard-chat-input#useSuggestion"
+      data-suggestion="What tasks should I prioritize today?"
+      class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm">
+      What should I prioritize?
+    </button>
+  </div>
+</div>

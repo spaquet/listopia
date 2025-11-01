@@ -25,6 +25,11 @@ gem "bcrypt", "~> 3.1.7"
 gem "pundit" # Authorization library for Rails applications
 gem "rolify" # Role management library for Rails applications
 
+# Auditing and versioning for Active Record models [https://github.com/palkan/logidze]
+gem "logidze"
+
+# Soft delete for Active Record models [https://github.com/jhawthorn/discard]
+gem "discard"
 
 # Use Redis as a cache store [https://guides.rubyonrails.org/caching_with_rails.html#redis-cache-store]
 # gem "redis", "~> 4.0"
@@ -41,6 +46,9 @@ gem "solid_cable"
 
 # Pagination
 gem "pagy"
+
+# Searching and filtering
+gem "pg_search"
 
 # Notification
 gem "noticed"

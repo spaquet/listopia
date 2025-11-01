@@ -1,0 +1,17 @@
+<!-- app/views/admin/users/new.html.erb -->
+<div class="max-w-2xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Add New User</h1>
+      <p class="text-gray-600 mt-1">Create a new user account</p>
+    </div>
+    <%= link_to admin_users_path, class: "text-gray-600 hover:text-gray-900" do %>
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    <% end %>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <%= render 'form' %>
+  </div>
+</div>

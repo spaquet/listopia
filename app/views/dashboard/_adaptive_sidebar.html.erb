@@ -1,0 +1,50 @@
+<!-- app/views/dashboard/_adaptive_sidebar.html.erb -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col" style="height: 600px;" id="dashboard-adaptive-sidebar">
+  <!-- Mode Selector Tabs -->
+  <div class="flex-shrink-0 border-b border-gray-200">
+    <div class="flex gap-1 p-2 bg-gray-50">
+      <%= link_to dashboard_focus_list_path(mode: :recommendations, format: :turbo_stream),
+                  data: { turbo_stream: true },
+                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :recommendations ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
+        Recommendations
+      <% end %>
+      <%= link_to dashboard_focus_list_path(mode: :nudge, format: :turbo_stream),
+                  data: { turbo_stream: true },
+                  class: "flex-1 px-3 py-2 text-center text-sm font-medium rounded transition-all #{adaptive_dashboard[:mode] == :nudge ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-white'}" do %>
+        Nudge
+      <% end %>
+    </div>
+  </div>
+  <!-- Header with Mode Indicator -->
+  <div class="flex-shrink-0 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+    <div>
+      <h3 class="text-lg font-medium text-gray-900">
+        <%= adaptive_dashboard_mode_title(adaptive_dashboard[:mode]) %>
+      </h3>
+      <p class="text-xs text-gray-500 mt-1">
+        <%= adaptive_dashboard_mode_subtitle(adaptive_dashboard[:mode]) %>
+      </p>
+    </div>
+    <!-- Mode indicator badge -->
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= mode_badge_class(adaptive_dashboard[:mode]) %>">
+      <%= adaptive_dashboard[:mode].to_s.humanize %>
+    </span>
+  </div>
+  <!-- Content Area - Changes based on mode -->
+  <div class="flex-1 overflow-y-auto p-6 space-y-4">
+    <% case adaptive_dashboard[:mode]
+       when :recommendations %>
+      <%= render "dashboard/adaptive_recommendations", 
+                  recommendations: adaptive_dashboard[:recommendations],
+                  current_user: current_user %>
+    <% when :spotlight %>
+      <%= render "dashboard/adaptive_spotlight",
+                  spotlight: adaptive_dashboard[:spotlight],
+                  current_user: current_user %>
+    <% when :nudge %>
+      <%= render "dashboard/adaptive_nudge",
+                  recommendations: adaptive_dashboard[:recommendations],
+                  current_user: current_user %>
+    <% end %>
+  </div>
+</div>

@@ -2,9 +2,20 @@
 
 # Clear existing data (optional - comment out if you want to keep existing data)
 puts "🧹 Cleaning existing data..."
+
+# Disable triggers to handle self-referential foreign keys
+ActiveRecord::Base.connection.execute("ALTER TABLE users DISABLE TRIGGER ALL;") if Rails.env.development?
+
+# Delete all data safely
 ListItem.destroy_all
 List.destroy_all
+Chat.destroy_all
+Message.destroy_all
 User.destroy_all
+
+# Re-enable foreign key checks
+ActiveRecord::Base.connection.execute("ALTER TABLE users ENABLE TRIGGER ALL;") if Rails.env.development?
+
 
 puts "🌱 Seeding database..."
 
@@ -20,7 +31,8 @@ mike = User.create!(
   name: "Mike Johnson",
   email_verified_at: Time.current
 )
-puts "✓ Created user: #{mike.email}"
+mike.add_role(:admin)
+puts "✓ Created user: #{mike.email} (Admin)"
 
 emma = User.create!(
   email: "emma@listopia.com",
@@ -357,7 +369,7 @@ puts "  - Pending items: #{ListItem.status_pending.count}"
 puts "Collaborations: #{Collaborator.count}"
 puts "Pending invitations: #{Invitation.pending.count}"
 puts "\n👥 USER ACCESS:"
-puts "• Mike (mike@listopia.com): 2 lists + collaborator on 2 others"
+puts "• Mike (mike@listopia.com): ADMIN - 2 lists + collaborator on 2 others"
 puts "• Emma (emma@listopia.com): 2 lists (1 public) + 1 collaboration"
 puts "• Sarah (sarah@listopia.com): 2 lists + collaborator on 1 other"
 puts "• Alex (alex@listopia.com): 1 list"
