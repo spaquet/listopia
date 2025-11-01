@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 8.0.3"
+gem "rails", "~> 8.1.0"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
@@ -77,7 +77,8 @@ gem "thruster", require: false
 gem "friendly_id"
 
 # Add tag support to Active Record models [https://github.com/mbleigh/acts-as-taggable-on]
-gem "acts-as-taggable-on"
+# gem "acts-as-taggable-on", "~> 12.0"
+gem "acts-as-taggable-on", github: "mbleigh/acts-as-taggable-on", branch: "master"
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
