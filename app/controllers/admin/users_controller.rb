@@ -2,7 +2,7 @@
 class Admin::UsersController < Admin::BaseController
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
 
-  skip_forgery_protection only: [ :toggle_admin, :toggle_status, :destroy ]
+  # REMOVED: skip_forgery_protection - CSRF token is now properly handled
 
   helper_method :locale_options, :timezone_options
 
@@ -53,25 +53,17 @@ class Admin::UsersController < Admin::BaseController
 
   def create
     @user = User.new(user_params)
+    @user.email_verified_at = Time.current
     authorize @user, :create?
-
-    # Generate temporary password (won't be used - just for has_secure_password)
-    temp_password = @user.generate_temp_password
-    @user.password = temp_password
-    @user.password_confirmation = temp_password
-
-    @user.email_verified_at = nil  # NOT verified yet - will be verified when they set password
-    @user.invited_by_admin = true
 
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
 
-      # Send invitation email
-      @user.send_admin_invitation!
-
       respond_to do |format|
-        format.html { redirect_to admin_users_path, notice: "User created successfully. Invitation email sent to #{@user.email}." }
-        format.turbo_stream { redirect_to admin_users_path, status: :see_other }
+        format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
+        format.turbo_stream do
+          redirect_to admin_users_path, status: :see_other
+        end
       end
     else
       render :new, status: :unprocessable_entity
@@ -105,54 +97,29 @@ class Admin::UsersController < Admin::BaseController
       respond_to do |format|
         format.html { redirect_to admin_users_path, alert: "You cannot delete your own account." }
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-            partial: "user_row", locals: { user: @user, current_user: current_user }),
-            status: :unprocessable_entity
+          render turbo_stream: turbo_stream.replace("user_#{@user.id}", "")
         end
       end
-      return
-    end
-
-    if @user.destroy
+    else
+      @user.destroy
       respond_to do |format|
         format.html { redirect_to admin_users_path, notice: "User deleted successfully." }
         format.turbo_stream do
           render turbo_stream: turbo_stream.remove("user_#{@user.id}")
         end
       end
-    else
-      respond_to do |format|
-        format.html { redirect_to admin_users_path, alert: "Failed to delete user." }
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-            partial: "user_row", locals: { user: @user, current_user: current_user }),
-            status: :unprocessable_entity
-        end
-      end
     end
   end
 
-  def toggle_admin
-    authorize @user, :toggle_admin?
+  def toggle_status
+    authorize @user, :toggle_status?
 
-    if @user == current_user
-      respond_to do |format|
-        format.html { redirect_to admin_users_path, alert: "You cannot modify your own admin status." }
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-            partial: "user_row", locals: { user: @user, current_user: current_user }),
-            status: :unprocessable_entity
-        end
-      end
-      return
-    end
-
-    if @user.admin?
-      @user.remove_role(:admin)
-      message = "Admin privileges revoked."
-    else
-      @user.add_role(:admin)
-      message = "Admin privileges granted."
+    if @user.active?
+      @user.update(status: :suspended)
+      message = "User suspended successfully."
+    elsif @user.suspended?
+      @user.update(status: :active)
+      message = "User activated successfully."
     end
 
     respond_to do |format|
@@ -164,28 +131,15 @@ class Admin::UsersController < Admin::BaseController
     end
   end
 
-  def toggle_status
-    authorize @user, :toggle_status?
+  def toggle_admin
+    authorize @user, :toggle_admin?
 
-    if @user == current_user
-      respond_to do |format|
-        format.html { redirect_to admin_users_path, alert: "You cannot suspend your own account." }
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.replace("user_#{@user.id}",
-            partial: "user_row", locals: { user: @user, current_user: current_user }),
-            status: :unprocessable_entity
-        end
-      end
-      return
-    end
-
-    case @user.status
-    when "active"
-      @user.suspend!(reason: params[:reason], suspended_by: current_user)
-      message = "User suspended successfully."
-    when "suspended"
-      @user.unsuspend!(unsuspended_by: current_user)
-      message = "User reactivated successfully."
+    if @user.admin?
+      @user.update(admin: false)
+      message = "Admin privileges removed."
+    else
+      @user.update(admin: true)
+      message = "Admin privileges granted."
     end
 
     respond_to do |format|
