@@ -10,9 +10,11 @@
 #  bio                      :text
 #  deactivated_at           :datetime
 #  deactivated_reason       :text
+#  discarded_at             :datetime
 #  email                    :string           not null
 #  email_verification_token :string
 #  email_verified_at        :datetime
+#  invited_by_admin         :boolean          default(FALSE)
 #  last_sign_in_at          :datetime
 #  last_sign_in_ip          :string
 #  locale                   :string(10)       default("en"), not null
@@ -33,8 +35,10 @@
 #
 #  index_users_on_account_metadata          (account_metadata) USING gin
 #  index_users_on_deactivated_at            (deactivated_at)
+#  index_users_on_discarded_at              (discarded_at)
 #  index_users_on_email                     (email) UNIQUE
 #  index_users_on_email_verification_token  (email_verification_token) UNIQUE
+#  index_users_on_invited_by_admin          (invited_by_admin)
 #  index_users_on_last_sign_in_at           (last_sign_in_at)
 #  index_users_on_locale                    (locale)
 #  index_users_on_provider_and_uid          (provider,uid) UNIQUE

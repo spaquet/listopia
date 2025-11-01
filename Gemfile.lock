@@ -1,3 +1,12 @@
+GIT
+  remote: https://github.com/mbleigh/acts-as-taggable-on.git
+  revision: f18679a73fbea042e0ce2f1929e16a5e1abbcb64
+  branch: master
+  specs:
+    acts-as-taggable-on (12.0.0)
+      activerecord (>= 7.1, < 8.2)
+      zeitwerk (>= 2.4, < 3.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -75,8 +84,6 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    acts-as-taggable-on (5.0.0)
-      activerecord (>= 4.2.8)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
     annotaterb (4.20.0)
@@ -485,7 +492,7 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
-  acts-as-taggable-on
+  acts-as-taggable-on!
   annotaterb
   bcrypt (~> 3.1.7)
   bootsnap

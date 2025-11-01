@@ -1127,10 +1127,10 @@ ALTER SEQUENCE public.models_id_seq OWNED BY public.models.id;
 --
 
 CREATE TABLE public.noticed_events (
-    id bigint NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     type character varying,
     record_type character varying,
-    record_id bigint,
+    record_id uuid,
     params jsonb,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
@@ -1139,58 +1139,20 @@ CREATE TABLE public.noticed_events (
 
 
 --
--- Name: noticed_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.noticed_events_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: noticed_events_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.noticed_events_id_seq OWNED BY public.noticed_events.id;
-
-
---
 -- Name: noticed_notifications; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.noticed_notifications (
-    id bigint NOT NULL,
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
     type character varying,
-    event_id bigint NOT NULL,
+    event_id uuid NOT NULL,
     recipient_type character varying NOT NULL,
-    recipient_id bigint NOT NULL,
+    recipient_id uuid NOT NULL,
     read_at timestamp without time zone,
     seen_at timestamp without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
-
-
---
--- Name: noticed_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.noticed_notifications_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: noticed_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.noticed_notifications_id_seq OWNED BY public.noticed_notifications.id;
 
 
 --
@@ -1372,6 +1334,8 @@ CREATE TABLE public.users (
     last_sign_in_at timestamp(6) without time zone,
     last_sign_in_ip character varying,
     sign_in_count integer DEFAULT 0 NOT NULL,
+    discarded_at timestamp(6) without time zone,
+    invited_by_admin boolean DEFAULT false,
     suspended_at timestamp(6) without time zone,
     suspended_reason text,
     suspended_by_id uuid,
@@ -1413,20 +1377,6 @@ ALTER TABLE ONLY public.logidze_data ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 ALTER TABLE ONLY public.models ALTER COLUMN id SET DEFAULT nextval('public.models_id_seq'::regclass);
-
-
---
--- Name: noticed_events id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.noticed_events ALTER COLUMN id SET DEFAULT nextval('public.noticed_events_id_seq'::regclass);
-
-
---
--- Name: noticed_notifications id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.noticed_notifications ALTER COLUMN id SET DEFAULT nextval('public.noticed_notifications_id_seq'::regclass);
 
 
 --
@@ -2459,6 +2409,13 @@ CREATE INDEX index_users_on_deactivated_at ON public.users USING btree (deactiva
 
 
 --
+-- Name: index_users_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_discarded_at ON public.users USING btree (discarded_at);
+
+
+--
 -- Name: index_users_on_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2470,6 +2427,13 @@ CREATE UNIQUE INDEX index_users_on_email ON public.users USING btree (email);
 --
 
 CREATE UNIQUE INDEX index_users_on_email_verification_token ON public.users USING btree (email_verification_token);
+
+
+--
+-- Name: index_users_on_invited_by_admin; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_invited_by_admin ON public.users USING btree (invited_by_admin);
 
 
 --
