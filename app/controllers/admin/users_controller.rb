@@ -114,12 +114,14 @@ class Admin::UsersController < Admin::BaseController
   def toggle_status
     authorize @user, :toggle_status?
 
-    if @user.active?
-      @user.update(status: :suspended)
+    if @user.status_active?
+      @user.suspend!(reason: "Suspended by admin", suspended_by: current_user)
       message = "User suspended successfully."
-    elsif @user.suspended?
-      @user.update(status: :active)
+    elsif @user.status_suspended?
+      @user.unsuspend!(unsuspended_by: current_user)
       message = "User activated successfully."
+    else
+      message = "Cannot toggle status for users in #{@user.status} state."
     end
 
     respond_to do |format|
@@ -135,10 +137,10 @@ class Admin::UsersController < Admin::BaseController
     authorize @user, :toggle_admin?
 
     if @user.admin?
-      @user.update(admin: false)
+      @user.remove_admin!
       message = "Admin privileges removed."
     else
-      @user.update(admin: true)
+      @user.make_admin!
       message = "Admin privileges granted."
     end
 

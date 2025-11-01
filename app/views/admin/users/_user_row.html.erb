@@ -67,20 +67,22 @@
   <div class="col-span-1 flex items-center justify-end space-x-2">
     <!-- Suspend/Activate Button -->
     <% if user != current_user %>
-      <% if user.active? %>
-        <%= link_to admin_user_path(user), method: :patch, data: { turbo_method: :patch }, 
-                    params: { user: { status: 'suspended' } },
-                    title: "Suspend user",
-                    class: "text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-200 transition-colors" do %>
+      <% if user.status_active? %>
+        <%= button_to toggle_status_admin_user_path(user), 
+                   method: :post,
+                   title: "Suspend user",
+                   class: "text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-200 transition-colors",
+                   form_class: "inline" do %>
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
           </svg>
         <% end %>
-      <% elsif user.suspended? %>
-        <%= link_to admin_user_path(user), method: :patch, data: { turbo_method: :patch }, 
-                    params: { user: { status: 'active' } },
-                    title: "Activate user",
-                    class: "text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-200 transition-colors" do %>
+      <% elsif user.status_suspended? %>
+        <%= button_to toggle_status_admin_user_path(user), 
+                   method: :post,
+                   title: "Activate user",
+                   class: "text-gray-500 hover:text-gray-700 p-2 rounded hover:bg-gray-200 transition-colors",
+                   form_class: "inline" do %>
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path d="M8 5v14l11-7z"/>
           </svg>
