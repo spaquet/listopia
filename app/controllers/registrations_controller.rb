@@ -1,7 +1,6 @@
 # app/controllers/registrations_controller.rb
 class RegistrationsController < ApplicationController
   before_action :redirect_if_authenticated, except: [ :setup_password, :complete_setup_password ]
-  skip_before_action :verify_authenticity_token, only: [ :complete_setup_password ]
 
   # Show registration form
   def new
