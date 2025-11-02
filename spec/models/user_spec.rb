@@ -326,32 +326,24 @@ RSpec.describe User, type: :model do
     let(:user) { create(:user) }
 
     it 'returns chats owned by user' do
-      # Build chats without saving (to avoid RubyLLM)
-      chat1 = build(:chat, user: user, title: 'Chat 1')
-      chat2 = build(:chat, user: user, title: 'Chat 2')
-
-      # Manually save to bypass acts_as_chat initialization
-      chat1.save(validate: false)
-      chat2.save(validate: false)
-
-      other_user_chat = build(:chat, user: create(:user), title: 'Other Chat')
-      other_user_chat.save(validate: false)
+      # Use create instead of build + manual save
+      chat1 = create(:chat, user: user, title: 'Chat 1')
+      chat2 = create(:chat, user: user, title: 'Chat 2')
+      create(:chat, user: create(:user), title: 'Other Chat')
 
       expect(user.chats).to include(chat1, chat2)
-      expect(user.chats).not_to include(other_user_chat)
+      expect(user.chats.count).to eq(2)
     end
 
     it 'destroys chats when user is deleted' do
-      chat = build(:chat, user: user, title: 'Chat to delete')
-      chat.save(validate: false)
+      # Use create instead of build + manual save
+      create(:chat, user: user, title: 'Chat to delete')
 
       expect {
         user.destroy
       }.to change(Chat, :count).by(-1)
     end
   end
-
-
 
   describe '#accessible_lists' do
     let(:owner) { create(:user) }

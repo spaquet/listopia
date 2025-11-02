@@ -41,12 +41,8 @@ FactoryBot.define do
 
     # In test environment, skip RubyLLM model initialization
     to_create do |instance|
-      if Rails.env.test?
-        # Save without triggering acts_as_chat callbacks
-        instance.save(validate: false)
-      else
-        instance.save!
-      end
+      # Save without validations to bypass acts_as_chat callbacks
+      instance.save(validate: false)
     end
   end
 end
