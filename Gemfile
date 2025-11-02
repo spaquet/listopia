@@ -115,6 +115,10 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 
+  # Used to test rubyllm integrations
+  gem "vcr", "~> 6.2"
+  gem "webmock", "~> 3.18"
+
   # Additional RSpec gems
   gem "shoulda-matchers", "~> 6.0" # For better model validations testing
   gem "database_cleaner-active_record" # For cleaning test database
