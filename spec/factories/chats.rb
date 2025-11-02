@@ -35,5 +35,18 @@
 #
 FactoryBot.define do
   factory :chat do
+    sequence(:title) { |n| "Chat #{n}" }
+    status { "active" }
+    association :user
+
+    # In test environment, skip RubyLLM model initialization
+    to_create do |instance|
+      if Rails.env.test?
+        # Save without triggering acts_as_chat callbacks
+        instance.save(validate: false)
+      else
+        instance.save!
+      end
+    end
   end
 end

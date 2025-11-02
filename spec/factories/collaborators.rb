@@ -22,5 +22,17 @@
 #
 FactoryBot.define do
   factory :collaborator do
+    association :user
+    permission { :read }
+
+    # Use a polymorphic association - provide either list or list_item
+    # In tests, use: create(:collaborator, collaboratable: list)
+    trait :for_list do
+      association :collaboratable, factory: :list, as: :collaboratable
+    end
+
+    trait :with_write_permission do
+      permission { :write }
+    end
   end
 end

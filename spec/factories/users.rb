@@ -56,6 +56,9 @@ FactoryBot.define do
     sequence(:name) { |n| "User #{n}" }
     password { "password123" }
     password_confirmation { password }
+    locale { "en" }
+    timezone { "UTC" }
+    status { "active" }
 
     # Traits for different user states
     trait :verified do
@@ -66,12 +69,35 @@ FactoryBot.define do
       email_verified_at { nil }
     end
 
+    trait :admin do
+      verified
+      after(:create) { |user| user.add_role(:admin) }
+    end
+
+    trait :suspended do
+      verified
+      status { "suspended" }
+      suspended_at { Time.current }
+      association :suspended_by, factory: :user
+    end
+
+    trait :deactivated do
+      verified
+      status { "deactivated" }
+      deactivated_at { Time.current }
+      deactivated_reason { "User requested deactivation" }
+    end
+
     trait :with_bio do
       bio { Faker::Lorem.paragraph }
     end
 
     trait :with_avatar do
       avatar_url { "https://example.com/avatar.jpg" }
+    end
+
+    trait :with_admin_notes do
+      admin_notes { Faker::Lorem.paragraph }
     end
   end
 end
