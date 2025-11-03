@@ -2,8 +2,22 @@ name: CI
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - 'docs/**'
+      - 'images/**'
+      - 'db/**'
+      - 'public/**'
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '**.txt'
+      - 'docs/**'
+      - 'images/**'
+      - 'db/**'
+      - 'public/**'
 
 jobs:
   scan_ruby:
