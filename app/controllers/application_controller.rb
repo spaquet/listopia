@@ -1,7 +1,7 @@
 # app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
   include Pundit::Authorization
-  include Pagy::Backend
+  include Pagy::Method
 
   # Prevent outdated browsers from accessing the application
   # This is a security measure to ensure users are on modern browsers.
