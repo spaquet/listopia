@@ -2,27 +2,30 @@
 #
 # Table name: messages
 #
-#  id                :uuid             not null, primary key
-#  content           :text
-#  context_snapshot  :json
-#  input_tokens      :integer
-#  llm_model         :string
-#  llm_provider      :string
-#  message_type      :string           default("text")
-#  metadata          :json
-#  model_id_string   :string
-#  output_tokens     :integer
-#  processing_time   :decimal(8, 3)
-#  role              :string           not null
-#  token_count       :integer
-#  tool_call_results :json
-#  tool_calls        :json
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  chat_id           :uuid             not null
-#  model_id          :bigint
-#  tool_call_id      :string
-#  user_id           :uuid
+#  id                    :uuid             not null, primary key
+#  cache_creation_tokens :integer
+#  cached_tokens         :integer
+#  content               :text
+#  content_raw           :json
+#  context_snapshot      :json
+#  input_tokens          :integer
+#  llm_model             :string
+#  llm_provider          :string
+#  message_type          :string           default("text")
+#  metadata              :json
+#  model_id_string       :string
+#  output_tokens         :integer
+#  processing_time       :decimal(8, 3)
+#  role                  :string           not null
+#  token_count           :integer
+#  tool_call_results     :json
+#  tool_calls            :json
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  chat_id               :uuid             not null
+#  model_id              :bigint
+#  tool_call_id          :string
+#  user_id               :uuid
 #
 # Indexes
 #
