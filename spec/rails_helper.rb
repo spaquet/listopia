@@ -107,6 +107,21 @@ RSpec.configure do |config|
       driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ]
     end
   end
+
+  # VCR integration
+  config.around(:each, vcr: true) do |example|
+    # Get the cassette name from metadata or use example description
+    cassette_name = example.metadata[:vcr][:cassette_name] ||
+                    example.description.gsub(/\s+/, '_').downcase
+
+    # Get any additional options (excluding cassette_name)
+    options = example.metadata[:vcr].except(:cassette_name)
+
+    # Use the cassette
+    VCR.use_cassette(cassette_name, options) do
+      example.run
+    end
+  end
 end
 
 # Shoulda Matchers are configured in spec/support/shoulda_matchers.rb
