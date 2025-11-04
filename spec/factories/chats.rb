@@ -38,27 +38,5 @@ FactoryBot.define do
     sequence(:title) { |n| "Chat #{n}" }
     status { "active" }
     association :user
-
-    # Don't use acts_as_chat in test - completely bypass RubyLLM
-    to_create do |instance|
-      if Rails.env.test?
-        # Test mode: Insert directly into database, bypassing all RubyLLM callbacks
-        # This prevents the "Unknown model" error completely
-        Chat.insert(
-          id: instance.id || SecureRandom.uuid,
-          user_id: instance.user_id,
-          title: instance.title,
-          status: instance.status,
-          created_at: Time.current,
-          updated_at: Time.current
-        )
-
-        # Reload to get the record in memory for tests
-        instance.reload
-      else
-        # Production: Use normal save with RubyLLM
-        instance.save!
-      end
-    end
   end
 end
