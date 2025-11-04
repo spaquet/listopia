@@ -32,5 +32,26 @@
 #
 FactoryBot.define do
   factory :invitation do
+    sequence(:email) { |n| "invited#{n}@example.com" }
+    permission { :read }
+    association :invitable, factory: :list
+    association :invited_by, factory: :user
+
+    trait :pending do
+      user_id { nil }
+    end
+
+    trait :accepted do
+      association :user, factory: :user
+      invitation_accepted_at { Time.current }
+    end
+
+    trait :read_only do
+      permission { :read }
+    end
+
+    trait :write_access do
+      permission { :write }
+    end
   end
 end
