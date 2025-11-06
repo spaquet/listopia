@@ -63,9 +63,7 @@ class Admin::UsersController < Admin::BaseController
       @user.send_admin_invitation!
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
-        format.turbo_stream do
-          redirect_to admin_users_path, status: :see_other
-        end
+        format.turbo_stream { redirect_to admin_users_path, status: :see_other }
       end
     else
       render :new, status: :unprocessable_entity
