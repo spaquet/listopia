@@ -55,44 +55,133 @@
 FactoryBot.define do
   factory :list_item do
     sequence(:title) { |n| "Task #{n}" }
-    description { Faker::Lorem.paragraph }
+    description { Faker::Lorem.paragraph(sentence_count: 3) }
     item_type { :task }
     priority { :medium }
-    completed { false }
+    status { :pending }
     position { 0 }
+    start_date { Time.current }
+    duration_days { 0 }
+    estimated_duration { 0.0 }
+    total_tracked_time { 0.0 }
+    recurrence_rule { "none" }
+    skip_notifications { false }
 
     association :list, strategy: :build
 
-    # Traits for different item types
+    # Work & Project Item Types
     trait :task do
       item_type { :task }
+      sequence(:title) { |n| "Task #{n}" }
     end
 
-    trait :note do
-      item_type { :note }
+    trait :milestone do
+      item_type { :milestone }
+      sequence(:title) { |n| "Milestone #{n}" }
     end
 
-    trait :link do
-      item_type { :link }
-      url { Faker::Internet.url }
+    trait :feature do
+      item_type { :feature }
+      sequence(:title) { |n| "Feature #{n}" }
     end
 
-    trait :file do
-      item_type { :file }
+    trait :bug do
+      item_type { :bug }
+      sequence(:title) { |n| "Bug #{n}" }
+    end
+
+    trait :decision do
+      item_type { :decision }
+      sequence(:title) { |n| "Decision #{n}" }
+    end
+
+    trait :meeting do
+      item_type { :meeting }
+      sequence(:title) { |n| "Meeting #{n}" }
     end
 
     trait :reminder do
       item_type { :reminder }
-      reminder_at { 1.hour.from_now }
+      reminder_at { 2.days.from_now }
+      sequence(:title) { |n| "Reminder #{n}" }
     end
 
-    # Traits for different priorities
+    trait :note do
+      item_type { :note }
+      sequence(:title) { |n| "Note #{n}" }
+    end
+
+    trait :reference do
+      item_type { :reference }
+      url { Faker::Internet.url }
+      sequence(:title) { |n| "Reference #{n}" }
+    end
+
+    # Personal Life Item Types
+    trait :habit do
+      item_type { :habit }
+      sequence(:title) { |n| "Habit #{n}" }
+    end
+
+    trait :health do
+      item_type { :health }
+      sequence(:title) { |n| "Health #{n}" }
+    end
+
+    trait :learning do
+      item_type { :learning }
+      sequence(:title) { |n| "Learning #{n}" }
+    end
+
+    trait :travel do
+      item_type { :travel }
+      sequence(:title) { |n| "Travel #{n}" }
+    end
+
+    trait :shopping do
+      item_type { :shopping }
+      sequence(:title) { |n| "Shopping #{n}" }
+    end
+
+    trait :home do
+      item_type { :home }
+      sequence(:title) { |n| "Home Task #{n}" }
+    end
+
+    trait :finance do
+      item_type { :finance }
+      sequence(:title) { |n| "Finance #{n}" }
+    end
+
+    trait :social do
+      item_type { :social }
+      sequence(:title) { |n| "Social Event #{n}" }
+    end
+
+    trait :entertainment do
+      item_type { :entertainment }
+      sequence(:title) { |n| "Entertainment #{n}" }
+    end
+
+    # Status Traits
+    trait :pending do
+      status { :pending }
+      status_changed_at { nil }
+    end
+
+    trait :in_progress do
+      status { :in_progress }
+      status_changed_at { 1.day.ago }
+    end
+
+    trait :completed do
+      status { :completed }
+      status_changed_at { Time.current }
+    end
+
+    # Priority Traits
     trait :low_priority do
       priority { :low }
-    end
-
-    trait :medium_priority do
-      priority { :medium }
     end
 
     trait :high_priority do
@@ -103,37 +192,75 @@ FactoryBot.define do
       priority { :urgent }
     end
 
-    # Traits for completion status
-    trait :completed do
-      status { :completed }
-      status_changed_at { 1.hour.ago }
-    end
-
-    trait :pending do
-      status { :pending }
-      status_changed_at { nil }
-    end
-
-    trait :in_progress do
-      status { :in_progress }
-      status_changed_at { 1.hour.ago }
-    end
-
-    # Traits for due dates
-    trait :due_today do
-      due_date { Date.current.end_of_day }
-    end
-
-    trait :due_tomorrow do
-      due_date { 1.day.from_now.end_of_day }
+    # Due Date Traits
+    trait :with_due_date do
+      due_date { 5.days.from_now }
     end
 
     trait :overdue do
-      due_date { 1.day.ago }
+      due_date { 3.days.ago }
+      status { :pending }
     end
 
-    trait :with_assignment do
-      association :assigned_user, factory: :user, strategy: :build
+    trait :due_soon do
+      due_date { 2.days.from_now }
+    end
+
+    # Assignment Traits
+    trait :assigned do
+      association :assigned_user, factory: :user
+    end
+
+    trait :assigned_to do
+      transient do
+        assigned_user { association :user }
+      end
+
+      after(:build) do |item, evaluator|
+        item.assigned_user = evaluator.assigned_user
+      end
+    end
+
+    # Recurrence Traits
+    trait :daily_recurring do
+      recurrence_rule { "daily" }
+      recurrence_end_date { 30.days.from_now }
+    end
+
+    trait :weekly_recurring do
+      recurrence_rule { "weekly" }
+      recurrence_end_date { 60.days.from_now }
+    end
+
+    # Tracking Traits
+    trait :with_time_logged do
+      total_tracked_time { 5.5 }
+      estimated_duration { 8.0 }
+    end
+
+    trait :with_metadata do
+      metadata { { "custom_field" => "value", "tags" => [ "important", "bug" ] } }
+    end
+
+    # Complex Traits (combine multiple)
+    trait :urgent_overdue_task do
+      priority { :urgent }
+      status { :pending }
+      due_date { 5.days.ago }
+    end
+
+    trait :completed_with_time_tracked do
+      status { :completed }
+      total_tracked_time { 8.0 }
+      estimated_duration { 8.0 }
+      status_changed_at { 2.days.ago }
+    end
+
+    trait :assigned_high_priority_due_soon do
+      association :assigned_user, factory: :user
+      priority { :high }
+      due_date { 2.days.from_now }
+      status { :in_progress }
     end
   end
 end
