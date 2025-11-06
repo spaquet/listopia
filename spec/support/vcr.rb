@@ -2,34 +2,45 @@
 require 'vcr'
 require 'webmock'
 
-# Refresh RubyLLM's model registry before running tests
-# This ensures models like 'gpt-4o-mini' are recognized
-RubyLLM.models.refresh! if defined?(RubyLLM)
-
-WebMock.allow_net_connect!
-
 VCR.configure do |config|
   config.cassette_library_dir = 'spec/fixtures/vcr_cassettes'
   config.hook_into :webmock
 
-  # Default recording mode
-  # :none = use cassettes only, don't record new ones
-  # :new_episodes = record new cassettes if they don't exist
-  # :once = record once then use cassettes
-  # :all = always re-record
-  config.default_cassette_options = { record: :new_episodes }
+  # CRITICAL: Enforce cassette usage
+  # This prevents accidental API calls when cassette is missing
+  config.allow_http_connections_when_no_cassette = false
 
-  # Filter sensitive data
-  if ENV['OPENAI_API_KEY']
+  # Default recording mode
+  # In CI: :none (use cassettes, fail if missing)
+  # Local: :new_episodes (record if needed, use existing)
+  config.default_cassette_options = {
+    record: ENV['CI'].present? ? :none : :new_episodes,
+    match_requests_on: [ :method, :uri ],
+    allow_playback_repeats: true
+  }
+
+  # Filter sensitive API keys from cassettes
+  if ENV['OPENAI_API_KEY'].present?
     config.filter_sensitive_data('<OPENAI_API_KEY>') { ENV['OPENAI_API_KEY'] }
+    config.define_cassette_placeholder('<OPENAI_API_KEY>', ENV['OPENAI_API_KEY'])
   end
 
-  # Allow localhost
+  if ENV['ANTHROPIC_API_KEY'].present?
+    config.filter_sensitive_data('<ANTHROPIC_API_KEY>') { ENV['ANTHROPIC_API_KEY'] }
+    config.define_cassette_placeholder('<ANTHROPIC_API_KEY>', ENV['ANTHROPIC_API_KEY'])
+  end
+
+  # Allow localhost connections (development servers)
   config.ignore_localhost = true
 
-  # ADD THIS FOR DEBUGGING
-  config.debug_logger = $stderr
-
-  # ADD THIS TOO
-  config.define_cassette_placeholder('<OPENAI_API_KEY>', ENV['OPENAI_API_KEY']) if ENV['OPENAI_API_KEY']
+  # Debug logging for troubleshooting
+  if ENV['VCR_DEBUG'].present?
+    config.debug_logger = $stderr
+  end
 end
+
+# WebMock configuration
+WebMock.disable_net_connect!(
+  allow_localhost: true,
+  allow: [ 'chromedriver.chromium.org' ]
+)

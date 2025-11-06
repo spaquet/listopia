@@ -54,5 +54,33 @@
 #
 FactoryBot.define do
   factory :message do
+    association :chat
+    association :user
+    role { 'user' }
+    content { Faker::Lorem.paragraph }
+    message_type { 'text' }
+    metadata { {} }
+
+    trait :from_assistant do
+      role { 'assistant' }
+      user { nil }
+    end
+
+    trait :from_system do
+      role { 'system' }
+      user { nil }
+    end
+
+    trait :from_tool do
+      role { 'tool' }
+      user { nil }
+      tool_call_id { 'call_12345' }
+    end
+
+    trait :with_tokens do
+      input_tokens { 100 }
+      output_tokens { 150 }
+      token_count { 250 }
+    end
   end
 end
