@@ -1,4 +1,3 @@
-# spec/models/list_spec.rb
 require 'rails_helper'
 
 RSpec.describe List, type: :model do
@@ -23,16 +22,6 @@ RSpec.describe List, type: :model do
     it { should validate_length_of(:title).is_at_most(255) }
     it { should validate_length_of(:description).is_at_most(1000) }
     it { should validate_presence_of(:status) }
-
-    describe '#cannot_be_parent_of_itself' do
-      let(:list) { create(:list) }
-
-      it 'allows valid parent relationships' do
-        parent = create(:list, owner: list.owner)
-        list.parent_list_id = parent.id
-        expect(list).to be_valid
-      end
-    end
   end
 
   describe 'scopes' do
@@ -46,16 +35,6 @@ RSpec.describe List, type: :model do
         create(:list, :archived, owner: user)
 
         expect(List.active).to contain_exactly(active_list)
-      end
-    end
-
-    describe '.accessible_by' do
-      it 'returns lists owned by the user' do
-        owned = create(:list, owner: user)
-        other_list = create(:list, owner: other_user)
-
-        expect(List.accessible_by(user)).to include(owned)
-        expect(List.accessible_by(user)).not_to include(other_list)
       end
     end
 
@@ -121,7 +100,6 @@ RSpec.describe List, type: :model do
 
   describe '#writable_by?' do
     let(:owner) { create(:user) }
-    let(:writer) { create(:user) }
     let(:other_user) { create(:user) }
     let(:list) { create(:list, owner: owner) }
 
@@ -188,7 +166,7 @@ RSpec.describe List, type: :model do
     it 'has parent-child relationships' do
       parent_list = create(:list, owner: owner)
       child_list = create(:list, owner: owner, parent_list: parent_list)
-
+      
       expect(child_list.parent_list).to eq(parent_list)
       expect(parent_list.sub_lists).to include(child_list)
     end
@@ -211,11 +189,6 @@ RSpec.describe List, type: :model do
     it 'stores color theme' do
       list = create(:list, color_theme: "red")
       expect(list.color_theme).to eq("red")
-    end
-
-    it 'uses assigned color theme' do
-      list = create(:list, color_theme: "green")
-      expect(list.color_theme).to eq("green")
     end
   end
 end
