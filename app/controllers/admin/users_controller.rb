@@ -2,8 +2,6 @@
 class Admin::UsersController < Admin::BaseController
   before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
 
-  # REMOVED: skip_forgery_protection - CSRF token is now properly handled
-
   helper_method :locale_options, :timezone_options
 
   def index
@@ -53,12 +51,16 @@ class Admin::UsersController < Admin::BaseController
 
   def create
     @user = User.new(user_params)
-    @user.email_verified_at = Time.current
+
+    # Generate random password ONLY in admin controller
+    # uses the generate_temp_password method from User model
+    @user.generate_temp_password
+
     authorize @user, :create?
 
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
-
+      @user.send_admin_invitation!
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
         format.turbo_stream do
