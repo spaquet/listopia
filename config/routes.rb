@@ -75,6 +75,9 @@ Rails.application.routes.draw do
       get :share
     end
 
+    # Comments on Lists
+    resources :comments, only: [ :create, :destroy ]
+
     # Analytics routes
     resources :analytics, only: [ :index ]
 
@@ -89,6 +92,9 @@ Rails.application.routes.draw do
         get :context_summary
         patch :reorder
       end
+
+      # Comments on ListItems
+      resources :comments, only: [ :create, :destroy ]
     end
 
     # Collaborations

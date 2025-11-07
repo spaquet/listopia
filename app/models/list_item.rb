@@ -61,6 +61,9 @@ class ListItem < ApplicationRecord
   # Logidzy for auditing changes
   has_logidze
 
+  # Comments
+  has_many :comments, as: :commentable, dependent: :destroy
+
   # Associations
   belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true

@@ -1,0 +1,41 @@
+<!-- app/views/comments/_comment.html.erb -->
+<!-- Individual comment display -->
+<div id="comment_<%= comment.id %>" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+  <!-- Comment Header -->
+  <div class="flex items-start justify-between mb-2">
+    <div class="flex items-center space-x-2">
+      <% if comment.user.avatar_url.present? %>
+        <img src="<%= comment.user.avatar_url %>" alt="<%= comment.user.name %>" class="w-8 h-8 rounded-full" />
+      <% else %>
+        <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-sm font-medium text-blue-800">
+          <%= comment.user.name.first %>
+        </div>
+      <% end %>
+      <div>
+        <p class="text-sm font-medium text-gray-900"><%= comment.user.name %></p>
+        <p class="text-xs text-gray-500">
+          <%= time_ago_in_words(comment.created_at) %> ago
+          <% if comment.updated_at > comment.created_at + 1.minute %>
+            <span class="text-gray-400">(edited)</span>
+          <% end %>
+        </p>
+      </div>
+    </div>
+    <!-- Delete Button (show only if user is comment author or admin) -->
+    <% if current_user && (current_user == comment.user || current_user.admin?) %>
+      <%= button_to comment_path(comment), 
+                    method: :delete,
+                    form: { local: true },
+                    data: { turbo_confirm: "Are you sure?" },
+                    class: "text-gray-400 hover:text-red-600 transition-colors" do %>
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+  <!-- Comment Content -->
+  <div class="text-sm text-gray-800 leading-relaxed break-words">
+    <%= simple_format(comment.content) %>
+  </div>
+</div>

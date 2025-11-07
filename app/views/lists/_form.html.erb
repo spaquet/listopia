@@ -1,5 +1,5 @@
 <!-- app/views/lists/_form.html.erb -->
-<%= form_with model: list, local: false, class: "space-y-6" do |f| %>
+<%= form_with model: [ list, comment ], local: false, class: "space-y-6" do |f| %>
   <!-- Error Messages -->
   <% if list.errors.any? %>
     <div class="bg-red-50 border border-red-200 rounded-lg p-4">

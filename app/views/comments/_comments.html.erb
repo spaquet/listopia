@@ -1,0 +1,18 @@
+<!-- app/views/comments/_comments.html.erb -->
+<!-- Container for all comments on a commentable resource -->
+<div class="bg-white rounded-lg border border-gray-200 p-6">
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold text-gray-900">
+      Comments
+      <span class="text-sm font-normal text-gray-500">(<%= commentable.comments.count %>)</span>
+    </h3>
+  </div>
+  <!-- Comments Container - replaced entirely when state changes (empty <-> filled) -->
+  <%= turbo_frame_tag "comments_container_#{commentable.class.name.downcase}_#{commentable.id}" do %>
+    <%= render "comments/comments_container", commentable: commentable %>
+  <% end %>
+  <!-- Add Comment Form -->
+  <div class="border-t border-gray-200 pt-6">
+    <%= render "comments/form", commentable: commentable, comment: commentable.comments.build %>
+  </div>
+</div>

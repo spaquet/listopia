@@ -106,6 +106,8 @@
       <% end %>
     </div>
   </div>
+  <!-- Comment Section -->
+  <%= render "comments/comments", commentable: @list, list: @list %>
   <!-- Sub-lists Section -->
   <% if @list.sub_lists.any? || (current_user && can_edit_list?(@list, current_user)) %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200">

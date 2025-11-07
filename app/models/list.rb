@@ -66,7 +66,10 @@ class List < ApplicationRecord
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
   has_many :list_items, dependent: :destroy
 
-  # NEW: Parent-Child List Relationships using the new database structure
+  # Comments
+  has_many :comments, as: :commentable, dependent: :destroy
+
+  # Parent-Child List Relationships using the new database structure
   belongs_to :parent_list, class_name: "List", optional: true
   has_many :sub_lists, class_name: "List", foreign_key: "parent_list_id", dependent: :destroy
 
