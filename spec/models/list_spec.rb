@@ -166,7 +166,7 @@ RSpec.describe List, type: :model do
     it 'has parent-child relationships' do
       parent_list = create(:list, owner: owner)
       child_list = create(:list, owner: owner, parent_list: parent_list)
-      
+
       expect(child_list.parent_list).to eq(parent_list)
       expect(parent_list.sub_lists).to include(child_list)
     end
