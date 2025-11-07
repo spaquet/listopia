@@ -37,8 +37,11 @@
         <div class="flex-1">
           <div class="flex items-center space-x-2 mb-1">
             <%= item_type_icon(item.item_type) %>
-            <h3 class="text-sm font-medium text-gray-900 <%= 'line-through text-gray-500' if item.status_completed? %>">
-              <%= item.title %>
+            <h3 class="text-sm font-medium text-gray-700 <%= 'line-through text-gray-500' if item.status_completed? %>">
+              <%# item.title %>
+              <%= link_to item.title, list_list_item_path(list, item), 
+                  class: "hover:text-gray-900",
+                  data: { turbo_frame: "_top" } %>
             </h3>
             <%= priority_badge(item) %>
           </div>

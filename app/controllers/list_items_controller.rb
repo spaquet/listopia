@@ -50,6 +50,16 @@ class ListItemsController < ApplicationController
     end
   end
 
+  def show
+    # Loads @list_item and @list via before_action
+    authorize @list_item, :show?
+  end
+
+  def edit
+    # For inline editing of list item details
+    authorize @list_item, :edit?
+  end
+
   # Toggle completion status using the new status enum
   def toggle_completion
     new_status = @list_item.status_completed? ? :pending : :completed

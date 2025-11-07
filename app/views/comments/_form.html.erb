@@ -2,7 +2,16 @@
 <!-- Form to add a new comment to a commentable resource -->
 <% if user_signed_in? %>
   <%= turbo_frame_tag "new_comment_form_#{commentable.class.name.downcase}_#{commentable.id}" do %>
-    <%= form_with model: [commentable, comment], local: false, class: "flex flex-col gap-2" do |f| %>
+    <% 
+      # Determine the correct comment path based on commentable type
+      comment_path = case commentable
+                     when List
+                       list_comments_path(commentable)
+                     when ListItem
+                       list_list_item_comments_path(commentable.list, commentable)
+                     end
+    %>
+    <%= form_with url: comment_path, method: :post, local: false, class: "flex flex-col gap-2" do |f| %>
       <!-- Error Messages -->
       <% if comment.errors.any? %>
         <div class="bg-red-50 border border-red-200 rounded-md p-3">
@@ -22,6 +31,7 @@
       <!-- Comment Content Field -->
       <div>
         <%= f.text_area :content,
+                        name: "comment[content]",
                         id: "comment_#{commentable.class.name.downcase}_#{commentable.id}_content",
                         rows: 3,
                         placeholder: "Add a comment...",
