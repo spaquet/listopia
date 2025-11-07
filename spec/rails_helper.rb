@@ -1,9 +1,16 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
+
 require 'spec_helper'
+
+# Load RubyLLM stub BEFORE Rails loads models
+require File.expand_path('../support/ruby_llm_stub', __FILE__)
+
 ENV['RAILS_ENV'] ||= 'test'
 require_relative '../config/environment'
+
 # Prevent database truncation if the environment is production
 abort("The Rails environment is running in production mode!") if Rails.env.production?
+
 require 'rspec/rails'
 
 # Add additional requires below this line. Rails is not loaded until this point!
@@ -105,6 +112,21 @@ RSpec.configure do |config|
       driven_by :selenium_chrome
     else
       driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ]
+    end
+  end
+
+  # VCR integration
+  config.around(:each, vcr: true) do |example|
+    # Get the cassette name from metadata or use example description
+    cassette_name = example.metadata[:vcr][:cassette_name] ||
+                    example.description.gsub(/\s+/, '_').downcase
+
+    # Get any additional options (excluding cassette_name)
+    options = example.metadata[:vcr].except(:cassette_name)
+
+    # Use the cassette
+    VCR.use_cassette(cassette_name, options) do
+      example.run
     end
   end
 end

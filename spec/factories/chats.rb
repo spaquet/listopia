@@ -35,5 +35,26 @@
 #
 FactoryBot.define do
   factory :chat do
+    association :user
+    sequence(:title) { |n| "Chat #{n}" }
+    status { 'active' }
+    conversation_state { 'stable' }
+    context { {} }
+    metadata { {} }
+
+    trait :with_messages do
+      after(:create) do |chat|
+        create(:message, chat: chat, role: 'user', content: 'Hello?')
+        create(:message, chat: chat, role: 'assistant', content: 'Hi there!')
+      end
+    end
+
+    trait :archived do
+      status { 'archived' }
+    end
+
+    trait :with_context do
+      context { { planning_type: 'event', urgency: 'high' } }
+    end
   end
 end

@@ -342,7 +342,9 @@ class User < ApplicationRecord
   # User during user creation by an admin
   # either when the user is created via the chat or admin panel
   def generate_temp_password
-    SecureRandom.random_bytes(16)
+    random_password = SecureRandom.hex(16)
+    self.password = random_password
+    self.password_confirmation = random_password
   end
 
   def send_admin_invitation!

@@ -95,34 +95,104 @@ class AiAgentMcpService
 
   def create_user_from_analysis(params)
     # Validate permissions
-    return error_response unless @user.admin?
-
-    # Create user
-    user = User.new(
-      name: params["name"],
-      email: params["email"]
-    )
-
-    # Generate temporary password
-    temp_password = user.generate_temp_password
-    user.password = temp_password
-    user.password_confirmation = temp_password
-    user.email_verified_at = Time.current
-
-    if user.save
-      # Add admin role if requested
-      user.add_role(:admin) if params["make_admin"] == true
-
-      # Send invitation email
-      user.send_admin_invitation!
-
-      success_response({
-        user: user,
-        message: "User #{user.email} created successfully. Invitation email sent."
-      })
-    else
-      error_response(user.errors.full_messages)
+    unless @user.admin?
+      return {
+        success: false,
+        error: "Only administrators can create users.",
+        unauthorized: true
+      }
     end
+
+    # Validate required parameters
+    unless params["email"].present?
+      return {
+        success: false,
+        error: "Email is required to create a user.",
+        errors: [ "Email cannot be blank" ]
+      }
+    end
+
+    # Check if user already exists
+    if User.exists?(email: params["email"])
+      return {
+        success: false,
+        error: "User with this email already exists.",
+        errors: [ "Email has already been taken" ]
+      }
+    end
+
+    begin
+      # Create the user WITHOUT generating password
+      new_user = User.new(
+        name: params["name"] || params["email"].split("@").first.capitalize,
+        email: params["email"],
+        bio: params["bio"],
+        locale: params["locale"] || "en",
+        timezone: params["timezone"] || "UTC",
+        admin_notes: params["admin_notes"]
+      )
+
+      # Mark email as verified for admin-created users
+      new_user.email_verified_at = Time.current
+
+      if new_user.save
+        # Add admin role if requested
+        new_user.add_role(:admin) if params["make_admin"] == true
+
+        log_debug "✓ User created: #{new_user.email}"
+
+        {
+          success: true,
+          message: "User #{new_user.email} created successfully.",
+          user: {
+            id: new_user.id,
+            name: new_user.name,
+            email: new_user.email,
+            status: new_user.status,
+            admin: new_user.admin?,
+            sign_in_count: new_user.sign_in_count,
+            last_sign_in_at: new_user.last_sign_in_at
+          }
+        }
+      else
+        log_error "Failed to create user: #{new_user.errors.full_messages.join(', ')}"
+
+        {
+          success: false,
+          error: "Failed to create user.",
+          errors: new_user.errors.full_messages
+        }
+      end
+    rescue => e
+      log_error "Error in create_user_from_analysis: #{e.message}", e
+
+      {
+        success: false,
+        error: "An unexpected error occurred while creating the user.",
+        errors: [ e.message ]
+      }
+    end
+  end
+
+  def success_response(data = {})
+    {
+      success: true,
+      message: data[:message] || "Action completed successfully.",
+      user: data[:user],
+      users: data[:users],
+      count: data[:count],
+      total_count: data[:total_count],
+      statistics: data[:statistics]
+    }
+  end
+
+  def error_response(errors = [])
+    {
+      success: false,
+      error: "An error occurred.",
+      errors: Array(errors),
+      unauthorized: false
+    }
   end
 
   def find_or_create_chat
@@ -661,14 +731,14 @@ class AiAgentMcpService
     action = analysis["action"]
     params = analysis["parameters"] || {}
 
-    # Find user by email if email provided instead of ID
-    if params["email"].present? && params["user_id"].nil?
-      target_user = User.find_by(email: params["email"])
-      params["user_id"] = target_user&.id
-    end
-
-    # Convert string keys to symbols for method calls
+    # Convert string keys to symbols immediately
     params = params.transform_keys(&:to_sym)
+
+    # Find user by email if email provided instead of ID
+    if params[:email].present? && params[:user_id].nil?
+      target_user = User.find_by(email: params[:email])
+      params[:user_id] = target_user&.id
+    end
 
     log_debug "Executing user management action: #{action}"
 
@@ -714,6 +784,93 @@ class AiAgentMcpService
       error: "Failed to execute user management action: #{e.message}"
     }
   end
+
+# ============================================================================
+# Update create_user_from_analysis to use symbol keys
+
+def create_user_from_analysis(params)
+  # Validate permissions
+  unless @user.admin?
+    return {
+      success: false,
+      error: "Only administrators can create users.",
+      unauthorized: true
+    }
+  end
+
+  # Validate required parameters (use symbol keys)
+  unless params[:email].present?
+    return {
+      success: false,
+      error: "Email is required to create a user.",
+      errors: [ "Email cannot be blank" ]
+    }
+  end
+
+  # Check if user already exists
+  if User.exists?(email: params[:email])
+    return {
+      success: false,
+      error: "User with this email already exists.",
+      errors: [ "Email has already been taken" ]
+    }
+  end
+
+  begin
+    # Create the user WITHOUT generating password
+    new_user = User.new(
+      name: params[:name] || params[:email].split("@").first.capitalize,
+      email: params[:email],
+      bio: params[:bio],
+      locale: params[:locale] || "en",
+      timezone: params[:timezone] || "UTC",
+      admin_notes: params[:admin_notes]
+    )
+
+    # Generate temp password using User model method
+    new_user.generate_temp_password
+
+    if new_user.save
+      # Add admin role if requested
+      new_user.add_role(:admin) if params[:make_admin] == true
+
+      # Send admin invitation email
+      new_user.send_admin_invitation!
+
+      log_debug "✓ User created: #{new_user.email}"
+
+      {
+        success: true,
+        message: "User #{new_user.email} created successfully.",
+        user: {
+          id: new_user.id,
+          name: new_user.name,
+          email: new_user.email,
+          status: new_user.status,
+          admin: new_user.admin?,
+          sign_in_count: new_user.sign_in_count,
+          last_sign_in_at: new_user.last_sign_in_at
+        }
+      }
+    else
+      log_error "Failed to create user: #{new_user.errors.full_messages.join(', ')}"
+
+      {
+        success: false,
+        error: "Failed to create user.",
+        errors: new_user.errors.full_messages
+      }
+    end
+  rescue => e
+    log_error "Error in create_user_from_analysis: #{e.message}", e
+
+    {
+      success: false,
+      error: "An unexpected error occurred while creating the user.",
+      errors: [ e.message ]
+    }
+  end
+end
 
   # Build response for user management actions
   def build_user_management_response(um_result)

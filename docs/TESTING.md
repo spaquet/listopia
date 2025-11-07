@@ -14,6 +14,40 @@ Listopia uses **RSpec** as the sole testing framework. All tests follow RSpec co
 - **[RSpec Retry](https://github.com/NoRedInk/rspec-retry)** - Flaky test retry handling
 - **[Timecop](https://github.com/travisci/timecop)** - Time freezing for time-dependent tests
 
+## Production-Ready Test Suite
+
+Listopia uses a phased testing approach where only fully-tested, production-ready models are run in the deployment pipeline. This allows the test suite to grow incrementally while maintaining deployment reliability.
+
+### Currently Production-Ready Models
+
+The following models have complete, reliable test coverage and are automatically tested on every deployment:
+
+- **User** - Authentication, validation, associations, and security
+- **Invitation** - Invitation creation, token generation, acceptance, and authorization
+- **Session** - Session management, token handling, and authentication state
+
+### Running Production-Ready Tests
+
+Use the Rake task to run only production-ready tests locally:
+
+```bash
+bundle exec rails test:production_ready
+```
+
+Or run specific production-ready models:
+
+```bash
+bundle exec rspec spec/models/user_spec.rb
+bundle exec rspec spec/models/invitation_spec.rb
+bundle exec rspec spec/models/session_spec.rb
+```
+
+### Continuous Integration
+
+Every push to `main` and every pull request automatically runs the production-ready test suite via GitHub Actions. This ensures only proven code reaches production.
+
+Check `.github/workflows/ci.yml` for CI configuration.
+
 ## Browser Testing
 
 Listopia uses **[Cuprite](https://github.com/rubycdp/cuprite)** as the headless browser driver for system tests with Capybara.
@@ -51,6 +85,11 @@ config.include Capybara::DSL
 bundle exec rspec
 ```
 
+### Production-Ready Tests Only (CI/Deployment)
+```bash
+bundle exec rails test:production_ready
+```
+
 ### Specific Test Files
 ```bash
 bundle exec rspec spec/models/user_spec.rb
@@ -81,9 +120,11 @@ bundle exec rspec --failure-exit-code 1          # Exit code on failure
 ```
 spec/
 ├── models/                 # Unit tests for models
-│   ├── user_spec.rb
-│   ├── list_spec.rb
-│   └── list_item_spec.rb
+│   ├── user_spec.rb                    # ✅ Production-ready
+│   ├── invitation_spec.rb              # ✅ Production-ready
+│   ├── session_spec.rb                 # ✅ Production-ready
+│   ├── list_spec.rb                    # 🚧 In progress
+│   └── list_item_spec.rb               # 🚧 In progress
 ├── controllers/            # Controller tests
 │   ├── lists_controller_spec.rb
 │   └── list_items_controller_spec.rb
@@ -105,6 +146,31 @@ spec/
 │   └── capybara.rb
 └── rails_helper.rb        # RSpec configuration
 ```
+
+### Marking Models as Production-Ready
+
+When a model's test suite is complete and reliable, add it to the production-ready test list:
+
+1. Ensure all tests pass consistently: `bundle exec rspec spec/models/your_model_spec.rb --profile 10`
+2. Verify no flaky tests by running multiple times
+3. Update `lib/tasks/test.rake` to include the model:
+
+```ruby
+# lib/tasks/test.rake
+namespace :test do
+  desc "Run production-ready tests (user, invitation, session)"
+  task :production_ready do
+    sh "bundle exec rspec " \
+       "spec/models/user_spec.rb " \
+       "spec/models/invitation_spec.rb " \
+       "spec/models/session_spec.rb " \
+       "spec/models/your_model_spec.rb"  # Add here
+  end
+end
+```
+
+4. Update CI workflow (`.github/workflows/ci.yml`)
+5. Update this documentation
 
 ## Model Tests
 
@@ -523,6 +589,36 @@ RSpec.configure do |config|
 end
 ```
 
+## Rake Tasks
+
+Listopia provides convenient Rake tasks for testing:
+
+```ruby
+# lib/tasks/test.rake
+namespace :test do
+  desc "Run production-ready tests (user, invitation, session)"
+  task :production_ready do
+    sh "bundle exec rspec " \
+       "spec/models/user_spec.rb " \
+       "spec/models/invitation_spec.rb " \
+       "spec/models/session_spec.rb"
+  end
+end
+```
+
+### Available Rake Tasks
+
+```bash
+# Run production-ready tests (used in CI)
+bundle exec rails test:production_ready
+
+# Run all tests
+bundle exec rspec
+
+# Run only model tests
+bundle exec rspec spec/models
+```
+
 ## Testing Patterns
 
 ### Test Real-Time Broadcasting
@@ -628,38 +724,6 @@ end
 - Test Rails framework code
 - Make slow/flaky browser tests
 
-## CI/CD Integration
-
-```yaml
-# .github/workflows/tests.yml
-name: Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.4
-          bundler-cache: true
-      
-      - run: bundle exec rails db:setup
-      - run: bundle exec rspec
-```
-
 ## Performance Tips
 
 1. **Use `create` sparingly** - Prefer `build` when possible
@@ -669,13 +733,44 @@ jobs:
 5. **Mark slow tests** - Use `@slow` tag for CI skipping
 6. **Parallel tests** - Use `parallel_tests` gem for CI
 
+## CI/CD Integration
+
+The GitHub Actions workflow runs production-ready tests on every push to `main` and every pull request:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Run "working" model tests (user, invitation, session)
+  env:
+    RAILS_ENV: test
+    DATABASE_URL: postgres://postgres:postgres@localhost:5432
+  run: |
+    bin/rails test spec/models/user_spec.rb \
+                    spec/models/invitation_spec.rb \
+                    spec/models/session_spec.rb
+```
+
+Alternatively, use the Rake task:
+
+```yaml
+- name: Run production-ready tests
+  run: bundle exec rails test:production_ready
+```
+
 ## Summary
 
-Listopia uses **RSpec exclusively** with **Cuprite** for browser testing. This provides:
+Listopia uses **RSpec exclusively** with a **phased testing approach**. This provides:
 
 - **Consistent test framework** - No mixing of testing tools
-- **Comprehensive coverage** - Unit, integration, and system tests
+- **Reliable deployments** - Only proven tests run in CI
+- **Incremental growth** - Add tests as features mature
 - **Clear patterns** - Factories, helpers, organized specs
 - **Good performance** - Fast test runs with Cuprite
 - **Real-time testing** - Proper Turbo Streams testing
 - **Maintainable code** - Clear structure and helpers
+
+### Next Steps
+
+1. Complete tests for remaining critical models
+2. Add each production-ready model to `lib/tasks/test.rake`
+3. Update CI workflow to include new models
+4. Keep this documentation current

@@ -1,9 +1,5 @@
 # app/helpers/application_helper.rb
 module ApplicationHelper
-  # Pagy navigation helper
-  include Pagy::Frontend
-
-
   # Format user-friendly timestamps
   def time_ago_in_words_or_date(time)
     return "" unless time

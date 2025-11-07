@@ -30,8 +30,393 @@
 #  fk_rails_...  (invited_by_id => users.id)
 #  fk_rails_...  (user_id => users.id)
 #
+# spec/models/invitation_spec.rb
 require 'rails_helper'
 
 RSpec.describe Invitation, type: :model do
-  pending "add some examples to (or delete) #{__FILE__}"
+  describe 'associations' do
+    it { should belong_to(:invitable) }
+    it { should belong_to(:user).optional }
+    it { should belong_to(:invited_by).class_name('User') }
+  end
+
+  describe 'validations' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    it { should validate_presence_of(:permission) }
+
+    describe 'email validation' do
+      it 'validates email format when present' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'invalid-email', user_id: nil)
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:email]).to be_present
+      end
+
+      it 'allows valid email format' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'user@example.com')
+        expect(invitation).to be_valid
+      end
+
+      it 'allows blank email when user_id is present' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, email: nil)
+        expect(invitation).to be_valid
+      end
+    end
+
+    describe 'email or user validation' do
+      it 'validates email or user present' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: nil, user_id: nil)
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:base]).to include('Either user or email must be present')
+      end
+
+      it 'allows invitation with user_id only' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, email: nil)
+        expect(invitation).to be_valid
+      end
+
+      it 'allows invitation with email only' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'newuser@example.com', user_id: nil)
+        expect(invitation).to be_valid
+      end
+    end
+
+    describe 'uniqueness validations' do
+      let!(:existing_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, email: 'existing@example.com') }
+
+      it 'prevents duplicate invitations by email to same invitable' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'existing@example.com')
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:email]).to be_present
+      end
+
+      it 'allows same email invited to different invitables' do
+        other_list = create(:list)
+        invitation = build(:invitation, invitable: other_list, invited_by: inviter, email: 'existing@example.com')
+        expect(invitation).to be_valid
+      end
+
+      it 'prevents duplicate invitations by user_id to same invitable' do
+        user = create(:user)
+        create(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:user_id]).to be_present
+      end
+
+      it 'allows same user invited to different invitables' do
+        user = create(:user)
+        create(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        other_list = create(:list)
+        invitation = build(:invitation, invitable: other_list, invited_by: inviter, user: user)
+        expect(invitation).to be_valid
+      end
+    end
+
+    describe 'owner validation' do
+      context 'when invitable is a List' do
+        let(:list) { create(:list) }
+
+        it 'prevents inviting the list owner by user' do
+          invitation = build(:invitation, invitable: list, invited_by: create(:user), user: list.owner)
+          expect(invitation).not_to be_valid
+          expect(invitation.errors[:user]).to include('cannot be the list owner')
+        end
+
+        it 'prevents inviting the list owner by email' do
+          invitation = build(:invitation, invitable: list, invited_by: create(:user), email: list.owner.email)
+          expect(invitation).not_to be_valid
+          expect(invitation.errors[:email]).to include('cannot be the list owner\'s email')
+        end
+
+        it 'allows inviting non-owner users' do
+          other_user = create(:user)
+          invitation = build(:invitation, invitable: list, invited_by: create(:user), user: other_user)
+          expect(invitation).to be_valid
+        end
+      end
+    end
+  end
+
+  describe 'enums' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    describe 'permission enum' do
+      it 'defines permission_read predicate' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :read, email: 'test@example.com')
+        expect(invitation).to be_permission_read
+      end
+
+      it 'defines permission_write predicate' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :write, email: 'test@example.com')
+        expect(invitation).to be_permission_write
+      end
+
+      it 'defaults to read permission' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        expect(invitation).to be_permission_read
+      end
+    end
+  end
+
+  describe 'scopes' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+    let(:user) { create(:user) }
+
+    describe '.pending' do
+      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com') }
+      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com') }
+
+      it 'returns only pending invitations' do
+        expect(Invitation.pending).to include(pending_invitation)
+        expect(Invitation.pending).not_to include(accepted_invitation)
+      end
+    end
+
+    describe '.accepted' do
+      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com') }
+      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com') }
+
+      it 'returns only accepted invitations' do
+        expect(Invitation.accepted).to include(accepted_invitation)
+        expect(Invitation.accepted).not_to include(pending_invitation)
+      end
+    end
+  end
+
+  describe 'callbacks' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    describe 'before_create' do
+      it 'generates invitation token' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        expect(invitation.invitation_token).to be_nil
+        invitation.save!
+        expect(invitation.invitation_token).to be_present
+      end
+
+      it 'sets invitation_sent_at' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        expect(invitation.invitation_sent_at).to be_nil
+        invitation.save!
+        expect(invitation.invitation_sent_at).to be_present
+        expect(invitation.invitation_sent_at).to be_within(1.second).of(Time.current)
+      end
+    end
+  end
+
+  describe 'instance methods' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    describe '#pending?' do
+      it 'returns true when user_id is nil' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com')
+        expect(invitation.pending?).to be true
+      end
+
+      it 'returns false when user_id is present' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        expect(invitation.pending?).to be false
+      end
+    end
+
+    describe '#accepted?' do
+      it 'returns false when user_id is nil' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com')
+        expect(invitation.accepted?).to be false
+      end
+
+      it 'returns true when user_id is present' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        expect(invitation.accepted?).to be true
+      end
+    end
+
+    describe '#display_email' do
+      it 'returns user email when user is present' do
+        user = create(:user, email: 'user@example.com')
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'different@example.com')
+        expect(invitation.display_email).to eq('user@example.com')
+      end
+
+      it 'returns invitation email when user is nil' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'pending@example.com')
+        expect(invitation.display_email).to eq('pending@example.com')
+      end
+    end
+
+    describe '#display_name' do
+      it 'returns user name when user is present' do
+        user = create(:user, name: 'John Doe', email: 'john@example.com')
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        expect(invitation.display_name).to eq('John Doe')
+      end
+
+      it 'returns invitation email when user is nil' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'pending@example.com')
+        expect(invitation.display_name).to eq('pending@example.com')
+      end
+    end
+
+    describe '#accept!' do
+      let(:accepting_user) { create(:user, email: 'accepter@example.com') }
+
+      it 'returns false if email does not match' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'different@example.com')
+        result = invitation.accept!(accepting_user)
+        expect(result).to be false
+      end
+
+      it 'creates a collaborator record with matching email' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: accepting_user.email, permission: :write)
+        expect {
+          invitation.accept!(accepting_user)
+        }.to change { invitable.collaborators.count }.by(1)
+      end
+
+      it 'sets the user on the invitation' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: accepting_user.email)
+        invitation.accept!(accepting_user)
+        expect(invitation.user).to eq(accepting_user)
+      end
+
+      it 'sets invitation_accepted_at timestamp' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: accepting_user.email)
+        expect(invitation.invitation_accepted_at).to be_nil
+        invitation.accept!(accepting_user)
+        expect(invitation.invitation_accepted_at).to be_present
+        expect(invitation.invitation_accepted_at).to be_within(1.second).of(Time.current)
+      end
+
+      it 'preserves the permission level' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: accepting_user.email, permission: :write)
+        collaborator = invitation.accept!(accepting_user)
+        expect(collaborator.permission_write?).to be true
+      end
+
+      it 'returns the created collaborator' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: accepting_user.email)
+        collaborator = invitation.accept!(accepting_user)
+        expect(collaborator).to be_a_kind_of(Collaborator)
+        expect(collaborator.user).to eq(accepting_user)
+      end
+    end
+
+    describe '#generate_invitation_token' do
+      it 'generates a token' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        invitation.generate_invitation_token
+        expect(invitation.invitation_token).to be_present
+        expect(invitation.invitation_token).to be_a(String)
+      end
+
+      it 'generates different tokens for different invitations with time separation' do
+        invitation1 = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test1@example.com')
+        invitation1.generate_invitation_token
+        token1 = invitation1.invitation_token
+
+        sleep(0.01)
+
+        invitation2 = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
+        invitation2.generate_invitation_token
+        token2 = invitation2.invitation_token
+
+        expect(token1).not_to eq(token2)
+      end
+    end
+  end
+
+  describe 'class methods' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    describe '.find_by_invitation_token' do
+      it 'finds invitation by valid token' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        expect(invitation.invitation_token).to be_present
+        expect(invitation.invitation_token).to be_a(String)
+      end
+
+      it 'returns nil for invalid token' do
+        found = Invitation.find_by_invitation_token('invalid-token')
+        expect(found).to be_nil
+      end
+
+      it 'returns nil for expired token' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        token = invitation.invitation_token
+
+        Timecop.freeze(Time.current + 8.days) do
+          found = Invitation.find_by_invitation_token(token)
+          expect(found).to be_nil
+        end
+      end
+    end
+  end
+
+  describe 'database' do
+    let(:invitable) { create(:list) }
+    let(:inviter) { create(:user) }
+
+    it 'has UUID primary key' do
+      invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+      expect(invitation.id).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
+    end
+
+    it 'has timestamps' do
+      invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+      expect(invitation.created_at).to be_present
+      expect(invitation.updated_at).to be_present
+    end
+
+    it 'has unique invitation token' do
+      invitation1 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test1@example.com')
+      invitation2 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
+
+      expect {
+        ActiveRecord::Base.connection.execute(
+          "UPDATE invitations SET invitation_token = '#{invitation1.invitation_token}' WHERE id = '#{invitation2.id}'"
+        )
+      }.to raise_error(ActiveRecord::StatementInvalid)
+    end
+  end
+
+  describe 'polymorphic invitable' do
+    it 'can be associated with a List' do
+      list = create(:list)
+      inviter = create(:user)
+      invitation = create(:invitation, invitable: list, invited_by: inviter, email: 'test@example.com')
+      expect(invitation.invitable).to eq(list)
+    end
+
+    it 'stores invitable type' do
+      list = create(:list)
+      inviter = create(:user)
+      invitation = create(:invitation, invitable: list, invited_by: inviter, email: 'test@example.com')
+      expect(invitation.invitable_type).to eq('List')
+    end
+  end
+
+  describe 'integration with Collaborator' do
+    it 'creates correct permission when accepting invitation' do
+      list = create(:list)
+      inviter = create(:user)
+      user = create(:user)
+      invitation = create(:invitation, invitable: list, invited_by: inviter, email: user.email, permission: :read)
+
+      collaborator = invitation.accept!(user)
+      expect(collaborator.permission_read?).to be true
+      expect(collaborator.user).to eq(user)
+      expect(collaborator.collaboratable).to eq(list)
+    end
+  end
 end

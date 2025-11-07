@@ -2,27 +2,30 @@
 #
 # Table name: messages
 #
-#  id                :uuid             not null, primary key
-#  content           :text
-#  context_snapshot  :json
-#  input_tokens      :integer
-#  llm_model         :string
-#  llm_provider      :string
-#  message_type      :string           default("text")
-#  metadata          :json
-#  model_id_string   :string
-#  output_tokens     :integer
-#  processing_time   :decimal(8, 3)
-#  role              :string           not null
-#  token_count       :integer
-#  tool_call_results :json
-#  tool_calls        :json
-#  created_at        :datetime         not null
-#  updated_at        :datetime         not null
-#  chat_id           :uuid             not null
-#  model_id          :bigint
-#  tool_call_id      :string
-#  user_id           :uuid
+#  id                    :uuid             not null, primary key
+#  cache_creation_tokens :integer
+#  cached_tokens         :integer
+#  content               :text
+#  content_raw           :json
+#  context_snapshot      :json
+#  input_tokens          :integer
+#  llm_model             :string
+#  llm_provider          :string
+#  message_type          :string           default("text")
+#  metadata              :json
+#  model_id_string       :string
+#  output_tokens         :integer
+#  processing_time       :decimal(8, 3)
+#  role                  :string           not null
+#  token_count           :integer
+#  tool_call_results     :json
+#  tool_calls            :json
+#  created_at            :datetime         not null
+#  updated_at            :datetime         not null
+#  chat_id               :uuid             not null
+#  model_id              :bigint
+#  tool_call_id          :string
+#  user_id               :uuid
 #
 # Indexes
 #
@@ -51,5 +54,33 @@
 #
 FactoryBot.define do
   factory :message do
+    association :chat
+    association :user
+    role { 'user' }
+    content { Faker::Lorem.paragraph }
+    message_type { 'text' }
+    metadata { {} }
+
+    trait :from_assistant do
+      role { 'assistant' }
+      user { nil }
+    end
+
+    trait :from_system do
+      role { 'system' }
+      user { nil }
+    end
+
+    trait :from_tool do
+      role { 'tool' }
+      user { nil }
+      tool_call_id { 'call_12345' }
+    end
+
+    trait :with_tokens do
+      input_tokens { 100 }
+      output_tokens { 150 }
+      token_count { 250 }
+    end
   end
 end

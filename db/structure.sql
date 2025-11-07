@@ -1076,6 +1076,9 @@ CREATE TABLE public.messages (
     processing_time numeric(8,3),
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
+    cached_tokens integer,
+    cache_creation_tokens integer,
+    content_raw json,
     CONSTRAINT tool_messages_must_have_tool_call_id CHECK ((((role)::text <> 'tool'::text) OR (tool_call_id IS NOT NULL)))
 );
 
@@ -2719,6 +2722,7 @@ ALTER TABLE ONLY public.recovery_contexts
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251103202838'),
 ('20251011000104'),
 ('20251010235748'),
 ('20251010235747'),

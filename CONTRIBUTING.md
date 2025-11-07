@@ -19,7 +19,7 @@ Thank you for your interest in contributing to Listopia! This guide will help yo
 
 Ensure you have the following installed on your development machine:
 
-- **Ruby 3.2+** (preferably using rbenv or rvm)
+- **Ruby 3.4+** (preferably using rbenv or rvm)
 - **Node.js 18+** (for JavaScript dependencies)
 - **Bun** (JavaScript package manager)
 - **Git**
@@ -109,9 +109,11 @@ Your application should now be running at `http://localhost:3000`!
 ### 7. Verify Setup
 
 ```bash
-# Run a quick test to verify everything works
-bundle exec rails test
-bundle exec rspec # if using RSpec
+# Run the smoke test to verify everything works
+bundle exec rspec spec/smoke_test_spec.rb
+
+# Run all tests
+bundle exec rspec
 
 # Check that you can access the application
 curl http://localhost:3000/up
@@ -142,6 +144,17 @@ app/
 ├── javascript/           # Stimulus controllers and JS
 └── assets/              # CSS and other assets
 
+spec/
+├── models/              # Model unit tests
+├── controllers/         # Controller tests
+├── requests/            # API/request specs
+├── system/              # Browser/integration tests
+├── services/            # Service object tests
+├── factories/           # FactoryBot factories
+├── support/             # RSpec helpers and configuration
+├── rails_helper.rb      # RSpec Rails configuration
+└── spec_helper.rb       # RSpec base configuration
+
 config/
 ├── routes.rb            # URL routing configuration
 ├── database.yml         # Database configuration
@@ -158,8 +171,22 @@ bundle exec rails console
 # Database console
 bundle exec rails dbconsole
 
-# Run specific tests
-bundle exec rails test test/models/user_test.rb
+# Run all tests
+bundle exec rspec
+
+# Run specific test files
+bundle exec rspec spec/models/user_spec.rb
+bundle exec rspec spec/controllers/lists_controller_spec.rb
+
+# Run tests by type
+bundle exec rspec --tag type:model
+bundle exec rspec --tag type:system
+
+# Run with detailed output
+bundle exec rspec --format documentation
+
+# Run only failing tests
+bundle exec rspec --only-failures
 
 # Check code style
 bundle exec rubocop
@@ -169,6 +196,9 @@ bundle exec rails routes
 
 # Reset database
 bundle exec rails db:reset
+
+# Reset test database
+RAILS_ENV=test bundle exec rails db:reset
 ```
 
 ## Making Contributions
@@ -310,93 +340,135 @@ end
 
 ## Testing
 
+Listopia uses **RSpec** as the sole testing framework with Capybara for system tests and Factory Bot for test data generation.
+
 ### Test Structure
 
-We use a combination of test frameworks:
+We use RSpec with the following test types:
 
-- **Minitest** for unit and integration tests
-- **RSpec** for behavior-driven testing (optional)
-- **Capybara** for system/feature tests
-- **Factory Bot** for test data creation
+- **Model specs** (`spec/models/`) - Unit tests for validations and associations
+- **Controller specs** (`spec/controllers/`) - Request/response tests
+- **Request specs** (`spec/requests/`) - API endpoint tests
+- **System specs** (`spec/system/`) - Browser integration tests with Capybara
+- **Service specs** (`spec/services/`) - Service object tests
+- **Policy specs** (`spec/policies/`) - Pundit authorization tests
 
 ### Running Tests
 
 ```bash
 # Run all tests
-bundle exec rails test
+bundle exec rspec
 
 # Run specific test files
-bundle exec rails test test/models/user_test.rb
-bundle exec rails test test/controllers/lists_controller_test.rb
+bundle exec rspec spec/models/user_spec.rb
+bundle exec rspec spec/controllers/lists_controller_spec.rb
+bundle exec rspec spec/system/authentication_spec.rb
 
-# Run system tests
-bundle exec rails test:system
+# Run by type
+bundle exec rspec --tag type:model
+bundle exec rspec --tag type:controller
+bundle exec rspec --tag type:system
+
+# Run focused tests
+bundle exec rspec --tag :focus
+
+# Run with different formats
+bundle exec rspec --format documentation         # Detailed output
+bundle exec rspec --format progress              # Compact progress dots
+bundle exec rspec --profile 10                   # Show 10 slowest tests
+
+# Run only previously failing tests
+bundle exec rspec --only-failures
 
 # Run with coverage (if configured)
-COVERAGE=true bundle exec rails test
+COVERAGE=true bundle exec rspec
 ```
 
 ### Writing Tests
 
 #### Model Tests
-```ruby
-# test/models/list_test.rb
-require "test_helper"
 
-class ListTest < ActiveSupport::TestCase
-  test "should calculate completion percentage correctly" do
-    list = create(:list)
-    create_list(:list_item, 3, list: list)
-    create_list(:list_item, 2, list: list, completed: true)
-    
-    assert_equal 40.0, list.completion_percentage
+```ruby
+# spec/models/list_spec.rb
+RSpec.describe List, type: :model do
+  describe "associations" do
+    it { is_expected.to belong_to(:owner).class_name("User") }
+    it { is_expected.to have_many(:list_items).dependent(:destroy) }
+    it { is_expected.to have_many(:list_collaborations) }
   end
-  
-  test "should require title" do
-    list = build(:list, title: nil)
-    assert_not list.valid?
-    assert_includes list.errors[:title], "can't be blank"
+
+  describe "validations" do
+    it { is_expected.to validate_presence_of(:title) }
+    it { is_expected.to validate_length_of(:title).is_at_most(255) }
+  end
+
+  describe "#completion_percentage" do
+    let(:list) { create(:list) }
+
+    it "returns 0 for empty list" do
+      expect(list.completion_percentage).to eq(0)
+    end
+
+    it "calculates percentage correctly" do
+      create_list(:list_item, 3, list: list, status: :completed)
+      create_list(:list_item, 2, list: list, status: :pending)
+      
+      expect(list.completion_percentage).to eq(60.0)
+    end
   end
 end
 ```
 
 #### Controller Tests
-```ruby
-# test/controllers/lists_controller_test.rb
-require "test_helper"
 
-class ListsControllerTest < ActionDispatch::IntegrationTest
-  setup do
-    @user = create(:user)
-    @list = create(:list, owner: @user)
-    sign_in_as(@user)
-  end
-  
-  test "should get index" do
-    get lists_path
-    assert_response :success
-    assert_select "h1", "My Lists"
-  end
-  
-  test "should create list" do
-    assert_difference("List.count") do
-      post lists_path, params: { list: { title: "New List" } }
+```ruby
+# spec/controllers/lists_controller_spec.rb
+RSpec.describe ListsController, type: :controller do
+  let(:user) { create(:user, :verified) }
+  let(:list) { create(:list, owner: user) }
+
+  before { sign_in(user) }
+
+  describe "GET #index" do
+    it "returns success" do
+      get :index
+      expect(response).to have_http_status(:success)
     end
-    assert_redirected_to list_path(List.last)
+
+    it "assigns lists" do
+      get :index
+      expect(assigns(:lists)).to be_present
+    end
+  end
+
+  describe "POST #create" do
+    it "creates a new list" do
+      expect {
+        post :create, params: { list: { title: "New List" } }
+      }.to change(List, :count).by(1)
+    end
+
+    it "redirects to the list" do
+      post :create, params: { list: { title: "New List" } }
+      expect(response).to redirect_to(list_path(List.last))
+    end
   end
 end
 ```
 
 #### System Tests
-```ruby
-# test/system/lists_test.rb
-require "application_system_test_case"
 
-class ListsTest < ApplicationSystemTestCase
-  test "user can create a new list" do
-    user = create(:user)
-    sign_in_as(user)
-    
+```ruby
+# spec/system/lists_spec.rb
+RSpec.describe "Lists", type: :system do
+  let(:user) { create(:user, :verified) }
+
+  before do
+    driven_by(:cuprite)
+    sign_in_with_ui(user)
+  end
+
+  it "user can create a new list" do
     visit lists_path
     click_on "New List"
     
@@ -404,8 +476,15 @@ class ListsTest < ApplicationSystemTestCase
     fill_in "Description", with: "A list for testing"
     click_on "Create List"
     
-    assert_text "List was successfully created"
-    assert_text "My Test List"
+    expect(page).to have_text("List was successfully created")
+    expect(page).to have_text("My Test List")
+  end
+
+  it "displays list items in real-time" do
+    list = create(:list, owner: user)
+    visit list_path(list)
+    
+    expect(page).to have_text(list.title)
   end
 end
 ```
@@ -413,24 +492,105 @@ end
 ### Test Data with Factory Bot
 
 ```ruby
-# test/factories/users.rb
+# spec/factories/users.rb
 FactoryBot.define do
   factory :user do
-    name { Faker::Name.full_name }
-    email { Faker::Internet.unique.email }
-    password { "password123" }
-    email_verified_at { Time.current }
+    sequence(:name) { |n| "User #{n}" }
+    sequence(:email) { |n| "user#{n}@example.com" }
+    password { "SecurePass123" }
+    password_confirmation { "SecurePass123" }
+
+    trait :verified do
+      email_verified_at { Time.current }
+    end
+
+    trait :admin do
+      verified
+      after(:create) { |user| user.add_role(:admin) }
+    end
   end
 end
 
-# test/factories/lists.rb
+# spec/factories/lists.rb
 FactoryBot.define do
   factory :list do
-    title { Faker::Lorem.words(number: 3).join(" ").titleize }
+    sequence(:title) { |n| "List #{n}" }
     description { Faker::Lorem.paragraph }
     status { :active }
     association :owner, factory: :user
+
+    trait :with_items do
+      after(:create) do |list|
+        create_list(:list_item, 5, list: list)
+      end
+    end
+
+    trait :public do
+      is_public { true }
+      public_slug { SecureRandom.urlsafe_base64(8) }
+    end
   end
+end
+
+# spec/factories/list_items.rb
+FactoryBot.define do
+  factory :list_item do
+    sequence(:title) { |n| "Item #{n}" }
+    description { Faker::Lorem.sentence }
+    status { :pending }
+    priority { :medium }
+    association :list
+
+    trait :completed do
+      status { :completed }
+      completed_at { Time.current }
+    end
+
+    trait :assigned do
+      association :assigned_user, factory: :user
+    end
+  end
+end
+```
+
+### Test Helpers
+
+```ruby
+# spec/support/authentication_helpers.rb
+module AuthenticationHelpers
+  def sign_in(user)
+    session[:user_id] = user.id
+    Current.user = user
+  end
+
+  def sign_out
+    session.clear
+    Current.user = nil
+  end
+
+  def sign_in_as_admin(user = nil)
+    user ||= create(:user, :verified, :admin)
+    sign_in(user)
+    user
+  end
+
+  def sign_in_with_ui(user)
+    visit new_session_path
+    fill_in "Email", with: user.email
+    fill_in "Password", with: user.password
+    click_button "Sign In"
+  end
+
+  def expect_unauthorized
+    expect(response).to redirect_to(root_path)
+    expect(flash[:alert]).to include("not authorized")
+  end
+end
+
+RSpec.configure do |config|
+  config.include AuthenticationHelpers, type: :controller
+  config.include AuthenticationHelpers, type: :system
+  config.include AuthenticationHelpers, type: :request
 end
 ```
 
@@ -482,7 +642,11 @@ git merge upstream/main
 
 ```bash
 # Ensure all tests pass
-bundle exec rails test
+bundle exec rspec
+
+# Run specific test suites
+bundle exec rspec spec/models
+bundle exec rspec spec/system
 
 # Check code style
 bundle exec rubocop
@@ -521,8 +685,12 @@ bundle exec rails server
 docker-compose up -d postgres
 bundle exec rails server
 
+# In another terminal, watch tests
+bundle exec rspec --format documentation --color
+
 # Make changes, test locally
-bundle exec rails test
+bundle exec rspec spec/models
+bundle exec rspec spec/system
 
 # Commit changes
 git add .
@@ -554,6 +722,24 @@ end
 <% end %>
 ```
 
+### Testing Real-time Features
+
+```ruby
+RSpec.describe ListItem, type: :model do
+  describe "#broadcast_created" do
+    it "broadcasts to list collaborators" do
+      list = create(:list)
+      user = create(:user)
+      list.collaborators.create!(user: user)
+      
+      expect {
+        list.list_items.create!(title: "New item")
+      }.to have_broadcasted_to("list_#{list.id}_user_#{user.id}")
+    end
+  end
+end
+```
+
 ### Working with Email Features
 
 Test emails in development:
@@ -572,14 +758,18 @@ docker-compose up -d mailhog
 # Use Rails console for debugging
 bundle exec rails console
 
-# Debug in views
-<% console %> # Opens web console
+# Debug in RSpec with pry
+require 'pry'
+binding.pry
 
-# Debug in controllers
-binding.pry # If pry gem is available
+# Debug specific tests
+bundle exec rspec spec/models/user_spec.rb --pry
 
 # Check logs
 tail -f log/development.log
+
+# Run tests with debugging output
+bundle exec rspec --format documentation --color
 ```
 
 ## Architecture Overview
@@ -611,7 +801,7 @@ Listopia uses a custom authentication system:
 
 - **Action Mailer** for email sending
 - **HTML and text templates** for all emails
-- **Background job processing** for email delivery
+- **Background job processing** with Solid Queue
 - **Configurable SMTP** for different environments
 
 ## Getting Help
@@ -619,6 +809,7 @@ Listopia uses a custom authentication system:
 ### Resources
 
 - **Rails Guides**: https://guides.rubyonrails.org/
+- **RSpec Documentation**: https://rspec.info/
 - **Hotwire Documentation**: https://hotwired.dev/
 - **Tailwind CSS**: https://tailwindcss.com/docs
 - **Stimulus Handbook**: https://stimulus.hotwired.dev/handbook/introduction
@@ -639,6 +830,12 @@ docker-compose up -d postgres
 bundle exec rails db:reset
 ```
 
+**Test database issues:**
+```bash
+# Reset test database
+RAILS_ENV=test bundle exec rails db:reset
+```
+
 **Asset compilation issues:**
 ```bash
 # Rebuild assets
@@ -648,8 +845,11 @@ bun run build:css
 
 **Test failures:**
 ```bash
-# Reset test database
-RAILS_ENV=test bundle exec rails db:reset
+# Run failing tests with detailed output
+bundle exec rspec --only-failures --format documentation
+
+# Run specific test with debugging
+bundle exec rspec spec/models/user_spec.rb --pry
 ```
 
 ## Recognition

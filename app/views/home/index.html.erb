@@ -1,70 +1,123 @@
 <!-- app/views/home/index.html.erb -->
-<div class="relative overflow-hidden">
-  <!-- Hero Section -->
-  <div class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center">
-        <h1 class="text-5xl font-bold text-gray-900 mb-6">
+<style>
+  body { overflow: hidden; }
+  html { height: 100vh; }
+  main { height: 100vh; }
+
+  @media (max-width: 768px) {
+    main { height: auto; overflow-y: auto; }
+    body { overflow-y: auto; }
+  }
+</style>
+<main class="h-full flex flex-col bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+  <!-- Hero & Features Section -->
+  <div class="flex-1 overflow-hidden px-4 sm:px-6 py-6 sm:py-8 md:overflow-visible md:py-12">
+    <div class="h-full max-w-7xl mx-auto flex flex-col justify-center">
+      <!-- Hero Title -->
+      <div class="mb-8 sm:mb-10 md:mb-12">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
           Where Lists Come to 
           <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Life</span>
         </h1>
-        <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-          Create, share, and collaborate on lists that evolve with your needs. 
-          From simple to-dos to complex project management, Listopia adapts to your workflow.
+        <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+          Open-source collaboration with AI smarts. Manage tasks, goals, and ideas together—powered by the LLMs you choose.
         </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <%= link_to new_registration_path, class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg" do %>
+      </div>
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4 sm:gap-6 md:gap-8">
+        <!-- Left Column: Call-to-Actions -->
+        <div class="col-span-1 sm:col-span-2 md:col-span-3 space-y-3 flex flex-col justify-start">
+          <%= link_to new_registration_path, class: "block text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg" do %>
             Get Started Free
           <% end %>
-          <% if current_user %>
-            <%= link_to dashboard_path, class: "text-gray-700 hover:text-blue-600 px-6 py-3 rounded-lg text-lg font-medium border border-gray-300 hover:border-blue-300 transition-all duration-200" do %>
-              Go to Dashboard
-            <% end %>
-          <% else %>
-            <%= link_to new_session_path, class: "text-gray-700 hover:text-blue-600 px-6 py-3 rounded-lg text-lg font-medium border border-gray-300 hover:border-blue-300 transition-all duration-200" do %>
-              Sign In
-            <% end %>
+          <%= link_to new_session_path, class: "block text-center border-2 border-gray-300 text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:border-blue-600 hover:text-blue-600 transition-all" do %>
+            Sign In
           <% end %>
+          <a href="https://listopia-dhv.pages.dev/" target="_blank" class="block text-center text-gray-700 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium hover:text-blue-600 transition-colors underline">
+            Visit Website
+          </a>
+        </div>
+        <!-- Middle Column: Key Features -->
+        <div class="col-span-1 sm:col-span-2 md:col-span-3 space-y-3 sm:space-y-4">
+          <div class="bg-white/80 backdrop-blur rounded-xl p-4 sm:p-5 border border-white shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-start space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 text-sm sm:text-base">LLM Agnostic</h3>
+                <p class="text-xs sm:text-sm text-gray-600 mt-1">Works with OpenAI, Claude, Gemini, Bedrock, and more</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white/80 backdrop-blur rounded-xl p-4 sm:p-5 border border-white shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-start space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 text-sm sm:text-base">Real-Time Collab</h3>
+                <p class="text-xs sm:text-sm text-gray-600 mt-1">Instant updates with your team or family</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white/80 backdrop-blur rounded-xl p-4 sm:p-5 border border-white shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-start space-x-3">
+              <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 text-sm sm:text-base">Smart Lists</h3>
+                <p class="text-xs sm:text-sm text-gray-600 mt-1">Priorities, due dates, and AI insights</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Right Column: Why Listopia & Open Source -->
+        <div class="col-span-1 sm:col-span-2 md:col-span-3 space-y-3 sm:space-y-4">
+          <!-- Why Listopia Box -->
+          <div class="bg-white/80 backdrop-blur rounded-xl p-4 sm:p-6 border border-white shadow-sm">
+            <h3 class="font-bold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Why Listopia?</h3>
+            <div class="space-y-2 sm:space-y-3">
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <p class="text-xs sm:text-sm text-gray-700">No vendor lock-in—switch LLM providers anytime</p>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <p class="text-xs sm:text-sm text-gray-700">Privacy first—host it yourself or use cloud</p>
+              </div>
+              <div class="flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <p class="text-xs sm:text-sm text-gray-700">Built for teams—not just individuals</p>
+              </div>
+            </div>
+          </div>
+          <!-- Open Source Box -->
+          <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 sm:p-6 border border-purple-100 shadow-sm">
+            <div class="flex items-center space-x-2 mb-3 sm:mb-4">
+              <svg class="w-5 sm:w-6 h-5 sm:h-6 text-purple-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              <h3 class="font-bold text-gray-900 text-sm sm:text-base">100% Open Source</h3>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-700 mb-3 sm:mb-4">Community-driven development. Contribute, fork, and customize. MIT Licensed.</p>
+            <a href="https://github.com/spaquet/listopia" target="_blank" class="text-xs sm:text-sm text-purple-600 font-medium hover:text-purple-700">→ View Repository</a>
+          </div>
         </div>
       </div>
     </div>
   </div>
-  <!-- Features Section -->
-  <div class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">Everything you need to stay organized</h2>
-        <p class="text-lg text-gray-600">Powerful features that grow with your needs</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
-          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Smart Lists</h3>
-          <p class="text-gray-600">Create dynamic lists with different item types, priorities, and due dates.</p>
-        </div>
-        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all duration-200">
-          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Real-time Collaboration</h3>
-          <p class="text-gray-600">Share lists and collaborate in real-time with your team or family.</p>
-        </div>
-        <div class="text-center p-6 rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-200">
-          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Lightning Fast</h3>
-          <p class="text-gray-600">Built with Rails 8 and Hotwire for instant updates without page refreshes.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+</main>

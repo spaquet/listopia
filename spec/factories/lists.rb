@@ -48,18 +48,18 @@
 #
 FactoryBot.define do
   factory :list do
-    sequence(:title) { |n| "My List #{n}" }
-    description { Faker::Lorem.sentence }
-    status { :active }
-    color_theme { 'blue' }
+    owner { association :user }
+    title { Faker::Lorem.sentence(word_count: 3) }
+    description { Faker::Lorem.paragraph(sentence_count: 2) }
+    status { :draft }
+    list_type { :personal }
+    public_permission { :public_read }
     is_public { false }
-
-    association :owner, factory: :user, strategy: :build
-
-    # Traits for different list states
-    trait :draft do
-      status { :draft }
-    end
+    color_theme { "blue" }
+    metadata { {} }
+    parent_list_id { nil }
+    list_items_count { 0 }
+    list_collaborations_count { 0 }
 
     trait :active do
       status { :active }
@@ -75,7 +75,18 @@ FactoryBot.define do
 
     trait :public do
       is_public { true }
-      public_slug { SecureRandom.urlsafe_base64(8) }
+      public_slug { "#{title.parameterize}-#{SecureRandom.hex(4)}" }
+    end
+
+    trait :public_writable do
+      is_public { true }
+      public_permission { :public_write }
+      public_slug { "#{title.parameterize}-#{SecureRandom.hex(4)}" }
+    end
+
+    trait :professional do
+      list_type { :professional }
+      title { Faker::Lorem.words(number: 3).join(" ").titleize }
     end
 
     trait :with_items do
@@ -84,10 +95,25 @@ FactoryBot.define do
       end
     end
 
-    trait :with_completed_items do
+    trait :with_collaborators do
       after(:create) do |list|
-        create_list(:list_item, 2, :completed, list: list)
-        create_list(:list_item, 1, list: list)
+        collaborator = create(:user)
+        list.collaborators.create!(
+          user: collaborator,
+          permission: :write
+        )
+      end
+    end
+
+    trait :with_sub_lists do
+      after(:create) do |list|
+        create_list(:list, 2, parent_list: list, owner: list.owner)
+      end
+    end
+
+    trait :with_board_columns do
+      after(:create) do |list|
+        create_list(:board_column, 3, list: list)
       end
     end
   end
