@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :update, :destroy, :toggle_completion, :toggle_status ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status ]
   before_action :authorize_list_access!
 
   def create
@@ -15,7 +15,7 @@ class ListItemsController < ApplicationController
           render turbo_stream: [
             turbo_stream.append("list-items-#{@list.id}", partial: "list_items/list_item", locals: { list_item: @list_item }),
             turbo_stream.replace("new_item_form_#{@list.id}", partial: "list_items/new_form", locals: { list: @list, list_item: @list.list_items.build }),
-            turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list })
+            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
           ]
         end
         format.json { render json: @list_item, status: :created }
@@ -32,19 +32,19 @@ class ListItemsController < ApplicationController
   def update
     if @list_item.update(list_item_params)
       respond_to do |format|
-        format.html { redirect_to @list, notice: "Item was successfully updated." }
+        format.html { redirect_to list_list_item_path(@list, @list_item), notice: "Item was successfully updated." }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.replace(@list_item, partial: "list_items/list_item", locals: { list_item: @list_item }),
-            turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list })
+            turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }),
+            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
           ]
         end
         format.json { render json: @list_item }
       end
     else
       respond_to do |format|
-        format.html { redirect_to @list, alert: "Unable to update item." }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("edit_item_#{@list_item.id}", partial: "list_items/edit_form", locals: { list_item: @list_item }) }
+        format.html { render :edit, status: :unprocessable_entity }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("list_item_#{@list_item.id}", partial: "list_items/item", locals: { item: @list_item, list: @list }) }
         format.json { render json: @list_item.errors, status: :unprocessable_entity }
       end
     end
@@ -87,8 +87,8 @@ class ListItemsController < ApplicationController
         format.html { redirect_to @list }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.replace(@list_item, partial: "list_items/list_item", locals: { list_item: @list_item }),
-            turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list })
+            turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }),
+            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
           ]
         end
         format.json { render json: @list_item }
@@ -101,13 +101,14 @@ class ListItemsController < ApplicationController
     end
   end
 
+
   def assign
     user_to_assign = User.find_by(id: params[:user_id])
 
     if @list_item.update(assigned_user_id: user_to_assign&.id)
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item assignment updated." }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace(@list_item, partial: "list_items/list_item", locals: { list_item: @list_item }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }) }
         format.json { render json: @list_item }
       end
     else
@@ -133,7 +134,7 @@ class ListItemsController < ApplicationController
       format.turbo_stream do
         render turbo_stream: [
           turbo_stream.remove(@list_item),
-          turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list })
+          turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
         ]
       end
       format.json { head :no_content }
@@ -156,8 +157,8 @@ class ListItemsController < ApplicationController
       format.html { redirect_to @list, notice: "#{completed_count} items marked as completed." }
       format.turbo_stream do
         render turbo_stream: [
-          turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list }),
-          items.map { |item| turbo_stream.replace(item, partial: "list_items/list_item", locals: { list_item: item }) }
+          turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list }),
+          items.map { |item| turbo_stream.replace(item, partial: "list_items/item", locals: { item: item, list: @list }) }
         ].flatten
       end
       format.json { render json: { completed_count: completed_count } }
@@ -176,8 +177,8 @@ class ListItemsController < ApplicationController
       format.turbo_stream do
         items.reload
         render turbo_stream: [
-          turbo_stream.replace("progress-#{@list.id}", partial: "lists/progress", locals: { list: @list }),
-          items.map { |item| turbo_stream.replace(item, partial: "list_items/list_item", locals: { list_item: item }) }
+          turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list }),
+          items.map { |item| turbo_stream.replace(item, partial: "list_items/item", locals: { item: item, list: @list }) }
         ].flatten
       end
       format.json { render json: { updated_count: updated_count } }

@@ -1,6 +1,6 @@
 <!-- app/views/list_items/update.turbo_stream.erb -->
 <%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
-  <%= render "list_items/item", item: @list_item %>
+  <%= render "list_items/item", item: @list_item, list: @list %>
 <% end %>
 <!-- Update list stats after update -->
 <%= turbo_stream.replace "list-stats" do %>
