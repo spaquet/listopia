@@ -1,5 +1,7 @@
 <!-- app/views/comments/_comment.html.erb -->
 <!-- Individual comment display -->
+<!-- app/views/comments/_comment.html.erb -->
+<!-- Individual comment display -->
 <div id="comment_<%= comment.id %>" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
   <!-- Comment Header -->
   <div class="flex items-start justify-between mb-2">
@@ -23,7 +25,7 @@
     </div>
     <!-- Delete Button (show only if user is comment author or admin) -->
     <% if current_user && (current_user == comment.user || current_user.admin?) %>
-      <%= button_to comment_path(comment), 
+      <%= button_to comment_delete_path(comment),
                     method: :delete,
                     form: { local: true },
                     data: { turbo_confirm: "Are you sure?" },

@@ -1,6 +1,6 @@
 <!-- app/views/list_items/_quick_add_form.html.erb -->
 <div data-controller="quick-add" class="space-y-4">
-  <%= form_with model: [list, list_item, comment], 
+  <%= form_with model: [ list, list_item ], 
                 data: { 
                   turbo_frame: "new_list_item", 
                   action: "turbo:submit-end->quick-add#reset turbo:submit-start->quick-add#clearError" 
