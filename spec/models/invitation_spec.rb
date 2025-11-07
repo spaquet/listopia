@@ -46,32 +46,42 @@ RSpec.describe Invitation, type: :model do
 
     it { should validate_presence_of(:permission) }
 
-    it 'validates email format when present' do
-      invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'invalid-email', user_id: nil)
-      expect(invitation).not_to be_valid
-      expect(invitation.errors[:email]).to be_present
+    describe 'email validation' do
+      it 'validates email format when present' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'invalid-email', user_id: nil)
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:email]).to be_present
+      end
+
+      it 'allows valid email format' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'user@example.com')
+        expect(invitation).to be_valid
+      end
+
+      it 'allows blank email when user_id is present' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, email: nil)
+        expect(invitation).to be_valid
+      end
     end
 
-    it 'allows valid email format' do
-      invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'user@example.com')
-      expect(invitation).to be_valid
-    end
+    describe 'email or user validation' do
+      it 'validates email or user present' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: nil, user_id: nil)
+        expect(invitation).not_to be_valid
+        expect(invitation.errors[:base]).to include('Either user or email must be present')
+      end
 
-    it 'validates email or user present' do
-      invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: nil, user_id: nil)
-      expect(invitation).not_to be_valid
-      expect(invitation.errors[:base]).to include('Either user or email must be present')
-    end
+      it 'allows invitation with user_id only' do
+        user = create(:user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, email: nil)
+        expect(invitation).to be_valid
+      end
 
-    it 'allows invitation with user_id only' do
-      user = create(:user)
-      invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: user.id, email: nil)
-      expect(invitation).to be_valid
-    end
-
-    it 'allows invitation with email only' do
-      invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'newuser@example.com', user_id: nil)
-      expect(invitation).to be_valid
+      it 'allows invitation with email only' do
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'newuser@example.com', user_id: nil)
+        expect(invitation).to be_valid
+      end
     end
 
     describe 'uniqueness validations' do
@@ -91,14 +101,22 @@ RSpec.describe Invitation, type: :model do
 
       it 'prevents duplicate invitations by user_id to same invitable' do
         user = create(:user)
-        existing = create(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        create(:invitation, invitable: invitable, invited_by: inviter, user: user)
         invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
         expect(invitation).not_to be_valid
         expect(invitation.errors[:user_id]).to be_present
       end
+
+      it 'allows same user invited to different invitables' do
+        user = create(:user)
+        create(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        other_list = create(:list)
+        invitation = build(:invitation, invitable: other_list, invited_by: inviter, user: user)
+        expect(invitation).to be_valid
+      end
     end
 
-    describe 'owner validations' do
+    describe 'owner validation' do
       context 'when invitable is a List' do
         let(:list) { create(:list) }
 
@@ -127,14 +145,21 @@ RSpec.describe Invitation, type: :model do
     let(:invitable) { create(:list) }
     let(:inviter) { create(:user) }
 
-    it 'defines permission_read predicate' do
-      invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :read, email: 'test@example.com')
-      expect(invitation).to be_permission_read
-    end
+    describe 'permission enum' do
+      it 'defines permission_read predicate' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :read, email: 'test@example.com')
+        expect(invitation).to be_permission_read
+      end
 
-    it 'defines permission_write predicate' do
-      invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :write, email: 'test@example.com')
-      expect(invitation).to be_permission_write
+      it 'defines permission_write predicate' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, permission: :write, email: 'test@example.com')
+        expect(invitation).to be_permission_write
+      end
+
+      it 'defaults to read permission' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
+        expect(invitation).to be_permission_read
+      end
     end
   end
 
@@ -217,36 +242,28 @@ RSpec.describe Invitation, type: :model do
     end
 
     describe '#display_email' do
-      it 'returns user email if user is present' do
+      it 'returns user email when user is present' do
         user = create(:user, email: 'user@example.com')
-        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'other@example.com')
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'different@example.com')
         expect(invitation.display_email).to eq('user@example.com')
       end
 
-      it 'returns invitation email if user is nil' do
-        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'newuser@example.com')
-        expect(invitation.display_email).to eq('newuser@example.com')
+      it 'returns invitation email when user is nil' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'pending@example.com')
+        expect(invitation.display_email).to eq('pending@example.com')
       end
     end
 
     describe '#display_name' do
-      it 'returns user name if user is present' do
-        user = create(:user, name: 'John Doe')
-        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'user@example.com')
+      it 'returns user name when user is present' do
+        user = create(:user, name: 'John Doe', email: 'john@example.com')
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user)
         expect(invitation.display_name).to eq('John Doe')
       end
 
-      it 'returns user email as fallback if name is not available' do
-        # Create user with a real name from factory, then verify display_name returns it
-        user = create(:user)
-        invitation = create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'user@example.com')
-        # display_name should return the user's name (which factory creates)
-        expect(invitation.display_name).to eq(user.name)
-      end
-
-      it 'returns invitation email if user is nil' do
-        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'newuser@example.com')
-        expect(invitation.display_name).to eq('newuser@example.com')
+      it 'returns invitation email when user is nil' do
+        invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'pending@example.com')
+        expect(invitation.display_name).to eq('pending@example.com')
       end
     end
 
@@ -299,6 +316,7 @@ RSpec.describe Invitation, type: :model do
         invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
         invitation.generate_invitation_token
         expect(invitation.invitation_token).to be_present
+        expect(invitation.invitation_token).to be_a(String)
       end
 
       it 'generates different tokens for different invitations with time separation' do
@@ -306,7 +324,6 @@ RSpec.describe Invitation, type: :model do
         invitation1.generate_invitation_token
         token1 = invitation1.invitation_token
 
-        # Sleep to ensure different token generation (token includes timestamp)
         sleep(0.01)
 
         invitation2 = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
@@ -323,7 +340,7 @@ RSpec.describe Invitation, type: :model do
     let(:inviter) { create(:user) }
 
     describe '.find_by_invitation_token' do
-      it 'generates and stores a token on creation' do
+      it 'finds invitation by valid token' do
         invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
         expect(invitation.invitation_token).to be_present
         expect(invitation.invitation_token).to be_a(String)
@@ -338,7 +355,6 @@ RSpec.describe Invitation, type: :model do
         invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
         token = invitation.invitation_token
 
-        # Simulate token expiration by moving time forward
         Timecop.freeze(Time.current + 8.days) do
           found = Invitation.find_by_invitation_token(token)
           expect(found).to be_nil
@@ -365,7 +381,7 @@ RSpec.describe Invitation, type: :model do
     it 'has unique invitation token' do
       invitation1 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test1@example.com')
       invitation2 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
-      # Manually duplicate the token to test uniqueness constraint
+
       expect {
         ActiveRecord::Base.connection.execute(
           "UPDATE invitations SET invitation_token = '#{invitation1.invitation_token}' WHERE id = '#{invitation2.id}'"
@@ -400,8 +416,7 @@ RSpec.describe Invitation, type: :model do
       collaborator = invitation.accept!(user)
       expect(collaborator.permission_read?).to be true
       expect(collaborator.user).to eq(user)
-      # Verify collaborator was added to the list
-      expect(list.collaborators).to include(collaborator)
+      expect(collaborator.collaboratable).to eq(list)
     end
   end
 end
