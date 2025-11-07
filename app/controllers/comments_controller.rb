@@ -45,13 +45,15 @@ class CommentsController < ApplicationController
 
   def destroy
     commentable = @comment.commentable
+    comment_id = @comment.id  # Capture ID before deletion
     @comment.destroy
 
     respond_to do |format|
-      format.html { redirect_to commentable, notice: "Comment was successfully deleted." }
       format.turbo_stream do
         render turbo_stream: [
-          # Replace the entire comments container to handle filled->empty transition
+          # First: Remove the individual comment frame
+          turbo_stream.remove("comment_#{comment_id}"),
+          # Second: Update the container (updates comment count, handles empty state)
           turbo_stream.replace(
             "comments_container_#{commentable.class.name.downcase}_#{commentable.id}",
             partial: "comments/comments_container",
