@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/mbleigh/acts-as-taggable-on.git
-  revision: f18679a73fbea042e0ce2f1929e16a5e1abbcb64
+  revision: b1d7651984534063b6ff4c790cdde70b8b0e241c
   branch: master
   specs:
-    acts-as-taggable-on (12.0.0)
+    acts-as-taggable-on (13.0.0)
       activerecord (>= 7.1, < 8.2)
       zeitwerk (>= 2.4, < 3.0)
 
@@ -408,7 +408,7 @@ GEM
     ruby-vips (2.2.5)
       ffi (~> 1.12)
       logger
-    ruby_llm (1.9.0)
+    ruby_llm (1.9.1)
       base64
       event_stream_parser (~> 1)
       faraday (>= 1.10.0)
@@ -472,7 +472,7 @@ GEM
       unicode-emoji (~> 4.1)
     unicode-emoji (4.1.0)
     uniform_notifier (1.18.0)
-    uri (1.1.0)
+    uri (1.1.1)
     useragent (0.16.11)
     vcr (6.3.1)
       base64
