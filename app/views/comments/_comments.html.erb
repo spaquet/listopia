@@ -1,18 +1,23 @@
 <!-- app/views/comments/_comments.html.erb -->
 <!-- Container for all comments on a commentable resource -->
-<div class="bg-white rounded-lg border border-gray-200 p-6">
-  <div class="mb-6">
-    <h3 class="text-lg font-semibold text-gray-900">
+<div class="flex flex-col h-full">
+  <!-- Header with Comment Count -->
+  <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+    <h3 class="text-sm font-semibold text-gray-900">
       Comments
-      <span class="text-sm font-normal text-gray-500">(<%= commentable.comments.count %>)</span>
+      <span class="text-xs font-normal text-gray-500">(<%= commentable.comments.count %>)</span>
     </h3>
   </div>
-  <!-- Comments Container - replaced entirely when state changes (empty <-> filled) -->
-  <%= turbo_frame_tag "comments_container_#{commentable.class.name.downcase}_#{commentable.id}" do %>
-    <%= render "comments/comments_container", commentable: commentable %>
-  <% end %>
-  <!-- Add Comment Form -->
-  <div class="border-t border-gray-200 pt-6">
+  <!-- Comments Container - scrollable and replaced via Turbo Streams -->
+  <div class="flex-1 overflow-y-auto min-h-0">
+    <div class="px-4 py-2">
+      <%= turbo_frame_tag "comments_container_#{commentable.class.name.downcase}_#{commentable.id}" do %>
+        <%= render "comments/comments_container", commentable: commentable %>
+      <% end %>
+    </div>
+  </div>
+  <!-- Comment Form -->
+  <div class="border-t border-gray-200 px-6 py-4 flex-shrink-0">
     <%= render "comments/form", commentable: commentable, comment: commentable.comments.build %>
   </div>
 </div>

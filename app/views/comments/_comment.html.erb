@@ -1,44 +1,49 @@
 <!-- app/views/comments/_comment.html.erb -->
 <!-- Individual comment display - wrapped in turbo frame for easy removal -->
 <%= turbo_frame_tag "comment_#{comment.id}", class: "contents" do %>
-  <div id="comment_<%= comment.id %>" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-    <!-- Comment Header -->
-    <div class="flex items-start justify-between mb-2">
-      <div class="flex items-center space-x-2">
-        <% if comment.user.avatar_url.present? %>
-          <img src="<%= comment.user.avatar_url %>" alt="<%= comment.user.name %>" class="w-8 h-8 rounded-full" />
-        <% else %>
-          <div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-sm font-medium text-blue-800">
-            <%= comment.user.name.first %>
-          </div>
-        <% end %>
-        <div>
-          <p class="text-sm font-medium text-gray-900"><%= comment.user.name %></p>
-          <p class="text-xs text-gray-500">
-            <%= time_ago_in_words(comment.created_at) %> ago
-            <% if comment.updated_at > comment.created_at + 1.minute %>
-              <span class="text-gray-400">(edited)</span>
-            <% end %>
-          </p>
+  <div id="comment_<%= comment.id %>" class="group flex gap-3 p-3 rounded-md hover:bg-gray-50 transition-colors duration-150">
+    <!-- User Avatar -->
+    <div class="flex-shrink-0">
+      <% if comment.user.avatar_url.present? %>
+        <img src="<%= comment.user.avatar_url %>" alt="<%= comment.user.name %>" class="w-7 h-7 rounded-full object-cover" />
+      <% else %>
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center text-xs font-semibold text-blue-800">
+          <%= comment.user.name.first.upcase %>
         </div>
+      <% end %>
+    </div>
+    <!-- Comment Content -->
+    <div class="flex-1 min-w-0">
+      <!-- Comment Header: User Info & Metadata -->
+      <div class="flex items-baseline justify-between mb-1">
+        <p class="text-xs font-medium text-gray-900"><%= comment.user.name %></p>
+        <p class="text-xs text-gray-500 ml-2 flex-shrink-0">
+          <%= time_ago_in_words(comment.created_at) %> ago
+          <% if comment.updated_at > comment.created_at + 1.minute %>
+            <span class="text-gray-400">(edited)</span>
+          <% end %>
+        </p>
       </div>
-      <!-- Delete Button (show only if user is comment author or admin) -->
-      <% if current_user && (current_user == comment.user || current_user.admin?) %>
+      <!-- Comment Content -->
+      <div class="text-xs text-gray-700 leading-relaxed break-words">
+        <%= simple_format(comment.content) %>
+      </div>
+    </div>
+    <!-- Delete Button -->
+    <% if current_user && (current_user == comment.user || current_user.admin?) %>
+      <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
         <%= button_to comment_delete_path(comment),
                       method: :delete,
                       data: { 
-                        turbo_confirm: "Are you sure you want to delete this comment?", 
+                        turbo_confirm: "Delete this comment?", 
                         turbo_stream: true },
-                      class: "text-gray-400 hover:text-red-600 transition-colors" do %>
+                      class: "p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors duration-150",
+                      title: "Delete comment" do %>
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
           </svg>
         <% end %>
-      <% end %>
-    </div>
-    <!-- Comment Content -->
-    <div class="text-sm text-gray-800 leading-relaxed break-words">
-      <%= simple_format(comment.content) %>
-    </div>
+      </div>
+    <% end %>
   </div>
 <% end %>
