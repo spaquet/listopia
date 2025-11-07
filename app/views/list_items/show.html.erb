@@ -1,13 +1,29 @@
 <!-- app/views/list_items/show.html.erb -->
 <div class="space-y-6">
-  <!-- Header with Back Button -->
-  <div class="flex items-center justify-between">
-    <%= link_to @list, class: "inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors" do %>
-      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg>
-      Back to <%= @list.title %>
-    <% end %>
+  <!-- Header with Back Button and Breadcrumb -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center space-x-2">
+      <!-- Back Button -->
+      <%= link_to @list, class: "inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        <span class="text-gray-600">Back to</span>
+        <span class="ml-1 font-semibold text-gray-900"><%= @list.title %></span>
+      <% end %>
+      <!-- Parent List Breadcrumb (if exists) -->
+      <% if @list.parent_list.present? %>
+        <div class="flex items-center space-x-2 text-sm">
+          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+          <span class="text-gray-500">Part of</span>
+          <%= link_to list_path(@list.parent_list), class: "font-semibold text-gray-700 hover:text-blue-600 hover:underline transition-colors" do %>
+            <%= @list.parent_list.title %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
     <!-- Actions Menu -->
     <div class="flex items-center space-x-2">
       <% if @list.writable_by?(current_user) %>
