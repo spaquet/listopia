@@ -85,10 +85,10 @@
         <!-- Actions -->
         <% if user && can_access_list?(item.list, user, :edit) %>
           <div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <%= link_to edit_list_list_item_path(item.list, item), 
-                       class: "text-gray-400 hover:text-gray-600",
-                       data: { turbo_frame: "list_item_#{item.id}" } do %>
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <%= link_to edit_list_list_item_path(list, item),
+              data: { turbo_frame: "list_item_#{item.id}" },
+              class: "opacity-0 group-hover:opacity-100 p-2 text-gray-500 hover:text-blue-600 transition-all" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
               </svg>
             <% end %>

@@ -129,6 +129,7 @@ class ListItem < ApplicationRecord
   before_save :track_status_change, :track_title_change
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
+  before_create :set_position
   after_create :assign_default_board_column
 
   # Methods
@@ -152,6 +153,15 @@ class ListItem < ApplicationRecord
   end
 
   private
+
+  # Set position before creation
+  def set_position
+    # If position is not explicitly set, assign the next available position
+    if self.position.nil? || self.position == 0
+      last_item = list.list_items.order(:position).last
+      self.position = last_item ? last_item.position + 1 : 0
+    end
+  end
 
   # Track status changes for notifications
   def track_status_change

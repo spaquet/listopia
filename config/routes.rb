@@ -73,6 +73,8 @@ Rails.application.routes.draw do
       patch :toggle_public_access
       post :duplicate
       get :share
+      patch :assign
+      patch :inline_update
     end
 
     # Comments on Lists

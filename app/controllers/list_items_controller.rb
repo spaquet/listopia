@@ -7,14 +7,15 @@ class ListItemsController < ApplicationController
 
   def create
     @list_item = @list.list_items.build(list_item_params)
+    # Remove any explicit position setting - let the model callback handle it
 
     if @list_item.save
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item was successfully added." }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.append("list-items-#{@list.id}", partial: "list_items/list_item", locals: { list_item: @list_item }),
-            turbo_stream.replace("new_item_form_#{@list.id}", partial: "list_items/new_form", locals: { list: @list, list_item: @list.list_items.build }),
+            turbo_stream.replace("list-items", partial: "list_items/list_container", locals: { list: @list }),
+            turbo_stream.replace("new_list_item", partial: "list_items/quick_add_form", locals: { list: @list, list_item: @list.list_items.build }),
             turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
           ]
         end
@@ -23,7 +24,7 @@ class ListItemsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to @list, alert: "Unable to add item." }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("new_item_form_#{@list.id}", partial: "list_items/new_form", locals: { list: @list, list_item: @list_item }) }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("new_list_item", partial: "list_items/quick_add_form", locals: { list: @list, list_item: @list_item }), status: :unprocessable_entity }
         format.json { render json: @list_item.errors, status: :unprocessable_entity }
       end
     end
@@ -50,14 +51,47 @@ class ListItemsController < ApplicationController
     end
   end
 
+  # Add this action after the `edit` action
+  def inline_update
+    authorize @list_item, :edit?
+
+    if @list_item.update(list_item_params)
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }),
+            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
+          ]
+        end
+        format.json { render json: @list_item }
+      end
+    else
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace("list_item_#{@list_item.id}", partial: "list_items/item", locals: { item: @list_item, list: @list }),
+          status: :unprocessable_entity
+        end
+        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+
   def show
     # Loads @list_item and @list via before_action
     authorize @list_item, :show?
   end
 
   def edit
-    # For inline editing of list item details
     authorize @list_item, :edit?
+
+    respond_to do |format|
+      format.html  # For full page edit at /lists/:list_id/list_items/:id/edit
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace("list_item_#{@list_item.id}",
+                                                partial: "list_items/inline_edit_form",
+                                                locals: { item: @list_item, list: @list })
+      end
+    end
   end
 
   # Toggle completion status using the new status enum
