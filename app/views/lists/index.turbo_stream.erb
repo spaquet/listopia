@@ -1,0 +1,49 @@
+<!-- app/views/lists/index.turbo_stream.erb -->
+<%= turbo_stream.replace("lists-grid") do %>
+  <% if @lists.any? %>
+    <div id="lists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @lists.each do |list| %>
+        <%= turbo_frame_tag "list_card_#{list.id}" do %>
+          <%= render "lists/list_card", list: list, current_user: current_user %>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div id="lists-grid">
+      <%= render "lists/empty_state" %>
+    </div>
+  <% end %>
+<% end %>
+<%= turbo_stream.replace("active-filters") do %>
+  <% if params[:search].present? || params[:status].present? || params[:visibility].present? || params[:collaboration].present? %>
+    <div id="active-filters" class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+      <div class="flex items-center space-x-2 text-sm text-gray-600">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+        </svg>
+        <span>Active filters:</span>
+        <% if params[:search].present? %>
+          <span class="bg-white px-2 py-1 rounded text-xs border">Search: "<%= params[:search] %>"</span>
+        <% end %>
+        <% if params[:status].present? %>
+          <span class="bg-white px-2 py-1 rounded text-xs border">Status: <%= params[:status].titleize %></span>
+        <% end %>
+        <% if params[:visibility].present? %>
+          <span class="bg-white px-2 py-1 rounded text-xs border">Visibility: <%= params[:visibility].titleize %></span>
+        <% end %>
+        <% if params[:collaboration].present? %>
+          <span class="bg-white px-2 py-1 rounded text-xs border">
+            Access: <%= params[:collaboration].humanize.titleize %>
+          </span>
+        <% end %>
+      </div>
+      <%= link_to lists_path,
+                  class: "text-sm text-blue-600 hover:text-blue-800 font-medium",
+                  data: {
+                    action: "click->list-filter#clearFilters"
+                  } do %>
+        Clear all filters
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
