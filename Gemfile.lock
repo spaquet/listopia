@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/mbleigh/acts-as-taggable-on.git
-  revision: b1d7651984534063b6ff4c790cdde70b8b0e241c
+  revision: ee3cd804d0804733f920bc67dcd3a40198bd50ba
   branch: master
   specs:
     acts-as-taggable-on (13.0.0)
@@ -353,7 +353,7 @@ GEM
       psych (>= 4.0.0)
       tsort
     regexp_parser (2.11.3)
-    reline (0.6.2)
+    reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
     rolify (6.0.1)
