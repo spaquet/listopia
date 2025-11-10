@@ -14,7 +14,7 @@ class ListItemsController < ApplicationController
         format.html { redirect_to @list, notice: "Item was successfully added." }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.replace("list-items", partial: "list_items/list_container", locals: { list: @list }),
+            turbo_stream.replace("list-items", partial: "list_items/items_list", locals: { list_items: @list.list_items.order(:position, :created_at), list: @list }),
             turbo_stream.replace("new_list_item", partial: "list_items/quick_add_form", locals: { list: @list, list_item: @list.list_items.build }),
             turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
           ]

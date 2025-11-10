@@ -67,10 +67,11 @@ class CommentsController < ApplicationController
   private
 
   def set_commentable
-    if params[:list_id]
-      @commentable = List.find(params[:list_id])
-    elsif params[:list_item_id]
+    # Check list_item_id FIRST because the route includes both list_id and list_item_id
+    if params[:list_item_id]
       @commentable = ListItem.find(params[:list_item_id])
+    elsif params[:list_id]
+      @commentable = List.find(params[:list_id])
     else
       redirect_to root_path, alert: "Invalid resource."
     end

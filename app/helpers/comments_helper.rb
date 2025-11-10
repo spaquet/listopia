@@ -7,7 +7,7 @@ module CommentsHelper
     when "List"
       list_comment_path(comment.commentable, comment)
     when "ListItem"
-      list_item_comment_path(comment.commentable.list, comment.commentable, comment)
+      list_list_item_comment_path(comment.commentable.list, comment.commentable, comment)
     else
       raise "Unknown commentable type: #{comment.commentable_type}"
     end

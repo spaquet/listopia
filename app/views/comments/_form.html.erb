@@ -4,14 +4,17 @@
   <%= turbo_frame_tag "new_comment_form_#{commentable.class.name.downcase}_#{commentable.id}" do %>
     <% 
       # Determine the correct comment path based on commentable type
-      comment_path = case commentable
-                     when List
-                       list_comments_path(commentable)
-                     when ListItem
+      comment_path = if commentable.is_a?(ListItem)
                        list_list_item_comments_path(commentable.list, commentable)
+                     elsif commentable.is_a?(List)
+                       list_comments_path(commentable)
                      end
     %>
-    <%= form_with url: comment_path, method: :post, local: false, class: "flex flex-col gap-2" do |f| %>
+    <%= form_with url: comment_path, 
+                   method: :post, 
+                   data: { turbo: true },
+                   local: true,
+                   class: "flex flex-col gap-2" do |f| %>
       <!-- Error Messages -->
       <% if comment.errors.any? %>
         <div class="bg-red-50 border border-red-200 rounded-md p-3">
@@ -30,18 +33,17 @@
       <% end %>
       <!-- Comment Content Field -->
       <div>
-        <%= f.text_area :content,
-                        name: "comment[content]",
-                        id: "comment_#{commentable.class.name.downcase}_#{commentable.id}_content",
-                        rows: 3,
-                        placeholder: "Add a comment...",
-                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" %>
+        <%= text_area_tag "comment[content]",
+                          comment.content,
+                          rows: 3,
+                          placeholder: "Add a comment...",
+                          class: "w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" %>
         <p class="mt-1 text-xs text-gray-500">Markdown formatting is supported</p>
       </div>
       <!-- Submit Button -->
       <div class="flex justify-end">
-        <%= f.submit "Comment", 
-                     class: "bg-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+        <%= submit_tag "Comment",
+                       class: "bg-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium cursor-pointer" %>
       </div>
     <% end %>
   <% end %>
