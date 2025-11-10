@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/mbleigh/acts-as-taggable-on.git
-  revision: b1d7651984534063b6ff4c790cdde70b8b0e241c
+  revision: ee3cd804d0804733f920bc67dcd3a40198bd50ba
   branch: master
   specs:
     acts-as-taggable-on (13.0.0)
@@ -191,7 +191,7 @@ GEM
       activesupport (>= 7.0.0)
     jsbundling-rails (1.3.1)
       railties (>= 6.0.0)
-    json (2.15.2)
+    json (2.16.0)
     kamal (2.8.2)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -229,7 +229,7 @@ GEM
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
-    minitest (5.26.0)
+    minitest (5.26.1)
     msgpack (1.8.0)
     multi_json (1.17.0)
     multipart-post (2.4.1)
