@@ -1,7 +1,6 @@
 // app/javascript/controllers/list_filter_controller.js
 import { Controller } from "@hotwired/stimulus"
 
-// Connects to data-controller="list-filter"
 export default class extends Controller {
   static targets = [
     "form",
@@ -17,12 +16,16 @@ export default class extends Controller {
     console.log("[ListFilter] Controller connected v1.0")
     this.debounceTimeout = null
     this.updateClearButtonVisibility()
+    
+    // Restore focus to search input after Turbo Stream update
+    document.addEventListener("turbo:load", this.restoreSearchFocus.bind(this))
   }
 
   disconnect() {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
+    document.removeEventListener("turbo:load", this.restoreSearchFocus.bind(this))
   }
 
   // Handle search input with debounce
@@ -98,10 +101,6 @@ export default class extends Controller {
     // Reset all filter inputs to empty
     this.searchInputTarget.value = ""
 
-    // Reset all filter buttons to "All" state by clearing their values
-    // (the HTML structure uses link_to which doesn't have form inputs,
-    // so we just navigate to the base URL)
-
     this.updateClearButtonVisibility()
 
     console.log("[ListFilter] Navigating to base lists path")
@@ -134,8 +133,23 @@ export default class extends Controller {
 
   // Show loading indicator with subtle animation
   showLoadingIndicator() {
-    // If you want to add a spinner or loading state, you can do it here
-    // For now, we'll keep it invisible but this is where you'd add visual feedback
     console.log("[ListFilter] Loading...")
+  }
+
+  // Restore focus to search input after Turbo Stream update completes
+  restoreSearchFocus(event) {
+    // Check if search input exists and should have focus
+    if (this.hasSearchInputTarget && this.searchInputTarget.value.length > 0) {
+      // Delay slightly to ensure DOM is fully updated
+      setTimeout(() => {
+        this.searchInputTarget.focus()
+        // Move cursor to end of input
+        this.searchInputTarget.setSelectionRange(
+          this.searchInputTarget.value.length,
+          this.searchInputTarget.value.length
+        )
+        console.log("[ListFilter] Focus restored to search input")
+      }, 10)
+    }
   }
 }
