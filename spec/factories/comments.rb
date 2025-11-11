@@ -98,8 +98,5 @@ FactoryBot.define do
       created_at { 3.days.ago }
       updated_at { 3.days.ago }
     end
-
-    # Sequences for unique content
-    sequence(:content_with_index) { |n| "Comment #{n}: #{Faker::Lorem.sentence}" }
   end
 end
