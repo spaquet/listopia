@@ -1,19 +1,47 @@
+# app/policies/comment_policy.rb
 class CommentPolicy < ApplicationPolicy
-  # NOTE: Up to Pundit v2.3.1, the inheritance was declared as
-  # `Scope < Scope` rather than `Scope < ApplicationPolicy::Scope`.
-  # In most cases the behavior will be identical, but if updating existing
-  # code, beware of possible changes to the ancestors:
-  # https://gist.github.com/Burgestrand/4b4bc22f31c8a95c425fc0e30d7ef1f5
+  def create?
+    # Allow if user can comment on the commentable resource
+    user.present? && can_comment_on_commentable?
+  end
 
-  class CommentPolicy < ApplicationPolicy
-    def create?
-      # Allow authenticated users to create comments on any accessible resource
-      user.present?
+  def destroy?
+    # Comment author or list/item owner can delete
+    record.user == user || is_owner_of_commentable?
+  end
+
+  def update?
+    # For now, same as destroy (can extend later)
+    destroy?
+  end
+
+  private
+
+  def can_comment_on_commentable?
+    case record.commentable
+    when List
+      commentable_policy = ListPolicy.new(user, record.commentable)
+      # Owner and any collaborator (read or write) can comment
+      record.commentable.owner == user ||
+      record.commentable.collaborators.exists?(user: user)
+    when ListItem
+      commentable_policy = ListItemPolicy.new(user, record.commentable)
+      # Owner and any collaborator can comment on list items
+      record.commentable.list.owner == user ||
+      record.commentable.list.collaborators.exists?(user: user)
+    else
+      false
     end
+  end
 
-    def destroy?
-      # Only comment author or admin can delete
-      user == record.user || user.admin?
+  def is_owner_of_commentable?
+    case record.commentable
+    when List
+      record.commentable.owner == user
+    when ListItem
+      record.commentable.list.owner == user
+    else
+      false
     end
   end
 end
