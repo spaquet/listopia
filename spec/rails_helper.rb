@@ -83,10 +83,6 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
-  # Include FactoryBot methods
-  # config.include FactoryBot::Syntax::Methods
-  # config.include FactoryBot::Syntax::Methods, type: :system
-
   # Include custom authentication helpers
   config.include AuthenticationHelpers, type: :controller
   config.include AuthenticationHelpers, type: :request
