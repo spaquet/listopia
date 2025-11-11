@@ -243,9 +243,10 @@ RSpec.describe CommentsController, type: :request do
         other_user = create(:user, :verified)
         login_as(other_user)
 
-        delete list_comment_path(list, comment)
+        delete list_comment_path(list, comment),
+              headers: { accept: 'text/vnd.turbo-stream.html' }
 
-        # Returns 403 Forbidden
+        # Should now return 403 Forbidden since we're authorizing the comment
         expect(response).to have_http_status(:forbidden)
       end
     end

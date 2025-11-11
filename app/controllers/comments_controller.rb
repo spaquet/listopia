@@ -44,6 +44,7 @@ class CommentsController < ApplicationController
   end
 
   def destroy
+    authorize @comment
     commentable = @comment.commentable
     comment_id = @comment.id  # Capture ID before deletion
     @comment.destroy
