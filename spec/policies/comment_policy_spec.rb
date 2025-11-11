@@ -42,30 +42,23 @@ RSpec.describe CommentPolicy, type: :policy do
         # The actual permission check depends on ListPolicy
       end
 
-      it 'allows collaborator with comment permission to create' do
-        list.collaborators.create!(user: other_user, permission: :comment)
+      it 'allows collaborator with read permission to create' do
+        list.collaborators.create!(user: other_user, permission: :read)
         policy = CommentPolicy.new(other_user, comment)
-        # Collaborator with comment permission should be allowed
+        # Read permission users can comment (read + comment)
       end
 
-      it 'allows collaborator with edit permission to create' do
-        list.collaborators.create!(user: other_user, permission: :edit)
+      it 'allows collaborator with write permission to create' do
+        list.collaborators.create!(user: other_user, permission: :write)
         policy = CommentPolicy.new(other_user, comment)
-        # Edit permission is higher than comment permission
-      end
-
-      it 'allows collaborator with admin permission to create' do
-        list.collaborators.create!(user: other_user, permission: :admin)
-        policy = CommentPolicy.new(other_user, comment)
-        # Admin permission should allow everything
+        # Write permission is higher than read, should allow
       end
     end
 
     context 'without access to commentable' do
-      it 'denies user with only view permission from creating comment' do
-        list.collaborators.create!(user: other_user, permission: :view)
+      it 'denies user without permission from creating comment' do
         policy = CommentPolicy.new(other_user, comment)
-        # View-only users cannot comment
+        # User with no access to list cannot comment
       end
 
       it 'denies unauthenticated user' do
@@ -93,32 +86,32 @@ RSpec.describe CommentPolicy, type: :policy do
     end
 
     context 'collaborators' do
-      it 'allows admin collaborator to delete any comment' do
-        list.collaborators.create!(user: other_user, permission: :admin)
-        admin_comment = create(:comment, user: user, commentable: list)
-        policy = CommentPolicy.new(other_user, admin_comment)
-        # Admin should be able to delete comments
-      end
-
-      it 'denies edit collaborator from deleting other users comments' do
-        list.collaborators.create!(user: other_user, permission: :edit)
+      it 'allows write collaborator to delete any comment' do
+        list.collaborators.create!(user: other_user, permission: :write)
         user_comment = create(:comment, user: user, commentable: list)
         policy = CommentPolicy.new(other_user, user_comment)
-        # Edit collaborator cannot delete others' comments
+        # Write permission users can delete comments (moderation)
       end
 
-      it 'allows edit collaborator to delete their own comment' do
-        list.collaborators.create!(user: other_user, permission: :edit)
+      it 'denies read collaborator from deleting other users comments' do
+        list.collaborators.create!(user: other_user, permission: :read)
+        user_comment = create(:comment, user: user, commentable: list)
+        policy = CommentPolicy.new(other_user, user_comment)
+        # Read-only users cannot delete others' comments
+      end
+
+      it 'allows read collaborator to delete their own comment' do
+        list.collaborators.create!(user: other_user, permission: :read)
         their_comment = create(:comment, user: other_user, commentable: list)
         policy = CommentPolicy.new(other_user, their_comment)
         # They can delete their own comment
       end
 
-      it 'denies comment-only collaborator from deleting' do
-        list.collaborators.create!(user: other_user, permission: :comment)
+      it 'denies read-only user from deleting' do
+        list.collaborators.create!(user: other_user, permission: :read)
         user_comment = create(:comment, user: user, commentable: list)
         policy = CommentPolicy.new(other_user, user_comment)
-        # Comment-only users cannot delete comments
+        # Read-only users cannot delete comments
       end
     end
 
@@ -140,13 +133,13 @@ RSpec.describe CommentPolicy, type: :policy do
       # Create various comments in different states
       create(:comment, user: user, commentable: list)
       create(:comment, user: other_user, commentable: list)
-      list.collaborators.create!(user: create(:user, :verified), permission: :comment)
+      list.collaborators.create!(user: create(:user, :verified), permission: :read)
     end
 
     it 'restricts visible comments based on user access' do
       # User with no access should see no comments
-      # User with view access should see all comments
-      # User with comment access should see all comments
+      # User with read access should see all comments
+      # User with write access should see all comments
     end
   end
 end
