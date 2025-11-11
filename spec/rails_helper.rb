@@ -84,6 +84,7 @@ RSpec.configure do |config|
 
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
+  config.include FactoryBot::Syntax::Methods, type: :system
 
   # Include custom authentication helpers
   config.include AuthenticationHelpers, type: :controller
@@ -109,9 +110,9 @@ RSpec.configure do |config|
   # Capybara configuration for system tests
   config.before(:each, type: :system) do
     if ENV["SHOW_BROWSER"] == "true"
-      driven_by :selenium_chrome
+      driven_by :cuprite_debug
     else
-      driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ]
+      driven_by :cuprite
     end
   end
 
