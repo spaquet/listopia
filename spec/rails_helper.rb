@@ -1,3 +1,4 @@
+# spec/rails_helper.rb
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 
 require 'spec_helper'
@@ -83,8 +84,8 @@ RSpec.configure do |config|
   # config.filter_gems_from_backtrace("gem name")
 
   # Include FactoryBot methods
-  config.include FactoryBot::Syntax::Methods
-  config.include FactoryBot::Syntax::Methods, type: :system
+  # config.include FactoryBot::Syntax::Methods
+  # config.include FactoryBot::Syntax::Methods, type: :system
 
   # Include custom authentication helpers
   config.include AuthenticationHelpers, type: :controller

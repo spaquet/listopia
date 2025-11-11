@@ -122,6 +122,9 @@ GEM
     crass (1.0.6)
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
+    cuprite (0.17)
+      capybara (~> 3.0)
+      ferrum (~> 0.17.0)
     database_cleaner-active_record (2.2.2)
       activerecord (>= 5.a)
       database_cleaner-core (~> 2.0)
@@ -161,6 +164,12 @@ GEM
       net-http (~> 0.5)
     faraday-retry (2.3.2)
       faraday (~> 2.0)
+    ferrum (0.17.1)
+      addressable (~> 2.5)
+      base64 (~> 0.2)
+      concurrent-ruby (~> 1.1)
+      webrick (~> 1.7)
+      websocket-driver (~> 0.7)
     ffi (1.17.2-aarch64-linux-gnu)
     ffi (1.17.2-aarch64-linux-musl)
     ffi (1.17.2-arm-linux-gnu)
@@ -267,7 +276,7 @@ GEM
     noticed (2.9.3)
       rails (>= 6.1.0)
     ostruct (0.6.3)
-    pagy (43.0.0)
+    pagy (43.0.2)
       json
       yaml
     parallel (1.27.0)
@@ -418,7 +427,7 @@ GEM
       marcel (~> 1.0)
       ruby_llm-schema (~> 0.2.1)
       zeitwerk (~> 2)
-    ruby_llm-schema (0.2.1)
+    ruby_llm-schema (0.2.4)
     rubyzip (3.2.2)
     securerandom (0.4.1)
     selenium-webdriver (4.38.0)
@@ -485,6 +494,7 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
+    webrick (1.9.1)
     websocket (1.2.11)
     websocket-driver (0.8.0)
       base64
@@ -515,6 +525,7 @@ DEPENDENCIES
   bullet
   capybara
   cssbundling-rails
+  cuprite
   database_cleaner-active_record
   debug
   discard
