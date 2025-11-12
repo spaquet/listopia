@@ -41,7 +41,7 @@ This document describes the purpose of each new table added to the collaborative
 - `created_at` and `updated_at`: Timestamps for record creation and updates.
 - Unique index on `list_id`, `position` ensures proper Kanban ordering.
 
-## comments
+## comments - IMPLEMENTED
 **Purpose**: Stores user comments on resources (e.g., tasks, lists) in a polymorphic manner to support collaboration discussions.
 - `commentable_id` and `commentable_type`: Polymorphic association to the resource (e.g., `ListItem`, `List`).
 - `user_id`: References the commenting user (foreign key to `users`).
