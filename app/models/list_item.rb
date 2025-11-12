@@ -68,6 +68,9 @@ class ListItem < ApplicationRecord
 
   has_many :time_entries, dependent: :destroy
 
+  # Comments
+  has_many :comments, as: :commentable, dependent: :destroy
+
   # Validations
   validates :title, presence: true, length: { maximum: 255 }
   validates :item_type, presence: true

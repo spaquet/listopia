@@ -59,7 +59,7 @@ FactoryBot.define do
     item_type { :task }
     priority { :medium }
     status { :pending }
-    position { 0 }
+    sequence(:position) { |n| n }
     start_date { Time.current }
     duration_days { 0 }
     estimated_duration { 0.0 }
