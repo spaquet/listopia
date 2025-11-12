@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "app",
@@ -10,13 +11,13 @@
         "@stimulus-components/notification": "^3.0.0",
         "@stimulus-components/reveal": "^5.0.0",
         "@stimulus-components/scroll-to": "^5.0.1",
-        "@tailwindcss/cli": "^4.1.16",
+        "@tailwindcss/cli": "^4.1.17",
         "highlight.js": "^11.11.1",
         "lodash": "^4.17.21",
-        "marked": "^16.4.1",
+        "marked": "^17.0.0",
         "sortablejs": "^1.15.6",
         "stimulus-textarea-autogrow": "^4.1.0",
-        "tailwindcss": "^4.1.16",
+        "tailwindcss": "^4.1.17",
       },
     },
   },
@@ -155,7 +156,7 @@
 
     "magic-string": ["magic-string@0.30.21", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
 
-    "marked": ["marked@16.4.2", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA=="],
+    "marked": ["marked@17.0.0", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-KkDYEWEEiYJw/KC+DVm1zzlpMQSMIu6YRltkcCvwheCp8HWPXCk9JwOmHJKBlGfzcpzcIt6x3sMnTsRm/51oDg=="],
 
     "micromatch": ["micromatch@4.0.8", "", { "dependencies": { "braces": "^3.0.3", "picomatch": "^2.3.1" } }, "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA=="],
 
