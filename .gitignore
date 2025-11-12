@@ -40,3 +40,6 @@
 
 # Ignore SimpleCov results.
 /coverage
+
+# Ignore MacOS system files
+.DS_Store
