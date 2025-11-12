@@ -83,11 +83,22 @@ Rails.application.routes.draw do
     # Analytics routes
     resources :analytics, only: [ :index ]
 
+    # Collaborations
+    resources :collaborations, except: [ :show, :new, :edit ] do
+      member do
+        patch :resend
+      end
+    end
+
     # List items
     resources :list_items, path: "items", except: [ :new ] do
       member do
         patch :toggle_completion
       end
+
+      # Collaborations on ListItems
+      resources :collaborations, except: [ :show, :new, :edit ]
+
       collection do
         patch :bulk_update
         patch :bulk_complete
