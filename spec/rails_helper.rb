@@ -1,3 +1,4 @@
+# spec/rails_helper.rb
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 
 require 'spec_helper'
@@ -82,9 +83,6 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
-  # Include FactoryBot methods
-  config.include FactoryBot::Syntax::Methods
-
   # Include custom authentication helpers
   config.include AuthenticationHelpers, type: :controller
   config.include AuthenticationHelpers, type: :request
@@ -109,9 +107,9 @@ RSpec.configure do |config|
   # Capybara configuration for system tests
   config.before(:each, type: :system) do
     if ENV["SHOW_BROWSER"] == "true"
-      driven_by :selenium_chrome
+      driven_by :cuprite_debug
     else
-      driven_by :selenium, using: :headless_chrome, screen_size: [ 1400, 1400 ]
+      driven_by :cuprite
     end
   end
 

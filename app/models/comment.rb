@@ -24,6 +24,12 @@ class Comment < ApplicationRecord
   # Logidzy for auditing changes
   has_logidze
 
+  # Add role support
+  resourcify
+
   belongs_to :commentable, polymorphic: true
   belongs_to :user
+
+  validates :content, presence: true, length: { minimum: 1, maximum: 5000 }
+  validates :user_id, presence: true
 end

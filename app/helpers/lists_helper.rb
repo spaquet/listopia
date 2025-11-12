@@ -17,6 +17,19 @@ module ListsHelper
     }
   end
 
+  # Display list type badge (personal/professional)
+  def list_type_badge(list)
+    colors = {
+      "personal" => "bg-green-100 text-green-800",
+      "professional" => "bg-blue-100 text-blue-800"
+    }
+
+    label = list.list_type.titleize
+
+    content_tag :span, label,
+      class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{colors[list.list_type]}"
+  end
+
   # Render progress bar
   def progress_bar(percentage)
     content_tag :div, class: "w-full bg-gray-200 rounded-full h-2" do
@@ -39,23 +52,17 @@ module ListsHelper
       class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{colors[list.status]}"
   end
 
-  # Display list sharing status
+  # Display list sharing status (minimalistic - no icons)
   def list_sharing_status(list)
     if list.is_public?
-      content_tag :span, class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800" do
-        concat content_tag(:span, "🌐", class: "mr-1")
-        concat "Public"
-      end
+      content_tag :span, "Public",
+        class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
     elsif list.collaborators.any?
-      content_tag :span, class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" do
-        concat content_tag(:span, "👥", class: "mr-1")
-        concat "Shared with #{list.collaborators.count}"
-      end
+      content_tag :span, "Shared (#{list.collaborators.count})",
+        class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
     else
-      content_tag :span, class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800" do
-        concat content_tag(:span, "🔒", class: "mr-1")
-        concat "Private"
-      end
+      content_tag :span, "Private",
+        class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
     end
   end
 

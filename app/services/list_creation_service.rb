@@ -21,10 +21,10 @@ class ListCreationService < ApplicationService
 
     if @list.save
       broadcast_all_updates(@list, action: :create)
-      @list  # Return the list directly instead of Result object
+      ApplicationService::Result.success(data: @list)  # ← FIXED: Return Result object
     else
       @errors = @list.errors.full_messages
-      raise StandardError, @errors.join(", ")
+      ApplicationService::Result.failure(errors: @errors)  # ← FIXED: Return Result object
     end
   end
 
@@ -72,11 +72,12 @@ class ListCreationService < ApplicationService
       @list.reload
       broadcast_all_updates(@list, action: :create)
 
-      @list  # Return the list directly instead of Result object
+      ApplicationService::Result.success(data: @list)  # ← FIXED: Return Result object
     end
   rescue => e
     Rails.logger.error "Error creating planning list: #{e.message}"
-    raise StandardError, e.message
+    @errors = [ e.message ]
+    ApplicationService::Result.failure(errors: @errors)  # ← FIXED: Return Result object
   end
 
   private

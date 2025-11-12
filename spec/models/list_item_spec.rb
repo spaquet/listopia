@@ -59,6 +59,119 @@ RSpec.describe ListItem, type: :model do
     end
   end
 
+  describe "URL validation" do
+    context "with valid HTTP/HTTPS URLs" do
+      it "accepts http URLs" do
+        item = build(:list_item, url: "http://example.com")
+        expect(item).to be_valid
+      end
+
+      it "accepts https URLs" do
+        item = build(:list_item, url: "https://example.com")
+        expect(item).to be_valid
+      end
+
+      it "accepts URLs with paths and query parameters" do
+        item = build(:list_item, url: "https://example.com/path/to/page?param=value&other=123")
+        expect(item).to be_valid
+      end
+
+      it "accepts URLs with fragments" do
+        item = build(:list_item, url: "https://example.com/page#section")
+        expect(item).to be_valid
+      end
+
+      it "accepts relative URLs starting with /" do
+        item = build(:list_item, url: "/internal/path")
+        expect(item).to be_valid
+      end
+    end
+
+    context "with invalid URLs" do
+      it "rejects javascript: URLs" do
+        item = build(:list_item, url: "javascript:alert(\"xss\")")
+        expect(item).not_to be_valid
+        expect(item.errors[:url].join).to match(/must be a valid HTTP\/HTTPS URL|is not a valid URL/)
+      end
+
+      it "rejects data: URLs" do
+        item = build(:list_item, url: "data:text/html,<script>alert(\"xss\")</script>")
+        expect(item).not_to be_valid
+        expect(item.errors[:url].join).to match(/must be a valid HTTP\/HTTPS URL|is not a valid URL/)
+      end
+
+      it "rejects vbscript: URLs" do
+        item = build(:list_item, url: "vbscript:msgbox(\"xss\")")
+        expect(item).not_to be_valid
+        expect(item.errors[:url].join).to match(/must be a valid HTTP\/HTTPS URL|is not a valid URL/)
+      end
+
+      # it "rejects file: URLs" do
+      #   item = build(:list_item, url: "file:///etc/passwd")
+      #   expect(item).not_to be_valid
+      #   expect(item.errors[:url].join).to match(/must be a valid HTTP\/HTTPS URL/)
+      # end
+
+      it "rejects malformed URLs" do
+        item = build(:list_item, url: "ht!tp://[invalid")
+        expect(item).not_to be_valid
+        expect(item.errors[:url]).to include("is not a valid URL")
+      end
+    end
+
+    context "with blank or nil URLs" do
+      it "allows blank URLs" do
+        item = build(:list_item, url: "")
+        expect(item).to be_valid
+      end
+
+      it "allows nil URLs" do
+        item = build(:list_item, url: nil)
+        expect(item).to be_valid
+      end
+    end
+  end
+
+  describe "URL sanitization" do
+    context "when saving URLs" do
+      it "strips leading and trailing whitespace" do
+        item = create(:list_item, url: "  https://example.com  ")
+        expect(item.url).to eq("https://example.com")
+      end
+
+      it "adds https:// prefix to URLs without scheme" do
+        item = create(:list_item, url: "example.com")
+        expect(item.url).to eq("https://example.com")
+      end
+
+      it "preserves http:// prefix when explicitly provided" do
+        item = create(:list_item, url: "http://example.com")
+        expect(item.url).to eq("http://example.com")
+      end
+
+      it "preserves https:// prefix" do
+        item = create(:list_item, url: "https://example.com")
+        expect(item.url).to eq("https://example.com")
+      end
+
+      it "does not modify relative URLs" do
+        item = create(:list_item, url: "/internal/page")
+        expect(item.url).to eq("/internal/page")
+      end
+
+      it "handles complex URLs correctly" do
+        complex_url = "github.com/rails/rails/issues?state=open&label=bug"
+        item = create(:list_item, url: complex_url)
+        expect(item.url).to eq("https://#{complex_url}")
+      end
+
+      it "does not double-prefix https://" do
+        item = create(:list_item, url: "https://example.com")
+        expect(item.url).not_to eq("https://https://example.com")
+      end
+    end
+  end
+
   describe "factory validity" do
     it "creates valid default list items" do
       expect(build(:list_item)).to be_valid

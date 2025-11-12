@@ -49,6 +49,9 @@ application.register("inline-edit", InlineEditController)
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
 
+import ListFilterController from "./list_filter_controller"
+application.register("list-filter", ListFilterController)
+
 import MarkdownController from "./markdown_controller"
 application.register("markdown", MarkdownController)
 

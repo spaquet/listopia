@@ -61,6 +61,9 @@ class ListItem < ApplicationRecord
   # Logidzy for auditing changes
   has_logidze
 
+  # Comments
+  has_many :comments, as: :commentable, dependent: :destroy
+
   # Associations
   belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true
@@ -74,6 +77,10 @@ class ListItem < ApplicationRecord
   validates :priority, presence: true
   validates :status, presence: true
   validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+
+  # Sanitize URL BEFORE validation
+  before_validation :sanitize_url
+  validate :validate_url_format
 
   # Enums
   enum :item_type, {
@@ -126,6 +133,7 @@ class ListItem < ApplicationRecord
   before_save :track_status_change, :track_title_change
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
+  before_create :set_position
   after_create :assign_default_board_column
 
   # Methods
@@ -149,6 +157,49 @@ class ListItem < ApplicationRecord
   end
 
   private
+
+  def validate_url_format
+    return if url.blank?
+
+    # Extract scheme if present
+    scheme = url.match(/^([a-z][a-z0-9+\-.]*):/)&.captures&.first
+
+    # If a scheme is present, only allow http and https
+    if scheme.present?
+      unless %w[http https].include?(scheme.downcase)
+        errors.add(:url, "must be a valid HTTP/HTTPS URL")
+        return
+      end
+    end
+
+    # Try to parse as URI to catch malformed URLs
+    begin
+      URI.parse(url)
+    rescue URI::InvalidURIError
+      errors.add(:url, "is not a valid URL")
+    end
+  end
+
+  def sanitize_url
+    return if url.blank?
+
+    # Remove any leading/trailing whitespace
+    self.url = url.strip
+
+    # If URL doesn't start with http/https and isn't a relative path, add https://
+    if url.present? && !url.start_with?("http://", "https://", "/")
+      self.url = "https://#{url}"
+    end
+  end
+
+  # Set position before creation
+  def set_position
+    # If position is not explicitly set, assign the next available position
+    if self.position.nil? || self.position == 0
+      last_item = list.list_items.order(:position).last
+      self.position = last_item ? last_item.position + 1 : 0
+    end
+  end
 
   # Track status changes for notifications
   def track_status_change

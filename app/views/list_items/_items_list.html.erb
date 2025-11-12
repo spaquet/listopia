@@ -1,0 +1,8 @@
+<!-- app/views/list_items/_items_list.html.erb -->
+<% if list_items.any? %>
+  <% list_items.each do |item| %>
+    <%= render "list_items/item", item: item, list: list %>
+  <% end %>
+<% else %>
+  <%= render "list_items/empty_state", list: list %>
+<% end %>

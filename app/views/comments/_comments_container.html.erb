@@ -1,0 +1,18 @@
+<!-- app/views/comments/_comments_container.html.erb -->
+<!-- This partial handles the comments display logic (list or empty state) -->
+<!-- It's extracted so it can be easily replaced via Turbo Streams -->
+<% if commentable.comments.any? %>
+  <div id="comments-<%= commentable.class.name.downcase %>-<%= commentable.id %>" class="space-y-2">
+    <% commentable.comments.order(created_at: :asc).each do |comment| %>
+      <%= render "comments/comment", comment: comment, commentable: commentable %>
+    <% end %>
+  </div>
+<% else %>
+  <div id="empty-state-<%= commentable.class.name.downcase %>-<%= commentable.id %>" class="text-center py-6 text-gray-500">
+    <!-- SVG icon for empty state -->
+    <svg class="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+    </svg>
+    <p class="text-xs text-gray-500">No comments yet. Be the first to add one!</p>
+  </div>
+<% end %>

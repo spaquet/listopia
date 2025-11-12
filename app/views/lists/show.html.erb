@@ -1,278 +1,189 @@
 <!-- app/views/lists/show.html.erb -->
 <div class="space-y-6">
-  <!-- List Header -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <div class="flex items-start justify-between">
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center space-x-3 mb-2">
-          <h1 class="text-2xl font-bold text-gray-900"><%= @list.title %></h1>
-          <%= list_status_badge(@list) %>
-          <%= list_sharing_status(@list) %>
-        </div>
-        <% if @list.description.present? %>
-          <p class="text-gray-600 mb-4"><%= @list.description %></p>
-        <% end %>
-        <!-- Progress and Stats -->
-        <% stats = list_completion_stats(@list) %>
-        <div id="list-stats" class="flex items-center space-x-6 text-sm text-gray-600">
-          <div class="flex items-center">
-            <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
-            <span class="ml-1">completed</span>
-          </div>
-          <div class="flex-1 max-w-xs">
-            <%= progress_bar(stats[:percentage]) %>
-          </div>
-          <span class="font-medium"><%= stats[:percentage] %>%</span>
-        </div>
-      </div>
-      <!-- Action Buttons - Permission-based visibility -->
+  <!-- List Header Section -->
+  <%= render "lists/header", list: @list %>
+  <!-- Main Content: Two Column Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Items (2/3 width on large screens) -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Quick Add Item Form -->
       <% if current_user && can_access_list?(@list, current_user) %>
-        <!-- TEMPORARY DEBUG INFO - Remove after testing -->
-        <% if Rails.env.development? %>
-          <div class="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
-            <strong>Debug - User Permissions:</strong><br>
-            User ID: <%= current_user.id %><br>
-            List Owner ID: <%= @list.user_id %><br>
-            Is Owner: <%= @list.owner == current_user %><br>
-            Permission: <%= list_permission_for_user(@list, current_user) %><br>
-            Can Edit: <%= can_edit_list?(@list, current_user) %><br>
-            Can Share: <%= can_share_list?(@list, current_user) %><br>
-            Can Delete: <%= can_delete_list?(@list, current_user) %><br>
-            Available Actions: <%= available_list_actions(@list, current_user) %><br>
-            <% if @list.collaborators.exists?(user: current_user) %>
-              <% collab = @list.collaborators.find_by(user: current_user) %>
-              Collaborator Permission: <%= collab.permission %> (<%= collab.permission.to_sym %>)<br>
-              Permission Write?: <%= collab.permission_write? %><br>
-              Permission Read?: <%= collab.permission_read? %><br>
-            <% else %>
-              No collaborator record found<br>
-            <% end %>
-          </div>
-        <% end %>
-        <div class="flex items-center space-x-2">
-          <!-- Status Toggle Button (for owners and write collaborators) -->
-          <% if can_edit_list?(@list, current_user) %>
-            <%= button_to toggle_status_list_path(@list),
-                          method: :patch,
-                          data: { turbo_stream: true },
-                          class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <%= @list.status == 'completed' ? 'Reopen' : 'Complete' %>
-            <% end %>
-          <% end %>
-          <!-- Share Button -->
-          <% if can_share_list?(@list, current_user) %>
-            <%= button_to "#",
-                          data: { 
-                            turbo_frame: "modal",
-                            turbo_stream: true,
-                            action: "click->modal#open"
-                          },
-                          class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
-              </svg>
-              Share
-            <% end %>
-          <% end %>
-          <!-- Edit Button -->
-          <% if can_edit_list?(@list, current_user) %>
-            <%= link_to edit_list_path(@list),
-                        class: "inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-              </svg>
-              Edit
-            <% end %>
-          <% end %>
-          <!-- Delete Button (only for owners) -->
-          <% if can_delete_list?(@list, current_user) %>
-            <%= button_to list_path(@list),
-                          method: :delete,
-                          data: { 
-                            turbo_confirm: "Are you sure? This will permanently delete the list and all its items.",
-                            turbo_stream: true
-                          },
-                          class: "inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 transition-colors duration-200" do %>
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-              </svg>
-              Delete
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <%= turbo_frame_tag "new_list_item" do %>
+            <% if can_edit_list?(@list, current_user) %>
+              <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
             <% end %>
           <% end %>
         </div>
       <% end %>
-    </div>
-  </div>
-  <!-- Sub-lists Section -->
-  <% if @list.sub_lists.any? || (current_user && can_edit_list?(@list, current_user)) %>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-medium text-gray-900">Sub-lists</h2>
-          <% if current_user && can_edit_list?(@list, current_user) %>
-            <%= link_to new_list_path(parent_list_id: @list.id),
-                        class: "inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200" do %>
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-              </svg>
-              Add Sub-list
-            <% end %>
-          <% end %>
-        </div>
-      </div>
-      <div class="p-6">
-        <% if @list.sub_lists.any? %>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <% @list.sub_lists.each do |sub_list| %>
-              <div class="group relative bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200 p-4">
-                <!-- Quick Actions for Sub-lists -->
-                <% if current_user && can_edit_list?(sub_list, current_user) %>
-                  <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-1">
-                    <!-- Edit Sub-list -->
-                    <%= link_to edit_list_path(sub_list),
-                                class: "p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all duration-200",
-                                title: "Edit sub-list" do %>
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                      </svg>
-                    <% end %>
-                    <!-- Delete Sub-list -->
-                    <% if can_delete_list?(sub_list, current_user) %>
-                      <%= button_to list_path(sub_list),
-                                    method: :delete,
-                                    data: { 
-                                      turbo_confirm: "Delete this sub-list and all its items?",
-                                      turbo_stream: true
-                                    },
-                                    class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200",
-                                    title: "Delete sub-list" do %>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                      <% end %>
-                    <% end %>
+      <!-- List Items -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 class="text-lg font-medium text-gray-900">Items</h2>
+            <% if current_user && can_access_list?(@list, current_user, :edit) %>
+              <div class="flex items-center space-x-2">
+                <!-- Filter/Sort options -->
+                <div class="relative" data-controller="dropdown">
+                  <button data-action="click->dropdown#toggle" 
+                    class="inline-flex items-center justify-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    <span>Sort</span>
+                  </button>
+                  <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Priority</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Due Date</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Created</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Updated</a>
                   </div>
-                <% end %>
-                <!-- Sub-list Content -->
-                <%= link_to list_path(sub_list), class: "block" do %>
-                  <div class="mb-3">
-                    <h3 class="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                      <%= sub_list.title %>
-                    </h3>
-                    <% if sub_list.description.present? %>
-                      <p class="text-sm text-gray-600 mt-1 line-clamp-2"><%= sub_list.description %></p>
-                    <% end %>
-                  </div>
-                  <!-- Sub-list Stats -->
-                  <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
-                    <div class="flex items-center space-x-3">
-                      <span><%= sub_list.list_items_count %> items</span>
-                      <% if sub_list.list_items_count > 0 %>
-                        <span><%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>% complete</span>
-                      <% end %>
-                    </div>
-                    <!-- Status Badge -->
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium <%= 
-                      case sub_list.status
-                      when 'draft'
-                        'bg-gray-100 text-gray-800'
-                      when 'active'
-                        'bg-green-100 text-green-800'
-                      when 'completed'
-                        'bg-blue-100 text-blue-800'
-                      when 'archived'
-                        'bg-yellow-100 text-yellow-800'
-                      end %>">
-                      <%= sub_list.status.humanize %>
-                    </span>
-                  </div>
-                  <!-- Progress Bar for Sub-list -->
-                  <% if sub_list.list_items_count > 0 %>
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                      <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                           style="width: <%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>%"></div>
-                    </div>
-                  <% end %>
-                <% end %>
+                </div>
               </div>
             <% end %>
           </div>
-        <% else %>
-          <div class="text-center py-8">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No sub-lists</h3>
-            <p class="mt-1 text-sm text-gray-500">Break down this list into smaller, manageable sub-lists.</p>
-            <% if current_user && can_edit_list?(@list, current_user) %>
-              <div class="mt-6">
+        </div>
+        <!-- Items Container -->
+        <div id="list-items" 
+           <% if current_user && can_access_list?(@list, current_user, :edit) && @list_items.any? %>
+             class="divide-y divide-gray-200" 
+             data-controller="sortable" 
+             data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>"
+           <% end %>>
+          <% if @list_items.any? %>
+            <% @list_items.each do |item| %>
+              <%= render "list_items/item", item: item, list: @list %>
+            <% end %>
+          <% else %>
+            <%= render "list_items/empty_state", list: @list %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <!-- Right Column: Comments & Sub-lists (1/3 width on large screens, scrollable) -->
+    <div class="lg:col-span-1 space-y-6 max-h-screen overflow-y-auto">
+      <!-- Comments Section with limited height -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+        <div class="flex-1 overflow-y-auto p-6 max-h-96">
+          <%= render "comments/comments", commentable: @list, list: @list %>
+        </div>
+      </div>
+      <!-- Sub-lists Section -->
+      <% if @list.sub_lists.any? || (current_user && can_edit_list?(@list, current_user)) %>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-medium text-gray-900">Sub-lists</h2>
+              <% if current_user && can_edit_list?(@list, current_user) %>
                 <%= link_to new_list_path(parent_list_id: @list.id),
-                            class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200" do %>
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class: "inline-flex items-center justify-center px-2 py-1 border border-transparent text-xs leading-4 font-medium rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200" do %>
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                   </svg>
-                  Create First Sub-list
+                  Add
+                <% end %>
+              <% end %>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4">
+            <% if @list.sub_lists.any? %>
+              <div class="space-y-3">
+                <% @list.sub_lists.each do |sub_list| %>
+                  <div class="group relative bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200 p-3">
+                    <!-- Quick Actions for Sub-lists -->
+                    <% if current_user && can_edit_list?(sub_list, current_user) %>
+                      <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-0.5">
+                        <!-- Edit Sub-list -->
+                        <%= link_to edit_list_path(sub_list),
+                                    class: "p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all duration-200",
+                                    title: "Edit sub-list" do %>
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                          </svg>
+                        <% end %>
+                        <!-- Delete Sub-list -->
+                        <% if can_delete_list?(sub_list, current_user) %>
+                          <%= button_to list_path(sub_list),
+                                        method: :delete,
+                                        data: { 
+                                          turbo_confirm: "Delete this sub-list and all its items?",
+                                          turbo_stream: true
+                                        },
+                                        class: "p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200",
+                                        title: "Delete sub-list" do %>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
+                    <!-- Sub-list Content -->
+                    <%= link_to list_path(sub_list), class: "block" do %>
+                      <div class="mb-2">
+                        <h3 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                          <%= sub_list.title %>
+                        </h3>
+                        <% if sub_list.description.present? %>
+                          <p class="text-xs text-gray-600 mt-0.5 line-clamp-1"><%= sub_list.description %></p>
+                        <% end %>
+                      </div>
+                      <!-- Sub-list Stats -->
+                      <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+                        <div class="flex items-center space-x-2">
+                          <span><%= sub_list.list_items_count %> items</span>
+                          <% if sub_list.list_items_count > 0 %>
+                            <span><%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>%</span>
+                          <% end %>
+                        </div>
+                        <!-- Status Badge -->
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium <%= 
+                          case sub_list.status
+                          when 'draft'
+                            'bg-gray-100 text-gray-800'
+                          when 'active'
+                            'bg-green-100 text-green-800'
+                          when 'completed'
+                            'bg-blue-100 text-blue-800'
+                          when 'archived'
+                            'bg-yellow-100 text-yellow-800'
+                          end %>">
+                          <%= sub_list.status.humanize %>
+                        </span>
+                      </div>
+                      <!-- Progress Bar for Sub-list -->
+                      <% if sub_list.list_items_count > 0 %>
+                        <div class="w-full bg-gray-200 rounded-full h-1">
+                          <div class="bg-blue-600 h-1 rounded-full transition-all duration-300" 
+                               style="width: <%= ((sub_list.list_items.status_completed.count.to_f / sub_list.list_items_count) * 100).round %>%"></div>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="text-center py-6">
+                <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                <h3 class="mt-2 text-xs font-medium text-gray-900">No sub-lists</h3>
+                <p class="mt-1 text-xs text-gray-500">Break it down into smaller lists</p>
+                <% if current_user && can_edit_list?(@list, current_user) %>
+                  <div class="mt-3">
+                    <%= link_to new_list_path(parent_list_id: @list.id),
+                                class: "inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200" do %>
+                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                      </svg>
+                      Create
+                    <% end %>
+                  </div>
                 <% end %>
               </div>
             <% end %>
           </div>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
-  <!-- Quick Add Item Form -->
-  <% if current_user && can_access_list?(@list, current_user) %>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <%= turbo_frame_tag "new_list_item" do %>
-        <% if can_edit_list?(@list, current_user) %>
-          <%= render "list_items/quick_add_form", list: @list, list_item: @new_list_item %>
-        <% end %>
-      <% end %>
-    </div>
-  <% end %>
-  <!-- List Items -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium text-gray-900">Items</h2>
-        <% if current_user && can_access_list?(@list, current_user, :edit) %>
-          <div class="flex items-center space-x-2">
-            <!-- Filter/Sort options -->
-            <div class="relative" data-controller="dropdown">
-              <button data-action="click->dropdown#toggle" 
-                class="text-sm text-gray-600 hover:text-gray-900 flex items-center space-x-1">
-                <span>Sort</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Priority</a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Due Date</a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Created</a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Updated</a>
-              </div>
-            </div>
-          </div>
-        <% end %>
-      </div>
-    </div>
-    <!-- Items Container - ALWAYS present with consistent structure -->
-    <div id="list-items" 
-       <% if current_user && can_access_list?(@list, current_user, :edit) && @list_items.any? %>
-         class="divide-y divide-gray-200" 
-         data-controller="sortable" 
-         data-sortable-url-value="<%= reorder_list_list_items_path(@list) %>"
-       <% end %>>
-      <% if @list_items.any? %>
-        <% @list_items.each do |item| %>
-          <%= render "list_items/item", item: item, list: @list %>
-        <% end %>
-      <% else %>
-        <%= render "list_items/empty_state", list: @list %>
+        </div>
       <% end %>
     </div>
   </div>

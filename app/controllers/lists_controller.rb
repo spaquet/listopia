@@ -69,6 +69,21 @@ class ListsController < ApplicationController
     # Apply includes and ordering at the end
     @lists = @lists.includes(:owner, :collaborators)
                   .order(updated_at: :desc)
+
+    # Store current filters for the view
+    @current_filters = {
+      search: params[:search],
+      status: params[:status],
+      visibility: params[:visibility],
+      collaboration: params[:collaboration]
+    }
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        render :index
+      end
+    end
   end
 
   # Display a specific list with its items
