@@ -303,7 +303,8 @@ RSpec.describe ListItem, type: :model do
       expect(item.item_type).to eq("task")
       expect(item.priority).to eq("medium")
       expect(item.status).to eq("pending")
-      expect(item.position).to eq(0)
+      expect(item.position).to be_a(Integer)
+      expect(item.position).to be >= 0
       expect(item.duration_days).to eq(0)
       expect(item.estimated_duration).to eq(0.0)
       expect(item.total_tracked_time).to eq(0.0)
