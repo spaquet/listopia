@@ -78,6 +78,10 @@ class ListItem < ApplicationRecord
   validates :status, presence: true
   validates :position, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
+  # Sanitize URL BEFORE validation
+  before_validation :sanitize_url
+  validate :validate_url_format
+
   # Enums
   enum :item_type, {
     # Work & Projects
@@ -153,6 +157,40 @@ class ListItem < ApplicationRecord
   end
 
   private
+
+  def validate_url_format
+    return if url.blank?
+
+    # Extract scheme if present
+    scheme = url.match(/^([a-z][a-z0-9+\-.]*):/)&.captures&.first
+
+    # If a scheme is present, only allow http and https
+    if scheme.present?
+      unless %w[http https].include?(scheme.downcase)
+        errors.add(:url, "must be a valid HTTP/HTTPS URL")
+        return
+      end
+    end
+
+    # Try to parse as URI to catch malformed URLs
+    begin
+      URI.parse(url)
+    rescue URI::InvalidURIError
+      errors.add(:url, "is not a valid URL")
+    end
+  end
+
+  def sanitize_url
+    return if url.blank?
+
+    # Remove any leading/trailing whitespace
+    self.url = url.strip
+
+    # If URL doesn't start with http/https and isn't a relative path, add https://
+    if url.present? && !url.start_with?("http://", "https://", "/")
+      self.url = "https://#{url}"
+    end
+  end
 
   # Set position before creation
   def set_position

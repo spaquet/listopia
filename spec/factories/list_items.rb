@@ -262,5 +262,30 @@ FactoryBot.define do
       due_date { 2.days.from_now }
       status { :in_progress }
     end
+
+    # URL Traits
+    trait :with_url do
+      url { Faker::Internet.url }
+    end
+
+    trait :with_https_url do
+      url { "https://example.com/page" }
+    end
+
+    trait :with_http_url do
+      url { "http://example.com/page" }
+    end
+
+    trait :with_complex_url do
+      url { "https://github.com/rails/rails/issues?state=open&label=bug#comments" }
+    end
+
+    trait :with_relative_url do
+      url { "/internal/documentation/page" }
+    end
+
+    trait :with_unschemed_url do
+      url { "example.com" }
+    end
   end
 end
