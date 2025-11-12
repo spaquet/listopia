@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines a comprehensive architecture for enabling collaboration on Lists and ListItems in Listopia. The design leverages existing patterns (admin user invitation flow) and extends them to support user-to-user collaboration with granular permissions.
+This document outlines a comprehensive architecture for enabling collaboration on Lists and ListItems in Listopia. The design leverages existing patterns (admin user invitation flow) and extends them to support user-to-user collaboration with granular permissions and role-based access control.
 
 ---
 
@@ -10,7 +10,7 @@ This document outlines a comprehensive architecture for enabling collaboration o
 
 ### 1.1 Collaboration Types
 - **List Collaboration**: Users collaborate on an entire list, seeing all items and being able to edit based on permissions
-- **ListItem Collaboration**: Users collaborate on specific items within a list (e.g., task assignment)
+- **ListItem Collaboration**: Users collaborate on specific items within a list (e.g., task assignment with delegation rights)
 
 ### 1.2 User Types
 - **Owner**: Creator of the resource (List/ListItem)
@@ -20,23 +20,43 @@ This document outlines a comprehensive architecture for enabling collaboration o
 - **Unregistered User**: Email-based invitee who needs to create an account
 
 ### 1.3 Permission Levels
-Based on existing code, we have a two-tier permission system:
-- **`read` (0)**: View-only access
-- **`write` (1)**: Full collaboration access (view, edit, comment, complete items)
 
-For future extensibility, we can define semantic meanings:
-- **Read**: View list/items, see collaborators
-- **Write**: Everything in Read + create/edit/complete/delete items, invite other collaborators
+We use a two-tier permission system with role-based extensions via Rolify:
+
+- **`read` (0)**: View-only access
+  - View list/items and collaborator information
+  - Cannot create, edit, delete, or modify items
+
+- **`write` (1)**: Full collaboration access
+  - Everything in Read + create/edit/complete/delete items
+  - Can assign items to other users
+  - **Can invite other collaborators** (important for delegation)
+  - Cannot change permissions or remove other collaborators
+
+For ListItem-level collaboration, `write` permission enables:
+- Full responsibility for item execution
+- Ability to sub-assign or delegate to team members (if `can_invite_collaborators` role assigned)
+- Distinction between "manager" (list owner) and "executor" (item collaborator)
+
+#### Role-Based Extensions
+
+Using Rolify, we define additional roles on the Collaborator model:
+- **`can_invite_collaborators`**: Can invite/add other users to collaborate (even with read-only access)
+- **`can_manage_permissions`**: Can change other collaborators' permissions (reserved for owner/admin)
+- **`can_remove_collaborators`**: Can remove other collaborators (reserved for owner/admin)
+
+This enables use cases like:
+- Manager assigns task (ListItem) to team lead with `write` + `can_invite_collaborators` role
+- Team lead can sub-assign to team members without requiring manager intervention
 
 ---
 
 ## 2. Database Architecture
 
-### 2.1 Existing Tables (Already Implemented)
+### 2.1 Existing Tables
 
 #### `collaborators` table
 ```ruby
-# Tracks active collaborations
 {
   id: uuid (PK)
   collaboratable_type: string (polymorphic: "List" or "ListItem")
@@ -55,7 +75,6 @@ For future extensibility, we can define semantic meanings:
 
 #### `invitations` table
 ```ruby
-# Tracks pending and accepted invitations
 {
   id: uuid (PK)
   invitable_type: string (polymorphic: "List" or "ListItem")
@@ -79,6 +98,12 @@ For future extensibility, we can define semantic meanings:
 - Polymorphic: (invitable_type, invitable_id)
 ```
 
+#### `roles` table (via Rolify - already exists)
+Used for role-based access control on Collaborator model
+
+#### `logidze_data` table (via Logidze - already exists)
+Tracks audit history of all model changes including collaboration permission changes
+
 ### 2.2 Key Design Decisions
 
 1. **Polymorphic Associations**: Both tables use polymorphic associations to support Lists and ListItems
@@ -88,6 +113,8 @@ For future extensibility, we can define semantic meanings:
 3. **Email-based Invitations**: Users can be invited by email even if they don't have an account
 4. **Token Security**: Using Rails 8's `generates_token_for` with 7-day expiration
 5. **Unique Constraints**: Prevent duplicate invitations/collaborations per resource
+6. **Logidze Audit Trail**: All collaboration changes are audited in `logidze_data` table
+7. **Rolify Integration**: Extended permission model for delegation scenarios
 
 ---
 
@@ -96,88 +123,89 @@ For future extensibility, we can define semantic meanings:
 ### 3.1 High-Level Invitation Flow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Invitation Initiation                        │
-│                                                                 │
-│  Owner clicks "Invite" → Enters email → Selects permission     │
-└─────────────────────┬───────────────────────────────────────────┘
-                      │
-                      ▼
-             ┌────────────────┐
-             │  Check if user │
-             │  exists?       │
-             └────────┬───────┘
-                      │
-         ┌────────────┴────────────┐
-         │                         │
-    [YES]│                         │[NO]
-         ▼                         ▼
-┌─────────────────┐       ┌──────────────────┐
-│ Registered User │       │ Unregistered     │
-│ Path            │       │ User Path        │
-└────────┬────────┘       └────────┬─────────┘
-         │                         │
-         ▼                         ▼
-┌─────────────────┐       ┌──────────────────┐
-│ Create          │       │ Create           │
-│ Collaborator    │       │ Invitation       │
-│ immediately     │       │ (email-based)    │
-└────────┬────────┘       └────────┬─────────┘
-         │                         │
-         ▼                         ▼
-┌─────────────────┐       ┌──────────────────┐
-│ Send email      │       │ Send invitation  │
-│ notification    │       │ email with token │
-│ "You've been    │       │ (link to signup) │
-│ added..."       │       │                  │
-└─────────────────┘       └────────┬─────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    Invitation Initiation                      │
+│                                                               │
+│  Owner clicks "Invite" → Enters email → Selects permission   │
+│  (optional: grants can_invite_collaborators role)            │
+└──────────────────────────────┬────────────────────────────────┘
+                               │
+                               ▼
+                      ┌────────────────────┐
+                      │  Check if user     │
+                      │  exists?           │
+                      └────────────┬───────┘
                                    │
-                          ┌────────┴──────────┐
-                          │                   │
-                          ▼                   ▼
-                  ┌──────────────┐    ┌─────────────┐
-                  │ User creates │    │ User signs  │
-                  │ account      │    │ in (already │
-                  │              │    │ registered) │
-                  └──────┬───────┘    └──────┬──────┘
-                         │                   │
-                         └────────┬──────────┘
-                                  │
-                                  ▼
-                         ┌────────────────┐
-                         │ Accept         │
-                         │ invitation     │
-                         │ (verify email  │
-                         │ match)         │
-                         └────────┬───────┘
-                                  │
-                                  ▼
-                         ┌────────────────┐
-                         │ Create         │
-                         │ Collaborator   │
-                         │ Update         │
-                         │ Invitation     │
-                         │ (mark accepted)│
-                         └────────────────┘
+                    ┌──────────────┼─────────────┐
+                    │                            │
+               [YES]│                            │[NO]
+                    ▼                            ▼
+        ┌────────────────────────┐   ┌────────────────────────┐
+        │ Registered User        │   │ Unregistered User      │
+        │ Path                   │   │ Path                   │
+        └────────────┬───────────┘   └────────────┬───────────┘
+                     │                            │
+                     ▼                            ▼
+        ┌────────────────────────┐   ┌────────────────────────┐
+        │ Create                 │   │ Create Invitation      │
+        │ Collaborator           │   │ (email-based)          │
+        │ immediately            │   │                        │
+        │ (with optional role)   │   │                        │
+        └────────────┬───────────┘   └────────────┬───────────┘
+                     │                            │
+                     ▼                            ▼
+        ┌────────────────────────┐   ┌────────────────────────┐
+        │ Send email             │   │ Send invitation        │
+        │ notification           │   │ email with token       │
+        │ "You've been added..."  │   │ (link to signup)       │
+        └────────────────────────┘   └────────────┬───────────┘
+                                                  │
+                                  ┌───────────────┼──────────────┐
+                                  │               │              │
+                                  ▼               ▼              ▼
+                          ┌──────────────┐ ┌──────────────┐
+                          │ User creates │ │ User signs   │
+                          │ account      │ │ in (already  │
+                          │              │ │ registered)  │
+                          └──────┬───────┘ └──────┬───────┘
+                                 │                │
+                                 └────────┬───────┘
+                                          │
+                                          ▼
+                         ┌────────────────────────────┐
+                         │ Accept invitation          │
+                         │ (verify email match)       │
+                         └────────────┬───────────────┘
+                                      │
+                                      ▼
+                         ┌────────────────────────────┐
+                         │ Create Collaborator        │
+                         │ Update Invitation          │
+                         │ (mark accepted)            │
+                         │ Grant optional roles       │
+                         └────────────────────────────┘
 ```
 
 ### 3.2 Detailed Flow Scenarios
 
-#### Scenario A: Inviting Registered User
+#### Scenario A: Inviting Registered User (with optional delegation role)
 
 1. **Owner Action**: Enters email `alice@example.com` with `write` permission
-2. **System Check**: `User.find_by(email: 'alice@example.com')` → Found
-3. **Validation**: Ensure Alice is not already a collaborator
-4. **Create Collaborator**: 
+2. **Optional**: Selects "Alice can invite others" checkbox
+3. **System Check**: `User.find_by(email: 'alice@example.com')` → Found
+4. **Validation**: Ensure Alice is not already a collaborator
+5. **Create Collaborator**: 
    ```ruby
    Collaborator.create!(
      collaboratable: @list,
      user: alice,
      permission: :write
    )
+   # Grant optional role if selected
+   collaborator.add_role(:can_invite_collaborators) if params[:can_invite]
    ```
-5. **Send Notification**: Email to Alice with link to the list
-6. **Immediate Access**: Alice can access the list immediately
+6. **Send Notification**: Email to Alice with link to the list
+7. **Immediate Access**: Alice can access the list immediately
 
 #### Scenario B: Inviting Unregistered User
 
@@ -200,14 +228,14 @@ For future extensibility, we can define semantic meanings:
    - Auto-accept invitation if emails match
    - Redirected to the shared list
 
-#### Scenario C: Inviting User Who Later Registers
+#### Scenario C: Delegating with Sub-Assignment Rights (ListItem)
 
-1. **Invitation Created**: For `carol@example.com`
-2. **Carol Registers**: Creates account separately (not through invitation link)
-3. **Email Verification**: Carol verifies `carol@example.com`
-4. **Next Login**: System detects pending invitation for `carol@example.com`
-5. **Auto-Link**: Create Collaborator, mark Invitation as accepted
-6. **Redirect**: Take Carol to the shared list
+1. **Manager**: Assigns task (ListItem) to team lead with `write` permission
+2. **Grant Role**: Manager selects "Can delegate to others"
+3. **Team Lead**: Receives notification, accepts
+4. **Team Lead Action**: Can now assign same task to team members
+5. **Team Member**: Gets invited with appropriate permission level
+6. **Audit Trail**: Logidze tracks all permission changes
 
 ---
 
@@ -223,15 +251,17 @@ For future extensibility, we can define semantic meanings:
 | Complete items | ✅ | ✅ | ❌ | ✅ (if public_write) |
 | Delete items | ✅ | ✅ | ❌ | ❌ |
 | Assign items | ✅ | ✅ | ❌ | ❌ |
-| Invite collaborators | ✅ | ✅ | ❌ | ❌ |
+| Invite collaborators | ✅ | ✅* | ❌ | ❌ |
 | Change permissions | ✅ | ❌ | ❌ | ❌ |
 | Remove collaborators | ✅ | ❌ | ❌ | ❌ |
 | Delete list | ✅ | ❌ | ❌ | ❌ |
 | Toggle public access | ✅ | ❌ | ❌ | ❌ |
 
+*Write collaborators can invite only if granted `can_invite_collaborators` role
+
 ### 4.2 Permission Checking
 
-Using Pundit policies (already established pattern):
+Using Pundit policies (established pattern) with Rolify role checks:
 
 ```ruby
 # app/policies/list_policy.rb
@@ -243,11 +273,18 @@ class ListPolicy < ApplicationPolicy
 
   def manage_collaborators?
     record.owner == user ||
-    record.collaborators.permission_write.exists?(user: user)
+    (record.collaborators.permission_write.exists?(user: user) &&
+     collaborator_for_user&.has_role?(:can_invite_collaborators))
   end
 
   def destroy?
     record.owner == user # Only owner can delete
+  end
+
+  private
+
+  def collaborator_for_user
+    record.collaborators.find_by(user: user)
   end
 end
 
@@ -268,6 +305,21 @@ class ListItemPolicy < ApplicationPolicy
     
     false
   end
+
+  def invite_collaborators?
+    # Owner of the list
+    return true if record.list.owner == user
+    
+    # Write permission on list with role
+    list_collab = record.list.collaborators.find_by(user: user)
+    return true if list_collab&.permission_write? && list_collab&.has_role?(:can_invite_collaborators)
+    
+    # Write permission on item with role
+    item_collab = record.collaborators.find_by(user: user)
+    return true if item_collab&.permission_write? && item_collab&.has_role?(:can_invite_collaborators)
+    
+    false
+  end
 end
 ```
 
@@ -275,7 +327,7 @@ end
 
 ## 5. Service Layer Architecture
 
-### 5.1 InvitationService (Already Exists)
+### 5.1 InvitationService
 
 **Purpose**: Handle all invitation logic
 
@@ -288,18 +340,18 @@ class InvitationService
   end
 
   # Main entry point
-  def invite(email, permission)
+  def invite(email, permission, grant_roles = {})
     existing_user = User.find_by(email: email)
     
     if existing_user
-      add_existing_user(existing_user, permission)
+      add_existing_user(existing_user, permission, grant_roles)
     else
-      invite_new_user(email, permission)
+      invite_new_user(email, permission, grant_roles)
     end
   end
 
   # For existing registered users
-  def add_existing_user(user, permission)
+  def add_existing_user(user, permission, grant_roles = {})
     # Validation: can't invite owner
     return failure("Cannot invite the owner") if owner?(user)
     
@@ -309,6 +361,7 @@ class InvitationService
     if collaborator.persisted?
       # Update existing permission
       if collaborator.update(permission: permission)
+        grant_optional_roles(collaborator, grant_roles)
         success("#{user.name}'s permission updated")
       else
         failure(collaborator.errors.full_messages)
@@ -317,6 +370,7 @@ class InvitationService
       # Create new collaborator
       collaborator.permission = permission
       if collaborator.save
+        grant_optional_roles(collaborator, grant_roles)
         CollaborationMailer.added_to_resource(collaborator).deliver_later
         success("#{user.name} added as collaborator")
       else
@@ -326,13 +380,14 @@ class InvitationService
   end
 
   # For unregistered users
-  def invite_new_user(email, permission)
+  def invite_new_user(email, permission, grant_roles = {})
     return failure("Cannot invite the owner") if owner_email?(email)
     
     invitation = @invitable.invitations.build(
       email: email,
       permission: permission,
-      invited_by: @inviter
+      invited_by: @inviter,
+      granted_roles: grant_roles.to_json  # Store roles to grant upon acceptance
     )
     
     if invitation.save
@@ -378,6 +433,12 @@ class InvitationService
     end
   end
 
+  def grant_optional_roles(collaborator, roles = {})
+    roles.each do |role_name, grant|
+      collaborator.add_role(role_name) if grant && role_name.to_s.match?(/^can_/)
+    end
+  end
+
   def success(message)
     OpenStruct.new(success?: true, message: message)
   end
@@ -388,7 +449,7 @@ class InvitationService
 end
 ```
 
-### 5.2 CollaborationAcceptanceService (New)
+### 5.2 CollaborationAcceptanceService
 
 **Purpose**: Handle invitation acceptance flow
 
@@ -416,6 +477,14 @@ class CollaborationAcceptanceService
         user: accepting_user,
         permission: invitation.permission
       )
+      
+      # Grant roles if specified
+      if invitation.granted_roles.present?
+        roles = JSON.parse(invitation.granted_roles)
+        roles.each do |role_name, grant|
+          collaborator.add_role(role_name) if grant
+        end
+      end
       
       # Mark invitation as accepted
       invitation.update!(
@@ -449,7 +518,7 @@ end
 
 ## 6. Controller Architecture
 
-### 6.1 InvitationsController (New)
+### 6.1 InvitationsController
 
 **Purpose**: Handle invitation acceptance and viewing
 
@@ -523,19 +592,19 @@ class InvitationsController < ApplicationController
 end
 ```
 
-### 6.2 CollaboratorsController Updates
+### 6.2 CollaboratorsController
 
-The existing `CollaboratorsController` already handles most collaboration management. Key points:
-
-- **Polymorphic routing**: Uses `list_id` or `list_item_id` params
-- **Authorization**: Uses Pundit for permission checks
-- **Real-time updates**: Uses Turbo Streams for UI updates
+The existing `CollaboratorsController` handles most collaboration management and has been extended to support:
+- Polymorphic routing (List and ListItem collaborators)
+- Role assignment for delegation scenarios
+- Turbo Streams for real-time updates
+- Logidze audit tracking via `has_logidze` on Collaborator model
 
 ---
 
 ## 7. Email/Mailer Architecture
 
-### 7.1 CollaborationMailer (Already Exists)
+### 7.1 CollaborationMailer
 
 ```ruby
 # app/mailers/collaboration_mailer.rb
@@ -611,7 +680,7 @@ end
 
 ## 8. AI Integration Architecture
 
-### 8.1 Chat-Based Invitations
+### 8.1 Chat-Based Invitations with Disambiguation
 
 Users can invite collaborators through the AI chat interface. The AI agent can:
 
@@ -620,11 +689,16 @@ Users can invite collaborators through the AI chat interface. The AI agent can:
    - "Share my project plan with bob@example.com, read-only"
    - "Add carol@example.com as a collaborator on task #5"
 
-2. **Execute invitation workflow**:
-   - Find the correct list/item
+2. **Handle Resource Disambiguation**:
+   - If user has multiple lists/items with the same or similar name
+   - AI presents a menu for user selection before executing invitation
+   - Example: "I found 3 lists named 'Project'. Which one?"
+
+3. **Execute invitation workflow**:
+   - Find the correct list/item (with user confirmation if ambiguous)
    - Validate permissions
    - Call `InvitationService`
-   - Return confirmation
+   - Return confirmation with collaboration details
 
 ### 8.2 MCP Tool: invite_collaborator
 
@@ -664,16 +738,74 @@ module McpTools
                 type: "string",
                 enum: ["read", "write"],
                 description: "Permission level for the collaborator"
+              },
+              can_invite: {
+                type: "boolean",
+                description: "Allow this collaborator to invite others (delegation)"
               }
             },
             required: ["resource_type", "resource_id", "email", "permission"]
+          }
+        },
+        {
+          name: "list_resources_for_disambiguation",
+          description: "Get list of resources matching a search term for disambiguation",
+          input_schema: {
+            type: "object",
+            properties: {
+              resource_type: {
+                type: "string",
+                enum: ["List", "ListItem"],
+                description: "Type of resource"
+              },
+              search_term: {
+                type: "string",
+                description: "Search term to find matching resources"
+              }
+            },
+            required: ["resource_type", "search_term"]
           }
         }
       ]
     end
 
-    # Tool Implementation
-    def invite_collaborator(resource_type:, resource_id:, email:, permission:)
+    # Tool Implementation - Disambiguation
+    def list_resources_for_disambiguation(resource_type:, search_term:)
+      resources = case resource_type
+      when "List"
+        @user.lists.where("title ILIKE ?", "%#{search_term}%").limit(5)
+      when "ListItem"
+        ListItem.joins(:list)
+                .where(lists: { user_id: @user.id })
+                .where("list_items.title ILIKE ?", "%#{search_term}%")
+                .limit(5)
+      else
+        return error_response("Invalid resource type")
+      end
+
+      if resources.empty?
+        {
+          success: false,
+          message: "No #{resource_type} found matching '#{search_term}'"
+        }
+      elsif resources.size == 1
+        {
+          success: true,
+          single_match: true,
+          resource: format_resource(resources.first)
+        }
+      else
+        {
+          success: true,
+          multiple_matches: true,
+          resources: resources.map { |r| format_resource(r) },
+          message: "Found #{resources.size} matching #{resource_type}. Please select one."
+        }
+      end
+    end
+
+    # Tool Implementation - Invitation
+    def invite_collaborator(resource_type:, resource_id:, email:, permission:, can_invite: false)
       # Find resource
       resource = case resource_type
       when "List"
@@ -691,7 +823,8 @@ module McpTools
 
       # Use InvitationService
       service = InvitationService.new(resource, @user)
-      result = service.invite(email, permission)
+      grant_roles = { can_invite_collaborators: can_invite }
+      result = service.invite(email, permission, grant_roles)
 
       if result.success?
         {
@@ -703,7 +836,8 @@ module McpTools
             title: resource.title
           },
           invitee: email,
-          permission: permission
+          permission: permission,
+          can_invite_others: can_invite
         }
       else
         error_response(result.errors)
@@ -714,15 +848,27 @@ module McpTools
 
     private
 
+    def format_resource(resource)
+      {
+        id: resource.id,
+        title: resource.title,
+        type: resource.class.name,
+        description: resource.is_a?(ListItem) ? "Item in #{resource.list.title}" : resource.description
+      }
+    end
+
     def can_invite?(resource)
       case resource
       when List
         resource.owner == @user ||
-        resource.collaborators.permission_write.exists?(user: @user)
+        (resource.collaborators.permission_write.exists?(user: @user) &&
+         resource.collaborators.find_by(user: @user)&.has_role?(:can_invite_collaborators))
       when ListItem
         resource.list.owner == @user ||
-        resource.list.collaborators.permission_write.exists?(user: @user) ||
-        resource.collaborators.permission_write.exists?(user: @user)
+        (resource.list.collaborators.permission_write.exists?(user: @user) &&
+         resource.list.collaborators.find_by(user: @user)&.has_role?(:can_invite_collaborators)) ||
+        (resource.collaborators.permission_write.exists?(user: @user) &&
+         resource.collaborators.find_by(user: @user)&.has_role?(:can_invite_collaborators))
       else
         false
       end
@@ -751,13 +897,13 @@ class AiAgentMcpService
     @chat = find_or_create_chat
     @extracted_data = {}
     @user_tools = McpTools::UserManagementTools.new(user, context)
-    @collaboration_tools = McpTools::CollaborationTools.new(user, context) # NEW
+    @collaboration_tools = McpTools::CollaborationTools.new(user, context)
   end
 
   def available_tools
     [
       # ... existing tools ...
-      *@collaboration_tools.tools # Add collaboration tools
+      *@collaboration_tools.tools
     ]
   end
 
@@ -765,6 +911,8 @@ class AiAgentMcpService
     case tool_name
     when "invite_collaborator"
       @collaboration_tools.invite_collaborator(**arguments.symbolize_keys)
+    when "list_resources_for_disambiguation"
+      @collaboration_tools.list_resources_for_disambiguation(**arguments.symbolize_keys)
     # ... existing tool handlers ...
     end
   end
@@ -777,7 +925,7 @@ end
 
 ### 9.1 Turbo Streams for Real-Time Updates
 
-All collaboration UI should use Turbo Streams for reactive updates:
+All collaboration UI uses Turbo Streams for reactive updates:
 
 ```ruby
 # app/views/collaborators/create.turbo_stream.erb
@@ -796,7 +944,7 @@ All collaboration UI should use Turbo Streams for reactive updates:
 
 ### 9.2 Collaboration Management UI
 
-**Location**: Accessible from list show page
+Accessible from list show page:
 
 ```html
 <!-- app/views/lists/show.html.erb -->
@@ -819,7 +967,7 @@ All collaboration UI should use Turbo Streams for reactive updates:
 </div>
 ```
 
-### 9.3 Invitation Form
+### 9.3 Invitation Form with Role Selection
 
 ```html
 <!-- app/views/collaborators/_form.html.erb -->
@@ -843,6 +991,12 @@ All collaboration UI should use Turbo Streams for reactive updates:
           class: "form-control" %>
   </div>
   
+  <div class="form-group">
+    <%= f.label :can_invite_collaborators, "Allow this person to invite others" %>
+    <%= f.check_box :can_invite_collaborators %>
+    <small class="text-muted">Only available for write permission</small>
+  </div>
+  
   <%= f.submit "Invite", class: "btn btn-primary" %>
 <% end %>
 ```
@@ -864,10 +1018,11 @@ All collaboration UI should use Turbo Streams for reactive updates:
 - **Email Verification**: Only verified users can accept invitations
 - **Owner Protection**: Prevent inviting the owner as a collaborator
 - **Duplicate Prevention**: Database constraints prevent duplicate collaborations
+- **Role Validation**: Verify roles via Rolify before granting permissions
 
 ### 10.3 Rate Limiting
 
-Implement rate limiting on invitation sending to prevent abuse:
+Use Rails 8.1 throttling with monitoring and logging:
 
 ```ruby
 # config/initializers/rack_attack.rb
@@ -876,255 +1031,179 @@ Rack::Attack.throttle("invitations/ip", limit: 10, period: 1.hour) do |req|
     req.ip
   end
 end
-```
 
----
-
-## 11. Testing Strategy
-
-### 11.1 Model Tests (RSpec)
-
-```ruby
-# spec/models/invitation_spec.rb
-RSpec.describe Invitation, type: :model do
-  describe "validations" do
-    it "requires either email or user_id" do
-      invitation = build(:invitation, email: nil, user: nil)
-      expect(invitation).not_to be_valid
-      expect(invitation.errors[:base]).to include("Either user or email must be present")
-    end
-    
-    it "prevents inviting the owner" do
-      list = create(:list)
-      invitation = build(:invitation, invitable: list, email: list.owner.email)
-      expect(invitation).not_to be_valid
-    end
-    
-    it "prevents duplicate email invitations" do
-      invitation = create(:invitation, email: "test@example.com")
-      duplicate = build(:invitation, 
-        invitable: invitation.invitable, 
-        email: "test@example.com"
-      )
-      expect(duplicate).not_to be_valid
-    end
-  end
-  
-  describe "#accept!" do
-    it "creates a collaborator and marks invitation as accepted" do
-      invitation = create(:invitation, email: "user@example.com")
-      user = create(:user, email: "user@example.com")
-      
-      result = invitation.accept!(user)
-      
-      expect(result).to be_a(Collaborator)
-      expect(invitation.reload.accepted?).to be true
-      expect(invitation.user).to eq(user)
-    end
-  end
-end
-```
-
-### 11.2 Service Tests
-
-```ruby
-# spec/services/invitation_service_spec.rb
-RSpec.describe InvitationService do
-  let(:list) { create(:list) }
-  let(:owner) { list.owner }
-  let(:service) { described_class.new(list, owner) }
-
-  describe "#invite existing user" do
-    let(:user) { create(:user) }
-    
-    it "creates a collaborator for registered users" do
-      result = service.invite(user.email, :write)
-      
-      expect(result.success?).to be true
-      expect(list.collaborators.find_by(user: user)).to be_present
-    end
-  end
-
-  describe "#invite new user" do
-    it "creates an invitation for unregistered users" do
-      result = service.invite("newuser@example.com", :read)
-      
-      expect(result.success?).to be true
-      expect(list.invitations.find_by(email: "newuser@example.com")).to be_present
-    end
-  end
-
-  describe "#invite owner" do
-    it "prevents inviting the owner" do
-      result = service.invite(owner.email, :write)
-      
-      expect(result.success?).to be false
-      expect(result.errors).to include(/Cannot invite the owner/)
-    end
-  end
-end
-```
-
-### 11.3 Integration Tests (Capybara)
-
-```ruby
-# spec/system/collaboration_spec.rb
-RSpec.describe "Collaboration", type: :system do
-  let(:owner) { create(:user) }
-  let(:list) { create(:list, owner: owner) }
-
-  before { sign_in owner }
-
-  describe "inviting registered user" do
-    let(:collaborator) { create(:user, email: "collab@example.com") }
-
-    it "adds user as collaborator immediately" do
-      visit list_path(list)
-      click_on "Manage Collaborators"
-      
-      fill_in "Email", with: collaborator.email
-      select "Read & Write", from: "Permission"
-      click_on "Invite"
-      
-      expect(page).to have_content("#{collaborator.name} added as collaborator")
-      expect(list.collaborators.find_by(user: collaborator)).to be_present
-    end
-  end
-
-  describe "inviting unregistered user" do
-    it "sends invitation email" do
-      visit list_path(list)
-      click_on "Manage Collaborators"
-      
-      fill_in "Email", with: "newuser@example.com"
-      select "Read Only", from: "Permission"
-      
-      expect {
-        click_on "Invite"
-      }.to change { ActionMailer::Base.deliveries.count }.by(1)
-      
-      expect(page).to have_content("Invitation sent to newuser@example.com")
-    end
-  end
-
-  describe "accepting invitation" do
-    let(:invitation) { create(:invitation, invitable: list, email: "invitee@example.com") }
-    let(:invitee) { create(:user, email: "invitee@example.com") }
-
-    it "creates collaborator and redirects to list" do
-      sign_in invitee
-      visit invitation_path(invitation.invitation_token)
-      
-      expect(page).to have_content("You've joined #{list.title}")
-      expect(list.collaborators.find_by(user: invitee)).to be_present
-    end
+# Log all throttling attempts
+Rack::Attack.throttle("invitations/user", limit: 20, period: 1.hour) do |req|
+  if req.path == "/collaborators" && req.post?
+    Rails.logger.warn(
+      event: "invitation_rate_limit_attempt",
+      ip: req.ip,
+      timestamp: Time.current
+    )
+    req.authenticated_user_id if req.authenticated_user_id
   end
 end
 ```
 
 ---
 
-## 12. Migration Plan
+## 11. Monitoring & Metrics
 
-### 12.1 Phase 1: Core Infrastructure (Already Complete ✅)
+### 11.1 Key Metrics to Track
 
-- ✅ `collaborators` table
-- ✅ `invitations` table  
-- ✅ `Collaborator` model
-- ✅ `Invitation` model
-- ✅ Polymorphic associations on List and ListItem
-- ✅ `InvitationService`
-- ✅ `CollaborationMailer`
-- ✅ `CollaboratorsController`
+```ruby
+# app/models/concerns/collaboration_analytics.rb
+module CollaborationAnalytics
+  extend ActiveSupport::Concern
 
-### 12.2 Phase 2: User Flows (Implementation Needed)
+  class_methods do
+    def invitation_metrics
+      {
+        total_sent: Invitation.count,
+        pending: Invitation.pending.count,
+        accepted: Invitation.accepted.count,
+        acceptance_rate: acceptance_rate,
+        avg_acceptance_time: avg_acceptance_time
+      }
+    end
 
-**2.1 Invitation Acceptance Flow**
-- [ ] Create `InvitationsController`
-- [ ] Add routes for invitation acceptance
-- [ ] Create `CollaborationAcceptanceService`
-- [ ] Update `RegistrationsController` to handle pending invitations
-- [ ] Update `SessionsController` to check for pending invitations on login
+    def collaboration_metrics
+      {
+        total_collaborations: Collaborator.count,
+        active_collaborations: active_collaborations_count,
+        avg_collaborators_per_list: avg_collaborators_per_list,
+        permission_distribution: permission_distribution
+      }
+    end
 
-**2.2 Email Templates**
-- [ ] Design email template for `invitation.html.erb`
-- [ ] Update `added_to_resource.html.erb` template
-- [ ] Create `invitation_reminder.html.erb` template
+    private
 
-**2.3 UI Components**
-- [ ] Collaboration management page/modal
-- [ ] Collaborator list display
-- [ ] Pending invitations display
-- [ ] Invitation form component
-- [ ] Permission change dropdown
-- [ ] Remove collaborator confirmation
+    def acceptance_rate
+      total = Invitation.count
+      return 0 if total.zero?
+      
+      (Invitation.accepted.count.to_f / total * 100).round(2)
+    end
 
-### 12.3 Phase 3: AI Integration
+    def avg_acceptance_time
+      accepted = Invitation.accepted
+                          .where.not(invitation_accepted_at: nil)
+      
+      return 0 if accepted.empty?
+      
+      times = accepted.map do |inv|
+        (inv.invitation_accepted_at - inv.invitation_sent_at) / 1.hour
+      end
+      
+      (times.sum / times.size).round(2)
+    end
+  end
+end
+```
 
-**3.1 MCP Tools**
-- [ ] Create `McpTools::CollaborationTools`
-- [ ] Implement `invite_collaborator` tool
-- [ ] Implement `list_collaborators` tool
-- [ ] Implement `remove_collaborator` tool
-- [ ] Integrate with `AiAgentMcpService`
+### 11.2 Logging
 
-**3.2 Natural Language Processing**
-- [ ] Train/prompt AI to recognize collaboration requests
-- [ ] Extract email, resource, and permission from user messages
-- [ ] Provide clear feedback on invitation actions
+```ruby
+# Log collaboration events
+Rails.logger.info({
+  event: "collaboration_created",
+  list_id: @list.id,
+  collaborator_id: @collaborator.id,
+  permission: @collaborator.permission,
+  inviter_id: current_user.id
+}.to_json)
 
-### 12.4 Phase 4: Advanced Features
+# Log invitation acceptance
+Rails.logger.info({
+  event: "invitation_accepted",
+  invitation_id: invitation.id,
+  resource_type: invitation.invitable_type,
+  resource_id: invitation.invitable_id,
+  acceptance_time_hours: (Time.current - invitation.invitation_sent_at) / 1.hour
+}.to_json)
+```
 
-**4.1 Collaboration on ListItems**
-- [ ] Enable item-level collaboration
-- [ ] Update policies for item-level permissions
-- [ ] UI for inviting to specific items
-- [ ] Assignment vs. collaboration distinction
+---
 
-**4.2 Permission Extensions**
-- [ ] Consider adding "comment" permission level
-- [ ] Consider adding "admin" permission level (can manage other collaborators)
-- [ ] Permission inheritance (list → items)
+## 12. Audit Trail & History
 
-**4.3 Notifications**
-- [ ] Real-time notifications when added to a list
-- [ ] Notifications when items are updated
-- [ ] Notification preferences
+### 12.1 Logidze Integration
 
-**4.4 Analytics**
-- [ ] Track collaboration metrics
-- [ ] Show activity by collaborator
-- [ ] Collaboration engagement analytics
+All collaboration changes are automatically tracked via Logidze:
+
+```ruby
+# app/models/collaborator.rb
+class Collaborator < ApplicationRecord
+  has_logidze  # Automatic audit trail
+
+  # Logidze tracks all changes to:
+  # - permission (read → write)
+  # - Assigned roles (via Rolify associations)
+  # - created_at, updated_at
+end
+```
+
+### 12.2 Accessing Collaboration History
+
+```ruby
+collaborator = Collaborator.find(id)
+
+# Get full history of changes
+history = collaborator.log_data.versions  # Returns array of all changes
+
+# Find when permission was changed
+collaborator.log_data.versions.each do |version|
+  if version['c']['permission'].present?
+    puts "Permission changed to: #{version['c']['permission']}"
+    puts "Changed at: #{Time.at(version['ts'] / 1000)}"
+  end
+end
+```
+
+### 12.3 Collaboration Activity Feed (Future Enhancement)
+
+Track and display collaboration activity:
+
+```ruby
+# Get recent collaboration changes
+Collaborator.joins(:log_data)
+            .where(collaboratable: @list)
+            .order(updated_at: :desc)
+            .limit(10)
+```
 
 ---
 
 ## 13. Routes Configuration
 
-### 13.1 Invitation Routes
+### 13.1 Collaboration Routes
+
+The routes are already defined in `config/routes.rb`:
 
 ```ruby
-# config/routes.rb
-Rails.application.routes.draw do
-  # Invitation acceptance (public routes)
-  resources :invitations, only: [:show, :destroy], param: :token do
+# Lists with nested collaborations
+resources :lists do
+  resources :collaborations, except: [ :show, :new, :edit ] do
     member do
-      post :accept
-      post :resend
+      patch :resend
+    end
+    collection do
+      get :accept, path: "accept/:token", as: :accept
     end
   end
+  # ... other list routes ...
+end
 
-  # Collaborator management (nested under resources)
-  resources :lists do
-    resources :collaborators, only: [:index, :create, :update, :destroy]
-    get :share, on: :member # Sharing management page
+# ListItems with nested collaborations
+resources :list_items do
+  resources :collaborations, except: [ :show, :new, :edit ]
+end
+
+# Standalone invitation routes
+resources :invitations, only: [:show, :destroy], param: :token do
+  member do
+    post :accept
   end
-
-  resources :list_items do
-    resources :collaborators, only: [:index, :create, :update, :destroy]
-  end
-
-  # Alternative: Polymorphic route for collaborators
-  resources :collaborators, only: [:create, :update, :destroy]
 end
 ```
 
@@ -1136,8 +1215,8 @@ invitation_url(invitation.invitation_token)
 # => https://listopia.com/invitations/abc123xyz
 
 # Collaborators for a list
-list_collaborators_path(@list)
-# => /lists/uuid/collaborators
+list_collaborations_path(@list)
+# => /lists/uuid/collaborations
 
 # Accept invitation
 accept_invitation_path(token: token)
@@ -1148,7 +1227,7 @@ accept_invitation_path(token: token)
 
 ## 14. Reusable Patterns from Admin Invitation
 
-The admin user invitation flow provides excellent patterns to reuse:
+The admin user invitation flow provides excellent patterns reused here:
 
 ### 14.1 Token Generation Pattern
 
@@ -1161,32 +1240,7 @@ generates_token_for :magic_link, expires_in: 15.minutes
 generates_token_for :invitation, expires_in: 7.days
 ```
 
-**Similarities:**
-- Both use Rails 8's `generates_token_for`
-- Both have expiration times
-- Both are single-use tokens
-- Both use `find_by_[purpose]_token` class methods
-
 ### 14.2 Email Verification Flow
-
-**Admin Pattern:**
-```
-Admin creates user → User.send_admin_invitation! → 
-AdminMailer.user_invitation → User clicks link → 
-RegistrationsController#setup_password → User sets password → 
-User.verify_email! → Sign in user → Redirect to dashboard
-```
-
-**Collaboration Pattern:**
-```
-Owner invites user → Invitation.create! → 
-CollaborationMailer.invitation → User clicks link → 
-InvitationsController#show → User signs up/logs in → 
-CollaborationAcceptanceService.accept → 
-Create Collaborator → Redirect to shared resource
-```
-
-### 14.3 Session Token Storage
 
 Both flows use session storage for pending operations:
 
@@ -1198,7 +1252,7 @@ session[:pending_collaboration_token] = params[:token]
 session[:pending_invitation_token] = params[:token]
 ```
 
-### 14.4 Post-Authentication Flow
+### 14.3 Post-Authentication Flow
 
 ```ruby
 # SessionsController (existing pattern)
@@ -1215,23 +1269,26 @@ end
 private
 
 def check_pending_collaboration
-  return nil unless session[:pending_collaboration_token]
+  return nil unless session[:pending_invitation_token]
   
-  collaboration = ListCollaboration.find_by_invitation_token(
-    session[:pending_collaboration_token]
+  invitation = Invitation.find_by_invitation_token(
+    session[:pending_invitation_token]
   )
   
-  if collaboration && collaboration.email == current_user.email
-    collaboration.update!(user: current_user, email: nil)
-    session.delete(:pending_collaboration_token)
-    return collaboration.list
+  if invitation && invitation.email == current_user.email
+    # Auto-accept the invitation
+    acceptance_service = CollaborationAcceptanceService.new(
+      session[:pending_invitation_token]
+    )
+    result = acceptance_service.accept(current_user)
+    
+    session.delete(:pending_invitation_token)
+    return result.resource if result.success?
   end
   
   nil
 end
 ```
-
-**This exact pattern can be reused for collaboration invitations!**
 
 ---
 
@@ -1277,7 +1334,7 @@ end
 
 ### 15.2 Error Messages
 
-```ruby
+```yaml
 # config/locales/collaboration.en.yml
 en:
   collaboration:
@@ -1354,87 +1411,9 @@ ExpiredInvitationsCleanupJob.perform_later
 
 ---
 
-## 17. Monitoring & Metrics
+## 17. Future Enhancements
 
-### 17.1 Key Metrics to Track
-
-```ruby
-# app/models/concerns/collaboration_analytics.rb
-module CollaborationAnalytics
-  extend ActiveSupport::Concern
-
-  class_methods do
-    def invitation_metrics
-      {
-        total_sent: Invitation.count,
-        pending: Invitation.pending.count,
-        accepted: Invitation.accepted.count,
-        acceptance_rate: acceptance_rate,
-        avg_acceptance_time: avg_acceptance_time
-      }
-    end
-
-    def collaboration_metrics
-      {
-        total_collaborations: Collaborator.count,
-        active_collaborations: active_collaborations_count,
-        avg_collaborators_per_list: avg_collaborators_per_list,
-        permission_distribution: permission_distribution
-      }
-    end
-
-    private
-
-    def acceptance_rate
-      total = Invitation.count
-      return 0 if total.zero?
-      
-      (Invitation.accepted.count.to_f / total * 100).round(2)
-    end
-
-    def avg_acceptance_time
-      accepted = Invitation.accepted
-                          .where.not(invitation_accepted_at: nil)
-      
-      return 0 if accepted.empty?
-      
-      times = accepted.map do |inv|
-        (inv.invitation_accepted_at - inv.invitation_sent_at) / 1.hour
-      end
-      
-      (times.sum / times.size).round(2)
-    end
-  end
-end
-```
-
-### 17.2 Logging
-
-```ruby
-# Log collaboration events
-Rails.logger.info({
-  event: "collaboration_created",
-  list_id: @list.id,
-  collaborator_id: @collaborator.id,
-  permission: @collaborator.permission,
-  inviter_id: current_user.id
-}.to_json)
-
-# Log invitation acceptance
-Rails.logger.info({
-  event: "invitation_accepted",
-  invitation_id: invitation.id,
-  resource_type: invitation.invitable_type,
-  resource_id: invitation.invitable_id,
-  acceptance_time_hours: (Time.current - invitation.invitation_sent_at) / 1.hour
-}.to_json)
-```
-
----
-
-## 18. Future Enhancements
-
-### 18.1 Short-term (Next 3-6 months)
+### Phase 2 - Short-term (Next 3-6 months)
 
 1. **Collaboration Templates**
    - Pre-defined permission sets
@@ -1451,11 +1430,12 @@ Rails.logger.info({
    - Notification preferences per list
 
 4. **Collaboration History**
-   - Audit log of all collaboration changes
-   - Track who added/removed whom
-   - Permission change history
+   - Activity feed showing who changed what and when
+   - Leverages Logidze for detailed audit trail
+   - Displays permission changes with timestamps
+   - Shows invitation acceptance and rejection history
 
-### 18.2 Long-term (6-12 months)
+### Phase 3 - Long-term (6-12 months)
 
 1. **Team/Organization Support**
    - Create teams
@@ -1479,7 +1459,7 @@ Rails.logger.info({
 
 ---
 
-## 19. Implementation Checklist
+## 18. Implementation Checklist
 
 ### Phase 2A: Core User Flows
 - [ ] Create `InvitationsController` with show, accept, destroy actions
@@ -1489,8 +1469,16 @@ Rails.logger.info({
 - [ ] Update `RegistrationsController#verify_email` to accept invitations
 - [ ] Update `SessionsController#create` to check pending invitations
 - [ ] Create `InvitationPolicy` for authorization
+- [ ] Add `granted_roles` column to invitations table
 
-### Phase 2B: Email & UI
+### Phase 2B: Role-Based Collaboration
+- [ ] Add `can_invite_collaborators`, `can_manage_permissions`, `can_remove_collaborators` roles to Rolify
+- [ ] Update `InvitationService` to handle role granting
+- [ ] Update `CollaborationAcceptanceService` to apply roles on acceptance
+- [ ] Update Collaborator policies to check roles via `has_role?`
+- [ ] Update UI form to show role checkboxes
+
+### Phase 2C: Email & UI
 - [ ] Design and implement invitation email template
 - [ ] Design and implement reminder email template
 - [ ] Create collaboration management page/section
@@ -1499,161 +1487,71 @@ Rails.logger.info({
 - [ ] Create invitation form with Turbo
 - [ ] Add permission change dropdown
 - [ ] Add remove collaborator button with confirmation
+- [ ] Add role selector for delegation
 
-### Phase 2C: Polish & Testing
-- [ ] Write model tests for Invitation
-- [ ] Write model tests for Collaborator
-- [ ] Write service tests for InvitationService
-- [ ] Write service tests for CollaborationAcceptanceService
-- [ ] Write controller tests for InvitationsController
-- [ ] Write system tests for invitation flow
-- [ ] Write system tests for collaboration management
-- [ ] Add error handling and user-friendly messages
-- [ ] Implement rate limiting on invitations
-
-### Phase 3: AI Integration
+### Phase 2D: AI Integration
 - [ ] Create `McpTools::CollaborationTools`
 - [ ] Implement `invite_collaborator` MCP tool
-- [ ] Implement `list_collaborators` MCP tool
-- [ ] Implement `remove_collaborator` MCP tool
+- [ ] Implement `list_resources_for_disambiguation` MCP tool
 - [ ] Add collaboration tools to `AiAgentMcpService`
 - [ ] Update AI system prompt with collaboration capabilities
 - [ ] Test natural language collaboration requests
-- [ ] Add collaboration examples to AI training
 
-### Phase 4: Advanced Features
+### Phase 2E: Polish & Testing
+- [ ] Add error handling and user-friendly messages
+- [ ] Implement rate limiting on invitations
+- [ ] Add disambiguation UI for ambiguous list names
+- [ ] Monitor Logidze audit trails
+- [ ] Set up collaboration metrics tracking
+- [ ] Test all edge cases
+
+### Phase 3: Advanced Features
 - [ ] Enable ListItem-level collaboration
 - [ ] Update ListItem policies for collaboration
 - [ ] Implement assignment vs. collaboration distinction
 - [ ] Add bulk invitation functionality
 - [ ] Implement invitation reminders (scheduled job)
-- [ ] Add collaboration analytics
-- [ ] Create collaboration activity feed
+- [ ] Create collaboration activity feed with Logidze
 - [ ] Implement real-time collaboration notifications
+- [ ] Add collaboration analytics dashboard
 
 ---
 
-## 20. Key Takeaways
+## 19. Key Takeaways
 
-### 20.1 Architecture Principles
+### 19.1 Architecture Principles
 
 1. **Reuse Existing Patterns**: The admin invitation flow provides a solid foundation
 2. **Polymorphic Design**: Support both Lists and ListItems with minimal code duplication
 3. **Two-Phase Flow**: Invitation → Collaboration keeps data clean and auditable
 4. **Email-First**: Email is the primary identifier for unregistered users
 5. **Security by Default**: Token expiration, email verification, and authorization checks
+6. **Role-Based Delegation**: Rolify enables granular control over who can invite others
+7. **Audit Everything**: Logidze provides complete history of all collaboration changes
 
-### 20.2 Critical Success Factors
+### 19.2 Critical Success Factors
 
 1. **Email Matching**: Always verify email match when accepting invitations
 2. **Session Management**: Store pending tokens in session for smooth UX
 3. **Real-Time Updates**: Use Turbo Streams for responsive collaboration UI
 4. **Clear Permissions**: Make permission levels obvious to users
 5. **Graceful Degradation**: Handle edge cases with helpful error messages
+6. **Disambiguation**: Present user options when multiple resources match
+7. **Audit Trail**: Track all collaboration changes for transparency and compliance
 
-### 20.3 Technical Decisions
+### 19.3 Technical Decisions
 
 1. **Invitation Expiration**: 7 days (longer than admin 24 hours because users may need to register)
-2. **Permission Model**: Simple read/write for initial implementation
+2. **Permission Model**: Simple read/write with role-based extensions for delegation
 3. **Token Security**: Rails 8's `generates_token_for` with signed tokens
 4. **Polymorphic Associations**: Enable code reuse across Lists and ListItems
 5. **Service Layer**: Keep controllers thin, use services for business logic
+6. **Rolify for Roles**: Extensible role system without database migrations for each new role
+7. **Logidze for Audit**: Detached audit trail for complete collaboration history
 
 ---
 
-## Appendix A: Database Schema Reference
-
-```sql
--- Collaborators Table
-CREATE TABLE collaborators (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  collaboratable_type VARCHAR NOT NULL,
-  collaboratable_id UUID NOT NULL,
-  user_id UUID NOT NULL REFERENCES users(id),
-  permission INTEGER DEFAULT 0 NOT NULL,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL,
-  
-  CONSTRAINT unique_collaboratable_user 
-    UNIQUE (collaboratable_id, collaboratable_type, user_id)
-);
-
-CREATE INDEX idx_collaborators_on_user ON collaborators(user_id);
-CREATE INDEX idx_collaborators_on_collaboratable 
-  ON collaborators(collaboratable_type, collaboratable_id);
-
--- Invitations Table
-CREATE TABLE invitations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  invitable_type VARCHAR NOT NULL,
-  invitable_id UUID NOT NULL,
-  user_id UUID REFERENCES users(id),
-  email VARCHAR,
-  invitation_token VARCHAR UNIQUE,
-  invitation_sent_at TIMESTAMP,
-  invitation_accepted_at TIMESTAMP,
-  invited_by_id UUID REFERENCES users(id),
-  permission INTEGER DEFAULT 0 NOT NULL,
-  created_at TIMESTAMP NOT NULL,
-  updated_at TIMESTAMP NOT NULL,
-  
-  CONSTRAINT unique_invitable_email 
-    UNIQUE (invitable_id, invitable_type, email) 
-    WHERE email IS NOT NULL,
-  
-  CONSTRAINT unique_invitable_user 
-    UNIQUE (invitable_id, invitable_type, user_id) 
-    WHERE user_id IS NOT NULL
-);
-
-CREATE INDEX idx_invitations_on_email ON invitations(email);
-CREATE INDEX idx_invitations_on_token ON invitations(invitation_token);
-CREATE INDEX idx_invitations_on_invitable 
-  ON invitations(invitable_type, invitable_id);
-```
-
----
-
-## Appendix B: API Endpoints
-
-```
-# Invitation Management
-GET    /invitations/:token              # View invitation details
-POST   /invitations/:token/accept       # Accept invitation
-POST   /invitations/:id/resend          # Resend invitation
-DELETE /invitations/:id                 # Cancel invitation
-
-# Collaborator Management
-GET    /lists/:list_id/collaborators              # List collaborators
-POST   /lists/:list_id/collaborators              # Add collaborator
-PATCH  /lists/:list_id/collaborators/:id          # Update permission
-DELETE /lists/:list_id/collaborators/:id          # Remove collaborator
-
-GET    /list_items/:item_id/collaborators         # List item collaborators
-POST   /list_items/:item_id/collaborators         # Add item collaborator
-PATCH  /list_items/:item_id/collaborators/:id     # Update item permission
-DELETE /list_items/:item_id/collaborators/:id     # Remove item collaborator
-
-# Sharing Management
-GET    /lists/:id/share                  # Sharing management page
-```
-
----
-
-## Appendix C: Environment Variables
-
-```bash
-# Collaboration Feature Configuration
-LISTOPIA_INVITATION_EXPIRY_DAYS=7
-LISTOPIA_MAX_COLLABORATORS_PER_LIST=50
-LISTOPIA_MAX_INVITATIONS_PER_HOUR=10
-LISTOPIA_ENABLE_COLLABORATION_ANALYTICS=true
-LISTOPIA_COLLABORATION_EMAIL_FROM=noreply@listopia.com
-```
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: 2025-01-XX  
+**Document Version**: 1.1  
+**Last Updated**: November 12, 2025  
 **Author**: Software Architecture Team  
 **Status**: Ready for Implementation
