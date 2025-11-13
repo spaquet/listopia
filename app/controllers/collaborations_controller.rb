@@ -91,7 +91,7 @@ class CollaborationsController < ApplicationController
           stream_updates = [
             turbo_stream.replace(
               "flash-messages",
-              partial: "shared/flash",
+              partial: "shared/flash_messages",
               locals: { notice: result.message }
             )
           ]
@@ -113,7 +113,7 @@ class CollaborationsController < ApplicationController
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace(
             "flash-messages",
-            partial: "shared/flash",
+            partial: "shared/flash_messages",
             locals: { alert: result.errors.join(", ") }
           ), status: :unprocessable_entity
         end
@@ -154,7 +154,7 @@ class CollaborationsController < ApplicationController
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace(
             "flash-messages",
-            partial: "shared/flash",
+            partial: "shared/flash_messages",
             locals: { alert: @collaboration.errors.full_messages.join(", ") }
           ), status: :unprocessable_entity
         end
@@ -194,7 +194,7 @@ class CollaborationsController < ApplicationController
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
           "flash-messages",
-          partial: "shared/flash",
+          partial: "shared/flash_messages",
           locals: { notice: result.message }
         )
       end
