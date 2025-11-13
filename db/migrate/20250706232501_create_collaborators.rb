@@ -12,6 +12,5 @@ class CreateCollaborators < ActiveRecord::Migration[8.0]
     end
 
     add_index :collaborators, [ :collaboratable_id, :collaboratable_type, :user_id ], unique: true, name: "index_collaborators_on_collaboratable_and_user"
-    add_index :collaborators, :user_id
   end
 end

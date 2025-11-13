@@ -37,9 +37,14 @@ class ListPolicy < ApplicationPolicy
   end
 
   def manage_collaborators?
-    # Owner or write collaborators can manage collaborators
-    record.owner == user ||
-    record.collaborators.permission_write.exists?(user: user)
+    # Owner can always manage collaborators
+    return true if record.owner == user
+
+    # Write collaborators with can_invite_collaborators role can manage collaborators
+    collaborator = record.collaborators.find_by(user: user)
+    return true if collaborator&.permission_write? && collaborator&.has_role?(:can_invite_collaborators)
+
+    false
   end
 
   def duplicate?
