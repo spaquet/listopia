@@ -1,5 +1,5 @@
 <!-- app/views/list_items/share.html.erb -->
-<% turbo_frame_tag "modal" do %>
+<%= turbo_frame_tag "modal" do %>
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" data-controller="modal" data-modal-target="modal">
     <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto border border-gray-200" data-modal-target="backdrop" data-action="click->modal#clickOutside">
       <!-- Modal Header -->
