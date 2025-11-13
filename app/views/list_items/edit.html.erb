@@ -137,7 +137,7 @@
                         data: { turbo_frame: "modal" } %>
           </div>
           <%
-            assignable_users = [@list.owner]
+            assignable_users = [current_user, @list.owner]
             assignable_users.concat(@list.collaborator_users)
             assignable_users = assignable_users.uniq(&:id)
           %>
@@ -145,7 +145,7 @@
                                   assignable_users,
                                   :id,
                                   :name,
-                                  { prompt: "Unassigned", include_blank: true },
+                                  { prompt: "Unassigned" },
                                   class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
         </div>
         <!-- Duration Days -->
