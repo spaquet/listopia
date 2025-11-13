@@ -103,7 +103,22 @@ class ListItemsController < ApplicationController
     # Check if user can manage collaborators on this item
     @can_manage_collaborators = policy(@list_item).manage_collaborators?
 
-    render :share
+    respond_to do |format|
+      format.html { render :share }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(
+          "modal",
+          partial: "list_items/share",
+          locals: {
+            list: @list,
+            list_item: @list_item,
+            collaborators: @collaborators,
+            pending_invitations: @pending_invitations,
+            can_manage_collaborators: @can_manage_collaborators
+          }
+        )
+      end
+    end
   end
 
   # Toggle completion status using the new status enum
