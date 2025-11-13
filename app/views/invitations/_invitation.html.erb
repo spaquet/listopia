@@ -1,0 +1,154 @@
+<!-- app/views/invitations/_invitation.html.erb -->
+<div id="invitation_<%= invitation.id %>" class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <!-- Invitation Details -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-start gap-3">
+        <!-- Invitable Icon -->
+        <div class="shrink-0">
+          <% if invitation.invitable_type == "List" %>
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100">
+              <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+            </div>
+          <% else %>
+            <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-purple-100">
+              <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3v-6"></path>
+              </svg>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 min-w-0">
+          <!-- Title/Resource -->
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-semibold text-gray-900 truncate">
+              <%= link_to invitation.invitable.title, invitation.invitable, class: "text-blue-600 hover:text-blue-800" %>
+            </h3>
+            <% if is_sent %>
+              <!-- Permission Badge -->
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                <%= invitation.permission.capitalize %>
+              </span>
+            <% end %>
+          </div>
+
+          <!-- Sender/Recipient Info -->
+          <div class="mt-1 text-sm text-gray-600">
+            <% if is_sent %>
+              <!-- Sent to email/user -->
+              <% if invitation.user %>
+                Sent to <span class="font-medium"><%= invitation.user.email %></span>
+              <% else %>
+                Sent to <span class="font-medium"><%= invitation.email %></span>
+              <% end %>
+            <% else %>
+              <!-- From sender -->
+              Invited by <span class="font-medium"><%= invitation.invited_by&.name || invitation.invited_by&.email %></span>
+            <% end %>
+          </div>
+
+          <!-- Dates -->
+          <div class="mt-1 text-xs text-gray-500 flex items-center gap-4">
+            <% if is_sent %>
+              <span>Sent <%= time_ago_in_words(invitation.invitation_sent_at) %> ago</span>
+              <% if invitation.invitation_sent_at && invitation.invitation_expires_at %>
+                <span>Expires <%= time_ago_in_words(invitation.invitation_expires_at) %></span>
+              <% end %>
+            <% else %>
+              <span>Received <%= time_ago_in_words(invitation.created_at) %> ago</span>
+            <% end %>
+          </div>
+
+          <!-- Status Badge -->
+          <div class="mt-2 flex items-center gap-2">
+            <% case invitation.status
+               when "pending" %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-800 border border-yellow-200">
+                ⏳ Pending
+              </span>
+            <% when "accepted" %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-800 border border-green-200">
+                ✓ Accepted
+              </span>
+            <% when "declined" %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-800 border border-gray-200">
+                ✕ Declined
+              </span>
+            <% when "revoked" %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-800 border border-red-200">
+                ✗ Revoked
+              </span>
+            <% when "expired" %>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-800 border border-gray-200">
+                ⌛ Expired
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="shrink-0 flex items-center gap-2">
+      <% if is_sent %>
+        <!-- Sent Invitation Actions -->
+        <% if invitation.status == "pending" %>
+          <!-- Resend Button -->
+          <%= button_to "Resend", resend_invitation_path(invitation),
+                        method: :patch,
+                        class: "inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors",
+                        title: "Resend invitation email" %>
+
+          <!-- Revoke Button -->
+          <%= button_to "Revoke", revoke_invitation_path(invitation),
+                        method: :delete,
+                        data: { confirm: "Are you sure?" },
+                        class: "inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors",
+                        title: "Revoke this invitation" %>
+
+          <!-- Permission Dropdown -->
+          <div class="relative" data-controller="dropdown">
+            <button data-action="click->dropdown#toggle" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              Edit Rights
+              <svg class="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+              </svg>
+            </button>
+            <div data-dropdown-target="menu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-10">
+              <% [ "read", "write" ].each do |perm| %>
+                <%= button_to perm.capitalize, invitation_path(invitation),
+                              method: :patch,
+                              params: { invitation: { permission: perm } },
+                              class: "block w-full text-left px-4 py-2 text-sm #{invitation.permission == perm ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}" %>
+              <% end %>
+            </div>
+          </div>
+        <% elsif invitation.status == "revoked" %>
+          <span class="text-sm text-red-600 font-medium">Revoked</span>
+        <% end %>
+      <% else %>
+        <!-- Received Invitation Actions -->
+        <% if invitation.status == "pending" %>
+          <!-- Accept Button -->
+          <%= link_to "Accept",
+                      accept_invitations_path(invitation),
+                      method: :patch,
+                      class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors",
+                      title: "Accept this invitation" %>
+
+          <!-- Decline Button -->
+          <%= button_to "Decline", decline_invitation_path(invitation),
+                        method: :patch,
+                        class: "inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors",
+                        title: "Decline this invitation" %>
+        <% elsif invitation.status == "declined" %>
+          <span class="text-sm text-gray-600 font-medium">Declined</span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -48,6 +48,16 @@ Rails.application.routes.draw do
   # Collaboration invitation acceptance
   get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
 
+  # Invitations management (list sent/received invitations with management features)
+  resources :invitations, only: [ :index, :show, :update ] do
+    member do
+      patch :accept
+      patch :decline
+      delete :revoke
+      patch :resend
+    end
+  end
+
   # Main application routes (require authentication)
 
   # Dashboard routes

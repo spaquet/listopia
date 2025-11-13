@@ -1,0 +1,155 @@
+<!-- app/views/invitations/index.html.erb -->
+<div class="min-h-screen bg-gray-50">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Collaboration Invitations</h1>
+      <p class="mt-2 text-gray-600">Manage invitations you've sent and received</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex space-x-4 mb-6 border-b border-gray-200">
+      <%= link_to "Received", invitations_path(tab: "received", search: @current_filters[:search], status: @current_filters[:status]),
+                  class: "px-4 py-2 font-medium #{@tab == 'received' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900'}" %>
+      <%= link_to "Sent", invitations_path(tab: "sent", search: @current_filters[:search], status: @current_filters[:status]),
+                  class: "px-4 py-2 font-medium #{@tab == 'sent' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900'}" %>
+    </div>
+
+    <!-- Filters and Search Section -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6"
+         data-controller="invitation-filter"
+         data-invitation-filter-debounce-delay="300">
+      <div class="flex flex-col space-y-4">
+        <!-- Search Input -->
+        <div class="w-full">
+          <%= form_with url: invitations_path, method: :get, local: true, class: "w-full",
+                        data: {
+                          invitation_filter_target: "form"
+                        } do |f| %>
+            <input type="hidden" name="tab" value="<%= @tab %>" />
+            <div class="relative" data-turbo-permanent id="search-field-container">
+              <%= f.text_field :search,
+                               value: @current_filters[:search],
+                               placeholder: "Search by email, name, or list...",
+                               class: "w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm",
+                               data: {
+                                 action: "input->invitation-filter#handleSearchInput",
+                                 invitation_filter_target: "searchInput"
+                               },
+                               autocomplete: "off",
+                               spellcheck: "false" %>
+              <!-- Search Icon -->
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <!-- Clear Button -->
+              <button type="button"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center <%= @current_filters[:search].present? ? '' : 'hidden' %>"
+                      data-action="click->invitation-filter#clearFilters"
+                      data-invitation-filter-target="clearBtn">
+                <svg class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Status Filter -->
+        <% if @tab == "sent" %>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-sm font-medium text-gray-700 mr-2 flex items-center">Status:</span>
+            <%= link_to "All", invitations_path(tab: "sent", search: @current_filters[:search]),
+                        class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{@current_filters[:status].blank? ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                        data: {
+                          action: "click->invitation-filter#filterChange",
+                          filter_type: "status"
+                        } %>
+            <%= link_to "Pending", invitations_path(tab: "sent", status: "pending", search: @current_filters[:search]),
+                        class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{@current_filters[:status] == 'pending' ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                        data: {
+                          action: "click->invitation-filter#filterChange",
+                          filter_type: "status"
+                        } %>
+            <%= link_to "Revoked", invitations_path(tab: "sent", status: "revoked", search: @current_filters[:search]),
+                        class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{@current_filters[:status] == 'revoked' ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                        data: {
+                          action: "click->invitation-filter#filterChange",
+                          filter_type: "status"
+                        } %>
+          </div>
+        <% else %>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-sm font-medium text-gray-700 mr-2 flex items-center">Status:</span>
+            <%= link_to "All Pending", invitations_path(tab: "received", search: @current_filters[:search]),
+                        class: "px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 #{@current_filters[:status].blank? ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}",
+                        data: {
+                          action: "click->invitation-filter#filterChange",
+                          filter_type: "status"
+                        } %>
+          </div>
+        <% end %>
+
+        <!-- Active Filters Summary -->
+        <% if @current_filters[:search].present? %>
+          <div id="active-filters" class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center space-x-2 text-sm text-gray-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+              </svg>
+              <span>Active filters:</span>
+              <% if @current_filters[:search].present? %>
+                <span class="bg-white px-2 py-1 rounded text-xs border">Search: "<%= @current_filters[:search] %>"</span>
+              <% end %>
+              <% if @current_filters[:status].present? %>
+                <span class="bg-white px-2 py-1 rounded text-xs border">Status: <%= @current_filters[:status].titleize %></span>
+              <% end %>
+            </div>
+            <%= link_to "Clear all filters", invitations_path(tab: @tab),
+                        class: "text-sm text-blue-600 hover:text-blue-800 font-medium",
+                        data: {
+                          action: "click->invitation-filter#clearFilters"
+                        } %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Invitations List -->
+    <div id="invitations-list" class="space-y-4">
+      <% if @invitations.any? %>
+        <% @invitations.each do |invitation| %>
+          <%= render "invitation", invitation: invitation, is_sent: @tab == "sent" %>
+        <% end %>
+      <% else %>
+        <div class="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">
+            <% if @tab == "sent" %>
+              No sent invitations
+            <% else %>
+              No pending invitations
+            <% end %>
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            <% if @tab == "sent" %>
+              You haven't sent any collaboration invitations yet.
+            <% else %>
+              You don't have any pending collaboration invitations.
+            <% end %>
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+  [data-turbo-permanent] {
+    display: none !important;
+  }
+</style>

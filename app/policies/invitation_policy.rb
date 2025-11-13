@@ -58,4 +58,24 @@ class InvitationPolicy < ApplicationPolicy
       false
     end
   end
+
+  def index?
+    # Users can view their own invitations (sent and received)
+    true
+  end
+
+  def decline?
+    # Only the recipient can decline their own invitation
+    record.email == user&.email && record.status == "pending"
+  end
+
+  def revoke?
+    # Only the person who sent the invitation can revoke it
+    record.invited_by == user && record.status == "pending"
+  end
+
+  def update?
+    # Only the person who sent the invitation can update it
+    record.invited_by == user && record.status == "pending"
+  end
 end
