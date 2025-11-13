@@ -88,27 +88,32 @@ class CollaborationsController < ApplicationController
         format.turbo_stream do
           # Reload associations to get fresh data
           @collaboratable.reload
-          stream_updates = [
+          @collaborators = @collaboratable.collaborators.includes(:user)
+          @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+          @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
+          @resource_type = @collaboratable.class.name
+          @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+
+          # Update both the modal and flash messages
+          render turbo_stream: [
             turbo_stream.replace(
               "flash-messages",
               partial: "shared/flash_messages",
               locals: { notice: result.message }
+            ),
+            turbo_stream.update(
+              "modal",
+              partial: "collaborations/share_modal",
+              locals: {
+                resource: @collaboratable,
+                resource_type: @resource_type,
+                collaborators: @collaborators,
+                pending_invitations: @pending_invitations,
+                can_manage_collaborators: @can_manage_collaborators,
+                can_remove_collaborator: @can_remove_collaborator
+              }
             )
           ]
-          if @collaboratable.collaborators.last
-            stream_updates.unshift(
-              turbo_stream.append(
-                "collaborators-list",
-                partial: "collaborations/collaborator",
-                locals: {
-                  collaborator: @collaboratable.collaborators.last,
-                  resource: @collaboratable,
-                  can_remove_collaborator: true
-                }
-              )
-            )
-          end
-          render turbo_stream: stream_updates
         end
       end
     else
