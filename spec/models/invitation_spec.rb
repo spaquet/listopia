@@ -4,11 +4,16 @@
 #
 #  id                     :uuid             not null, primary key
 #  email                  :string
+#  granted_roles          :string           default([]), not null, is an Array
 #  invitable_type         :string           not null
 #  invitation_accepted_at :datetime
+#  invitation_expires_at  :datetime
 #  invitation_sent_at     :datetime
 #  invitation_token       :string
+#  message                :text
+#  metadata               :jsonb            not null
 #  permission             :integer          default("read"), not null
+#  status                 :string           default("pending"), not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
 #  invitable_id           :uuid             not null
@@ -23,6 +28,7 @@
 #  index_invitations_on_invitable_and_user   (invitable_id,invitable_type,user_id) UNIQUE WHERE (user_id IS NOT NULL)
 #  index_invitations_on_invitation_token     (invitation_token) UNIQUE
 #  index_invitations_on_invited_by_id        (invited_by_id)
+#  index_invitations_on_status               (status)
 #  index_invitations_on_user_id              (user_id)
 #
 # Foreign Keys
@@ -169,8 +175,8 @@ RSpec.describe Invitation, type: :model do
     let(:user) { create(:user) }
 
     describe '.pending' do
-      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com') }
-      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com') }
+      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com', status: 'pending') }
+      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com', status: 'accepted') }
 
       it 'returns only pending invitations' do
         expect(Invitation.pending).to include(pending_invitation)
@@ -179,8 +185,8 @@ RSpec.describe Invitation, type: :model do
     end
 
     describe '.accepted' do
-      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com') }
-      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com') }
+      let!(:pending_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'pending@example.com', status: 'pending') }
+      let!(:accepted_invitation) { create(:invitation, invitable: invitable, invited_by: inviter, user: user, email: 'accepted@example.com', status: 'accepted') }
 
       it 'returns only accepted invitations' do
         expect(Invitation.accepted).to include(accepted_invitation)
@@ -217,26 +223,26 @@ RSpec.describe Invitation, type: :model do
 
     describe '#pending?' do
       it 'returns true when user_id is nil' do
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com')
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com', status: 'pending')
         expect(invitation.pending?).to be true
       end
 
       it 'returns false when user_id is present' do
         user = create(:user)
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, status: 'accepted')
         expect(invitation.pending?).to be false
       end
     end
 
     describe '#accepted?' do
       it 'returns false when user_id is nil' do
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com')
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user_id: nil, email: 'test@example.com', status: 'pending')
         expect(invitation.accepted?).to be false
       end
 
       it 'returns true when user_id is present' do
         user = create(:user)
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user)
+        invitation = build(:invitation, invitable: invitable, invited_by: inviter, user: user, status: 'accepted')
         expect(invitation.accepted?).to be true
       end
     end

@@ -71,6 +71,11 @@ class ListItem < ApplicationRecord
   # Comments
   has_many :comments, as: :commentable, dependent: :destroy
 
+  # Collaboration
+  has_many :collaborators, as: :collaboratable, dependent: :destroy
+  has_many :collaborator_users, through: :collaborators, source: :user
+  has_many :invitations, as: :invitable, dependent: :destroy
+
   # Validations
   validates :title, presence: true, length: { maximum: 255 }
   validates :item_type, presence: true

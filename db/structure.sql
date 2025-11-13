@@ -892,6 +892,8 @@ CREATE TABLE public.collaborators (
     collaboratable_id uuid NOT NULL,
     user_id uuid NOT NULL,
     permission integer DEFAULT 0 NOT NULL,
+    granted_roles character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -956,8 +958,13 @@ CREATE TABLE public.invitations (
     invitation_token character varying,
     invitation_sent_at timestamp(6) without time zone,
     invitation_accepted_at timestamp(6) without time zone,
+    invitation_expires_at timestamp(6) without time zone,
     invited_by_id uuid,
     permission integer DEFAULT 0 NOT NULL,
+    granted_roles character varying[] DEFAULT '{}'::character varying[] NOT NULL,
+    message text,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -1772,6 +1779,13 @@ CREATE UNIQUE INDEX index_invitations_on_invitation_token ON public.invitations 
 --
 
 CREATE INDEX index_invitations_on_invited_by_id ON public.invitations USING btree (invited_by_id);
+
+
+--
+-- Name: index_invitations_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_invitations_on_status ON public.invitations USING btree (status);
 
 
 --

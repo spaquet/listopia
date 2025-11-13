@@ -8,6 +8,7 @@ class AiAgentMcpService
     @chat = find_or_create_chat
     @extracted_data = {}
     @user_tools = McpTools::UserManagementTools.new(user, context)
+    @collaboration_tools = McpTools::CollaborationTools.new(user, context)
   end
 
   def process_message(message_content)
@@ -273,6 +274,11 @@ class AiAgentMcpService
       return handle_user_management_request
     end
 
+    # STEP 1.5: Check for collaboration requests
+    if collaboration_request?
+      return handle_collaboration_request
+    end
+
     # STEP 2: Categorize and extract everything in ONE call
     analysis = analyze_and_extract_request
     return handle_workflow_failure("analysis") if analysis.nil?
@@ -298,6 +304,10 @@ class AiAgentMcpService
 
     if result[:user_management_result]
       return build_user_management_response(result[:user_management_result])
+    end
+
+    if result[:collaboration_result]
+      return build_collaboration_response(result[:collaboration_result])
     end
 
     if lists_count == 1 && items_count > 0
@@ -786,6 +796,128 @@ class AiAgentMcpService
   end
 
 # ============================================================================
+# COLLABORATION MANAGEMENT
+# ============================================================================
+
+  # Detect if this is a collaboration request
+  def collaboration_request?
+    collab_keywords = [ "share", "invite", "collaborate", "collaborator", "collaboration", "add.*to", "give.*access" ]
+    message_lower = @current_message.downcase
+
+    collab_keywords.any? { |kw| message_lower.match?(/#{kw}/) }
+  end
+
+  # Handle collaboration requests
+  def handle_collaboration_request
+    log_debug "Detected collaboration request"
+
+    # Analyze the request to determine action and parameters
+    analysis = analyze_collaboration_request
+    return handle_workflow_failure("collaboration analysis") if analysis.nil?
+
+    # Execute the appropriate collaboration action
+    result = execute_collaboration_action(analysis)
+
+    {
+      lists_created: [],
+      items_created: [],
+      collaboration_result: result,
+      analysis: analysis
+    }
+  end
+
+  # Analyze what collaboration action is requested
+  def analyze_collaboration_request
+    prompt = <<~PROMPT
+      Analyze this collaboration request and extract the action and parameters.
+
+      User message: "#{@current_message}"
+
+      Current user's lists: #{@user.lists.pluck(:id, :title).to_json}
+
+      Respond with JSON containing:
+      {
+        "action": "invite_collaborator|list_resources_for_disambiguation|list_collaborators|remove_collaborator",
+        "parameters": {
+          "resource_type": "List or ListItem",
+          "resource_id": "UUID if specified or can be determined",
+          "resource_title": "title if resource_id not found (we'll search for it)",
+          "email": "email to invite/remove",
+          "permission": "read or write",
+          "can_invite": true/false (for delegation)
+        },
+        "needs_disambiguation": true/false
+      }
+
+      Examples:
+      - "share my grocery list with alice@example.com" -> {"action": "invite_collaborator", "parameters": {"resource_title": "grocery list", "email": "alice@example.com", "permission": "write"}}
+      - "invite bob@example.com to my project with read access" -> {"action": "invite_collaborator", "parameters": {"resource_title": "project", "email": "bob@example.com", "permission": "read"}}
+      - "add carol@example.com as collaborator on list #{@user.lists.first&.id}" -> {"action": "invite_collaborator", "parameters": {"resource_id": "#{@user.lists.first&.id}", "email": "carol@example.com", "permission": "write"}}
+      - "who has access to my shopping list?" -> {"action": "list_collaborators", "parameters": {"resource_title": "shopping list"}}
+      - "remove dave@example.com from my todo list" -> {"action": "remove_collaborator", "parameters": {"resource_title": "todo list", "email": "dave@example.com"}}
+    PROMPT
+
+    response = call_ai_with_json_mode(prompt)
+    return nil unless response
+
+    parse_json_response(response, "collaboration analysis")
+  end
+
+  # Execute the collaboration action
+  def execute_collaboration_action(analysis)
+    action = analysis["action"]
+    params = analysis["parameters"] || {}
+
+    # Convert string keys to symbols
+    params = params.transform_keys(&:to_sym)
+
+    # If we have a resource_title but no resource_id, search for it
+    if params[:resource_title].present? && params[:resource_id].blank?
+      search_result = @collaboration_tools.list_resources_for_disambiguation(
+        resource_type: params[:resource_type] || "List",
+        search_term: params[:resource_title]
+      )
+
+      if search_result[:success] && search_result[:single_match]
+        params[:resource_id] = search_result[:resource][:id]
+        params[:resource_type] = search_result[:resource][:type]
+      elsif search_result[:success] && search_result[:multiple_matches]
+        # Return disambiguation result
+        return search_result
+      else
+        return {
+          success: false,
+          error: "Could not find a list or item matching '#{params[:resource_title]}'"
+        }
+      end
+    end
+
+    log_debug "Executing collaboration action: #{action}"
+
+    case action
+    when "invite_collaborator"
+      @collaboration_tools.invite_collaborator(**params.slice(:resource_type, :resource_id, :email, :permission, :can_invite))
+    when "list_resources_for_disambiguation"
+      @collaboration_tools.list_resources_for_disambiguation(**params.slice(:resource_type, :search_term))
+    when "list_collaborators"
+      @collaboration_tools.list_collaborators(**params.slice(:resource_type, :resource_id))
+    when "remove_collaborator"
+      @collaboration_tools.remove_collaborator(**params.slice(:resource_type, :resource_id, :email))
+    else
+      {
+        success: false,
+        error: "Unknown collaboration action: #{action}"
+      }
+    end
+  rescue => e
+    log_error "Error executing collaboration action: #{e.message}"
+    {
+      success: false,
+      error: "Failed to execute collaboration action: #{e.message}"
+    }
+  end
+
+# ============================================================================
 # Update create_user_from_analysis to use symbol keys
 
 def create_user_from_analysis(params)
@@ -924,6 +1056,56 @@ end
       else
         "❌ #{error_msg}"
       end
+    end
+  end
+
+  def build_collaboration_response(collab_result)
+    if collab_result[:success]
+      response = collab_result[:message] || "Collaboration action completed successfully."
+
+      # Handle invitation result
+      if collab_result[:invitee]
+        response += "\n\n**Collaboration Details:**\n"
+        response += "- Resource: #{collab_result[:resource][:title]}\n" if collab_result[:resource]
+        response += "- Invited: #{collab_result[:invitee]}\n"
+        response += "- Permission: #{collab_result[:permission]}\n"
+        response += "- Can invite others: #{collab_result[:can_invite_others] ? 'Yes' : 'No'}\n"
+      end
+
+      # Handle list collaborators result
+      if collab_result[:collaborators]
+        response += "\n\n**Current Collaborators (#{collab_result[:total_collaborators]}):**\n"
+        collab_result[:collaborators].each do |collaborator|
+          response += "\n- #{collaborator[:name]} (#{collaborator[:email]})"
+          response += " - #{collaborator[:permission].upcase}"
+          response += " - Can invite others" if collaborator[:can_invite_others]
+        end
+
+        if collab_result[:pending_invitations]&.any?
+          response += "\n\n**Pending Invitations (#{collab_result[:pending_count]}):**\n"
+          collab_result[:pending_invitations].each do |inv|
+            response += "\n- #{inv[:email]}"
+            response += " - #{inv[:permission].upcase}"
+            response += " - Invited by #{inv[:invited_by]}"
+          end
+        end
+      end
+
+      # Handle disambiguation result
+      if collab_result[:multiple_matches]
+        response = "I found #{collab_result[:resources].size} matching resources. Please specify which one:\n\n"
+        collab_result[:resources].each_with_index do |resource, index|
+          response += "#{index + 1}. #{resource[:title]}"
+          response += " (#{resource[:type]})"
+          response += " - #{resource[:list_title]}" if resource[:list_title]
+          response += "\n"
+        end
+      end
+
+      response
+    else
+      error_msg = collab_result[:error] || "Collaboration action failed"
+      "❌ #{error_msg}"
     end
   end
 
