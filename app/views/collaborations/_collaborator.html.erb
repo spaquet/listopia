@@ -1,0 +1,27 @@
+<!-- app/views/collaborations/_collaborator.html.erb -->
+<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg" id="<%= dom_id(collaborator) %>">
+  <div class="flex items-center space-x-3">
+    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
+      <%= collaborator.user.name&.first&.upcase || collaborator.user.email[0].upcase %>
+    </div>
+    <div>
+      <p class="text-sm font-medium text-gray-900"><%= collaborator.user.name %></p>
+      <p class="text-xs text-gray-500"><%= collaborator.user.email %></p>
+    </div>
+  </div>
+  <div class="flex items-center space-x-2">
+    <span class="text-xs font-medium <%= collaborator.permission_write? ? 'text-blue-700 bg-blue-100' : 'text-gray-700 bg-gray-100' %> px-2 py-1 rounded">
+      <%= collaborator.permission_write? ? 'Can Edit' : 'Can View' %>
+    </span>
+    <% if can_remove_collaborator %>
+      <%= button_to collaboration_path_for(resource, collaborator),
+                  method: :delete,
+                  class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
+                  title: "Remove collaborator" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+</div>

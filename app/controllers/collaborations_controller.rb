@@ -100,7 +100,11 @@ class CollaborationsController < ApplicationController
               turbo_stream.append(
                 "collaborators-list",
                 partial: "collaborations/collaborator",
-                locals: { collaborator: @collaboratable.collaborators.last }
+                locals: {
+                  collaborator: @collaboratable.collaborators.last,
+                  resource: @collaboratable,
+                  can_remove_collaborator: true
+                }
               )
             )
           end
@@ -144,7 +148,11 @@ class CollaborationsController < ApplicationController
           render turbo_stream: turbo_stream.replace(
             @collaboration,
             partial: "collaborations/collaborator",
-            locals: { collaborator: @collaboration }
+            locals: {
+              collaborator: @collaboration,
+              resource: @collaboratable,
+              can_remove_collaborator: can_manage_collaborators?(@collaboratable)
+            }
           )
         end
       end
