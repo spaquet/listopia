@@ -32,7 +32,6 @@ class CollaborationsController < ApplicationController
           }
         )
       end
-      format.html { render :index }
     end
   end
 
