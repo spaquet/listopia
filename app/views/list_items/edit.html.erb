@@ -127,10 +127,15 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Assigned User -->
         <div>
-          <%= f.label :assigned_user_id, "Assign To", class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-            Assign To <span class="text-xs font-normal text-gray-500">(optional)</span>
-          <% end %>
-          <% 
+          <div class="flex items-center justify-between mb-2">
+            <%= f.label :assigned_user_id, "Assign To", class: "block text-sm font-semibold text-gray-900" do %>
+              Assign To <span class="text-xs font-normal text-gray-500">(optional)</span>
+            <% end %>
+            <%= link_to "Share Collaborators",
+                        share_list_list_item_path(@list, @list_item),
+                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors" %>
+          </div>
+          <%
             assignable_users = [@list.owner]
             assignable_users.concat(@list.collaborator_users)
             assignable_users = assignable_users.uniq(&:id)
