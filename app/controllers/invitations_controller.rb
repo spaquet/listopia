@@ -64,6 +64,14 @@
 #   - InvitationService: Resends invitation emails for both types
 #   - CollaborationMailer: Sends notifications for collaboration invitations
 #
+# NEW: INDEX ACTION (List Sent & Received Invitations)
+#   - index: Lists invitations sent by current user (with management options) and received by current user
+#   - Uses turbo_stream format for search/filter without page reload
+#   - Sent tab: Shows pending/active invitations with options to revoke, resend, or update permissions
+#   - Received tab: Shows pending invitations with options to accept or decline
+#   - Supports filtering by: tab (sent/received), status (pending/accepted/expired), search by email/name/list
+#   - Uses Stimulus controller (invitation-filter) for real-time filter updates with focus retention
+#
 # EXTENDING THIS CONTROLLER
 #   - To add new invitation types: Add case statement in accept() and create new private handler method
 #   - To add new actions: Follow same pattern (check type, route to specialized private method)
@@ -77,7 +85,63 @@
 #   - app/mailers/collaboration_mailer.rb - Email notifications
 class InvitationsController < ApplicationController
   before_action :authenticate_user!, except: [ :accept ]
-  before_action :set_invitation, only: [ :show, :destroy, :resend ]
+  before_action :set_invitation, only: [ :show, :destroy, :resend, :revoke, :update, :decline ]
+
+  # GET /invitations
+  # List sent and received collaboration invitations with filtering and search
+  def index
+    # Determine which tab to show
+    @tab = params[:tab] || "received"
+
+    if @tab == "sent"
+      # Sent invitations - those created by current user (excluding accepted)
+      @invitations = current_user.sent_invitations
+                                  .where(invitable_type: [ "List", "ListItem" ])
+                                  .where.not(status: "accepted")
+                                  .includes(:invitable, :user)
+    else
+      # Received invitations - those sent to current user (only pending)
+      @invitations = current_user.received_invitations
+                                  .where(invitable_type: [ "List", "ListItem" ])
+                                  .where(status: "pending")
+                                  .includes(:invitable, :invited_by)
+    end
+
+    # Apply search filter
+    if params[:search].present?
+      search_term = "%#{params[:search].strip}%"
+      @invitations = @invitations.joins(
+        "LEFT JOIN users ON invitations.#{@tab == 'sent' ? 'user_id' : 'invited_by_id'} = users.id"
+      ).joins(
+        "LEFT JOIN lists ON invitations.invitable_id = lists.id AND invitations.invitable_type = 'List'"
+      ).where(
+        "invitations.email ILIKE ? OR users.email ILIKE ? OR users.name ILIKE ? OR lists.title ILIKE ?",
+        search_term, search_term, search_term, search_term
+      ).distinct
+    end
+
+    # Apply status filter
+    if params[:status].present?
+      @invitations = @invitations.where(status: params[:status])
+    end
+
+    # Order by created_at descending
+    @invitations = @invitations.order(created_at: :desc)
+
+    # Store current filters for view
+    @current_filters = {
+      tab: @tab,
+      search: params[:search],
+      status: params[:status]
+    }
+
+    respond_to do |format|
+      format.html
+      format.turbo_stream do
+        render :index
+      end
+    end
+  end
 
   # GET /invitations/:token
   # Display invitation details (for collaboration invites)
@@ -148,8 +212,138 @@ class InvitationsController < ApplicationController
     InvitationService.new(@invitation.invitable, current_user).resend(@invitation)
 
     respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.replace(@invitation, @invitation) }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "invitation_#{@invitation.id}",
+          partial: "invitation",
+          locals: { invitation: @invitation, is_sent: @invitation.invited_by == current_user }
+        )
+      end
       format.html { redirect_back(fallback_location: root_path, notice: "Invitation resent.") }
+    end
+  end
+
+  # PATCH /invitations/:id/decline
+  # Decline a received collaboration invitation
+  def decline
+    authorize @invitation
+
+    unless @invitation.invited_by.present? && @invitation.email.present?
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "Invalid invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Invalid invitation.", type: "alert" }
+          )
+        }
+      end
+      return
+    end
+
+    if @invitation.update(status: "declined")
+      respond_to do |format|
+        format.html { redirect_to invitations_path(tab: "received"), notice: "Invitation declined." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.remove("invitation_#{@invitation.id}")
+        end
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "Failed to decline invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Failed to decline invitation.", type: "alert" }
+          )
+        }
+      end
+    end
+  end
+
+  # DELETE /invitations/:id/revoke
+  # Revoke a sent collaboration invitation
+  def revoke
+    authorize @invitation
+
+    unless @invitation.invited_by == current_user
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "You cannot revoke this invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "You cannot revoke this invitation.", type: "alert" }
+          )
+        }
+      end
+      return
+    end
+
+    if @invitation.update(status: "revoked")
+      respond_to do |format|
+        format.html { redirect_to invitations_path(tab: "sent"), notice: "Invitation revoked." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.remove("invitation_#{@invitation.id}")
+        end
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "Failed to revoke invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Failed to revoke invitation.", type: "alert" }
+          )
+        }
+      end
+    end
+  end
+
+  # PATCH /invitations/:id
+  # Update invitation permissions (sent invitations only)
+  def update
+    authorize @invitation
+
+    unless @invitation.invited_by == current_user
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "You cannot update this invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "You cannot update this invitation.", type: "alert" }
+          )
+        }
+      end
+      return
+    end
+
+    if @invitation.update(invitation_params)
+      respond_to do |format|
+        format.html { redirect_to invitations_path(tab: "sent"), notice: "Invitation updated." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "invitation_#{@invitation.id}",
+            partial: "invitation",
+            locals: { invitation: @invitation, is_sent: true }
+          )
+        end
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to invitations_path, alert: "Failed to update invitation." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash-messages",
+            partial: "shared/flash_message",
+            locals: { message: "Failed to update invitation.", type: "alert" }
+          )
+        }
+      end
     end
   end
 
@@ -193,5 +387,9 @@ class InvitationsController < ApplicationController
         format.turbo_stream { render turbo_stream: turbo_stream.replace("invitation", partial: "error", locals: { error: result.errors.join(", ") }), status: :unprocessable_entity }
       end
     end
+  end
+
+  def invitation_params
+    params.require(:invitation).permit(:permission)
   end
 end
