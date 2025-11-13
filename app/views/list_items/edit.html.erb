@@ -141,12 +141,10 @@
             assignable_users.concat(@list.collaborator_users)
             assignable_users = assignable_users.uniq(&:id)
           %>
-          <%= f.collection_select :assigned_user_id,
-                                  assignable_users,
-                                  :id,
-                                  :name,
-                                  { prompt: "Unassigned" },
-                                  class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          <%= f.select :assigned_user_id,
+                       options_from_collection_for_select(assignable_users, :id, ->(user) { format_assignee_name(user) }, @list_item.assigned_user_id),
+                       { prompt: "Unassigned" },
+                       class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
         </div>
         <!-- Duration Days -->
         <div>
