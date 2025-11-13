@@ -133,7 +133,8 @@
             <% end %>
             <%= link_to "Share Collaborators",
                         share_list_list_item_path(@list, @list_item),
-                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors" %>
+                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors",
+                        data: { turbo_frame: "modal" } %>
           </div>
           <%
             assignable_users = [@list.owner]
@@ -192,4 +193,7 @@
       </div>
     <% end %>
   </div>
+  <!-- Modal Frame for Share Modal -->
+  <%= turbo_frame_tag "modal" do %>
+  <% end %>
 </div>
