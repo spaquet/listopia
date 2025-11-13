@@ -104,6 +104,7 @@ Rails.application.routes.draw do
     resources :list_items, path: "items", except: [ :new ] do
       member do
         patch :toggle_completion
+        get :share
       end
 
       # Collaborations on ListItems

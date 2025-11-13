@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share ]
   before_action :authorize_list_access!
 
   def create
@@ -92,6 +92,17 @@ class ListItemsController < ApplicationController
                                                 locals: { item: @list_item, list: @list })
       end
     end
+  end
+
+  # Display share/collaboration modal for list item
+  def share
+    authorize @list_item, :edit?
+
+    @collaborators = @list_item.collaborators.includes(:user)
+    @pending_invitations = @list_item.invitations.where(status: "pending")
+    @can_manage_collaborators = @list.collaboratable_by?(current_user)
+
+    render :share
   end
 
   # Toggle completion status using the new status enum
