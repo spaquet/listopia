@@ -3,7 +3,38 @@ class CollaborationsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_collaboratable
   before_action :set_collaboration, only: [ :update, :destroy, :resend ]
-  before_action :authorize_manage_collaborators!, except: [ :accept ]
+  before_action :authorize_manage_collaborators!, except: [ :accept, :show ]
+
+  # GET /lists/:list_id/collaborations
+  # GET /list_items/:list_item_id/collaborations
+  # Show the share modal
+  def show
+    authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
+
+    @collaborators = @collaboratable.collaborators.includes(:user)
+    @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+    @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
+    @resource_type = @collaboratable.class.name
+    @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(
+          "modal",
+          partial: "collaborations/share_modal",
+          locals: {
+            resource: @collaboratable,
+            resource_type: @resource_type,
+            collaborators: @collaborators,
+            pending_invitations: @pending_invitations,
+            can_manage_collaborators: @can_manage_collaborators,
+            can_remove_collaborator: @can_remove_collaborator
+          }
+        )
+      end
+      format.html { render :show }
+    end
+  end
 
   # POST /lists/:list_id/collaborations
   # POST /list_items/:list_item_id/collaborations
@@ -164,8 +195,11 @@ class CollaborationsController < ApplicationController
   end
 
   def authorize_manage_collaborators!
-    # Use appropriate policy based on collaboratable type
-    policy_class = case @collaboratable
+    authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
+  end
+
+  def get_policy_class
+    case @collaboratable
     when List
       ListPolicy
     when ListItem
@@ -173,8 +207,12 @@ class CollaborationsController < ApplicationController
     else
       ApplicationPolicy
     end
+  end
 
-    authorize @collaboratable, :manage_collaborators?, policy_class: policy_class
+  def can_manage_collaborators?(resource)
+    policy(resource).manage_collaborators?
+  rescue Pundit::NotAuthorizedError
+    false
   end
 
   def collaboration_params

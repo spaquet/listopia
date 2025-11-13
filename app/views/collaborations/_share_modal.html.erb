@@ -1,0 +1,156 @@
+<!-- app/views/collaborations/_share_modal.html.erb -->
+<div class="fixed inset-0 z-50 overflow-y-auto" data-controller="modal" data-action="click->modal#clickOutside">
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" data-modal-target="backdrop"></div>
+
+  <!-- Modal -->
+  <div class="flex items-center justify-center min-h-screen px-4 py-8">
+    <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full" data-modal-target="modal" role="dialog" aria-labelledby="modal-title">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <div>
+          <h2 id="modal-title" class="text-xl font-semibold text-gray-900">Share <%= resource_type == 'ListItem' ? 'Task' : 'List' %></h2>
+          <p class="text-sm text-gray-600 mt-1"><%= resource.title %></p>
+        </div>
+        <button class="text-gray-400 hover:text-gray-600 transition-colors" data-action="click->modal#close">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-6">
+        <!-- Current Collaborators Section -->
+        <div>
+          <h3 class="text-sm font-medium text-gray-900 mb-3">Current Collaborators</h3>
+          <div id="collaborators-list" class="space-y-2 max-h-48 overflow-y-auto">
+            <% if collaborators.any? %>
+              <% collaborators.each do |collaborator| %>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
+                      <%= collaborator.user.name&.first&.upcase || collaborator.user.email[0].upcase %>
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900"><%= collaborator.user.name %></p>
+                      <p class="text-xs text-gray-500"><%= collaborator.user.email %></p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-medium <%= collaborator.permission_write? ? 'text-blue-700 bg-blue-100' : 'text-gray-700 bg-gray-100' %> px-2 py-1 rounded">
+                      <%= collaborator.permission_write? ? 'Can Edit' : 'Can View' %>
+                    </span>
+                    <% if can_remove_collaborator %>
+                      <%= button_to list_collaboration_path(resource, collaborator),
+                                  method: :delete,
+                                  class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
+                                  title: "Remove collaborator" do %>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% else %>
+              <p class="text-sm text-gray-600 text-center py-4">No collaborators yet</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Pending Invitations Section -->
+        <% if pending_invitations.any? %>
+          <div class="border-t border-gray-200 pt-6">
+            <h3 class="text-sm font-medium text-gray-900 mb-3">Pending Invitations</h3>
+            <div class="space-y-2 max-h-32 overflow-y-auto">
+              <% pending_invitations.each do |invitation| %>
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div>
+                    <p class="text-sm text-gray-900"><%= invitation.email %></p>
+                    <p class="text-xs text-gray-500">Invited <%= time_ago_in_words(invitation.invitation_sent_at) %> ago</p>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded">
+                      Pending
+                    </span>
+                    <% if can_remove_collaborator %>
+                      <%= button_to list_invitation_path(resource, invitation),
+                                  method: :delete,
+                                  class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors",
+                                  title: "Cancel invitation" do %>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Invite New Collaborator Form -->
+        <% if can_manage_collaborators %>
+          <div class="border-t border-gray-200 pt-6">
+            <h3 class="text-sm font-medium text-gray-900 mb-3">Invite Person</h3>
+            <%= form_with url: collaborations_path(resource), method: :post, local: true, class: "space-y-4" do |f| %>
+              <div class="space-y-3">
+                <!-- Email Input -->
+                <div>
+                  <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                  <%= f.email_field :email,
+                                   placeholder: "person@example.com",
+                                   required: true,
+                                   class: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" %>
+                </div>
+
+                <!-- Permission Level -->
+                <div>
+                  <%= f.label :permission, "Permission Level", class: "block text-sm font-medium text-gray-700 mb-2" %>
+                  <div class="space-y-2">
+                    <label class="flex items-center cursor-pointer">
+                      <%= f.radio_button :permission, 'read', checked: true, class: "w-4 h-4 text-blue-600" %>
+                      <span class="ml-3">
+                        <span class="text-sm font-medium text-gray-900">Can View</span>
+                        <span class="text-xs text-gray-600 block">Read-only access</span>
+                      </span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                      <%= f.radio_button :permission, 'write', class: "w-4 h-4 text-blue-600" %>
+                      <span class="ml-3">
+                        <span class="text-sm font-medium text-gray-900">Can Edit</span>
+                        <span class="text-xs text-gray-600 block">Full edit access</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Delegation Option -->
+                <div>
+                  <label class="flex items-center cursor-pointer">
+                    <%= f.check_box :can_invite_collaborators, {}, true, false, class: "w-4 h-4 text-blue-600 rounded" %>
+                    <span class="ml-3">
+                      <span class="text-sm font-medium text-gray-900">Allow to invite others</span>
+                      <span class="text-xs text-gray-600 block">Let them add more collaborators</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-3 pt-2">
+                <%= f.submit "Send Invite", class: "flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
+                <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors" data-action="click->modal#close">
+                  Cancel
+                </button>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
