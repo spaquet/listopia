@@ -1,4 +1,6 @@
 # app/services/invitation_service.rb
+require 'ostruct'
+
 class InvitationService
   def initialize(invitable, inviter)
     @invitable = invitable
