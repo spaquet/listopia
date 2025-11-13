@@ -58,18 +58,23 @@ class CollaborationsController < ApplicationController
         format.turbo_stream do
           # Reload associations to get fresh data
           @collaboratable.reload
-          render turbo_stream: [
-            turbo_stream.append(
-              "collaborators-list",
-              partial: "collaborations/collaborator",
-              locals: { collaborator: @collaboratable.collaborators.last }
-            ) if @collaboratable.collaborators.last,
+          stream_updates = [
             turbo_stream.replace(
               "flash-messages",
               partial: "shared/flash",
               locals: { notice: result.message }
             )
           ]
+          if @collaboratable.collaborators.last
+            stream_updates.unshift(
+              turbo_stream.append(
+                "collaborators-list",
+                partial: "collaborations/collaborator",
+                locals: { collaborator: @collaboratable.collaborators.last }
+              )
+            )
+          end
+          render turbo_stream: stream_updates
         end
       end
     else
