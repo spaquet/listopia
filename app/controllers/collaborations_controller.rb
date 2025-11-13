@@ -167,15 +167,34 @@ class CollaborationsController < ApplicationController
   def destroy
     authorize @collaboration
 
-    user = @collaboration.user
+    is_invitation = @collaboration.is_a?(Invitation)
+    user = @collaboration.is_a?(Collaborator) ? @collaboration.user : nil
     @collaboration.destroy
 
-    CollaborationMailer.removed_from_resource(user, @collaboratable).deliver_later
+    CollaborationMailer.removed_from_resource(user, @collaboratable).deliver_later if user
 
     respond_to do |format|
       format.html { redirect_to @collaboratable, notice: "Collaborator removed successfully." }
       format.turbo_stream do
-        render turbo_stream: turbo_stream.remove(@collaboration)
+        # Refresh the modal to show updated collaborators/invitations list
+        @collaborators = @collaboratable.collaborators.includes(:user)
+        @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+        @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
+        @resource_type = @collaboratable.class.name
+        @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+
+        render turbo_stream: turbo_stream.update(
+          "modal",
+          partial: "collaborations/share_modal",
+          locals: {
+            resource: @collaboratable,
+            resource_type: @resource_type,
+            collaborators: @collaborators,
+            pending_invitations: @pending_invitations,
+            can_manage_collaborators: @can_manage_collaborators,
+            can_remove_collaborator: @can_remove_collaborator
+          }
+        )
       end
     end
   end
@@ -224,6 +243,10 @@ class CollaborationsController < ApplicationController
     # This could be a Collaborator or an Invitation depending on the action
     if action_name == "resend"
       @collaboration = @collaboratable.invitations.find(params[:id])
+    elsif action_name == "destroy"
+      # Try to find as Invitation first (pending), then as Collaborator
+      @collaboration = @collaboratable.invitations.find_by(id: params[:id]) ||
+                       @collaboratable.collaborators.find(params[:id])
     else
       @collaboration = @collaboratable.collaborators.find(params[:id])
     end
