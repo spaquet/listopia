@@ -269,17 +269,25 @@ class AiAgentMcpService
     log_debug "STARTING MULTI-STEP AI WORKFLOW"
     log_debug "=" * 80
 
-    # STEP 1: Check for user management requests
-    if user_management_request?
+    # STEP 1: Detect the intent of the user's message
+    intent_analysis = detect_user_intent
+    return handle_workflow_failure("intent detection") if intent_analysis.nil?
+
+    log_debug "INTENT DETECTED: #{intent_analysis["intent"]}"
+
+    # STEP 2: Route based on detected intent
+    case intent_analysis["intent"]
+    when "user_management"
       return handle_user_management_request
-    end
-
-    # STEP 1.5: Check for collaboration requests
-    if collaboration_request?
+    when "collaboration"
       return handle_collaboration_request
+    when "list_creation"
+      # Continue to list creation workflow
+    else
+      # Default to list creation workflow
     end
 
-    # STEP 2: Categorize and extract everything in ONE call
+    # STEP 3: Categorize and extract everything in ONE call
     analysis = analyze_and_extract_request
     return handle_workflow_failure("analysis") if analysis.nil?
 
@@ -665,15 +673,40 @@ class AiAgentMcpService
     }
   end
 
-  # Detect if this is a user management request
-  def user_management_request?
-    user_keywords = [ "user", "users", "account", "accounts", "profile", "admin", "suspend", "deactivate" ]
-    action_keywords = [ "create", "update", "delete", "list", "show", "suspend", "unsuspend", "deactivate", "reactivate", "grant", "revoke" ]
+  # ============================================================================
+  # INTENT DETECTION - Use AI to understand user's intent
+  # ============================================================================
 
-    message_lower = @current_message.downcase
+  def detect_user_intent
+    prompt = <<~PROMPT
+      Analyze the user's message and determine their primary intent.
 
-    user_keywords.any? { |kw| message_lower.include?(kw) } &&
-    action_keywords.any? { |kw| message_lower.include?(kw) }
+      User message: "#{@current_message}"
+
+      Respond with JSON containing:
+      {
+        "intent": "user_management|collaboration|list_creation",
+        "confidence": 0.0-1.0,
+        "reasoning": "brief explanation of why this intent was detected"
+      }
+
+      Intent definitions:
+      - "user_management": The user wants to manage users (create, suspend, deactivate, grant admin, etc.)
+        Examples: "create a new user", "suspend john@example.com", "list all users", "make jane an admin"
+
+      - "collaboration": The user wants to share lists/items or manage collaborators
+        Examples: "invite alice@example.com to my grocery list", "share this project with bob", "who has access to my todo list", "remove dave from the list"
+
+      - "list_creation": The user wants to create a new list or manage list items
+        Examples: "create a grocery list with milk, bread, eggs", "add a new task to my project", "I need a todo list for my home renovation"
+
+      Return ONLY valid JSON, no additional text.
+    PROMPT
+
+    response = call_ai_with_json_mode(prompt)
+    return nil unless response
+
+    parse_json_response(response, "intent detection")
   end
 
   # Handle user management requests
@@ -798,14 +831,6 @@ class AiAgentMcpService
 # ============================================================================
 # COLLABORATION MANAGEMENT
 # ============================================================================
-
-  # Detect if this is a collaboration request
-  def collaboration_request?
-    collab_keywords = [ "share", "invite", "collaborate", "collaborator", "collaboration", "add.*to", "give.*access" ]
-    message_lower = @current_message.downcase
-
-    collab_keywords.any? { |kw| message_lower.match?(/#{kw}/) }
-  end
 
   # Handle collaboration requests
   def handle_collaboration_request

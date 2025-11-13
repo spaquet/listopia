@@ -84,7 +84,7 @@ Rails.application.routes.draw do
     resources :analytics, only: [ :index ]
 
     # Collaborations
-    resources :collaborations, except: [ :show, :new, :edit ] do
+    resources :collaborations, except: [ :new, :edit ] do
       member do
         patch :resend
       end
@@ -97,7 +97,7 @@ Rails.application.routes.draw do
       end
 
       # Collaborations on ListItems
-      resources :collaborations, except: [ :show, :new, :edit ]
+      resources :collaborations, except: [ :new, :edit ]
 
       collection do
         patch :bulk_update
@@ -111,7 +111,7 @@ Rails.application.routes.draw do
     end
 
     # Collaborations
-    resources :collaborations, except: [ :show, :new, :edit ] do
+    resources :collaborations, except: [ :new, :edit ] do
       member do
         patch :resend
       end
