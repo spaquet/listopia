@@ -3,11 +3,42 @@ class CollaborationsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_collaboratable
   before_action :set_collaboration, only: [ :update, :destroy, :resend ]
-  before_action :authorize_manage_collaborators!, except: [ :accept, :show ]
+  before_action :authorize_manage_collaborators!, except: [ :accept, :show, :index ]
 
   # GET /lists/:list_id/collaborations
   # GET /list_items/:list_item_id/collaborations
   # Show the share modal
+  def index
+    authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
+
+    @collaborators = @collaboratable.collaborators.includes(:user)
+    @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+    @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
+    @resource_type = @collaboratable.class.name
+    @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(
+          "modal",
+          partial: "collaborations/share_modal",
+          locals: {
+            resource: @collaboratable,
+            resource_type: @resource_type,
+            collaborators: @collaborators,
+            pending_invitations: @pending_invitations,
+            can_manage_collaborators: @can_manage_collaborators,
+            can_remove_collaborator: @can_remove_collaborator
+          }
+        )
+      end
+      format.html { render :index }
+    end
+  end
+
+  # GET /lists/:list_id/collaborations/:id
+  # GET /list_items/:list_item_id/collaborations/:id
+  # Show a specific collaboration (for detail view, if needed)
   def show
     authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
 
