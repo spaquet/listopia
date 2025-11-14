@@ -242,8 +242,8 @@ GEM
     msgpack (1.8.0)
     multi_json (1.17.0)
     multipart-post (2.4.1)
-    net-http (0.7.0)
-      uri
+    net-http (0.8.0)
+      uri (>= 0.11.1)
     net-imap (0.5.12)
       date
       net-protocol
@@ -276,7 +276,7 @@ GEM
     noticed (2.9.3)
       rails (>= 6.1.0)
     ostruct (0.6.3)
-    pagy (43.0.3)
+    pagy (43.0.4)
       json
       yaml
     parallel (1.27.0)
