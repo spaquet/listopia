@@ -12,7 +12,7 @@ class CollaborationsController < ApplicationController
     authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
 
     @collaborators = @collaboratable.collaborators.includes(:user)
-    @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+    @pending_invitations = @collaboratable.invitations.pending
     @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
     @resource_type = @collaboratable.class.name
     @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
@@ -42,7 +42,7 @@ class CollaborationsController < ApplicationController
     authorize @collaboratable, :manage_collaborators?, policy_class: get_policy_class
 
     @collaborators = @collaboratable.collaborators.includes(:user)
-    @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+    @pending_invitations = @collaboratable.invitations.pending
     @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
     @resource_type = @collaboratable.class.name
     @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
@@ -89,7 +89,7 @@ class CollaborationsController < ApplicationController
           # Reload associations to get fresh data
           @collaboratable.reload
           @collaborators = @collaboratable.collaborators.includes(:user)
-          @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+          @pending_invitations = @collaboratable.invitations.pending
           @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
           @resource_type = @collaboratable.class.name
           @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
@@ -201,7 +201,7 @@ class CollaborationsController < ApplicationController
       format.turbo_stream do
         # Refresh the modal to show updated collaborators/invitations list
         @collaborators = @collaboratable.collaborators.includes(:user)
-        @pending_invitations = @collaboratable.invitations.pending.includes(:invited_by)
+        @pending_invitations = @collaboratable.invitations.pending
         @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
         @resource_type = @collaboratable.class.name
         @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
