@@ -44,7 +44,7 @@
                       <%= collaborator.permission_write? ? 'Can Edit' : 'Can View' %>
                     </span>
                     <% if @can_manage_collaborators %>
-                      <%= button_to "Remove", list_list_item_collaboration_path(@list, @list_item, collaborator), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
+                      <%= button_to "Remove", [@list, @list_item, collaborator], method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
                     <% end %>
                   </div>
                 </div>
@@ -68,7 +68,7 @@
                   <div class="flex items-center space-x-2">
                     <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Pending</span>
                     <% if @can_manage_collaborators %>
-                      <%= button_to "Cancel", list_list_item_invitation_path(@list, @list_item, invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
+                      <%= button_to "x", revoke_invitation_path(invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
                     <% end %>
                   </div>
                 </div>
@@ -107,11 +107,6 @@
                     </label>
                   </div>
                 </div>
-              </div>
-              <!-- Action Buttons -->
-              <div class="flex gap-3 pt-2">
-                <%= f.submit "Send Invite", class: "flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
-                <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors" data-action="click->modal#close">Cancel</button>
               </div>
             <% end %>
           </div>
