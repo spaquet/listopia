@@ -100,7 +100,8 @@ class ListItemsController < ApplicationController
 
     @collaborators = @list_item.collaborators.includes(:user)
     @pending_invitations = @list_item.invitations.where(status: "pending")
-    @can_manage_collaborators = @list.collaboratable_by?(current_user)
+    # Check if user can manage collaborators on this item
+    @can_manage_collaborators = policy(@list_item).manage_collaborators?
 
     render :share
   end
