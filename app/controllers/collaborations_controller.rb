@@ -243,10 +243,10 @@ class CollaborationsController < ApplicationController
   private
 
   def set_collaboratable
-    if params[:list_id]
-      @collaboratable = List.find(params[:list_id])
-    elsif params[:list_item_id]
+    if params[:list_item_id]
       @collaboratable = ListItem.find(params[:list_item_id])
+    elsif params[:list_id]
+      @collaboratable = List.find(params[:list_id])
     else
       redirect_to root_path, alert: "Invalid collaboration resource."
     end
