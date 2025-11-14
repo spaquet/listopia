@@ -93,6 +93,16 @@ class CollaborationsController < ApplicationController
           @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
           @resource_type = @collaboratable.class.name
           @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+          @list = @collaboratable.is_a?(ListItem) ? @collaboratable.list : @collaboratable
+
+          # Determine which template to render based on resource type
+          if @collaboratable.is_a?(ListItem)
+            # Render the dedicated list_items/_share partial
+            modal_partial = "list_items/share"
+          else
+            # Render the generic share_modal for lists
+            modal_partial = "collaborations/share_modal"
+          end
 
           # Update both the modal and flash messages
           render turbo_stream: [
@@ -103,7 +113,7 @@ class CollaborationsController < ApplicationController
             ),
             turbo_stream.update(
               "modal",
-              partial: "collaborations/share_modal",
+              partial: modal_partial,
               locals: {
                 resource: @collaboratable,
                 resource_type: @resource_type,

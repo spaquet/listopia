@@ -102,6 +102,8 @@ class ListItemsController < ApplicationController
     @pending_invitations = @list_item.invitations.where(status: "pending")
     # Check if user can manage collaborators on this item
     @can_manage_collaborators = policy(@list_item).manage_collaborators?
+    # Ensure @list is available for route generation
+    @list ||= @list_item.list
 
     respond_to do |format|
       format.html { render :share }

@@ -31,15 +31,16 @@ class InvitationService
   private
 
   def grant_optional_roles(collaborator, roles = {})
-    roles.each do |role_name, grant|
-      # Only grant roles that start with 'can_' for security
-      if grant && role_name.to_s.match?(/^can_/)
-        collaborator.add_role(role_name.to_sym) unless collaborator.has_role?(role_name.to_sym)
-      elsif !grant && role_name.to_s.match?(/^can_/)
-        # Remove role if it was unchecked
-        collaborator.remove_role(role_name.to_sym) if collaborator.has_role?(role_name.to_sym)
-      end
-    end
+    # Skip role granting for now - to be implemented when needed
+    # roles.each do |role_name, grant|
+    #   # Only grant roles that start with 'can_' for security
+    #   if grant && role_name.to_s.match?(/^can_/)
+    #     collaborator.add_role(role_name.to_sym) unless collaborator.has_role?(role_name.to_sym)
+    #   elsif !grant && role_name.to_s.match?(/^can_/)
+    #     # Remove role if it was unchecked
+    #     collaborator.remove_role(role_name.to_sym) if collaborator.has_role?(role_name.to_sym)
+    #   end
+    # end
   end
 
   def add_existing_user(user, permission, grant_roles = {})
