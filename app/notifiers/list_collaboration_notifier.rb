@@ -4,19 +4,23 @@ class ListCollaborationNotifier < ApplicationNotifier
 
   notification_methods do
     def message
-      "#{actor_name} joined the list \"#{target_list&.title}\""
+      "#{actor_name} invited you to collaborate on \"#{target_list&.title}\""
     end
 
     def title
-      "New Collaborator"
+      "Collaboration invitation"
     end
 
     def icon
-      "user-plus"
+      "share-2"
     end
 
     def notification_type
       "collaboration"
+    end
+
+    def url
+      list_path(target_list)
     end
   end
 end

@@ -64,6 +64,7 @@ class InvitationService
       if collaborator.save
         grant_optional_roles(collaborator, grant_roles)
         CollaborationMailer.added_to_resource(collaborator).deliver_later
+        send_collaboration_notification(user, collaborator)
         success("#{user.name} added as collaborator")
       else
         failure(collaborator.errors.full_messages)
@@ -120,5 +121,37 @@ class InvitationService
 
   def failure(errors)
     OpenStruct.new(success?: false, errors: Array(errors))
+  end
+
+  def send_collaboration_notification(user, collaborator)
+    case @invitable
+    when List
+      ListCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_id: @invitable.id
+      ).deliver(user)
+    when ListItem
+      ListItemCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_item_id: @invitable.id,
+        list_id: @invitable.list.id
+      ).deliver(user)
+    end
+  end
+
+  def send_permission_updated_notification(user, collaborator)
+    case @invitable
+    when List
+      ListCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_id: @invitable.id
+      ).deliver(user)
+    when ListItem
+      ListItemCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_item_id: @invitable.id,
+        list_id: @invitable.list.id
+      ).deliver(user)
+    end
   end
 end
