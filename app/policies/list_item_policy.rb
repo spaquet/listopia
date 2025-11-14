@@ -46,16 +46,11 @@ class ListItemPolicy < ApplicationPolicy
   end
 
   def manage_collaborators?
-    # Owner of the list can always manage collaborators
+    # Owner of the list can always manage collaborators on any item
     return true if list_item.list.owner == user
 
-    # List-level write collaborators with can_invite_collaborators role
-    list_collaborator = list_item.list.collaborators.find_by(user: user)
-    return true if list_collaborator&.permission_write? && list_collaborator&.has_role?(:can_invite_collaborators)
-
-    # Item-level write collaborators with can_invite_collaborators role
-    item_collaborator = list_item.collaborators.find_by(user: user)
-    return true if item_collaborator&.permission_write? && item_collaborator&.has_role?(:can_invite_collaborators)
+    # User assigned to this item can manage collaborators on it
+    return true if list_item.assigned_user == user
 
     false
   end
