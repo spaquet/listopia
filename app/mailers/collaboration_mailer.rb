@@ -7,10 +7,13 @@ class CollaborationMailer < ApplicationMailer
     @invitable = invitation.invitable
     @invited_by = invitation.invited_by
     @invitation_url = accept_invitation_url(@invitation.invitation_token)
+    @inviter_name = @invited_by&.name || "Someone"
+
+    subject = "#{@inviter_name} invited you to collaborate on #{@invitable.title}"
 
     mail(
       to: @invitation.email,
-      subject: "#{@invited_by.name} invited you to collaborate on #{@invitable.title}"
+      subject: subject
     )
   end
 
@@ -18,6 +21,7 @@ class CollaborationMailer < ApplicationMailer
     @invitation = invitation
     @invitable = invitation.invitable
     @invited_by = invitation.invited_by
+    @inviter_name = @invited_by&.name || "Someone"
     @invitation_url = accept_invitation_url(@invitation.invitation_token)
 
     mail(

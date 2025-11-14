@@ -20,11 +20,11 @@
         <h1>You're invited to collaborate!</h1>
       </div>
       <p>Hi there,</p>
-      <p><strong><%= @inviter.name %></strong> has invited you to collaborate on their list in Listopia:</p>
+      <p><strong><%= @inviter_name %></strong> has invited you to collaborate on <%= @invitable.class.name == 'List' ? 'a list' : 'a task' %> in Listopia:</p>
       <div class="list-info">
-        <h2 style="margin: 0 0 10px 0; color: #374151;"><%= @list.title %></h2>
-        <% if @list.description.present? %>
-          <p style="margin: 0; color: #6b7280;"><%= @list.description %></p>
+        <h2 style="margin: 0 0 10px 0; color: #374151;"><%= @invitable.title %></h2>
+        <% if @invitable.description.present? %>
+          <p style="margin: 0; color: #6b7280;"><%= @invitable.description %></p>
         <% end %>
       </div>
       <p>Listopia is a powerful list management tool that lets you:</p>
@@ -34,12 +34,13 @@
         <li>Track progress and completion</li>
         <li>Access your lists from anywhere</li>
       </ul>
-      <p>To accept this invitation, you'll need to create a free Listopia account:</p>
+      <p>To accept this invitation, click the link below:</p>
       <div style="text-align: center;">
-        <a href="<%= @signup_url %>" class="button">Sign Up & Join List</a>
+        <a href="<%= @invitation_url %>" class="button">Accept Invitation</a>
       </div>
       <p style="font-size: 14px; color: #6b7280;">
-        Already have an account? <a href="<%= @accept_url %>" style="color: #3B82F6;">Click here to accept the invitation</a>
+        Or copy and paste this link in your browser: <br>
+        <a href="<%= @invitation_url %>" style="color: #3B82F6; word-break: break-all;"><%= @invitation_url %></a>
       </p>
       <div class="footer">
         <p>This invitation will expire in 7 days.</p>
