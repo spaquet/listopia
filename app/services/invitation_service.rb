@@ -23,7 +23,16 @@ class InvitationService
       invitation_sent_at: Time.current
     )
 
+    # Check if the invitee is an existing user
+    invitee_user = User.find_by(email: invitation.email)
+
+    # Always send email reminder
     CollaborationMailer.invitation_reminder(invitation).deliver_later
+
+    # If user exists, also send in-app notification
+    if invitee_user
+      send_resend_notification(invitee_user, invitation)
+    end
 
     OpenStruct.new(success?: true, message: "Invitation resent successfully!")
   end
@@ -172,6 +181,24 @@ class InvitationService
         actor_id: @inviter.id,
         list_item_id: @invitable.id,
         list_id: @invitable.list.id
+      ).deliver(user)
+    end
+  end
+
+  def send_resend_notification(user, invitation)
+    case @invitable
+    when List
+      ListCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_id: @invitable.id,
+        notification_type: "invitation_resent"
+      ).deliver(user)
+    when ListItem
+      ListItemCollaborationNotifier.with(
+        actor_id: @inviter.id,
+        list_item_id: @invitable.id,
+        list_id: @invitable.list.id,
+        notification_type: "invitation_resent"
       ).deliver(user)
     end
   end
