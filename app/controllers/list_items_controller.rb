@@ -107,7 +107,7 @@ class ListItemsController < ApplicationController
 
     respond_to do |format|
       format.html do
-        render :share, formats: [:turbo_stream], content_type: "text/vnd.turbo-stream.html"
+        render :share, formats: [ :turbo_stream ], content_type: "text/vnd.turbo-stream.html"
       end
       format.turbo_stream
     end
