@@ -78,18 +78,39 @@ class InvitationService
     # Convert grant_roles hash to array of role names that should be granted
     roles_to_grant = grant_roles.select { |_, grant| grant }.keys.map(&:to_s)
 
-    invitation = @invitable.invitations.build(
-      email: email,
-      permission: permission,
-      invited_by: @inviter,
-      granted_roles: roles_to_grant
-    )
+    # Check if an invitation already exists (revoked, declined, etc.)
+    existing_invitation = @invitable.invitations.find_by(email: email)
 
-    if invitation.save
-      CollaborationMailer.invitation(invitation).deliver_later
-      success("Invitation sent to #{email}")
+    if existing_invitation
+      # Re-activate the invitation if it was previously revoked/declined
+      if existing_invitation.update(
+        status: "pending",
+        permission: permission,
+        invited_by: @inviter,
+        granted_roles: roles_to_grant,
+        invitation_token: existing_invitation.generate_invitation_token,
+        invitation_sent_at: Time.current
+      )
+        CollaborationMailer.invitation(existing_invitation).deliver_later
+        success("Invitation re-sent to #{email}")
+      else
+        failure(existing_invitation.errors.full_messages)
+      end
     else
-      failure(invitation.errors.full_messages)
+      # Create new invitation
+      invitation = @invitable.invitations.build(
+        email: email,
+        permission: permission,
+        invited_by: @inviter,
+        granted_roles: roles_to_grant
+      )
+
+      if invitation.save
+        CollaborationMailer.invitation(invitation).deliver_later
+        success("Invitation sent to #{email}")
+      else
+        failure(invitation.errors.full_messages)
+      end
     end
   end
 
