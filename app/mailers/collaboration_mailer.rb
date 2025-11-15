@@ -21,8 +21,21 @@ class CollaborationMailer < ApplicationMailer
     @invitation = invitation
     @invitable = invitation.invitable
     @invited_by = invitation.invited_by
+    @inviter = @invited_by
     @inviter_name = @invited_by&.name || "Someone"
     @invitation_url = accept_invitation_url(@invitation.invitation_token)
+
+    # Set @list for the template (handles both List and ListItem invitables)
+    @list = case @invitable
+            when ListItem
+              @invitable.list
+            else
+              @invitable
+            end
+
+    # Generate URLs for the template
+    @accept_url = @invitation_url
+    @signup_url = new_registration_url
 
     mail(
       to: @invitation.email,
