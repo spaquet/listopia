@@ -132,7 +132,20 @@
             </div>
           </div>
         <% elsif invitation.status == "revoked" %>
-          <span class="text-sm text-red-600 font-medium">Revoked</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-red-600 font-medium">Revoked</span>
+            <% if invitation.invitable_type == "ListItem" %>
+              <%= link_to "Re-invite",
+                          list_list_item_path(invitation.invitable.list, invitation.invitable),
+                          class: "inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors",
+                          title: "Go to list item to re-invite" %>
+            <% else %>
+              <%= link_to "Re-invite",
+                          list_path(invitation.invitable),
+                          class: "inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors",
+                          title: "Go to list to re-invite" %>
+            <% end %>
+          </div>
         <% end %>
       <% else %>
         <!-- Received Invitation Actions -->
