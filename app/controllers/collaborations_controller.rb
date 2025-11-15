@@ -89,7 +89,7 @@ class CollaborationsController < ApplicationController
           # Reload associations to get fresh data
           @collaboratable.reload
           @collaborators = @collaboratable.collaborators.includes(:user)
-          @pending_invitations = @collaboratable.invitations.pending
+          @pending_invitations = @collaboratable.invitations.pending.to_a
           @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
           @resource_type = @collaboratable.class.name
           @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
@@ -133,7 +133,7 @@ class CollaborationsController < ApplicationController
           # Reload associations to show updated state
           @collaboratable.reload
           @collaborators = @collaboratable.collaborators.includes(:user)
-          @pending_invitations = @collaboratable.invitations.pending
+          @pending_invitations = @collaboratable.invitations.pending.to_a
           @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
           @resource_type = @collaboratable.class.name
           @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
