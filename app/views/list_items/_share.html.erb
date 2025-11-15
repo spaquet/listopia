@@ -4,21 +4,14 @@
     <!-- Modal Header -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
       <div class="flex items-center space-x-3">
-<<<<<<< HEAD
         <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-=======
-        <div class="w-10 h-10 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
           </svg>
         </div>
         <div>
           <h3 class="text-lg font-semibold text-gray-900">Share Task</h3>
-<<<<<<< HEAD
-=======
           <p class="text-sm text-gray-600"><%= truncate(resource.title, length: 30) %></p>
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
         </div>
       </div>
       <button data-action="click->modal#close" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
@@ -63,19 +56,7 @@
                     <%= collaborator.permission_write? ? 'Can Edit' : 'Can View' %>
                   </span>
                   <% if can_manage_collaborators %>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    <%= button_to "Remove", list_list_item_collaboration_path(list, list_item, collaborator), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
-=======
-                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, collaborator), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
-=======
-                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, collaborator), method: :delete, data: { turbo_confirm: "Remove this collaborator?" }, form_class: "inline", class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Remove collaborator" %>
->>>>>>> f9cc9a6 (Improve remove collaborator button in list item share partial)
-=======
                     <%= button_to "x", list_list_item_collaboration_path(@list, resource, collaborator), method: :delete, data: { turbo_confirm: "Are you sure?" }, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Remove collaborator" %>
->>>>>>> 6ab89d0 (Add confirmation dialogs to collaboration removal actions)
                   <% end %>
                 </div>
               </div>
@@ -85,10 +66,6 @@
           <% end %>
         </div>
       </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
       <!-- Pending Invitations Section -->
       <% if pending_invitations.any? %>
         <div class="border-t border-gray-200 pt-6">
@@ -103,19 +80,7 @@
                 <div class="flex items-center space-x-2">
                   <span class="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-1 rounded">Pending</span>
                   <% if can_manage_collaborators %>
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    <%= button_to "Cancel", list_list_item_invitation_path(list, list_item, invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
-=======
-                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
-=======
-                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation), method: :delete, data: { turbo_confirm: "Cancel this invitation?" }, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Cancel invitation" %>
->>>>>>> 6ab89d0 (Add confirmation dialogs to collaboration removal actions)
-=======
                     <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation.id), method: :delete, data: { turbo_confirm: "Cancel this invitation?" }, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Cancel invitation" %>
->>>>>>> c5c8ab4 (Fix pending invitations removal button in list item share modal)
                   <% end %>
                 </div>
               </div>
@@ -123,29 +88,17 @@
           </div>
         </div>
       <% end %>
-<<<<<<< HEAD
-
-=======
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
       <!-- Invite New Collaborator Form -->
       <% if can_manage_collaborators %>
         <div class="border-t border-gray-200 pt-6">
           <h4 class="text-sm font-medium text-gray-900 mb-3">Invite Person</h4>
-<<<<<<< HEAD
-          <% form_with url: list_list_item_collaborations_path(list, list_item), method: :post, local: true, class: "space-y-4" do |f| %>
-=======
           <%= form_with url: list_list_item_collaborations_path(@list, resource), method: :post, local: true, class: "space-y-4" do |f| %>
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
             <div class="space-y-3">
               <!-- Email Input -->
               <div>
                 <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-700 mb-1" %>
                 <%= f.email_field :email, placeholder: "person@example.com", required: true, class: "w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent", name: "collaboration[email]" %>
               </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
               <!-- Permission Level -->
               <div>
                 <%= f.label :permission, "Permission Level", class: "block text-sm font-medium text-gray-700 mb-2" %>
@@ -167,17 +120,10 @@
                 </div>
               </div>
             </div>
-<<<<<<< HEAD
-
             <!-- Action Buttons -->
             <div class="flex gap-3 pt-2">
               <%= f.submit "Send Invite", class: "flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
               <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors" data-action="click->modal#close">Cancel</button>
-=======
-            <!-- Submit Button -->
-            <div class="pt-2">
-              <%= f.submit "Send Invitation", class: "w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
->>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
             </div>
           <% end %>
         </div>
