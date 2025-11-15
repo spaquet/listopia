@@ -58,7 +58,15 @@
       </div>
       <!-- Item Details Card -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Details</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Details</h2>
+          <% if current_user && can_edit_list?(@list, current_user) %>
+            <%= link_to "Share Collaborators",
+                        share_list_list_item_path(@list, @list_item),
+                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors",
+                        data: { turbo_frame: "modal", turbo_prefetch: false } %>
+          <% end %>
+        </div>
         <div class="grid grid-cols-2 gap-6">
           <!-- Assigned To -->
           <div>
@@ -136,4 +144,7 @@
       </div>
     </div>
   </div>
+  <!-- Modal Frame for Share Modal -->
+  <%= turbo_frame_tag "modal" do %>
+  <% end %>
 </div>

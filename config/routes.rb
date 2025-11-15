@@ -48,6 +48,16 @@ Rails.application.routes.draw do
   # Collaboration invitation acceptance
   get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
 
+  # Invitations management (list sent/received invitations with management features)
+  resources :invitations, only: [ :index, :show, :update ] do
+    member do
+      patch :accept
+      patch :decline
+      delete :revoke
+      patch :resend
+    end
+  end
+
   # Main application routes (require authentication)
 
   # Dashboard routes
@@ -83,11 +93,23 @@ Rails.application.routes.draw do
     # Analytics routes
     resources :analytics, only: [ :index ]
 
+    # Collaborations
+    resources :collaborations, except: [ :new, :edit ] do
+      member do
+        patch :resend
+      end
+    end
+
     # List items
     resources :list_items, path: "items", except: [ :new ] do
       member do
         patch :toggle_completion
+        get :share
       end
+
+      # Collaborations on ListItems
+      resources :collaborations, except: [ :new, :edit ]
+
       collection do
         patch :bulk_update
         patch :bulk_complete
@@ -100,7 +122,7 @@ Rails.application.routes.draw do
     end
 
     # Collaborations
-    resources :collaborations, except: [ :show, :new, :edit ] do
+    resources :collaborations, except: [ :new, :edit ] do
       member do
         patch :resend
       end

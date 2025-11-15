@@ -4,11 +4,16 @@
 #
 #  id                     :uuid             not null, primary key
 #  email                  :string
+#  granted_roles          :string           default([]), not null, is an Array
 #  invitable_type         :string           not null
 #  invitation_accepted_at :datetime
+#  invitation_expires_at  :datetime
 #  invitation_sent_at     :datetime
 #  invitation_token       :string
+#  message                :text
+#  metadata               :jsonb            not null
 #  permission             :integer          default("read"), not null
+#  status                 :string           default("pending"), not null
 #  created_at             :datetime         not null
 #  updated_at             :datetime         not null
 #  invitable_id           :uuid             not null
@@ -23,6 +28,7 @@
 #  index_invitations_on_invitable_and_user   (invitable_id,invitable_type,user_id) UNIQUE WHERE (user_id IS NOT NULL)
 #  index_invitations_on_invitation_token     (invitation_token) UNIQUE
 #  index_invitations_on_invited_by_id        (invited_by_id)
+#  index_invitations_on_status               (status)
 #  index_invitations_on_user_id              (user_id)
 #
 # Foreign Keys

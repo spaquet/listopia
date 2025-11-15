@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share ]
   before_action :authorize_list_access!
 
   def create
@@ -91,6 +91,25 @@ class ListItemsController < ApplicationController
                                                 partial: "list_items/inline_edit_form",
                                                 locals: { item: @list_item, list: @list })
       end
+    end
+  end
+
+  # Display share/collaboration modal for list item
+  def share
+    authorize @list_item, :edit?
+
+    @collaborators = @list_item.collaborators.includes(:user)
+    @pending_invitations = @list_item.invitations.pending
+    # Check if user can manage collaborators on this item
+    @can_manage_collaborators = policy(@list_item).manage_collaborators?
+    # Ensure @list is available for route generation
+    @list ||= @list_item.list
+
+    respond_to do |format|
+      format.html do
+        render :share, formats: [ :turbo_stream ], content_type: "text/vnd.turbo-stream.html"
+      end
+      format.turbo_stream
     end
   end
 

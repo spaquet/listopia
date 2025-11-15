@@ -5,6 +5,8 @@ class CreateCollaborators < ActiveRecord::Migration[8.0]
       t.references :collaboratable, polymorphic: true, null: false, type: :uuid, index: true
       t.references :user, type: :uuid, null: false, foreign_key: true
       t.integer :permission, default: 0, null: false
+      t.string :granted_roles, array: true, default: [], null: false
+      t.jsonb :metadata, default: {}, null: false
 
       t.timestamps
     end

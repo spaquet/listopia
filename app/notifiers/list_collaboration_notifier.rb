@@ -4,19 +4,30 @@ class ListCollaborationNotifier < ApplicationNotifier
 
   notification_methods do
     def message
-      "#{actor_name} joined the list \"#{target_list&.title}\""
+      action = params[:action] || "invited"
+      if action == "removed"
+        "#{actor_name} removed you from \"#{target_list&.title}\""
+      else
+        "#{actor_name} invited you to collaborate on \"#{target_list&.title}\""
+      end
     end
 
     def title
-      "New Collaborator"
+      action = params[:action] || "invited"
+      action == "removed" ? "Removed from collaboration" : "Collaboration invitation"
     end
 
     def icon
-      "user-plus"
+      action = params[:action] || "invited"
+      action == "removed" ? "user-minus" : "share-2"
     end
 
     def notification_type
       "collaboration"
+    end
+
+    def url
+      list_path(target_list)
     end
   end
 end

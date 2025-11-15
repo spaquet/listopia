@@ -4,6 +4,8 @@
 #
 #  id                  :uuid             not null, primary key
 #  collaboratable_type :string           not null
+#  granted_roles       :string           default([]), not null, is an Array
+#  metadata            :jsonb            not null
 #  permission          :integer          default("read"), not null
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null

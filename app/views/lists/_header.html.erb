@@ -100,7 +100,11 @@
         <!-- Share Button -->
         <% if can_share_list?(list, current_user) %>
           <%= link_to list_collaborations_path(list),
-                      class: "w-full sm:w-auto lg:w-full inline-flex items-center justify-center px-4 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200" do %>
+                      class: "w-full sm:w-auto lg:w-full inline-flex items-center justify-center px-4 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200",
+                      data: {
+                        turbo_stream: true,
+                        action: "modal#open"
+                      } do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>

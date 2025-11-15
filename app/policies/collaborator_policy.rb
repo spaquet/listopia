@@ -22,6 +22,8 @@ class CollaboratorPolicy < ApplicationPolicy
     case record.collaboratable_type
     when "List"
       record.collaboratable.owner == user
+    when "ListItem"
+      record.collaboratable.list.owner == user
     else
       false
     end
