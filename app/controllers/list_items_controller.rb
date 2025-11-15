@@ -106,20 +106,31 @@ class ListItemsController < ApplicationController
     @list ||= @list_item.list
 
     respond_to do |format|
+<<<<<<< HEAD
       format.html { render :share }
+=======
+>>>>>>> 158ff7f (Consolidate list item share modal - single source of truth with _share partial)
       format.turbo_stream do
         render turbo_stream: turbo_stream.update(
           "modal",
           partial: "list_items/share",
           locals: {
+<<<<<<< HEAD
             list: @list,
             list_item: @list_item,
+=======
+            resource: @list_item,
+>>>>>>> 158ff7f (Consolidate list item share modal - single source of truth with _share partial)
             collaborators: @collaborators,
             pending_invitations: @pending_invitations,
             can_manage_collaborators: @can_manage_collaborators
           }
         )
       end
+<<<<<<< HEAD
+=======
+      format.html { render :share }
+>>>>>>> 158ff7f (Consolidate list item share modal - single source of truth with _share partial)
     end
   end
 
