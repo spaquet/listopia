@@ -1,0 +1,10 @@
+<%= turbo_stream.replace(
+  "modal",
+  partial: "list_items/share",
+  locals: {
+    resource: @list_item,
+    collaborators: @collaborators,
+    pending_invitations: @pending_invitations,
+    can_manage_collaborators: @can_manage_collaborators
+  }
+) %>
