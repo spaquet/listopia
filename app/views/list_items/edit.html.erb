@@ -1,24 +1,24 @@
 <!-- app/views/list_items/edit.html.erb -->
 <div class="space-y-6">
   <!-- Header with Back Button -->
-  <div class="flex items-center justify-between">
-    <%= link_to @list, class: "inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200" do %>
+  <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <%= link_to @list, class: "inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 w-fit" do %>
       <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
       <span class="text-gray-600">Back to</span>
       <span class="ml-1 font-semibold text-gray-900"><%= @list.title %></span>
     <% end %>
-    <h1 class="text-2xl font-bold text-gray-900">Edit Item</h1>
+    <h1 class="text-3xl font-bold text-gray-900">Edit Item</h1>
   </div>
   <!-- Edit Form Card -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <%= form_with model: [@list, @list_item], local: true, class: "space-y-6" do |f| %>
+  <div class="bg-white rounded-lg shadow-md border border-gray-200 p-8">
+    <%= form_with model: [@list, @list_item], local: true, class: "space-y-8", data: { controller: "date-calculator" } do |f| %>
       <!-- Error Messages -->
       <% if @list_item.errors.any? %>
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
           <div class="flex items-start space-x-3">
-            <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-red-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
@@ -32,160 +32,201 @@
           </div>
         </div>
       <% end %>
-      <!-- Title Field -->
-      <div>
-        <%= f.label :title, class: "block text-sm font-semibold text-gray-900 mb-2" %>
-        <%= f.text_field :title,
-                        placeholder: "Item title...",
-                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
-      </div>
-      <!-- Description Field -->
-      <div>
-        <%= f.label :description, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-          Description <span class="text-xs font-normal text-gray-500">(optional)</span>
-        <% end %>
-        <%= f.text_area :description,
-                       rows: 4,
-                       placeholder: "Add more details...",
-                       class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none" %>
-      </div>
-      <!-- Type, Priority, and Status Row -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Type Select -->
+      <!-- Section: Basic Information -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Basic Information
+        </h2>
+        <!-- Title Field -->
         <div>
-          <%= f.label :item_type, "Type", class: "block text-sm font-semibold text-gray-900 mb-2" %>
-          <%= f.select :item_type,
-                      options_for_select([
-                        ['Task', 'task'],
-                        ['Milestone', 'milestone'],
-                        ['Feature', 'feature'],
-                        ['Bug', 'bug'],
-                        ['Idea', 'idea'],
-                        ['Note', 'note'],
-                        ['Reference', 'reference'],
-                        ['Decision', 'decision'],
-                        ['Travel', 'travel'],
-                        ['Shopping', 'shopping'],
-                        ['Learning', 'learning'],
-                        ['Health', 'health'],
-                        ['Finance', 'finance'],
-                        ['Home', 'home'],
-                        ['Social', 'social'],
-                        ['Habit', 'habit']
-                      ], @list_item.item_type),
-                      {},
-                      class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          <%= f.label :title, class: "block text-sm font-semibold text-gray-900 mb-2" %>
+          <%= f.text_field :title,
+                          placeholder: "Item title...",
+                          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
         </div>
-        <!-- Priority Select -->
+        <!-- Description Field -->
         <div>
-          <%= f.label :priority, "Priority", class: "block text-sm font-semibold text-gray-900 mb-2" %>
-          <%= f.select :priority,
-                      options_for_select([
-                        ['Low', 'low'],
-                        ['Medium', 'medium'],
-                        ['High', 'high'],
-                        ['Urgent', 'urgent']
-                      ], @list_item.priority),
-                      {},
-                      class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
-        </div>
-        <!-- Status Select -->
-        <div>
-          <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-900 mb-2" %>
-          <%= f.select :status,
-                      options_for_select([
-                        ['Pending', 'pending'],
-                        ['In Progress', 'in_progress'],
-                        ['Completed', 'completed']
-                      ], @list_item.status),
-                      {},
-                      class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
-        </div>
-      </div>
-      <!-- Due Date and Start Date Row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Due Date -->
-        <div>
-          <%= f.label :due_date, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-            Due Date <span class="text-xs font-normal text-gray-500">(optional)</span>
+          <%= f.label :description, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
+            Description <span class="text-xs font-normal text-gray-500">(optional)</span>
           <% end %>
-          <%= f.datetime_local_field :due_date,
-                                     value: (@list_item.due_date&.strftime("%Y-%m-%dT%H:%M") if @list_item.due_date),
-                                     class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
-        </div>
-        <!-- Start Date -->
-        <div>
-          <%= f.label :start_date, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-            Start Date <span class="text-xs font-normal text-gray-500">(optional)</span>
-          <% end %>
-          <%= f.datetime_local_field :start_date,
-                                     value: (@list_item.start_date&.strftime("%Y-%m-%dT%H:%M") if @list_item.start_date),
-                                     class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          <%= f.text_area :description,
+                         rows: 4,
+                         placeholder: "Add more details...",
+                         class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none" %>
         </div>
       </div>
-      <!-- Assigned User and Duration Row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Assigned User -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <%= f.label :assigned_user_id, "Assign To", class: "block text-sm font-semibold text-gray-900" do %>
-              Assign To <span class="text-xs font-normal text-gray-500">(optional)</span>
-            <% end %>
-            <%= link_to "Share Collaborators",
-                        share_list_list_item_path(@list, @list_item),
-                        class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors",
-                        data: { turbo_frame: "modal", turbo_prefetch: false } %>
+      <!-- Section: Classification -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+          </svg>
+          Classification
+        </h2>
+        <!-- Type, Priority, and Status Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Type Select -->
+          <div>
+            <%= f.label :item_type, "Type", class: "block text-sm font-semibold text-gray-900 mb-2" %>
+            <%= f.select :item_type,
+                        options_for_select([
+                          ['Task', 'task'],
+                          ['Milestone', 'milestone'],
+                          ['Feature', 'feature'],
+                          ['Bug', 'bug'],
+                          ['Idea', 'idea'],
+                          ['Note', 'note'],
+                          ['Reference', 'reference'],
+                          ['Decision', 'decision'],
+                          ['Travel', 'travel'],
+                          ['Shopping', 'shopping'],
+                          ['Learning', 'learning'],
+                          ['Health', 'health'],
+                          ['Finance', 'finance'],
+                          ['Home', 'home'],
+                          ['Social', 'social'],
+                          ['Habit', 'habit']
+                        ], @list_item.item_type),
+                        {},
+                        class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
           </div>
-          <%
-            assignable_users = [current_user, @list.owner]
-            assignable_users.concat(@list.collaborator_users)
-            assignable_users = assignable_users.uniq(&:id)
-          %>
-          <%= f.select :assigned_user_id,
-                       options_from_collection_for_select(assignable_users, :id, ->(user) { format_assignee_name(user) }, @list_item.assigned_user_id),
-                       { prompt: "Unassigned" },
-                       class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
-        </div>
-        <!-- Duration Days -->
-        <div>
-          <%= f.label :duration_days, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-            Duration (Days) <span class="text-xs font-normal text-gray-500">(optional)</span>
-          <% end %>
-          <%= f.number_field :duration_days,
-                            min: 0,
-                            placeholder: "0",
-                            class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          <!-- Priority Select -->
+          <div>
+            <%= f.label :priority, "Priority", class: "block text-sm font-semibold text-gray-900 mb-2" %>
+            <%= f.select :priority,
+                        options_for_select([
+                          ['Low', 'low'],
+                          ['Medium', 'medium'],
+                          ['High', 'high'],
+                          ['Urgent', 'urgent']
+                        ], @list_item.priority),
+                        {},
+                        class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+          <!-- Status Select -->
+          <div>
+            <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-900 mb-2" %>
+            <%= f.select :status,
+                        options_for_select([
+                          ['Pending', 'pending'],
+                          ['In Progress', 'in_progress'],
+                          ['Completed', 'completed']
+                        ], @list_item.status),
+                        {},
+                        class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
         </div>
       </div>
-      <!-- URL Field -->
-      <div>
-        <%= f.label :url, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
-          Link <span class="text-xs font-normal text-gray-500">(optional)</span>
-        <% end %>
-        <%= f.url_field :url,
-                       placeholder: "https://example.com",
-                       class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+      <!-- Section: Timeline -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Timeline
+        </h2>
+        <!-- Start Date, Duration, and Due Date Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Start Date -->
+          <div>
+            <%= f.label :start_date, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
+              Start Date <span class="text-xs font-normal text-gray-500">(optional)</span>
+            <% end %>
+            <%= f.datetime_local_field :start_date,
+                                       value: (@list_item.start_date&.strftime("%Y-%m-%dT%H:%M") if @list_item.start_date),
+                                       data: { "date-calculator-target": "startDate", action: "date-calculator#onStartDateChange" },
+                                       class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+          <!-- Duration Days -->
+          <div>
+            <%= f.label :duration_days, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
+              Duration (Days) <span class="text-xs font-normal text-gray-500">(optional)</span>
+            <% end %>
+            <%= f.number_field :duration_days,
+                              min: 0,
+                              placeholder: "0",
+                              data: { "date-calculator-target": "duration", action: "date-calculator#onDurationChange" },
+                              class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+          <!-- Due Date -->
+          <div>
+            <%= f.label :due_date, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
+              Due Date <span class="text-xs font-normal text-gray-500">(optional)</span>
+            <% end %>
+            <%= f.datetime_local_field :due_date,
+                                       value: (@list_item.due_date&.strftime("%Y-%m-%dT%H:%M") if @list_item.due_date),
+                                       data: { "date-calculator-target": "dueDate", action: "date-calculator#onDueDateChange" },
+                                       class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+        </div>
       </div>
-      <!-- Divider -->
-      <div class="border-t border-gray-200 pt-6">
-        <!-- Form Actions -->
-        <div class="flex items-center justify-between">
-          <%= link_to list_list_item_path(@list, @list_item), class: "px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors" do %>
-            Cancel
-          <% end %>
-          <div class="flex items-center space-x-3">
+      <!-- Section: Details -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Details
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Assigned User -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <%= f.label :assigned_user_id, "Assign To", class: "block text-sm font-semibold text-gray-900" do %>
+                Assign To <span class="text-xs font-normal text-gray-500">(optional)</span>
+              <% end %>
+              <%= link_to "Share Collaborators",
+                          share_list_list_item_path(@list, @list_item),
+                          class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors",
+                          data: { turbo_frame: "modal", turbo_prefetch: false } %>
+            </div>
+            <%
+              assignable_users = [current_user, @list.owner]
+              assignable_users.concat(@list.collaborator_users)
+              assignable_users = assignable_users.uniq(&:id)
+            %>
+            <%= f.select :assigned_user_id,
+                         options_from_collection_for_select(assignable_users, :id, ->(user) { format_assignee_name(user) }, @list_item.assigned_user_id),
+                         { prompt: "Unassigned" },
+                         class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+          <!-- URL Field -->
+          <div>
+            <%= f.label :url, class: "block text-sm font-semibold text-gray-900 mb-2" do %>
+              Link <span class="text-xs font-normal text-gray-500">(optional)</span>
+            <% end %>
+            <%= f.url_field :url,
+                           placeholder: "https://example.com",
+                           class: "w-full h-11 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          </div>
+        </div>
+      </div>
+      <!-- Form Actions -->
+      <div class="border-t border-gray-200 pt-8">
+        <div class="flex flex-col-reverse md:flex-row md:items-center md:justify-between gap-4">
+          <!-- Left Actions -->
+          <div class="flex items-center gap-2">
+            <%= link_to list_list_item_path(@list, @list_item), class: "px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors rounded-lg hover:bg-gray-100" do %>
+              Cancel
+            <% end %>
             <%= button_to list_list_item_path(@list, @list_item),
                          method: :delete,
-                         data: { 
+                         data: {
                            turbo_confirm: "Are you sure you want to delete this item? This action cannot be undone.",
                            turbo_stream: true
                          },
                          form: { class: "inline-block" },
-                         class: "px-4 py-2 text-red-600 hover:text-red-800 font-medium transition-colors bg-transparent border-0 cursor-pointer" do %>
+                         class: "px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 font-medium transition-colors rounded-lg bg-transparent border-0 cursor-pointer" do %>
               Delete
             <% end %>
+          </div>
+          <!-- Right Actions -->
+          <div>
             <%= f.submit "Save Changes",
-                        class: "px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200" %>
+                        class: "w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200 shadow-md hover:shadow-lg" %>
           </div>
         </div>
       </div>
