@@ -1,6 +1,5 @@
 <!-- app/views/list_items/_share.html.erb -->
-<%= turbo_frame_tag "modal" do %>
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" data-controller="modal" data-modal-target="modal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" data-controller="modal" data-modal-target="modal">
   <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto border border-gray-200" data-modal-target="backdrop" data-action="click->modal#clickOutside">
     <!-- Modal Header -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
@@ -122,9 +121,8 @@
               </div>
             </div>
             <!-- Action Buttons -->
-            <div class="flex gap-3 pt-2">
-              <%= f.submit "Send Invite", class: "flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
-              <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors" data-action="click->modal#close">Cancel</button>
+            <div class="pt-2">
+              <%= f.submit "Send Invite", class: "w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors" %>
             </div>
           <% end %>
         </div>
@@ -135,5 +133,4 @@
       <button data-action="click->modal#close" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">Done</button>
     </div>
   </div>
-  </div>
-<% end %>
+</div>
