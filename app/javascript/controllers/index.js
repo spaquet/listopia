@@ -34,6 +34,9 @@ application.register("dashboard-chat-input", DashboardChatInputController)
 import DashboardChatScrollController from "./dashboard_chat_scroll_controller"
 application.register("dashboard-chat-scroll", DashboardChatScrollController)
 
+import DateCalculatorController from "./date_calculator_controller"
+application.register("date-calculator", DateCalculatorController)
+
 import DropdownController from "./dropdown_controller"
 application.register("dropdown", DropdownController)
 
@@ -45,6 +48,9 @@ application.register("flash", FlashController)
 
 import InlineEditController from "./inline_edit_controller"
 application.register("inline-edit", InlineEditController)
+
+import InvitationFilterController from "./invitation_filter_controller"
+application.register("invitation-filter", InvitationFilterController)
 
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
