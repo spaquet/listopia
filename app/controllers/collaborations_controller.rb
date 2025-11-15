@@ -130,11 +130,42 @@ class CollaborationsController < ApplicationController
       respond_to do |format|
         format.html { redirect_to @collaboratable, alert: result.errors.join(", ") }
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "flash-messages",
-            partial: "shared/flash_messages",
-            locals: { alert: result.errors.join(", ") }
-          ), status: :unprocessable_entity
+          # Reload associations to show updated state
+          @collaboratable.reload
+          @collaborators = @collaboratable.collaborators.includes(:user)
+          @pending_invitations = @collaboratable.invitations.pending
+          @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
+          @resource_type = @collaboratable.class.name
+          @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+          @list = @collaboratable.is_a?(ListItem) ? @collaboratable.list : @collaboratable
+
+          # Determine which template to render based on resource type
+          if @collaboratable.is_a?(ListItem)
+            modal_partial = "list_items/share"
+          else
+            modal_partial = "collaborations/share_modal"
+          end
+
+          # Update both the flash messages and the modal (with form still visible and error shown)
+          render turbo_stream: [
+            turbo_stream.replace(
+              "flash-messages",
+              partial: "shared/flash_messages",
+              locals: { alert: result.errors.join(", ") }
+            ),
+            turbo_stream.update(
+              "modal",
+              partial: modal_partial,
+              locals: {
+                resource: @collaboratable,
+                resource_type: @resource_type,
+                collaborators: @collaborators,
+                pending_invitations: @pending_invitations,
+                can_manage_collaborators: @can_manage_collaborators,
+                can_remove_collaborator: @can_remove_collaborator
+              }
+            )
+          ], status: :unprocessable_entity
         end
       end
     end
