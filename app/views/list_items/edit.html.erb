@@ -134,7 +134,7 @@
             <%= link_to "Share Collaborators",
                         share_list_list_item_path(@list, @list_item),
                         class: "text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors",
-                        data: { turbo_frame: "modal" } %>
+                        data: { turbo_frame: "modal", turbo_prefetch: false } %>
           </div>
           <%
             assignable_users = [current_user, @list.owner]
