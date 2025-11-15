@@ -195,6 +195,7 @@ class CollaborationsController < ApplicationController
     @collaboration.destroy
 
     CollaborationMailer.removed_from_resource(user, @collaboratable).deliver_later if user
+    send_removal_notification(user) if user
 
     respond_to do |format|
       format.html { redirect_to @collaboratable, notice: "Collaborator removed successfully." }
@@ -205,10 +206,18 @@ class CollaborationsController < ApplicationController
         @can_manage_collaborators = can_manage_collaborators?(@collaboratable)
         @resource_type = @collaboratable.class.name
         @can_remove_collaborator = can_manage_collaborators?(@collaboratable)
+        @list = @collaboratable.is_a?(ListItem) ? @collaboratable.list : @collaboratable
+
+        # Determine which template to render based on resource type
+        if @collaboratable.is_a?(ListItem)
+          modal_partial = "list_items/share"
+        else
+          modal_partial = "collaborations/share_modal"
+        end
 
         render turbo_stream: turbo_stream.update(
           "modal",
-          partial: "collaborations/share_modal",
+          partial: modal_partial,
           locals: {
             resource: @collaboratable,
             resource_type: @resource_type,
@@ -301,5 +310,25 @@ class CollaborationsController < ApplicationController
   rescue ActionController::ParameterMissing
     # If params aren't wrapped in :collaboration key, try top-level params
     params.permit(:email, :permission, :can_invite_collaborators)
+  end
+
+  def send_removal_notification(user)
+    case @collaboratable
+    when List
+      ListCollaborationNotifier.with(
+        actor_id: current_user.id,
+        list_id: @collaboratable.id,
+        action: "removed"
+      ).deliver(user)
+    when ListItem
+      ListItemCollaborationNotifier.with(
+        actor_id: current_user.id,
+        list_item_id: @collaboratable.id,
+        list_id: @collaboratable.list.id,
+        action: "removed"
+      ).deliver(user)
+    end
+  rescue StandardError => e
+    Rails.logger.error("Failed to send removal notification: #{e.message}")
   end
 end
