@@ -105,6 +105,7 @@ class ListItemsController < ApplicationController
     # Ensure @list is available for route generation
     @list ||= @list_item.list
 
+<<<<<<< HEAD
     respond_to do |format|
 <<<<<<< HEAD
       format.html { render :share }
@@ -132,6 +133,18 @@ class ListItemsController < ApplicationController
       format.html { render :share }
 >>>>>>> 158ff7f (Consolidate list item share modal - single source of truth with _share partial)
     end
+=======
+    render turbo_stream: turbo_stream.update(
+      "modal",
+      partial: "list_items/share",
+      locals: {
+        resource: @list_item,
+        collaborators: @collaborators,
+        pending_invitations: @pending_invitations,
+        can_manage_collaborators: @can_manage_collaborators
+      }
+    )
+>>>>>>> bcbd4e5 (Remove redundant share.html.erb view - only turbo_stream format needed)
   end
 
   # Toggle completion status using the new status enum
