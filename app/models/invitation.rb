@@ -147,7 +147,16 @@ class Invitation < ApplicationRecord
         errors.add(:email, "cannot be the list owner's email")
       end
     when "ListItem"
-      # Add similar logic for list items
+      list = invitable&.list
+      if list.present?
+        if user_id.present? && user_id == list.user_id
+          errors.add(:user, "cannot be the list owner")
+        end
+
+        if email.present? && email == list.owner&.email
+          errors.add(:email, "cannot be the list owner's email")
+        end
+      end
     end
   end
 
