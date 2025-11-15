@@ -105,6 +105,7 @@
                   <% if can_manage_collaborators %>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <%= button_to "Cancel", list_list_item_invitation_path(list, list_item, invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
 =======
                     <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Cancel invitation" %>
@@ -112,6 +113,9 @@
 =======
                     <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation), method: :delete, data: { turbo_confirm: "Cancel this invitation?" }, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Cancel invitation" %>
 >>>>>>> 6ab89d0 (Add confirmation dialogs to collaboration removal actions)
+=======
+                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, invitation.id), method: :delete, data: { turbo_confirm: "Cancel this invitation?" }, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Cancel invitation" %>
+>>>>>>> c5c8ab4 (Fix pending invitations removal button in list item share modal)
                   <% end %>
                 </div>
               </div>
