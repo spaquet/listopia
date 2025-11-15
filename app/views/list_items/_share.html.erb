@@ -51,10 +51,14 @@
                   </span>
                   <% if can_manage_collaborators %>
 <<<<<<< HEAD
+<<<<<<< HEAD
                     <%= button_to "Remove", list_list_item_collaboration_path(list, list_item, collaborator), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
 =======
                     <%= button_to "x", list_list_item_collaboration_path(@list, resource, collaborator), method: :delete, class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors inline-block", title: "Remove collaborator" %>
 >>>>>>> ceb89a4 (Fix ListItem collaboration share modal and invitation workflow)
+=======
+                    <%= button_to "x", list_list_item_collaboration_path(@list, resource, collaborator), method: :delete, data: { turbo_confirm: "Remove this collaborator?" }, form_class: "inline", class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors", title: "Remove collaborator" %>
+>>>>>>> f9cc9a6 (Improve remove collaborator button in list item share partial)
                   <% end %>
                 </div>
               </div>
