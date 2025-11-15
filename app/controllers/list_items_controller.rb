@@ -99,7 +99,7 @@ class ListItemsController < ApplicationController
     authorize @list_item, :edit?
 
     @collaborators = @list_item.collaborators.includes(:user)
-    @pending_invitations = @list_item.invitations.where(status: "pending")
+    @pending_invitations = @list_item.invitations.where(status: "pending").to_a
     # Check if user can manage collaborators on this item
     @can_manage_collaborators = policy(@list_item).manage_collaborators?
     # Ensure @list is available for route generation
