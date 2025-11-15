@@ -116,7 +116,7 @@ class ListItemsController < ApplicationController
             pending_invitations: @pending_invitations,
             can_manage_collaborators: @can_manage_collaborators
           }
-        )
+        ), content_type: "text/vnd.turbo-stream.html"
       end
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(

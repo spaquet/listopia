@@ -1,5 +1,6 @@
 <!-- app/views/list_items/_share.html.erb -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" data-controller="modal" data-modal-target="modal">
+<%= turbo_frame_tag "modal" do %>
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" data-controller="modal" data-modal-target="modal">
   <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto border border-gray-200" data-modal-target="backdrop" data-action="click->modal#clickOutside">
     <!-- Modal Header -->
     <div class="flex items-center justify-between p-6 border-b border-gray-200">
@@ -134,4 +135,5 @@
       <button data-action="click->modal#close" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">Done</button>
     </div>
   </div>
-</div>
+  </div>
+<% end %>
