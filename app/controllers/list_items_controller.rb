@@ -106,6 +106,18 @@ class ListItemsController < ApplicationController
     @list ||= @list_item.list
 
     respond_to do |format|
+      format.html do
+        render turbo_stream: turbo_stream.replace(
+          "modal",
+          partial: "list_items/share",
+          locals: {
+            resource: @list_item,
+            collaborators: @collaborators,
+            pending_invitations: @pending_invitations,
+            can_manage_collaborators: @can_manage_collaborators
+          }
+        )
+      end
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
           "modal",
