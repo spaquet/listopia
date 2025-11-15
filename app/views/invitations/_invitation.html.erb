@@ -26,7 +26,11 @@
           <!-- Title/Resource -->
           <div class="flex items-center gap-2">
             <h3 class="text-sm font-semibold text-gray-900 truncate">
-              <%= link_to invitation.invitable.title, invitation.invitable, class: "text-blue-600 hover:text-blue-800" %>
+              <% if invitation.invitable_type == "ListItem" %>
+                <%= link_to invitation.invitable.title, list_list_item_path(invitation.invitable.list, invitation.invitable), class: "text-blue-600 hover:text-blue-800" %>
+              <% else %>
+                <%= link_to invitation.invitable.title, invitation.invitable, class: "text-blue-600 hover:text-blue-800" %>
+              <% end %>
             </h3>
             <% if is_sent %>
               <!-- Permission Badge -->
