@@ -27,11 +27,11 @@ class CollaborationMailer < ApplicationMailer
 
     # Set @list for the template (handles both List and ListItem invitables)
     @list = case @invitable
-            when ListItem
-              @invitable.list
-            else
-              @invitable
-            end
+    when ListItem
+      @invitable.list
+    else
+      @invitable
+    end
 
     # Generate URLs for the template
     @accept_url = @invitation_url

@@ -1,5 +1,5 @@
 # app/services/invitation_service.rb
-require 'ostruct'
+require "ostruct"
 
 class InvitationService
   def initialize(invitable, inviter)
