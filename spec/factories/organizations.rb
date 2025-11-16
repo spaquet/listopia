@@ -4,7 +4,7 @@ FactoryBot.define do
     sequence(:slug) { |n| "org-#{n}" }
     size { :small }
     status { :active }
-    created_by { association :user }
+    creator { association :user }
 
     trait :medium do
       size { :medium }

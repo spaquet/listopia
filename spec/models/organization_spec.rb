@@ -3,7 +3,7 @@ require 'rails_helper'
 
 RSpec.describe Organization, type: :model do
   let(:user) { create(:user) }
-  let(:organization) { create(:organization, created_by: user) }
+  let(:organization) { create(:organization, creator: user) }
 
   describe 'associations' do
     it { is_expected.to belong_to(:creator).class_name('User').with_foreign_key('created_by_id') }

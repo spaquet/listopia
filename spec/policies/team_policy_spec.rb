@@ -4,7 +4,7 @@ require 'rails_helper'
 RSpec.describe TeamPolicy, type: :policy do
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
-  let(:organization) { create(:organization, created_by: user) }
+  let(:organization) { create(:organization, creator: user) }
   let(:team) { create(:team, organization: organization, created_by: user) }
   let(:policy) { described_class.new(user, team) }
 

@@ -211,7 +211,7 @@ class User < ApplicationRecord
 
   # Organization methods
   def in_organization?(organization)
-    organizations.exists?(organization)
+    organizations.exists?(organization.is_a?(Organization) ? organization.id : organization)
   end
 
   def organization_membership(organization)

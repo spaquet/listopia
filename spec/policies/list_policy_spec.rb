@@ -3,8 +3,8 @@ require 'rails_helper'
 RSpec.describe ListPolicy, type: :policy do
   let(:user1) { create(:user) }
   let(:user2) { create(:user) }
-  let(:org1) { create(:organization, created_by: user1) }
-  let(:org2) { create(:organization, created_by: user2) }
+  let(:org1) { create(:organization, creator: user1) }
+  let(:org2) { create(:organization, creator: user2) }
 
   before do
     # Setup memberships
@@ -67,7 +67,7 @@ RSpec.describe ListPolicy, type: :policy do
     end
 
     context "when user is member of multiple orgs" do
-      let(:org3) { create(:organization, created_by: user1) }
+      let(:org3) { create(:organization, creator: user1) }
 
       before do
         create(:organization_membership, organization: org3, user: user1, role: :member)
@@ -356,8 +356,8 @@ RSpec.describe ListPolicy, type: :policy do
   describe "organization boundary enforcement" do
     context "cross-organization access denial" do
       it "prevents user in org A from accessing list in org B" do
-        org_a = create(:organization, created_by: user1)
-        org_b = create(:organization, created_by: user2)
+        org_a = create(:organization, creator: user1)
+        org_b = create(:organization, creator: user2)
 
         create(:organization_membership, organization: org_a, user: user1, role: :owner)
         create(:organization_membership, organization: org_b, user: user2, role: :owner)
@@ -368,7 +368,7 @@ RSpec.describe ListPolicy, type: :policy do
       end
 
       it "prevents user from collaborating on list in organization they don't belong to" do
-        org_b = create(:organization, created_by: user2)
+        org_b = create(:organization, creator: user2)
         create(:organization_membership, organization: org_b, user: user2, role: :owner)
 
         list_in_b = create(:list, owner: user2, organization: org_b)
