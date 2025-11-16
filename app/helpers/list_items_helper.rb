@@ -7,5 +7,4 @@ module ListItemsHelper
       user.name
     end
   end
-
 end
