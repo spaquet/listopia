@@ -57,10 +57,23 @@ class OrganizationPolicy < ApplicationPolicy
   end
 
   def suspend?
+    # Admin users can suspend any organization
+    return true if user.admin?
+    # Organization owner can suspend their own
     record.user_is_owner?(user)
   end
 
   def reactivate?
+    # Admin users can reactivate any organization
+    return true if user.admin?
+    # Organization owner can reactivate their own
+    record.user_is_owner?(user)
+  end
+
+  def audit_logs?
+    # Admin users can view audit logs
+    return true if user.admin?
+    # Organization owner can view their own
     record.user_is_owner?(user)
   end
 

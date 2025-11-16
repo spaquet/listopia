@@ -111,4 +111,14 @@ class Organization < ApplicationRecord
   def user_is_owner?(user)
     user_role(user) == 'owner'
   end
+
+  # Suspend organization
+  def suspend!
+    update(status: :suspended)
+  end
+
+  # Reactivate organization
+  def reactivate!
+    update(status: :active)
+  end
 end

@@ -1,0 +1,56 @@
+<!-- app/views/admin/organizations/_organization_row.html.erb -->
+<tr id="organization_<%= organization.id %>" class="hover:bg-gray-50 transition-colors">
+  <td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex flex-col">
+      <span class="text-sm font-medium text-gray-900"><%= link_to organization.name, admin_organization_path(organization), class: "text-blue-600 hover:text-blue-700" %></span>
+      <span class="text-xs text-gray-500"><%= organization.slug %></span>
+    </div>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <span class="text-sm text-gray-700 capitalize"><%= organization.size.humanize %></span>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <span class="text-sm font-medium text-gray-900"><%= organization.users.count %></span>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% status_class = case organization.status
+      when "active" then "bg-green-100 text-green-800"
+      when "suspended" then "bg-yellow-100 text-yellow-800"
+      else "bg-gray-100 text-gray-800"
+      end %>
+    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %>">
+      <%= organization.status.humanize %>
+    </span>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+    <%= time_ago_in_words(organization.created_at) %> ago
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <div class="flex justify-end space-x-2">
+      <%= link_to admin_organization_path(organization), class: "text-blue-600 hover:text-blue-900" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+      <% end %>
+
+      <% if organization.status_active? %>
+        <%= link_to suspend_admin_organization_path(organization), method: :post,
+            data: { confirm: "Are you sure?" },
+            class: "text-yellow-600 hover:text-yellow-900" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 5v1m0-13a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        <% end %>
+      <% elsif organization.status_suspended? %>
+        <%= link_to reactivate_admin_organization_path(organization), method: :post,
+            data: { confirm: "Are you sure?" },
+            class: "text-green-600 hover:text-green-900" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        <% end %>
+      <% end %>
+    </div>
+  </td>
+</tr>
