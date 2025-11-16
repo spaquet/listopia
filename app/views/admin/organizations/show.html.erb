@@ -63,62 +63,6 @@
         </dl>
       </div>
 
-      <!-- Members Card -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Members (<%= @organization.users.count %>)</h2>
-        <% if @organization.users.any? %>
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Name</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Email</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Role</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Joined</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200">
-                <% @organization.organization_memberships.each do |membership| %>
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm text-gray-900">
-                      <%= link_to membership.user.name, admin_user_path(membership.user), class: "text-blue-600 hover:text-blue-700" %>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-600"><%= membership.user.email %></td>
-                    <td class="px-4 py-3 text-sm">
-                      <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium capitalize">
-                        <%= membership.role.humanize %>
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm">
-                      <% status_class = case membership.status
-                        when "active" then "bg-green-100 text-green-800"
-                        when "pending" then "bg-blue-100 text-blue-800"
-                        when "suspended" then "bg-yellow-100 text-yellow-800"
-                        else "bg-gray-100 text-gray-800"
-                        end %>
-                      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %>">
-                        <%= membership.status.humanize %>
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-500">
-                      <% if membership.joined_at %>
-                        <%= membership.joined_at.strftime("%b %d, %Y") %>
-                      <% else %>
-                        <span class="text-gray-400">—</span>
-                      <% end %>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-        <% else %>
-          <div class="text-center py-8">
-            <p class="text-gray-500">No members in this organization yet</p>
-          </div>
-        <% end %>
-      </div>
     </div>
 
     <!-- Sidebar -->
@@ -132,7 +76,7 @@
                 data: { confirm: "Are you sure you want to suspend this organization?" },
                 class: "block w-full bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200 transition-colors text-center text-sm font-medium" do %>
               <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 5v1m0-13a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               Suspend Organization
             <% end %>
@@ -149,9 +93,9 @@
         </div>
       </div>
 
-      <!-- Stats Card -->
+      <!-- Usage Card -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Statistics</h2>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Usage</h2>
         <dl class="space-y-3">
           <div class="flex justify-between">
             <dt class="text-sm text-gray-600">Total Members</dt>
@@ -166,6 +110,25 @@
             <dd class="text-lg font-semibold text-gray-900"><%= @organization.lists.count %></dd>
           </div>
         </dl>
+      </div>
+
+      <!-- Management Card -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Management</h2>
+        <div class="space-y-2">
+          <%= link_to admin_users_path(organization_id: @organization.id), class: "block w-full bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors text-center text-sm font-medium" do %>
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            Manage Users
+          <% end %>
+          <%= link_to organization_path(@organization), class: "block w-full bg-purple-100 text-purple-800 px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors text-center text-sm font-medium" do %>
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM4 20h16a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+            </svg>
+            Manage Teams
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
