@@ -21,34 +21,18 @@ class OrganizationMembersController < ApplicationController
   def create
     authorize @organization, :invite_member?
 
-    emails = params[:emails].split(/[\n,]/).map(&:strip).reject(&:blank?)
+    emails = params[:emails]
     role = params[:role] || 'member'
 
-    emails.each do |email|
-      next if email.blank?
+    # Use the service to handle invitations
+    service = OrganizationInvitationService.new(@organization, current_user, emails, role)
+    results = service.invite_users
 
-      user = User.find_by(email: email)
-
-      if user.present?
-        # User exists, create membership directly or update if exists
-        membership = @organization.organization_memberships.find_or_initialize_by(user: user)
-        membership.role = role
-        membership.status = :active
-        membership.save
-      else
-        # User doesn't exist, create invitation
-        @organization.invitations.create(
-          invitable_type: 'Organization',
-          invitable_id: @organization.id,
-          email: email,
-          role: role,
-          invited_by: current_user
-        )
-      end
-    end
+    # Build response message
+    message = build_invitation_message(results)
 
     respond_to do |format|
-      format.html { redirect_to organization_members_path(@organization), notice: "Invitations sent successfully." }
+      format.html { redirect_to organization_members_path(@organization), notice: message }
       format.turbo_stream
     end
   end
@@ -101,5 +85,14 @@ class OrganizationMembersController < ApplicationController
 
   def authorize_access!
     authorize @organization, :manage_members?
+  end
+
+  def build_invitation_message(results)
+    messages = []
+    messages << "#{results[:created].length} invitation(s) sent" if results[:created].any?
+    messages << "#{results[:already_member].length} user(s) already members" if results[:already_member].any?
+    messages << "#{results[:invalid].length} invalid email(s)" if results[:invalid].any?
+
+    messages.join(", ").capitalize
   end
 end

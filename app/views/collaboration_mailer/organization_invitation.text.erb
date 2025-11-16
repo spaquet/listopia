@@ -1,0 +1,39 @@
+<%= render_organization_invitation_text %>
+
+<% if @membership.present? %>
+Hi <%= @user.name %>,
+
+<%= @inviter_name %> has added you to <%= @organization.name %> on Listopia.
+
+You can now:
+- View and manage lists in the organization
+- Collaborate with team members
+- Access shared resources
+
+Go to <%= @organization.name %>:
+<%= @organization_url %>
+
+<% else %>
+Hi there,
+
+<%= @inviter_name %> has invited you to join <%= @organization.name %> on Listopia.
+
+Listopia is a collaborative list management platform that makes it easy to:
+- Create and manage lists with your team
+- Collaborate in real-time
+- Keep everyone organized and on the same page
+
+You can accept this invitation in two ways:
+1. Sign up for a new account with this email address
+2. If you already have a Listopia account, log in and accept the invitation
+
+Accept Invitation:
+<%= @accept_url %>
+
+Sign Up:
+<%= @signup_url %>
+
+<% end %>
+If you didn't expect this invitation, you can safely ignore this email.
+
+© Listopia. All rights reserved.

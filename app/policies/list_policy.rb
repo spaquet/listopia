@@ -71,10 +71,21 @@ class ListPolicy < ApplicationPolicy
   # Scope for index action
   class Scope < Scope
     def resolve
-      # Return lists the user owns or collaborates on
-      scope.joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
-           .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
-           .group("lists.id")
+      # Get user's active organization IDs
+      user_org_ids = user.organization_memberships
+                         .where(status: :active)
+                         .pluck(:organization_id)
+
+      # Return lists the user owns or collaborates on, within their organizations
+      org_lists = scope.joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
+                       .where(organization_id: user_org_ids)
+                       .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
+                       .group("lists.id")
+
+      personal_lists = scope.where(organization_id: nil, user_id: user.id)
+
+      # Union both personal and org lists
+      org_lists.union(personal_lists)
     end
   end
 

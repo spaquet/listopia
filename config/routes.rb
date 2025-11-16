@@ -48,6 +48,9 @@ Rails.application.routes.draw do
   # Collaboration invitation acceptance
   get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
 
+  # Organization invitation acceptance
+  get "/organizations/invitations/accept/:token", to: "organization_invitations#accept", as: "accept_organization_invitation"
+
   # Invitations management (list sent/received invitations with management features)
   resources :invitations, only: [ :index, :show, :update ] do
     member do

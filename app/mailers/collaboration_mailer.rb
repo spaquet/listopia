@@ -76,4 +76,46 @@ class CollaborationMailer < ApplicationMailer
       subject: "Your permission has been updated for #{@collaboratable.title}"
     )
   end
+
+  # Organization invitation for existing user
+  def organization_invitation(membership_or_invitation)
+    case membership_or_invitation
+    when OrganizationMembership
+      handle_organization_membership_email(membership_or_invitation)
+    when Invitation
+      handle_organization_invitation_email(membership_or_invitation)
+    end
+  end
+
+  private
+
+  def handle_organization_membership_email(membership)
+    @membership = membership
+    @organization = membership.organization
+    @user = membership.user
+    @inviter = @organization.creator
+    @inviter_name = @inviter&.name || "Someone"
+    @organization_url = organization_url(@organization)
+
+    mail(
+      to: @user.email,
+      subject: "#{@inviter_name} added you to #{@organization.name}"
+    )
+  end
+
+  def handle_organization_invitation_email(invitation)
+    @invitation = invitation
+    @organization = invitation.organization
+    @email = invitation.email
+    @inviter = invitation.invited_by
+    @inviter_name = @inviter&.name || "Someone"
+    @invitation_token = invitation.invitation_token
+    @signup_url = new_registration_url
+    @accept_url = accept_organization_invitation_url(@invitation_token)
+
+    mail(
+      to: @email,
+      subject: "#{@inviter_name} invited you to join #{@organization.name}"
+    )
+  end
 end

@@ -12,6 +12,9 @@ class RegistrationsController < ApplicationController
     @user = User.new(registration_params)
 
     if @user.save
+      # Create personal organization for new user
+      create_personal_organization(@user)
+
       # Generate email verification token and send email
       token = @user.generate_email_verification_token
       AuthMailer.email_verification(@user, token).deliver_now
@@ -24,6 +27,13 @@ class RegistrationsController < ApplicationController
           session.delete(:pending_collaboration_token)
           flash[:notice] = "Account created and collaboration invitation accepted! Please verify your email to get started."
         end
+      end
+
+      # Store org invitation token if present
+      if session[:pending_organization_invitation_token]
+        session[:org_invitation_token] = session[:pending_organization_invitation_token]
+        session.delete(:pending_organization_invitation_token)
+        session.delete(:pending_organization_invitation_email)
       end
 
       redirect_to verify_email_path, notice: "Please check your email to verify your account."
@@ -49,6 +59,14 @@ class RegistrationsController < ApplicationController
           redirect_to collaboration.list, notice: "Email verified! Welcome to the collaboration!"
           return
         end
+      end
+
+      # If they have a pending organization invitation, redirect to accept it
+      if session[:org_invitation_token]
+        org_token = session[:org_invitation_token]
+        session.delete(:org_invitation_token)
+        redirect_to accept_organization_invitation_path(org_token), notice: "Email verified! Now accepting your organization invitation..."
+        return
       end
 
       redirect_to dashboard_path, notice: "Email verified! Welcome to Listopia!"
@@ -124,5 +142,30 @@ class RegistrationsController < ApplicationController
   # Redirect authenticated users away from registration
   def redirect_if_authenticated
     redirect_to dashboard_path if current_user
+  end
+
+  # Create a personal organization for new user
+  def create_personal_organization(user)
+    org_name = "#{user.name}'s Workspace"
+    slug_base = user.email.split('@')[0]
+    slug = "#{slug_base}-#{user.id[0...8]}"
+
+    org = Organization.create!(
+      name: org_name,
+      slug: slug,
+      size: :small,
+      status: :active,
+      created_by_id: user.id
+    )
+
+    OrganizationMembership.create!(
+      organization: org,
+      user: user,
+      role: :owner,
+      status: :active,
+      joined_at: Time.current
+    )
+
+    user.update!(current_organization_id: org.id)
   end
 end
