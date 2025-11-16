@@ -8,7 +8,7 @@
 #  name          :string           not null
 #  size          :integer          default("small"), not null
 #  slug          :string           not null
-#  status        :string           default("active"), not null
+#  status        :integer          default("active"), not null
 #  created_at    :datetime         not null
 #  updated_at    :datetime         not null
 #  created_by_id :uuid             not null

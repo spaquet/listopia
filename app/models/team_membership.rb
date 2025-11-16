@@ -6,7 +6,7 @@
 #  id                         :uuid             not null, primary key
 #  joined_at                  :datetime         not null
 #  metadata                   :jsonb            not null
-#  role                       :string           default("member"), not null
+#  role                       :integer          default("member"), not null
 #  created_at                 :datetime         not null
 #  updated_at                 :datetime         not null
 #  organization_membership_id :uuid             not null

@@ -1,4 +1,29 @@
 # spec/models/team_spec.rb
+# == Schema Information
+#
+# Table name: teams
+#
+#  id              :uuid             not null, primary key
+#  metadata        :jsonb            not null
+#  name            :string           not null
+#  slug            :string           not null
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  created_by_id   :uuid             not null
+#  organization_id :uuid             not null
+#
+# Indexes
+#
+#  index_teams_on_created_at                (created_at)
+#  index_teams_on_created_by_id             (created_by_id)
+#  index_teams_on_organization_id           (organization_id)
+#  index_teams_on_organization_id_and_slug  (organization_id,slug) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (created_by_id => users.id)
+#  fk_rails_...  (organization_id => organizations.id)
+#
 require 'rails_helper'
 
 RSpec.describe Team, type: :model do

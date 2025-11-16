@@ -6,8 +6,8 @@
 #  id              :uuid             not null, primary key
 #  joined_at       :datetime         not null
 #  metadata        :jsonb            not null
-#  role            :string           default("member"), not null
-#  status          :string           default("active"), not null
+#  role            :integer          default("member"), not null
+#  status          :integer          default("active"), not null
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  organization_id :uuid             not null
