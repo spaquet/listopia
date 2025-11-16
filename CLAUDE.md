@@ -42,6 +42,50 @@ Quick reference for developing Listopia, a modern Rails 8 collaborative list man
 - Respond with `turbo_stream` format from controllers
 - Trigger broadcasts for multi-user real-time collaboration
 
+### Organizations & Teams Architecture
+
+**Foundational Model:**
+- Every user belongs to one or more organizations
+- Organizations auto-create on signup (personal workspace)
+- Teams are optional sub-groups within organizations
+- All data (lists, items, collaborations) scoped to organizations
+
+**Three-Level Hierarchy:**
+```
+User → Organization → Team → Lists/Collaborators
+User → Organization → Lists (without team)
+```
+
+**Role System:**
+- Organization roles: member, admin, owner (stored in OrganizationMembership.role enum)
+- Team roles: member, lead, admin (stored in TeamMembership.role enum)
+- Use Pundit for authorization checks, Rolify for role management
+
+**Authorization Pattern:**
+Every access follows this validation chain:
+1. Authentication: user must be signed in
+2. Org membership: user must be member of organization
+3. Role-based: Pundit policy checks specific permission
+4. Query scoping: data filtered to user's organizations
+
+Example:
+```ruby
+authorize @list  # Pundit checks: user in org? has permission?
+@lists = policy_scope(List)  # Returns only lists in user's orgs
+```
+
+**Key Implementation Rule:**
+All queries must include org context. Never fetch data without organization filter. Use either:
+- `policy_scope(Model)` - Pundit handles scoping
+- `current_organization.lists` - Access through association
+- `.where(organization_id: current_user.organizations.select(:id))` - Explicit filter
+
+**Reused Infrastructure:**
+- Invitations table (polymorphic, add org_id column)
+- Collaborators model (add org boundary validation)
+- Logidze (enable on new models with has_logidze)
+- CollaborationMailer (extend with org_invitation method)
+
 ## Key Models
 
 ```ruby
@@ -71,6 +115,30 @@ enum :status (active, archived, completed)
 belongs_to :chat, :user (optional for assistant messages)
 enum :role (user, assistant, system, tool)
 ```
+
+### Organization Models
+
+**Organization** - Top-level container
+- Attributes: id (UUID), name, slug (unique), size (enum), status (enum), created_by (FK)
+- Associations: has_many users (through memberships), has_many teams, has_many lists
+- Logidze: enabled (tracks all changes)
+- Used to scope all other data
+
+**OrganizationMembership** - User-org relationship
+- Attributes: organization_id (FK), user_id (FK), role (enum: member/admin/owner), status (enum: pending/active/suspended/revoked), joined_at
+- Unique constraint: [organization_id, user_id]
+- Tracks user's role and access status in organization
+
+**Team** - Sub-group within organization
+- Attributes: id (UUID), organization_id (FK), name, slug, created_by (FK)
+- Unique constraint: [organization_id, slug]
+- Associations: has_many users (through memberships), has_many lists
+- Lists can belong to team or exist without team
+
+**TeamMembership** - User-team relationship
+- Attributes: team_id (FK), user_id (FK), organization_membership_id (FK), role (enum: member/lead/admin), joined_at
+- Unique constraint: [team_id, user_id]
+- Prerequisite: user must be OrganizationMembership in team's org first
 
 ## Frontend Approach
 
@@ -144,6 +212,41 @@ export default class extends Controller {
 </div>
 ```
 
+### Organization & Team Operations
+
+**Check if user is in organization:**
+```ruby
+current_user.in_organization?(org)  # true/false
+```
+
+**Get all accessible lists:**
+```ruby
+policy_scope(List)  # Lists in all user's orgs
+current_organization.lists  # Lists in current org
+```
+
+**Get teams in current org:**
+```ruby
+current_organization.teams
+current_user.teams.where(organization_id: current_organization.id)
+```
+
+**Create resource in current org:**
+```ruby
+@list = current_organization.lists.build(title: "...")
+@list.owner = current_user
+authorize @list
+```
+
+**Invite user to organization:**
+Use OrganizationInvitationService (see workflows section)
+
+**Ensure org boundary in queries:**
+All custom queries should include:
+```ruby
+.where(organization_id: current_user.organizations.select(:id))
+```
+
 ## Performance & Quality
 
 ### Database
@@ -172,6 +275,39 @@ export default class extends Controller {
 **Turbo Stream Not Working:** Check format responds with `format.turbo_stream`  
 **Test Database Issues:** Run `RAILS_ENV=test rails db:reset`
 
+## Development Standards
+### Organization & Team Development Guidelines
+
+**Query Scoping Checklist:**
+When fetching any data, ensure:
+- [ ] Query includes org boundary check
+- [ ] Using policy_scope when loading multiple records
+- [ ] Explicit .where(organization_id: ...) if not using policy_scope
+- [ ] Accessed through association (current_organization.items) when possible
+
+**Creating Resources in Org Context:**
+- Set organization_id when creating records
+- Use: `current_organization.lists.build(...)` OR `@resource.organization_id = current_organization.id`
+- Verify organization_id is persisted in database
+
+**Model Validation for Org Boundaries:**
+Add validation when model references resource in different org:
+- Collaborator must validate user is in resource's org
+- TeamMembership must validate user is org member
+- Any cross-org references need validation
+
+**Authorization Pattern for Controllers:**
+Every action accessing org/team data:
+- Call `authorize @resource` (Pundit)
+- OR verify `current_user.in_organization?(org)` explicitly
+- Always check policy before responding
+
+**Testing Organization Access Control:**
+Core test scenario:
+- User in Org A cannot access data in Org B
+- Both positive (authorized) and negative (denied) cases
+- Test at multiple layers: policy, controller, query
+
 ## Useful Commands
 
 ```bash
@@ -186,6 +322,9 @@ bundle exec rspec spec/models   # Run model tests only
 # Code Quality
 bundle exec rubocop --fix       # Auto-fix style issues
 bundle exec brakeman            # Security check
+
+# Create Simulus controller
+rails g stimulus [NameOfTheController] # Create a new stimulus controller and add it to the index.js
 
 # Frontend
 bun install                      # Install JS dependencies
