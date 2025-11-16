@@ -7,13 +7,20 @@ class Admin::UsersController < Admin::BaseController
   def index
     authorize User
 
+    # Get current admin's organizations for filtering
+    @admin_organizations = current_user.organizations.order(name: :asc)
+
+    # Get organization_id from params (default to current_organization if admin has one)
+    organization_id = params[:organization_id] || current_user.current_organization_id
+
     # Use ONLY params, no session fallback
     @filter_service = UserFilterService.new(
       query: params[:query],
       status: params[:status],
       role: params[:role],
       verified: params[:verified],
-      sort_by: params[:sort_by]
+      sort_by: params[:sort_by],
+      organization_id: organization_id
     )
 
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
@@ -23,10 +30,17 @@ class Admin::UsersController < Admin::BaseController
       status: @filter_service.status,
       role: @filter_service.role,
       verified: @filter_service.verified,
-      sort_by: @filter_service.sort_by
+      sort_by: @filter_service.sort_by,
+      organization_id: @filter_service.organization_id
     }
 
-    @total_users = User.count
+    # Count total users in selected organization if filtering by org
+    @total_users = organization_id.present? ?
+      User.joins(:organization_memberships)
+          .where(organization_memberships: { organization_id: organization_id })
+          .distinct
+          .count :
+      User.count
 
     respond_to do |format|
       format.html
