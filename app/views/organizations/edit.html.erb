@@ -1,0 +1,13 @@
+<div class="space-y-6 max-w-2xl">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Edit Organization</h1>
+      <p class="mt-2 text-gray-600">Update settings for <%= @organization.name %></p>
+    </div>
+    <%= link_to "← Back", organization_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <%= render "form", organization: @organization %>
+  </div>
+</div>

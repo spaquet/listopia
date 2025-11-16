@@ -1,0 +1,34 @@
+<%= form_with model: [@organization, @team], local: true, class: "space-y-6" do |f| %>
+  <% if @team.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-red-900 mb-2">
+        <%= pluralize(@team.errors.count, "error") %> prevented this team from being saved:
+      </h3>
+      <ul class="text-sm text-red-700 list-disc list-inside">
+        <% @team.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, "Team Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
+    <%= f.text_field :name,
+      class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+      placeholder: "Engineering Team",
+      required: true
+    %>
+    <p class="mt-1 text-sm text-gray-600">The name of your team</p>
+  </div>
+
+  <div class="flex gap-2">
+    <%= f.submit @team.persisted? ? "Update Team" : "Create Team",
+      class: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+    %>
+    <%= link_to "Cancel",
+      @team.persisted? ? organization_team_path(@organization, @team) : organization_teams_path(@organization),
+      class: "px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
+    %>
+  </div>
+<% end %>

@@ -1,0 +1,56 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Teams</h1>
+      <p class="mt-2 text-gray-600">Organize your team members in <%= @organization.name %></p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "← Back", organization_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+      <% if policy(@organization).manage_teams? %>
+        <%= link_to "New Team", new_organization_team_path(@organization), class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @teams.any? %>
+    <div class="grid gap-4">
+      <% @teams.each do |team| %>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h2 class="text-lg font-semibold text-gray-900">
+                <%= link_to team.name, organization_team_path(@organization, team), class: "hover:text-blue-600" %>
+              </h2>
+              <p class="text-sm text-gray-600 mt-1">
+                <%= team.users.count %> members · Created <%= time_ago_in_words(team.created_at) %> ago
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <% if policy(team).show? %>
+                <%= link_to "View", organization_team_path(@organization, team), class: "px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded" %>
+              <% end %>
+              <% if policy(team).update? %>
+                <%= link_to "Edit", edit_organization_team_path(@organization, team), class: "px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded" %>
+              <% end %>
+              <% if policy(team).manage_members? %>
+                <%= link_to "Members", organization_team_members_path(@organization, team), class: "px-3 py-1 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded" %>
+              <% end %>
+              <% if policy(team).destroy? %>
+                <%= link_to "Delete", organization_team_path(@organization, team), method: :delete, data: { confirm: "Are you sure?" }, class: "px-3 py-1 text-sm bg-red-100 text-red-700 hover:bg-red-200 rounded" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%= pagy_nav(@pagy) %>
+  <% else %>
+    <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <p class="text-gray-600 mb-4">No teams created yet.</p>
+      <% if policy(@organization).manage_teams? %>
+        <%= link_to "Create your first team", new_organization_team_path(@organization), class: "inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

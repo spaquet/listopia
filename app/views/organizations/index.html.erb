@@ -1,0 +1,54 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Organizations</h1>
+      <p class="mt-2 text-gray-600">Manage your organizations and teams</p>
+    </div>
+    <%= link_to "New Organization", new_organization_path, class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+  </div>
+
+  <% if @organizations.any? %>
+    <div class="grid gap-4">
+      <% @organizations.each do |org| %>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h2 class="text-lg font-semibold text-gray-900">
+                <%= link_to org.name, organization_path(org), class: "hover:text-blue-600" %>
+              </h2>
+              <p class="text-sm text-gray-600 mt-1">
+                <%= org.users.count %> members · Created <%= time_ago_in_words(org.created_at) %> ago
+              </p>
+              <div class="mt-2 flex gap-2">
+                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                  <%= org.size.titleize %>
+                </span>
+                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full <%= org.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                  <%= org.status.titleize %>
+                </span>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <% if policy(org).show? %>
+                <%= link_to "View", organization_path(org), class: "px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded" %>
+              <% end %>
+              <% if policy(org).update? %>
+                <%= link_to "Edit", edit_organization_path(org), class: "px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded" %>
+              <% end %>
+              <% if policy(org).destroy? %>
+                <%= link_to "Delete", organization_path(org), method: :delete, data: { confirm: "Are you sure?" }, class: "px-3 py-1 text-sm bg-red-100 text-red-700 hover:bg-red-200 rounded" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%= pagy_nav(@pagy) %>
+  <% else %>
+    <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <p class="text-gray-600 mb-4">You don't have any organizations yet.</p>
+      <%= link_to "Create your first organization", new_organization_path, class: "inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+    </div>
+  <% end %>
+</div>
