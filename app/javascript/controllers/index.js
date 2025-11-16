@@ -90,3 +90,6 @@ application.register("toggle", ToggleController)
 
 import UserFilterController from "./user_filter_controller"
 application.register("user-filter", UserFilterController)
+
+import WysiwygMarkdownController from "./wysiwyg_markdown_controller"
+application.register("wysiwyg-markdown", WysiwygMarkdownController)

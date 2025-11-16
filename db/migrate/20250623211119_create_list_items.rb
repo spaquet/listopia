@@ -29,8 +29,8 @@ class CreateListItems < ActiveRecord::Migration[8.0]
       t.decimal :total_tracked_time, precision: 10, scale: 2, default: 0.0, null: false
 
       # Timeline management
-      t.datetime :start_date, default: -> { "CURRENT_TIMESTAMP" }, null: false
-      t.integer :duration_days, default: 0, null: false
+      t.datetime :start_date
+      t.integer :duration_days
 
       # Additional data
       t.string :url # for link type items
