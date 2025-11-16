@@ -15,11 +15,15 @@ class OrganizationsController < ApplicationController
   def new
     @organization = Organization.new
     authorize @organization, :create?
+    respond_to do |format|
+      format.html
+      format.turbo_stream
+    end
   end
 
   def create
     @organization = current_user.organizations.build(organization_params)
-    @organization.created_by = current_user
+    @organization.created_by_id = current_user.id
     authorize @organization, :create?
 
     if @organization.save
@@ -33,9 +37,15 @@ class OrganizationsController < ApplicationController
       # Set as current organization
       self.current_organization = @organization
 
-      redirect_to organization_path(@organization), notice: "Organization created successfully."
+      respond_to do |format|
+        format.html { redirect_to organization_path(@organization), notice: "Organization created successfully." }
+        format.turbo_stream { render :create }
+      end
     else
-      render :new, status: :unprocessable_entity
+      respond_to do |format|
+        format.html { render :new, status: :unprocessable_entity }
+        format.turbo_stream { render :new }
+      end
     end
   end
 

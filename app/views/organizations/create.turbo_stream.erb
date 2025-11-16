@@ -1,0 +1,4 @@
+<%= turbo_stream.remove "admin_modals" %>
+<%= turbo_stream.prepend "organizations-table" do %>
+  <%= render "admin/organizations/organization_row", organization: @organization %>
+<% end %>

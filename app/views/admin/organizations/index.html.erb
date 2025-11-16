@@ -1,5 +1,9 @@
 <!-- app/views/admin/organizations/index.html.erb -->
 <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
+
+<!-- Modals Container -->
+<div id="admin_modals"></div>
+
 <div class="max-w-7xl mx-auto space-y-6">
   <!-- Header -->
   <div class="flex items-center justify-between">
@@ -8,6 +12,12 @@
       <p class="text-gray-600 mt-1">Manage all organizations and their members</p>
     </div>
     <div class="flex items-center space-x-3">
+      <%= link_to new_organization_path, class: "bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center", data: { turbo_stream: true } do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Create Organization
+      <% end %>
       <%= link_to admin_root_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors" do %>
         <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -186,7 +196,7 @@
             <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody class="divide-y divide-gray-200" id="organizations-table">
           <% if @organizations.any? %>
             <% @organizations.each do |organization| %>
               <%= render "organization_row", organization: organization %>
