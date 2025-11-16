@@ -5,6 +5,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def show?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Owner, collaborators, or public lists
     record.owner == user ||
     record.collaborators.exists?(user: user) ||
@@ -16,6 +19,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def update?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Owner or write collaborators
     record.owner == user ||
     record.collaborators.permission_write.exists?(user: user)
@@ -26,6 +32,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def destroy?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Only the owner can delete a list
     record.owner == user
   end
