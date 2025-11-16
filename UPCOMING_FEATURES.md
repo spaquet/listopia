@@ -2,7 +2,7 @@
 
 This document describes the purpose of each new table added to the collaborative lists and task management application to support additional features.
 
-## time_entries
+## time_entries - PARTIAL
 **Purpose**: Logs time spent by users on specific tasks to support time tracking for productivity analysis and billing.
 - `list_item_id`: References the task being tracked (foreign key to `list_items`).
 - `user_id`: References the user tracking time (foreign key to `users`).
@@ -12,7 +12,7 @@ This document describes the purpose of each new table added to the collaborative
 - `metadata`: Stores additional data as JSON.
 - `created_at` and `updated_at`: Timestamps for record creation and updates.
 
-## collaborators
+## collaborators - IMPLEMENTED
 **Purpose**: Tracks users collaborating on resources (e.g., tasks, lists) in a polymorphic manner, allowing multiple users to contribute without being the owner.
 - `collaboratable_id` and `collaboratable_type`: Polymorphic association to the resource (e.g., `ListItem`, `List`).
 - `user_id`: References the collaborating user (foreign key to `users`).
@@ -20,7 +20,7 @@ This document describes the purpose of each new table added to the collaborative
 - `created_at` and `updated_at`: Timestamps for record creation and updates.
 - Unique index on `collaboratable_id`, `collaboratable_type`, `user_id` prevents duplicate collaborations.
 
-## invitations
+## invitations - IMPLEMENTED
 **Purpose**: Manages invitations for users to collaborate on resources (e.g., tasks, lists) in a polymorphic manner, replacing the `list_collaborations` table.
 - `invitable_id` and `invitable_type`: Polymorphic association to the resource being invited to.
 - `user_id`: References the invited user (foreign key to `users`, optional).
