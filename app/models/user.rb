@@ -29,11 +29,13 @@
 #  uid                      :string
 #  created_at               :datetime         not null
 #  updated_at               :datetime         not null
+#  current_organization_id  :uuid
 #  suspended_by_id          :uuid
 #
 # Indexes
 #
 #  index_users_on_account_metadata          (account_metadata) USING gin
+#  index_users_on_current_organization_id   (current_organization_id)
 #  index_users_on_deactivated_at            (deactivated_at)
 #  index_users_on_discarded_at              (discarded_at)
 #  index_users_on_email                     (email) UNIQUE
@@ -69,6 +71,13 @@ class User < ApplicationRecord
   has_many :sessions, dependent: :destroy
   has_many :chats, dependent: :destroy
   has_many :messages, dependent: :destroy
+
+  # Organization & Team associations
+  has_many :organization_memberships, dependent: :destroy
+  has_many :organizations, through: :organization_memberships
+  has_many :team_memberships, dependent: :destroy
+  has_many :teams, through: :team_memberships
+  belongs_to :current_organization, class_name: "Organization", optional: true
 
   # Collaboration associations
   has_many :time_entries, dependent: :destroy
@@ -198,6 +207,25 @@ class User < ApplicationRecord
   # I18n helper
   def with_locale(&block)
     I18n.with_locale(locale, &block)
+  end
+
+  # Organization methods
+  def in_organization?(organization)
+    organizations.exists?(organization)
+  end
+
+  def organization_membership(organization)
+    organization_memberships.find_by(organization: organization)
+  end
+
+  def organization_role(organization)
+    organization_membership(organization)&.role
+  end
+
+  def organization_teams(organization)
+    teams.joins(:team_memberships)
+         .where(teams: { organization_id: organization.id })
+         .distinct
   end
 
   # Admin role checks using Rolify

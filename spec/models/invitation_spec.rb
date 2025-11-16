@@ -18,6 +18,7 @@
 #  updated_at             :datetime         not null
 #  invitable_id           :uuid             not null
 #  invited_by_id          :uuid
+#  organization_id        :uuid
 #  user_id                :uuid
 #
 # Indexes
@@ -28,6 +29,7 @@
 #  index_invitations_on_invitable_and_user   (invitable_id,invitable_type,user_id) UNIQUE WHERE (user_id IS NOT NULL)
 #  index_invitations_on_invitation_token     (invitation_token) UNIQUE
 #  index_invitations_on_invited_by_id        (invited_by_id)
+#  index_invitations_on_organization_id      (organization_id)
 #  index_invitations_on_status               (status)
 #  index_invitations_on_user_id              (user_id)
 #

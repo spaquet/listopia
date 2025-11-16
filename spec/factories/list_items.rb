@@ -6,7 +6,7 @@
 #  id                  :uuid             not null, primary key
 #  description         :text
 #  due_date            :datetime
-#  duration_days       :integer          default(0), not null
+#  duration_days       :integer
 #  estimated_duration  :decimal(10, 2)   default(0.0), not null
 #  item_type           :integer          default("task"), not null
 #  metadata            :json
@@ -16,7 +16,7 @@
 #  recurrence_rule     :string           default("none"), not null
 #  reminder_at         :datetime
 #  skip_notifications  :boolean          default(FALSE), not null
-#  start_date          :datetime         not null
+#  start_date          :datetime
 #  status              :integer          default("pending"), not null
 #  status_changed_at   :datetime
 #  title               :string           not null

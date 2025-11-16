@@ -10,12 +10,14 @@
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
 #  collaboratable_id   :uuid             not null
+#  organization_id     :uuid
 #  user_id             :uuid             not null
 #
 # Indexes
 #
 #  index_collaborators_on_collaboratable           (collaboratable_type,collaboratable_id)
 #  index_collaborators_on_collaboratable_and_user  (collaboratable_id,collaboratable_type,user_id) UNIQUE
+#  index_collaborators_on_organization_id          (organization_id)
 #  index_collaborators_on_user_id                  (user_id)
 #
 # Foreign Keys
@@ -25,11 +27,12 @@
 
 # app/models/collaborator.rb
 class Collaborator < ApplicationRecord
-  # Logidzy for auditing changes
+  # Logidza for auditing changes
   has_logidze
 
   belongs_to :collaboratable, polymorphic: true
   belongs_to :user
+  belongs_to :organization, optional: true
 
   # Add role support
   resourcify
@@ -41,6 +44,7 @@ class Collaborator < ApplicationRecord
 
   validates :user_id, uniqueness: { scope: [ :collaboratable_type, :collaboratable_id ] }
   validates :permission, presence: true
+  validate :user_must_be_in_same_organization
 
   # Scopes
   scope :readers, -> { where(permission: :read) }
@@ -57,5 +61,14 @@ class Collaborator < ApplicationRecord
 
   def display_name
     user.name || user.email
+  end
+
+  private
+
+  def user_must_be_in_same_organization
+    return unless organization_id.present?
+    return if user&.in_organization?(organization)
+
+    errors.add(:user, "must be in the same organization as the resource")
   end
 end

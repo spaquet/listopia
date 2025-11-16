@@ -17,7 +17,9 @@
 #  title                     :string           not null
 #  created_at                :datetime         not null
 #  updated_at                :datetime         not null
+#  organization_id           :uuid
 #  parent_list_id            :uuid
+#  team_id                   :uuid
 #  user_id                   :uuid             not null
 #
 # Indexes
@@ -27,11 +29,13 @@
 #  index_lists_on_list_collaborations_count      (list_collaborations_count)
 #  index_lists_on_list_items_count               (list_items_count)
 #  index_lists_on_list_type                      (list_type)
+#  index_lists_on_organization_id                (organization_id)
 #  index_lists_on_parent_list_id                 (parent_list_id)
 #  index_lists_on_parent_list_id_and_created_at  (parent_list_id,created_at)
 #  index_lists_on_public_permission              (public_permission)
 #  index_lists_on_public_slug                    (public_slug) UNIQUE
 #  index_lists_on_status                         (status)
+#  index_lists_on_team_id                        (team_id)
 #  index_lists_on_user_id                        (user_id)
 #  index_lists_on_user_id_and_created_at         (user_id,created_at)
 #  index_lists_on_user_id_and_status             (user_id,status)

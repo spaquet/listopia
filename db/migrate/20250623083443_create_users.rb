@@ -49,11 +49,15 @@ class CreateUsers < ActiveRecord::Migration[8.0]
       t.text :admin_notes
       t.jsonb :account_metadata, default: {}
 
+      # Organization context
+      t.uuid :current_organization_id
+
       t.timestamps
     end
 
     # Basic indexes
     add_index :users, :email, unique: true
+    add_index :users, :current_organization_id
     add_index :users, :email_verification_token, unique: true
     add_index :users, [ :provider, :uid ], unique: true
     add_index :users, :locale
