@@ -76,16 +76,17 @@ class ListPolicy < ApplicationPolicy
                          .where(status: :active)
                          .pluck(:organization_id)
 
-      # Return lists the user owns or collaborates on, within their organizations
-      org_lists = scope.joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
-                       .where(organization_id: user_org_ids)
-                       .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
-                       .group("lists.id")
+      # Lists in user's organizations where user is owner or collaborator
+      org_lists_ids = List.where(organization_id: user_org_ids)
+                          .where("user_id = ? OR id IN (SELECT collaboratable_id FROM collaborators WHERE collaboratable_type = 'List' AND user_id = ?)", user.id, user.id)
+                          .select(:id)
+                          .distinct
 
-      personal_lists = scope.where(organization_id: nil, user_id: user.id)
+      # Personal lists owned by user
+      personal_lists_ids = scope.where(organization_id: nil, user_id: user.id).select(:id)
 
-      # Union both personal and org lists
-      org_lists.union(personal_lists)
+      # Combine both queries
+      scope.where("lists.id IN (?) OR lists.id IN (?)", org_lists_ids, personal_lists_ids)
     end
   end
 
