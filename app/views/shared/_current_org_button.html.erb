@@ -1,0 +1,14 @@
+<% if current_organization %>
+  <%= link_to switcher_organizations_path(format: :turbo_stream),
+      id: "current-org-button",
+      class: "flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-blue-600 border border-gray-300 rounded-lg hover:border-blue-300 transition-all duration-200 max-w-xs",
+      data: {
+        turbo_frame: "org_switcher_modal",
+        turbo_prefetch: "false"
+      } do %>
+    <div class="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded flex items-center justify-center flex-shrink-0">
+      <span class="text-white text-xs font-semibold"><%= current_organization.name.first.upcase %></span>
+    </div>
+    <span class="text-sm font-medium truncate"><%= current_organization.name %></span>
+  <% end %>
+<% end %>
