@@ -38,18 +38,18 @@
               <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
               <input type="hidden" name="organization_id" value="<%= org.id %>">
               <button type="submit"
-                      class="w-full flex items-center gap-4 p-4 rounded-lg border transition-all duration-200
+                      class="w-full flex items-stretch gap-4 p-4 rounded-lg border transition-all duration-200
                              <%= is_current ? 'border-blue-500 bg-blue-50 hover:bg-blue-100' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50' %>">
                 <!-- Left Section: Avatar & Info -->
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                   <!-- Avatar -->
-                  <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div class="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                     <span class="text-white font-bold text-sm"><%= org.name.first.upcase %></span>
                   </div>
                   <!-- Text Info -->
-                  <div class="flex-1 min-w-0">
+                  <div class="flex-1 min-w-0 flex flex-col justify-center items-start">
                     <h4 class="text-sm font-semibold text-gray-900 truncate"><%= org.name %></h4>
-                    <div class="flex items-center mt-1 gap-2 flex-wrap">
+                    <div class="flex items-center gap-2 flex-wrap">
                       <!-- Plan Size -->
                       <span class="text-xs text-gray-500"><%= org.size.titleize %></span>
                       <!-- Role Badge -->
@@ -77,12 +77,6 @@
                       <% end %>
                     </div>
                   </div>
-                </div>
-                <!-- Right Section: Chevron -->
-                <div class="flex-shrink-0">
-                  <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
                 </div>
               </button>
             </form>

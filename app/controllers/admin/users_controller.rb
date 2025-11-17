@@ -67,6 +67,15 @@ class Admin::UsersController < Admin::BaseController
   def new
     @user = User.new
     authorize @user, :create?
+
+    # Store organization_id for creating user in specific organization
+    @organization_id = params[:organization_id]
+
+    # Validate organization access if provided
+    if @organization_id.present? && !current_user.in_organization?(@organization_id)
+      flash[:alert] = "You don't have access to that organization"
+      redirect_to admin_users_path and return
+    end
   end
 
   def create
@@ -78,12 +87,28 @@ class Admin::UsersController < Admin::BaseController
 
     authorize @user, :create?
 
+    # Get organization_id from params or current context
+    organization_id = params[:organization_id] || current_user.current_organization_id
+
+    # Validate organization access
+    if organization_id.present? && !current_user.in_organization?(organization_id)
+      @user.errors.add(:base, "Invalid organization")
+      render :new, status: :unprocessable_entity and return
+    end
+
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
       @user.send_admin_invitation!
+
+      # Add user to the specified organization
+      if organization_id.present?
+        org = Organization.find(organization_id)
+        org.users << @user unless org.users.include?(@user)
+      end
+
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
-        format.turbo_stream { redirect_to admin_users_path, status: :see_other }
+        format.turbo_stream { redirect_to admin_users_path(organization_id: organization_id), status: :see_other }
       end
     else
       render :new, status: :unprocessable_entity
