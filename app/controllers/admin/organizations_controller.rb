@@ -1,6 +1,6 @@
 # app/controllers/admin/organizations_controller.rb
 class Admin::OrganizationsController < Admin::BaseController
-  before_action :set_organization, only: %i[show suspend reactivate audit_logs]
+  before_action :set_organization, only: %i[show edit update destroy suspend reactivate audit_logs members]
 
   def index
     authorize Organization
@@ -40,6 +40,69 @@ class Admin::OrganizationsController < Admin::BaseController
     authorize @organization, :show?
   end
 
+  def new
+    @organization = Organization.new
+    authorize @organization, :create?
+    respond_to do |format|
+      format.html
+      format.turbo_stream
+    end
+  end
+
+  def create
+    @organization = Organization.new(organization_params)
+    @organization.created_by_id = current_user.id
+    authorize @organization, :create?
+
+    if @organization.save
+      # Add creator as owner
+      @organization.organization_memberships.create!(
+        user: current_user,
+        role: :owner,
+        status: :active
+      )
+
+      respond_to do |format|
+        format.html { redirect_to admin_organization_path(@organization), notice: "Organization created successfully." }
+        format.turbo_stream { render :create }
+      end
+    else
+      respond_to do |format|
+        format.html { render :new, status: :unprocessable_entity }
+        format.turbo_stream { render :new }
+      end
+    end
+  end
+
+  def edit
+    authorize @organization, :update?
+  end
+
+  def update
+    authorize @organization, :update?
+
+    if @organization.update(organization_params)
+      redirect_to admin_organization_path(@organization), notice: "Organization updated successfully."
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    authorize @organization, :destroy?
+
+    if @organization.destroy
+      redirect_to admin_organizations_path, notice: "Organization deleted successfully."
+    else
+      redirect_to admin_organization_path(@organization), alert: "Unable to delete organization."
+    end
+  end
+
+  def members
+    authorize @organization, :manage_members?
+    @pagy, @members = pagy(@organization.organization_memberships.includes(:user).order(created_at: :desc))
+  end
+
   def suspend
     authorize @organization, :suspend?
 
@@ -52,8 +115,12 @@ class Admin::OrganizationsController < Admin::BaseController
     respond_to do |format|
       format.html { redirect_to admin_organizations_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace("organization_#{@organization.id}",
-          partial: "organization_row", locals: { organization: @organization })
+        render turbo_stream: [
+          turbo_stream.replace("organization_#{@organization.id}",
+            partial: "organization_row", locals: { organization: @organization }),
+          turbo_stream.update("active-organizations-count", Organization.where(status: :active).count),
+          turbo_stream.update("suspended-count", Organization.where(status: :suspended).count)
+        ]
       end
     end
   end
@@ -70,8 +137,12 @@ class Admin::OrganizationsController < Admin::BaseController
     respond_to do |format|
       format.html { redirect_to admin_organizations_path, notice: message }
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace("organization_#{@organization.id}",
-          partial: "organization_row", locals: { organization: @organization })
+        render turbo_stream: [
+          turbo_stream.replace("organization_#{@organization.id}",
+            partial: "organization_row", locals: { organization: @organization }),
+          turbo_stream.update("active-organizations-count", Organization.where(status: :active).count),
+          turbo_stream.update("suspended-count", Organization.where(status: :suspended).count)
+        ]
       end
     end
   end
@@ -87,5 +158,9 @@ class Admin::OrganizationsController < Admin::BaseController
     @organization = Organization.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to admin_organizations_path, alert: "Organization not found."
+  end
+
+  def organization_params
+    params.require(:organization).permit(:name, :size)
   end
 end

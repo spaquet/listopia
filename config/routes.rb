@@ -168,44 +168,11 @@ Rails.application.routes.draw do
   get "setup_password/:token", to: "registrations#setup_password", as: :setup_password_registration
   post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
 
-  # Organizations - for all authenticated users
-  resources :organizations do
-    member do
-      get :members
-      post :suspend
-      post :reactivate
-    end
+  # Organizations - switcher and switching only
+  resources :organizations, only: [] do
     collection do
+      get :switcher, as: :switcher
       patch :switch
-    end
-
-    # Organization members management
-    resources :members, controller: "organization_members" do
-      member do
-        patch :update_role
-        delete :remove
-      end
-    end
-
-    # Organization invitations
-    resources :invitations, controller: "organization_invitations" do
-      member do
-        patch :resend
-        delete :revoke
-      end
-    end
-
-    # Teams within organization
-    resources :teams do
-      member do
-        get :members
-      end
-      resources :members, controller: "team_members" do
-        member do
-          patch :update_role
-          delete :remove
-        end
-      end
     end
   end
 
@@ -228,6 +195,32 @@ Rails.application.routes.draw do
         post :suspend
         post :reactivate
         get :audit_logs
+      end
+
+      resources :members, controller: "organization_members" do
+        member do
+          patch :update_role
+          delete :remove
+        end
+      end
+
+      resources :invitations, controller: "organization_invitations" do
+        member do
+          patch :resend
+          delete :revoke
+        end
+      end
+
+      resources :teams do
+        member do
+          get :members
+        end
+        resources :members, controller: "team_members" do
+          member do
+            patch :update_role
+            delete :remove
+          end
+        end
       end
     end
 

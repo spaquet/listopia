@@ -2,7 +2,7 @@
 <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
 
 <!-- Modals Container -->
-<div id="admin_modals"></div>
+<%= turbo_frame_tag "admin_modals" %>
 
 <div class="max-w-7xl mx-auto space-y-6">
   <!-- Header -->
@@ -12,7 +12,7 @@
       <p class="text-gray-600 mt-1">Manage all organizations and their members</p>
     </div>
     <div class="flex items-center space-x-3">
-      <%= link_to new_organization_path, class: "bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center", data: { turbo_stream: true } do %>
+      <%= link_to new_admin_organization_path, class: "bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center", data: { turbo_frame: "admin_modals" } do %>
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
@@ -33,7 +33,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Total Organizations</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1"><%= @total_organizations %></p>
+          <p class="text-2xl font-bold text-gray-900 mt-1" id="total-organizations-count"><%= @total_organizations %></p>
         </div>
         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +47,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Active Organizations</p>
-          <p class="text-2xl font-bold text-green-600 mt-1"><%= Organization.where(status: :active).count %></p>
+          <p class="text-2xl font-bold text-green-600 mt-1" id="active-organizations-count"><%= Organization.where(status: :active).count %></p>
         </div>
         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +60,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Suspended</p>
-          <p class="text-2xl font-bold text-yellow-600 mt-1"><%= Organization.where(status: :suspended).count %></p>
+          <p class="text-2xl font-bold text-yellow-600 mt-1" id="suspended-count"><%= Organization.where(status: :suspended).count %></p>
         </div>
         <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

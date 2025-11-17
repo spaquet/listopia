@@ -6,7 +6,7 @@
         <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
           <%= @organization.size.titleize %>
         </span>
-        <span class="inline-block px-2 py-1 ml-2 text-xs font-medium rounded-full <%= @organization.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+        <span class="inline-block px-2 py-1 ml-2 text-xs font-medium rounded-full <%= @organization.status_active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
           <%= @organization.status.titleize %>
         </span>
       </p>
@@ -54,7 +54,7 @@
       <div>
         <dt class="text-sm font-medium text-gray-600">Status</dt>
         <dd class="mt-1">
-          <span class="inline-block px-2 py-1 text-xs font-medium rounded-full <%= @organization.active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+          <span class="inline-block px-2 py-1 text-xs font-medium rounded-full <%= @organization.status_active? ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
             <%= @organization.status.titleize %>
           </span>
         </dd>
@@ -88,10 +88,10 @@
   <% end %>
 
   <div class="flex gap-2">
-    <% if policy(@organization).suspend? && @organization.active? %>
-      <%= link_to "Suspend Organization", organization_suspend_path(@organization), method: :post, data: { confirm: "Are you sure? This will prevent all members from accessing the organization." }, class: "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700" %>
-    <% elsif policy(@organization).reactivate? && @organization.suspended? %>
-      <%= link_to "Reactivate Organization", organization_reactivate_path(@organization), method: :post, class: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" %>
+    <% if policy(@organization).suspend? && @organization.status_active? %>
+      <%= link_to "Suspend Organization", suspend_organization_path(@organization), method: :post, data: { confirm: "Are you sure? This will prevent all members from accessing the organization." }, class: "px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700" %>
+    <% elsif policy(@organization).reactivate? && @organization.status_suspended? %>
+      <%= link_to "Reactivate Organization", reactivate_organization_path(@organization), method: :post, class: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700" %>
     <% end %>
     <% if policy(@organization).destroy? %>
       <%= link_to "Delete Organization", organization_path(@organization), method: :delete, data: { confirm: "Are you sure? This action cannot be undone." }, class: "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" %>

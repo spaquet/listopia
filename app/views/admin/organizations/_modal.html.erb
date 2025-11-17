@@ -17,7 +17,7 @@
 
       <!-- Form -->
       <div class="bg-white px-4 py-5 sm:p-6">
-        <%= form_with model: organization, local: true, class: "space-y-4" do |f| %>
+        <%= form_with model: [:admin, organization], local: true, class: "space-y-4" do |f| %>
           <% if organization.errors.any? %>
             <div class="bg-red-50 border border-red-200 rounded-lg p-4">
               <h3 class="text-sm font-medium text-red-900 mb-2">

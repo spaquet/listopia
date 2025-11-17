@@ -1,0 +1,12 @@
+<%= turbo_stream.update "admin_modals" do %>
+  <%= turbo_frame_tag "admin_modals" %>
+<% end %>
+<%= turbo_stream.prepend "organizations-table" do %>
+  <%= render "admin/organizations/organization_row", organization: @organization %>
+<% end %>
+<%= turbo_stream.update "total-organizations-count" do %>
+  <%= Organization.count %>
+<% end %>
+<%= turbo_stream.update "active-organizations-count" do %>
+  <%= Organization.where(status: :active).count %>
+<% end %>
