@@ -13,6 +13,12 @@ class Admin::UsersController < Admin::BaseController
     # Get organization_id from params (default to current_organization if admin has one)
     organization_id = params[:organization_id] || current_user.current_organization_id
 
+    # Validate that the organization_id belongs to the admin
+    if organization_id.present? && !current_user.in_organization?(organization_id)
+      flash.now[:alert] = "You don't have access to that organization"
+      organization_id = current_user.current_organization_id
+    end
+
     # Use ONLY params, no session fallback
     @filter_service = UserFilterService.new(
       query: params[:query],
