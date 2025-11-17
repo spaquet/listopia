@@ -33,7 +33,7 @@
             <% membership = current_user.organization_membership(org) %>
             <% role = membership&.role %>
             <% is_current = current_organization && current_organization.id == org.id %>
-            <form action="<%= switch_organizations_path %>" method="POST" class="group" data-turbo="true">
+            <form action="<%= switch_organizations_path %>" method="POST" class="group" data-turbo="false">
               <input type="hidden" name="_method" value="patch">
               <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
               <input type="hidden" name="organization_id" value="<%= org.id %>">
@@ -111,6 +111,19 @@
 </div>
 <!-- Script to show spinner on form submission -->
 <script>
+  document.addEventListener('turbo:before-fetch-request', function(event) {
+    // Check if this is the org switcher form
+    if (event.detail.fetchOptions.method === 'PATCH' &&
+        event.detail.url.includes('organizations/switch')) {
+      // Show loading spinner immediately
+      const overlay = document.getElementById('org-switching-overlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+      }
+    }
+  });
+
+  // Fallback for direct form submission
   document.querySelectorAll('form[action="<%= switch_organizations_path %>"]').forEach(form => {
     form.addEventListener('submit', function() {
       const overlay = document.getElementById('org-switching-overlay');

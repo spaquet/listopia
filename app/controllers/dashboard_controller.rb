@@ -3,14 +3,15 @@ class DashboardController < ApplicationController
   before_action :authenticate_user!
 
   def index
-    @stats = DashboardStatsService.new(current_user).call
+    @stats = DashboardStatsService.new(current_user, current_organization).call
 
     # Build context for adaptive dashboard
     dashboard_context = {
       selected_list_id: params[:focus_list_id],
       in_chat: params[:chat_mode] == "true",
       chat_available: true,
-      user_id: current_user.id
+      user_id: current_user.id,
+      organization_id: current_organization&.id
     }
 
     # Get adaptive dashboard data
@@ -101,8 +102,14 @@ class DashboardController < ApplicationController
 
   # Generate recent items for backward compatibility
   def generate_recent_items
+    lists = if current_organization
+              current_organization.lists.where(user_id: current_user.id)
+            else
+              current_user.lists.where(organization_id: nil)
+            end
+
     ListItem.joins(:list)
-            .where(list: current_user.accessible_lists)
+            .where(list: lists)
             .includes(:list)
             .order(updated_at: :desc)
             .limit(20)

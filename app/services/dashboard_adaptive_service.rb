@@ -20,6 +20,16 @@ class DashboardAdaptiveService
 
   private
 
+  # Get lists scoped to current organization
+  def accessible_lists
+    organization_id = current_context[:organization_id]
+    if organization_id
+      user.lists.where(organization_id: organization_id)
+    else
+      user.lists.where(organization_id: nil)
+    end
+  end
+
   # Determine which mode to show based on user state
   def determine_mode
     # Force a specific mode for testing if provided
@@ -48,7 +58,7 @@ class DashboardAdaptiveService
 
     # Check activity level - get max updated_at from user's accessible list items
     last_activity = ListItem.joins(:list)
-                            .where(list: user.accessible_lists)
+                            .where(list: accessible_lists)
                             .maximum(:updated_at)
     days_since_activity = ((Time.current - last_activity) / 1.day).round if last_activity
 
@@ -67,7 +77,7 @@ class DashboardAdaptiveService
 
   # Generate ranked recommendations for exploration mode
   def generate_recommendations
-    lists = user.accessible_lists.includes(:list_items, :collaborators)
+    lists = accessible_lists.includes(:list_items, :collaborators)
 
     recommendations = lists.map do |list|
       score_list_for_recommendation(list)
@@ -166,13 +176,13 @@ class DashboardAdaptiveService
 
     # If no list selected but in spotlight mode, use first accessible list
     if selected_list_id.blank? && current_context[:forced_mode] == :spotlight
-      first_list = user.accessible_lists.first
+      first_list = accessible_lists.first
       selected_list_id = first_list&.id
     end
 
     return {} unless selected_list_id
 
-    list = user.accessible_lists.find_by(id: selected_list_id)
+    list = accessible_lists.find_by(id: selected_list_id)
     return {} unless list
 
     total_items = list.list_items.count

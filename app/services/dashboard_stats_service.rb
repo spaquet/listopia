@@ -1,12 +1,18 @@
 # app/services/dashboard_stats_service.rb
 class DashboardStatsService
-  def initialize(user)
+  def initialize(user, organization = nil)
     @user = user
+    @organization = organization
   end
 
   def call
-    accessible_lists_ids = @user.accessible_lists.pluck(:id)
-    accessible_lists = List.where(id: accessible_lists_ids)
+    accessible_lists = if @organization
+                         @organization.lists.where(user_id: @user.id)
+                       else
+                         @user.lists.where(organization_id: nil)
+                       end
+
+    accessible_lists_ids = accessible_lists.pluck(:id)
 
     {
       total_lists: accessible_lists.count,

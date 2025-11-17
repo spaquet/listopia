@@ -13,14 +13,7 @@ class OrganizationsController < ApplicationController
 
     self.current_organization = org
 
-    respond_to do |format|
-      format.html { redirect_to dashboard_path, notice: "Switched to #{org.name}." }
-      format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.remove("org_switcher_modal"),
-          turbo_stream.action(:redirect, to: dashboard_path)
-        ]
-      end
-    end
+    # Always redirect, regardless of format
+    redirect_to dashboard_path, notice: "Switched to #{org.name}."
   end
 end
