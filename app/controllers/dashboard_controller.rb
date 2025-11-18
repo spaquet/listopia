@@ -32,6 +32,7 @@ class DashboardController < ApplicationController
       in_chat: false,
       chat_available: true,
       user_id: current_user.id,
+      organization_id: current_organization&.id,
       forced_mode: mode  # Force a specific mode for testing
     }
 
