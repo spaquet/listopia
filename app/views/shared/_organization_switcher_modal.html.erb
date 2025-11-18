@@ -7,7 +7,7 @@
   <!-- Modal Content -->
   <div class="bg-white rounded-lg text-left overflow-hidden shadow-xl w-full max-w-2xl">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-6 sm:px-6">
+    <div class="bg-linear-to-r from-blue-50 to-purple-50 px-4 py-6 sm:px-6">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-xl font-bold text-gray-900" id="org-switcher-title">
@@ -34,12 +34,12 @@
             <% role = membership&.role %>
             <% is_current = current_organization && current_organization.id == org.id %>
             <!-- Organization Card - clickable to switch -->
-            <%= form_with url: switch_organizations_path, method: :patch, local: true, class: "group", data: { target: "_top" } do |f| %>
+            <%= form_with url: switch_organizations_path, method: :patch, local: true, class: "group" do |f| %>
               <%= f.hidden_field :organization_id, value: org.id %>
               <button type="submit" class="w-full flex items-stretch gap-4 p-4 rounded-lg border transition-all duration-200 cursor-pointer
                              #{is_current ? 'border-blue-500 bg-blue-50 hover:bg-blue-100' : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'}">
                 <!-- Avatar -->
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div class="w-10 h-10 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
                   <span class="text-white font-bold text-sm"><%= org.name.first.upcase %></span>
                 </div>
                 <!-- Text Info -->

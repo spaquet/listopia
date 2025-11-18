@@ -33,7 +33,9 @@ class OrganizationsController < ApplicationController
     self.current_organization = @organization
 
     respond_to do |format|
-      format.turbo_stream  # Renders switch.turbo_stream.erb
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.refresh(request_id: "main")
+      end
       format.html do
         redirect_back(fallback_location: dashboard_path, notice: "Switched to #{@organization.name}.")
       end
