@@ -32,6 +32,9 @@ class OrganizationsController < ApplicationController
     # Set the new current organization in session
     self.current_organization = @organization
 
+    # Set the new current organization for the user
+    current_user.update(current_organization: @organization)
+
     respond_to do |format|
       format.turbo_stream do
         render turbo_stream: turbo_stream.refresh(request_id: "main")
