@@ -113,98 +113,100 @@
     <% end %>
   </div>
 </div>
-<script>
-  // Tab switching
-  document.querySelectorAll('.tab-button').forEach(button => {
-    button.addEventListener('click', function() {
-      const tab = this.getAttribute('data-tab');
 
-      // Hide all tabs
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-button').forEach(el => {
-        el.classList.remove('border-blue-600', 'text-blue-600');
-        el.classList.add('border-gray-200', 'text-gray-600');
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const tab = this.getAttribute('data-tab');
+
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-button').forEach(el => {
+          el.classList.remove('border-blue-600', 'text-blue-600');
+          el.classList.add('border-gray-200', 'text-gray-600');
+        });
+
+        // Show selected tab
+        document.getElementById(tab + '-tab').classList.remove('hidden');
+        this.classList.add('border-blue-600', 'text-blue-600');
+        this.classList.remove('border-gray-200', 'text-gray-600');
+      });
+    });
+
+    // Member search functionality with Turbo Streams
+    const searchInput = document.getElementById('member_search_input');
+    const selectedUserIdInput = document.getElementById('selected_user_id');
+    let searchTimeout;
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        // Only search if we have at least 1 character
+        if (query.length > 0) {
+          searchTimeout = setTimeout(() => {
+            // Use Turbo to fetch search results
+            const searchUrl = `<%= search_organization_team_members_path(organization_id: @organization.id, team_id: @team.id) %>?q=${encodeURIComponent(query)}`;
+            fetch(searchUrl, {
+              headers: {
+                'Accept': 'text/vnd.turbo-stream.html'
+              },
+              credentials: 'same-origin'
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.text();
+            })
+            .then(html => {
+              Turbo.renderStreamMessage(html);
+            })
+            .catch(error => {
+              console.error('Search error:', error);
+            });
+          }, 300); // Debounce for 300ms
+        } else {
+          // Clear results if input is empty
+          document.getElementById('member_search_results').innerHTML = '';
+        }
       });
 
-      // Show selected tab
-      document.getElementById(tab + '-tab').classList.remove('hidden');
-      this.classList.add('border-blue-600', 'text-blue-600');
-      this.classList.remove('border-gray-200', 'text-gray-600');
+      // Allow clicking search input to clear and search again
+      searchInput.addEventListener('focus', function() {
+        if (this.disabled) {
+          this.disabled = false;
+          this.value = '';
+          this.classList.remove('bg-gray-50');
+          selectedUserIdInput.value = '';
+        }
+      });
+    }
+
+    // Handle member selection from search results
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.member-search-item')) {
+        const button = e.target.closest('.member-search-item');
+        const userId = button.dataset.userId;
+        const userName = button.dataset.userName;
+        const userEmail = button.dataset.userEmail;
+
+        // Set the hidden input value
+        selectedUserIdInput.value = userId;
+
+        // Update the search input to show the selected user
+        searchInput.value = `${userName} (${userEmail})`;
+        searchInput.disabled = true;
+
+        // Clear the results
+        document.getElementById('member_search_results').innerHTML = '';
+
+        // Optionally disable the search input to show selection
+        searchInput.classList.add('bg-gray-50');
+      }
     });
-  });
-
-  // Member search functionality with Turbo Streams
-  const searchInput = document.getElementById('member_search_input');
-  const selectedUserIdInput = document.getElementById('selected_user_id');
-  let searchTimeout;
-
-  searchInput.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const query = this.value.trim();
-
-    // Only search if we have at least 1 character
-    if (query.length > 0) {
-      searchTimeout = setTimeout(() => {
-        // Use Turbo to fetch search results
-        const searchUrl = `<%= search_organization_team_members_path(@organization, @team) %>?q=${encodeURIComponent(query)}`;
-        console.log('Fetching from:', searchUrl);
-        fetch(searchUrl, {
-          headers: {
-            'Accept': 'text/vnd.turbo-stream.html'
-          },
-          credentials: 'same-origin'
-        })
-        .then(response => {
-          console.log('Response status:', response.status);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.text();
-        })
-        .then(html => {
-          console.log('Received HTML:', html.substring(0, 200));
-          Turbo.renderStreamMessage(html);
-        })
-        .catch(error => {
-          console.error('Search error:', error);
-        });
-      }, 300); // Debounce for 300ms
-    } else {
-      // Clear results if input is empty
-      document.getElementById('member_search_results').innerHTML = '';
-    }
-  });
-
-  // Handle member selection from search results
-  document.addEventListener('click', function(e) {
-    if (e.target.closest('.member-search-item')) {
-      const button = e.target.closest('.member-search-item');
-      const userId = button.dataset.userId;
-      const userName = button.dataset.userName;
-      const userEmail = button.dataset.userEmail;
-
-      // Set the hidden input value
-      selectedUserIdInput.value = userId;
-
-      // Update the search input to show the selected user
-      searchInput.value = `${userName} (${userEmail})`;
-      searchInput.disabled = true;
-
-      // Clear the results
-      document.getElementById('member_search_results').innerHTML = '';
-
-      // Optionally disable the search input to show selection
-      searchInput.classList.add('bg-gray-50');
-    }
-  });
-
-  // Allow clicking search input to clear and search again
-  searchInput.addEventListener('focus', function() {
-    if (this.disabled) {
-      this.disabled = false;
-      this.value = '';
-      this.classList.remove('bg-gray-50');
-      selectedUserIdInput.value = '';
-    }
   });
 </script>

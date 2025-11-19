@@ -1,8 +1,9 @@
+# app/controllers/team_members_controller.rb
 class TeamMembersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
   before_action :set_team
-  before_action :set_member, only: [:update_role, :remove]
+  before_action :set_member, only: [ :update_role, :remove ]
 
   def new
     authorize @team, :manage_members?
@@ -13,10 +14,10 @@ class TeamMembersController < ApplicationController
   def create
     authorize @team, :manage_members?
 
-    if params[:invitation_type] == 'bulk'
+    if params[:invitation_type] == "bulk"
       # Handle bulk email invitations
       emails = params[:emails]
-      role = params[:role] || 'member'
+      role = params[:role] || "member"
 
       service = TeamInvitationService.new(@team, current_user, emails, role)
       results = service.invite_users
@@ -36,62 +37,18 @@ class TeamMembersController < ApplicationController
       end
 
       # Create team membership
-      membership = @team.team_memberships.build(
+      @member = @team.team_memberships.build(
         user: user,
         organization_membership: org_membership,
-        role: params[:role] || 'member'
+        role: params[:role] || "member"
       )
 
-      if membership.save
-        respond_to do |format|
-          format.html { redirect_to organization_team_path(@organization, @team), notice: "Member added to team." }
-          format.turbo_stream
-        end
+      if @member.save
+        redirect_to organization_team_path(@organization, @team), notice: "Member added to team."
       else
         respond_to do |format|
           format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to add member." }
         end
-      end
-    end
-  end
-
-  private
-
-  def build_invitation_message(results)
-    message_parts = []
-    message_parts << "Added #{results[:created].length} member(s)" if results[:created].any?
-    message_parts << "#{results[:already_member].length} already member(s)" if results[:already_member].any?
-    message_parts << "#{results[:invalid].length} invalid invitation(s)" if results[:invalid].any?
-
-    message_parts.join(", ")
-  end
-
-  def update_role
-    authorize @team, :update_member_role?
-
-    if @member.update(role: params[:role])
-      respond_to do |format|
-        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member role updated." }
-        format.turbo_stream { render action: :update_role }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to update role." }
-      end
-    end
-  end
-
-  def remove
-    authorize @team, :manage_members?
-
-    if @member.destroy
-      respond_to do |format|
-        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member removed from team." }
-        format.turbo_stream { render action: :remove }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to remove member." }
       end
     end
   end
@@ -117,6 +74,67 @@ class TeamMembersController < ApplicationController
     respond_to do |format|
       format.turbo_stream
     end
+  end
+
+  def update_role
+    authorize @team, :update_member_role?
+
+    # Prevent users from changing their own role
+    if @member.user == current_user
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "You cannot change your own role." }
+        format.turbo_stream { render plain: "error", status: :forbidden }
+      end
+      return
+    end
+
+    if @member.update(role: params[:role])
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member role updated." }
+        format.turbo_stream { render action: :update_role }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to update role." }
+        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+      end
+    end
+  end
+
+  def remove
+    authorize @team, :manage_members?
+
+    # Prevent users from removing themselves
+    if @member.user == current_user
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "You cannot remove yourself from the team." }
+        format.turbo_stream { render plain: "error", status: :forbidden }
+      end
+      return
+    end
+
+    if @member.destroy
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member removed from team." }
+        format.turbo_stream { render action: :remove }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to remove member." }
+        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+      end
+    end
+  end
+
+  private
+
+  def build_invitation_message(results)
+    message_parts = []
+    message_parts << "Added #{results[:created].length} member(s)" if results[:created].any?
+    message_parts << "#{results[:already_member].length} already member(s)" if results[:already_member].any?
+    message_parts << "#{results[:invalid].length} invalid invitation(s)" if results[:invalid].any?
+
+    message_parts.join(", ")
   end
 
   def set_organization
