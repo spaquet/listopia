@@ -145,10 +145,15 @@ class TeamMembersController < ApplicationController
   def cancel_invitation
     authorize @team, :manage_members?
 
+    # Store the ID before destroying the invitation
+    invitation_id = @invitation.id
+
     if @invitation.destroy
       respond_to do |format|
         format.html { redirect_to organization_team_path(@organization, @team), notice: "Invitation cancelled." }
-        format.turbo_stream { render action: :cancel_invitation }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.remove("team_invitation_#{invitation_id}")
+        end
       end
     else
       respond_to do |format|

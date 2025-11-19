@@ -200,10 +200,13 @@ class InvitationsController < ApplicationController
   def destroy
     authorize @invitation
 
+    # Store the ID before destroying
+    invitation_id = @invitation.id
+
     @invitation.destroy
 
     respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.remove(@invitation) }
+      format.turbo_stream { render turbo_stream: turbo_stream.remove("invitation_#{invitation_id}") }
       format.html { redirect_back(fallback_location: root_path, notice: "Invitation cancelled.") }
     end
   end
