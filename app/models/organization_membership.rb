@@ -39,8 +39,8 @@ class OrganizationMembership < ApplicationRecord
   # Validations
   validates :user_id, presence: true, uniqueness: { scope: :organization_id, message: "can only have one membership per organization" }
   validates :organization_id, presence: true
-  validates :role, presence: true, inclusion: { in: %w(member admin owner), message: "%{value} is not a valid role" }
-  validates :status, presence: true, inclusion: { in: %w(pending active suspended revoked), message: "%{value} is not a valid status" }
+  validates :role, presence: true, inclusion: { in: %w[member admin owner], message: "%{value} is not a valid role" }
+  validates :status, presence: true, inclusion: { in: %w[pending active suspended revoked], message: "%{value} is not a valid status" }
   validates :joined_at, presence: true
 
   # Enums
@@ -63,7 +63,7 @@ class OrganizationMembership < ApplicationRecord
   # Scopes
   scope :active, -> { where(status: :active) }
   scope :by_role, ->(role) { where(role: role) }
-  scope :admins_and_owners, -> { where(role: ['admin', 'owner']) }
+  scope :admins_and_owners, -> { where(role: [ "admin", "owner" ]) }
 
   # Methods
   def activate!
@@ -79,22 +79,22 @@ class OrganizationMembership < ApplicationRecord
   end
 
   def can_manage_organization?
-    role.in?(['admin', 'owner'])
+    role.in?([ "admin", "owner" ])
   end
 
   def can_manage_teams?
-    role.in?(['admin', 'owner'])
+    role.in?([ "admin", "owner" ])
   end
 
   def can_manage_members?
-    role.in?(['admin', 'owner'])
+    role.in?([ "admin", "owner" ])
   end
 
   private
 
   def set_defaults
     self.joined_at ||= Time.current
-    self.status ||= 'active'
-    self.role ||= 'member'
+    self.status ||= "active"
+    self.role ||= "member"
   end
 end

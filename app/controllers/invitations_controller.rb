@@ -414,7 +414,7 @@ class InvitationsController < ApplicationController
     end
 
     # Get the role from invitation metadata, default to 'member'
-    role = @invitation.metadata['role'] || 'member'
+    role = @invitation.metadata["role"] || "member"
 
     # Check if user is already a team member
     if team.member?(current_user)
@@ -435,7 +435,7 @@ class InvitationsController < ApplicationController
       # Mark invitation as accepted
       @invitation.update(
         user: current_user,
-        status: 'accepted',
+        status: "accepted",
         invitation_accepted_at: Time.current
       )
 

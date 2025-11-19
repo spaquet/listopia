@@ -104,12 +104,12 @@ class Organization < ApplicationRecord
   # Check if user is an admin or owner
   def user_is_admin?(user)
     role = user_role(user)
-    role.in?(['admin', 'owner'])
+    role.in?([ "admin", "owner" ])
   end
 
   # Check if user is the owner
   def user_is_owner?(user)
-    user_role(user) == 'owner'
+    user_role(user) == "owner"
   end
 
   # Suspend organization

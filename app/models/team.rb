@@ -92,7 +92,7 @@ class Team < ApplicationRecord
   # Check if user is an admin or lead
   def user_is_admin?(user)
     role = user_role(user)
-    role.in?(['admin', 'lead'])
+    role.in?([ "admin", "lead" ])
   end
 
   private
@@ -102,7 +102,7 @@ class Team < ApplicationRecord
     team_memberships.create!(
       user: creator,
       organization_membership_id: organization.membership_for(creator).id,
-      role: 'admin'
+      role: "admin"
     )
   end
 end

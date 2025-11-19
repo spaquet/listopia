@@ -1,8 +1,8 @@
 class OrganizationInvitationsController < ApplicationController
-  before_action :authenticate_user!, except: [:accept]
-  before_action :set_organization, except: [:accept]
-  before_action :set_invitation, only: [:show, :resend, :revoke]
-  before_action :authorize_access!, except: [:accept]
+  before_action :authenticate_user!, except: [ :accept ]
+  before_action :set_organization, except: [ :accept ]
+  before_action :set_invitation, only: [ :show, :resend, :revoke ]
+  before_action :authorize_access!, except: [ :accept ]
 
   def index
     authorize @organization, :invite_member?
@@ -22,7 +22,7 @@ class OrganizationInvitationsController < ApplicationController
       return
     end
 
-    if @invitation.status != 'pending'
+    if @invitation.status != "pending"
       redirect_to root_path, alert: "This invitation is no longer valid."
       return
     end
@@ -92,7 +92,7 @@ class OrganizationInvitationsController < ApplicationController
     ActiveRecord::Base.transaction do
       # Create or update organization membership
       membership = invitation.organization.organization_memberships.find_or_create_by(user: user) do |m|
-        m.role = invitation.metadata&.dig('role') || 'member'
+        m.role = invitation.metadata&.dig("role") || "member"
         m.status = :active
         m.joined_at = Time.current
       end
@@ -105,7 +105,7 @@ class OrganizationInvitationsController < ApplicationController
       # Mark invitation as accepted
       invitation.update!(
         user: user,
-        status: 'accepted',
+        status: "accepted",
         invitation_accepted_at: Time.current
       )
 

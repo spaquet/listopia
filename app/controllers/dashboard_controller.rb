@@ -104,10 +104,10 @@ class DashboardController < ApplicationController
   # Generate recent items for backward compatibility
   def generate_recent_items
     lists = if current_organization
-              current_organization.lists.where(user_id: current_user.id)
-            else
-              current_user.lists.where(organization_id: nil)
-            end
+      current_organization.lists.where(user_id: current_user.id)
+    else
+      current_user.lists.where(organization_id: nil)
+    end
 
     ListItem.joins(:list)
             .where(list: lists)

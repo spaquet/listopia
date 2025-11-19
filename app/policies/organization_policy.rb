@@ -94,6 +94,6 @@ class OrganizationPolicy < ApplicationPolicy
 
     # Owner or admin can manage
     role = organization.user_role(user)
-    role.in?(['owner', 'admin'])
+    role.in?([ "owner", "admin" ])
   end
 end

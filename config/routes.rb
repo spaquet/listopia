@@ -176,7 +176,7 @@ Rails.application.routes.draw do
 
     # Teams - user-facing team management
     resources :teams do
-      resources :members, controller: "team_members", only: [:new, :create] do
+      resources :members, controller: "team_members", only: [ :new, :create ] do
         collection do
           get :search
         end

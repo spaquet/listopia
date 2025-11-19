@@ -1,7 +1,7 @@
 class OrganizationMembersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_member, only: [:show, :edit, :update, :update_role, :remove]
+  before_action :set_member, only: [ :show, :edit, :update, :update_role, :remove ]
   before_action :authorize_access!
 
   def index
@@ -22,7 +22,7 @@ class OrganizationMembersController < ApplicationController
     authorize @organization, :invite_member?
 
     emails = params[:emails]
-    role = params[:role] || 'member'
+    role = params[:role] || "member"
 
     # Use the service to handle invitations
     service = OrganizationInvitationService.new(@organization, current_user, emails, role)
@@ -56,7 +56,7 @@ class OrganizationMembersController < ApplicationController
     authorize @organization, :remove_member?
 
     # Prevent removing the last owner
-    if @member.role_owner? && @organization.organization_memberships.where(role: 'owner').count == 1
+    if @member.role_owner? && @organization.organization_memberships.where(role: "owner").count == 1
       redirect_to organization_members_path(@organization), alert: "Cannot remove the last owner."
       return
     end

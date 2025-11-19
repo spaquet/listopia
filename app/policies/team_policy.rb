@@ -42,7 +42,7 @@ class TeamPolicy < ApplicationPolicy
     return false unless user.in_organization?(record.organization)
 
     role = record.user_role(user)
-    role.in?(['admin', 'lead'])
+    role.in?([ "admin", "lead" ])
   end
 
   # Scope for index action
@@ -71,6 +71,6 @@ class TeamPolicy < ApplicationPolicy
     return false unless user.in_organization?(team.organization)
 
     role = team.user_role(user)
-    role.in?(['admin', 'lead'])
+    role.in?([ "admin", "lead" ])
   end
 end

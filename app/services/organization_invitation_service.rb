@@ -1,6 +1,6 @@
 # app/services/organization_invitation_service.rb
 class OrganizationInvitationService
-  def initialize(organization, invited_by, emails, role = 'member')
+  def initialize(organization, invited_by, emails, role = "member")
     @organization = organization
     @invited_by = invited_by
     @emails = parse_emails(emails)
@@ -53,14 +53,14 @@ class OrganizationInvitationService
       else
         # Add existing user as member
         membership = create_membership(user)
-        @results[:created] << { email: email, user_id: user.id, name: user.name, type: 'existing_user' }
+        @results[:created] << { email: email, user_id: user.id, name: user.name, type: "existing_user" }
         # Send welcome email to existing user
         CollaborationMailer.organization_invitation(membership).deliver_later
       end
     else
       # User doesn't exist - create invitation
       invitation = create_invitation(email)
-      @results[:created] << { email: email, invitation_id: invitation.id, type: 'invitation' }
+      @results[:created] << { email: email, invitation_id: invitation.id, type: "invitation" }
       # Send invitation email
       CollaborationMailer.organization_invitation(invitation).deliver_later
     end
@@ -81,10 +81,10 @@ class OrganizationInvitationService
       organization: @organization,
       email: email,
       invited_by: @invited_by,
-      invitable_type: 'Organization',
+      invitable_type: "Organization",
       invitable_id: @organization.id,
       permission: :read,
-      status: 'pending',
+      status: "pending",
       metadata: { role: @role }
     )
   end

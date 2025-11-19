@@ -10,7 +10,7 @@ class Admin::OrganizationsController < Admin::BaseController
                                         .where(
                                           organization_memberships: {
                                             user_id: current_user.id,
-                                            role: [:owner, :admin]
+                                            role: [ :owner, :admin ]
                                           }
                                         )
                                         .distinct

@@ -11,7 +11,7 @@ class CreateTeams < ActiveRecord::Migration[8.0]
     end
 
     # Unique constraint on organization and slug
-    add_index :teams, [:organization_id, :slug], unique: true
+    add_index :teams, [ :organization_id, :slug ], unique: true
     add_index :teams, :created_by_id
     add_index :teams, :created_at
 

@@ -12,7 +12,7 @@ class CreateOrganizationMemberships < ActiveRecord::Migration[8.0]
     end
 
     # Unique constraint on organization and user
-    add_index :organization_memberships, [:organization_id, :user_id], unique: true
+    add_index :organization_memberships, [ :organization_id, :user_id ], unique: true
     add_index :organization_memberships, :role
     add_index :organization_memberships, :status
     add_index :organization_memberships, :joined_at

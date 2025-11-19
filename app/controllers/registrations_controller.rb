@@ -154,7 +154,7 @@ class RegistrationsController < ApplicationController
   # Create a personal organization for new user
   def create_personal_organization(user)
     org_name = "#{user.name}'s Workspace"
-    slug_base = user.email.split('@')[0]
+    slug_base = user.email.split("@")[0]
     slug = "#{slug_base}-#{user.id[0...8]}"
 
     org = Organization.create!(

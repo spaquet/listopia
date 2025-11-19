@@ -1,6 +1,6 @@
 # app/services/team_invitation_service.rb
 class TeamInvitationService
-  def initialize(team, invited_by, emails, role = 'member')
+  def initialize(team, invited_by, emails, role = "member")
     @team = team
     @organization = team.organization
     @invited_by = invited_by
@@ -61,14 +61,14 @@ class TeamInvitationService
 
         # Add existing user to team
         membership = create_team_membership(user, org_membership)
-        @results[:created] << { email: email, user_id: user.id, name: user.name, type: 'existing_user' }
+        @results[:created] << { email: email, user_id: user.id, name: user.name, type: "existing_user" }
         # Send notification email
         CollaborationMailer.team_member_invitation(membership).deliver_later
       end
     else
       # User doesn't exist - create invitation
       invitation = create_team_invitation(email)
-      @results[:created] << { email: email, invitation_id: invitation.id, type: 'invitation' }
+      @results[:created] << { email: email, invitation_id: invitation.id, type: "invitation" }
       # Send invitation email
       CollaborationMailer.team_member_invitation(invitation).deliver_later
     end
@@ -88,10 +88,10 @@ class TeamInvitationService
       organization: @organization,
       email: email,
       invited_by: @invited_by,
-      invitable_type: 'Team',
+      invitable_type: "Team",
       invitable_id: @team.id,
       permission: :read,
-      status: 'pending',
+      status: "pending",
       metadata: { role: @role, team_id: @team.id }
     )
   end

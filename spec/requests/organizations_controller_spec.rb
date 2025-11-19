@@ -52,7 +52,7 @@ RSpec.describe OrganizationsController, type: :request do
       it "succeeds and sets organization in session" do
         patch switch_organizations_path, params: { organization_id: org2.id }, headers: { "Accept" => Mime[:turbo_stream].to_s }
         # Verify the request succeeded and returns turbo-stream response
-        expect([200, 204]).to include(response.status)
+        expect([ 200, 204 ]).to include(response.status)
         if response.status == 200
           expect(response.body).to include("turbo-stream")
         end
@@ -84,7 +84,7 @@ RSpec.describe OrganizationsController, type: :request do
       it "redirects appropriately" do
         patch switch_organizations_path, params: { organization_id: org2.id }
         # Redirect either back or to dashboard
-        expect([request.referrer || dashboard_path, response.redirect_url]).to include(response.redirect_url) if response.redirect?
+        expect([ request.referrer || dashboard_path, response.redirect_url ]).to include(response.redirect_url) if response.redirect?
       end
     end
   end

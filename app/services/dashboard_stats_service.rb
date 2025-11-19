@@ -8,9 +8,9 @@ class DashboardStatsService
   def call
     accessible_lists = if @organization
                          @organization.lists.where(user_id: @user.id)
-                       else
+    else
                          @user.lists.where(organization_id: nil)
-                       end
+    end
 
     accessible_lists_ids = accessible_lists.pluck(:id)
 

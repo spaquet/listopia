@@ -12,7 +12,7 @@ class CreateTeamMemberships < ActiveRecord::Migration[8.0]
     end
 
     # Unique constraint on team and user
-    add_index :team_memberships, [:team_id, :user_id], unique: true
+    add_index :team_memberships, [ :team_id, :user_id ], unique: true
     add_index :team_memberships, :role
     add_index :team_memberships, :joined_at
   end

@@ -41,7 +41,7 @@ class TeamMembership < ApplicationRecord
   validates :user_id, presence: true, uniqueness: { scope: :team_id, message: "can only have one membership per team" }
   validates :team_id, presence: true
   validates :organization_membership_id, presence: true
-  validates :role, presence: true, inclusion: { in: %w(member lead admin), message: "%{value} is not a valid role" }
+  validates :role, presence: true, inclusion: { in: %w[member lead admin], message: "%{value} is not a valid role" }
   validates :joined_at, presence: true
   validate :user_must_be_org_member
 
@@ -58,18 +58,18 @@ class TeamMembership < ApplicationRecord
 
   # Scopes
   scope :by_role, ->(role) { where(role: role) }
-  scope :admins_and_leads, -> { where(role: ['admin', 'lead']) }
+  scope :admins_and_leads, -> { where(role: [ "admin", "lead" ]) }
 
   # Methods
   def can_manage_team?
-    role.in?(['admin', 'lead'])
+    role.in?([ "admin", "lead" ])
   end
 
   private
 
   def set_defaults
     self.joined_at ||= Time.current
-    self.role ||= 'member'
+    self.role ||= "member"
   end
 
   def set_organization_membership
