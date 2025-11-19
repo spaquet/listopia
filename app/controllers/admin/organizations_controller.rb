@@ -5,12 +5,23 @@ class Admin::OrganizationsController < Admin::BaseController
   def index
     authorize Organization
 
-    # Apply filters
+    # Get only organizations where user is owner or admin
+    user_manageable_orgs = Organization.joins(:organization_memberships)
+                                        .where(
+                                          organization_memberships: {
+                                            user_id: current_user.id,
+                                            role: [:owner, :admin]
+                                          }
+                                        )
+                                        .distinct
+
+    # Apply filters to user's manageable organizations
     @filter_service = OrganizationFilterService.new(
       query: params[:query],
       status: params[:status],
       size: params[:size],
-      sort_by: params[:sort_by]
+      sort_by: params[:sort_by],
+      base_scope: user_manageable_orgs
     )
 
     @organizations = @filter_service.filtered_organizations.includes(:creator).limit(100)
@@ -22,7 +33,8 @@ class Admin::OrganizationsController < Admin::BaseController
       sort_by: @filter_service.sort_by
     }
 
-    @total_organizations = Organization.count
+    # Count only user's manageable organizations
+    @total_organizations = user_manageable_orgs.count
 
     respond_to do |format|
       format.html

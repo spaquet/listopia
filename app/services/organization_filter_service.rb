@@ -2,15 +2,16 @@
 class OrganizationFilterService
   attr_reader :query, :status, :size, :sort_by
 
-  def initialize(query: nil, status: nil, size: nil, sort_by: nil)
+  def initialize(query: nil, status: nil, size: nil, sort_by: nil, base_scope: nil)
     @query = query&.strip
     @status = status
     @size = size
     @sort_by = sort_by || "recent"
+    @base_scope = base_scope || Organization.all
   end
 
   def filtered_organizations
-    organizations = Organization.all
+    organizations = @base_scope
 
     organizations = apply_search(organizations)
     organizations = apply_status_filter(organizations)

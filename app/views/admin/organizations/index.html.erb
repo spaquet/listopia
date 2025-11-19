@@ -43,11 +43,12 @@
         </div>
       </div>
     </div>
+    <% managed_orgs = Organization.joins(:organization_memberships).where(organization_memberships: { user_id: current_user.id, role: [:owner, :admin] }).distinct %>
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Active Organizations</p>
-          <p class="text-2xl font-bold text-green-600 mt-1" id="active-organizations-count"><%= Organization.where(status: :active).count %></p>
+          <p class="text-2xl font-bold text-green-600 mt-1" id="active-organizations-count"><%= managed_orgs.where(status: :active).count %></p>
         </div>
         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +61,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Suspended</p>
-          <p class="text-2xl font-bold text-yellow-600 mt-1" id="suspended-count"><%= Organization.where(status: :suspended).count %></p>
+          <p class="text-2xl font-bold text-yellow-600 mt-1" id="suspended-count"><%= managed_orgs.where(status: :suspended).count %></p>
         </div>
         <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +74,7 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-600">Enterprise Plans</p>
-          <p class="text-2xl font-bold text-purple-600 mt-1"><%= Organization.where(size: :enterprise).count %></p>
+          <p class="text-2xl font-bold text-purple-600 mt-1"><%= managed_orgs.where(size: :enterprise).count %></p>
         </div>
         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
