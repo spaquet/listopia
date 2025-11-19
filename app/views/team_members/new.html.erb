@@ -115,7 +115,7 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  function initializeTeamMemberForm() {
     // Tab switching
     document.querySelectorAll('.tab-button').forEach(button => {
       button.addEventListener('click', function() {
@@ -208,5 +208,15 @@
         searchInput.classList.add('bg-gray-50');
       }
     });
-  });
+  }
+
+  // Initialize on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeTeamMemberForm);
+  } else {
+    initializeTeamMemberForm();
+  }
+
+  // Also initialize on Turbo navigation
+  document.addEventListener('turbo:load', initializeTeamMemberForm);
 </script>
