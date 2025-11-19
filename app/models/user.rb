@@ -103,6 +103,7 @@ class User < ApplicationRecord
   # Callbacks
   before_validation :set_defaults, on: :create
   after_create :create_default_notification_settings
+  before_save :ensure_current_organization_is_valid
 
   # Scopes
   scope :verified, -> { where.not(email_verified_at: nil) }
@@ -386,6 +387,18 @@ class User < ApplicationRecord
 
 
   private
+
+  def ensure_current_organization_is_valid
+    # If current_organization_id is nil but user has organizations, set to first one
+    if current_organization_id.nil? && organizations.any?
+      self.current_organization_id = organizations.first.id
+    end
+
+    # If current_organization_id is set, verify it's actually a user's organization
+    if current_organization_id.present? && !in_organization?(current_organization_id)
+      self.current_organization_id = organizations.first&.id
+    end
+  end
 
   def set_defaults
     self.locale ||= I18n.default_locale.to_s

@@ -91,6 +91,17 @@ class ApplicationController < ActionController::Base
     session[:user_id] = user.id
     session[:user_signed_in_at] = Time.current.to_s
     @current_user = user
+
+    # Set the current organization in session from user's preferred org
+    # This ensures the user starts with their current_organization
+    if user.current_organization.present?
+      session[:current_organization_id] = user.current_organization.id
+    elsif user.organizations.any?
+      # Fallback to first organization if user has no current_organization set
+      org = user.organizations.first
+      session[:current_organization_id] = org.id
+      user.update!(current_organization_id: org.id)
+    end
   end
 
   # Sign out the current user
@@ -167,6 +178,12 @@ class ApplicationController < ActionController::Base
 
     org = current_organization
     Current.organization = org if defined?(Current)
+
+    # Sync the user's current_organization_id if it's different from the session
+    # This ensures the database is kept in sync with the session choice
+    if org.present? && current_user.current_organization_id != org.id
+      current_user.update_column(:current_organization_id, org.id)
+    end
   end
 
   # Authorization helper - check if user can access resource

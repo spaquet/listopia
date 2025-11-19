@@ -104,6 +104,11 @@ class Admin::UsersController < Admin::BaseController
       if organization_id.present?
         org = Organization.find(organization_id)
         org.users << @user unless org.users.include?(@user)
+        # Set as current organization for admin-invited users
+        @user.update!(current_organization_id: org.id)
+      elsif @user.organizations.any?
+        # If no org specified but user has orgs, set the first one
+        @user.update!(current_organization_id: @user.organizations.first.id)
       end
 
       respond_to do |format|

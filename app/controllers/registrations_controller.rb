@@ -118,6 +118,13 @@ class RegistrationsController < ApplicationController
     if @user.update(password_params_setup)
       # Now verify the email and sign them in
       @user.verify_email!
+
+      # Ensure the user has a current_organization set before signing in
+      # (sign_in will use this to set the session)
+      if @user.current_organization_id.nil? && @user.organizations.any?
+        @user.update!(current_organization_id: @user.organizations.first.id)
+      end
+
       sign_in(@user)
 
       redirect_to dashboard_path, notice: "Password set successfully! Welcome to Listopia!"
