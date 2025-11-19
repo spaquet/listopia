@@ -1,0 +1,24 @@
+<%= turbo_stream.update "member_search_results" do %>
+  <% if @search_results&.any? %>
+    <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+      <% @search_results.each do |user| %>
+        <button
+          type="button"
+          class="w-full text-left px-4 py-3 hover:bg-gray-100 border-b last:border-0 member-search-item"
+          data-user-id="<%= user.id %>"
+          data-user-name="<%= user.name %>"
+          data-user-email="<%= user.email %>"
+        >
+          <div class="flex flex-col">
+            <span class="font-medium text-gray-900"><%= user.name %></span>
+            <span class="text-sm text-gray-600"><%= user.email %></span>
+          </div>
+        </button>
+      <% end %>
+    </div>
+  <% elsif params[:q].to_s.strip.present? %>
+    <div class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 p-4 text-center">
+      <p class="text-gray-600 text-sm">No members found matching "<%= params[:q] %>"</p>
+    </div>
+  <% end %>
+<% end %>

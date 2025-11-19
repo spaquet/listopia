@@ -2,7 +2,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-3xl font-bold text-gray-900"><%= @team.name %></h1>
-      <p class="mt-2 text-gray-600">Team in <%= link_to @organization.name, organization_path(@organization), class: "text-blue-600 hover:text-blue-800" %></p>
+      <p class="mt-2 text-gray-600">Team in <%= @organization.name %></p>
     </div>
     <div class="flex gap-2">
       <%= link_to "← Back", organization_teams_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
@@ -44,40 +44,55 @@
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-600">Organization</dt>
-        <dd class="mt-1 text-gray-900"><%= link_to @organization.name, organization_path(@organization), class: "text-blue-600 hover:text-blue-800" %></dd>
+        <dd class="mt-1 text-gray-900"><%= @organization.name %></dd>
       </div>
     </dl>
   </div>
 
   <% if policy(@team).manage_members? %>
-    <div class="bg-white rounded-lg border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
         <h2 class="text-lg font-semibold text-gray-900">Team Members</h2>
         <%= link_to "Add Member", new_organization_team_member_path(@organization, @team), class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm" %>
       </div>
 
       <% if @team.users.any? %>
-        <div class="space-y-3">
-          <% @team.team_memberships.order(created_at: :desc).limit(5).each do |membership| %>
-            <div class="flex items-center justify-between py-3 border-b last:border-0">
-              <div>
-                <p class="font-medium text-gray-900"><%= membership.user.name %></p>
-                <p class="text-sm text-gray-600"><%= membership.user.email %></p>
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                  <%= membership.role.titleize %>
-                </span>
-                <%= link_to "Manage", organization_team_member_path(@organization, @team, membership), class: "text-sm text-blue-600 hover:text-blue-800" %>
-              </div>
-            </div>
-          <% end %>
-        </div>
-        <% if @team.users.count > 5 %>
-          <%= link_to "View All Members", organization_team_members_path(@organization, @team), class: "mt-4 inline-block text-blue-600 hover:text-blue-800 text-sm font-medium" %>
-        <% end %>
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-200 bg-gray-50">
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Name</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Role</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Joined</th>
+              <th class="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @team.team_memberships.order(created_at: :desc).each do |membership| %>
+              <tr class="border-b border-gray-200 last:border-0 hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= membership.user.name %></td>
+                <td class="px-6 py-4 text-sm text-gray-600"><%= membership.user.email %></td>
+                <td class="px-6 py-4 text-sm">
+                  <span class="px-3 py-1 text-xs font-medium rounded-full <%= membership.role == 'admin' ? 'bg-purple-100 text-purple-800' : membership.role == 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                    <%= membership.role.titleize %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-600"><%= membership.created_at.strftime("%b %d, %Y") %></td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-3">
+                    <%= button_to "Edit Role", update_role_organization_team_member_path(@organization, @team, membership), method: :patch, form: { class: "inline" }, class: "text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+                    <%= button_to "Remove", remove_organization_team_member_path(@organization, @team, membership), method: :delete, form: { data: { turbo_confirm: "Are you sure?" }, class: "inline" }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       <% else %>
-        <p class="text-gray-600 py-4">No members in this team yet.</p>
+        <div class="px-6 py-12 text-center">
+          <p class="text-gray-600 mb-4">No members in this team yet.</p>
+          <%= link_to "Add the first member", new_organization_team_member_path(@organization, @team), class: "text-blue-600 hover:text-blue-800 font-medium" %>
+        </div>
       <% end %>
     </div>
   <% end %>

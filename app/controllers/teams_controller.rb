@@ -1,7 +1,7 @@
 class TeamsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_team, only: [:show, :edit, :update, :destroy, :members]
+  before_action :set_team, only: [:show, :edit, :update, :destroy]
   before_action :authorize_org!
 
   def index
@@ -21,7 +21,7 @@ class TeamsController < ApplicationController
   def create
     authorize @organization, :manage_teams?
     @team = @organization.teams.build(team_params)
-    @team.created_by = current_user
+    @team.creator = current_user
 
     if @team.save
       redirect_to organization_team_path(@organization, @team), notice: "Team created successfully."
@@ -52,11 +52,6 @@ class TeamsController < ApplicationController
     else
       redirect_to organization_team_path(@organization, @team), alert: "Unable to delete team."
     end
-  end
-
-  def members
-    authorize @team, :manage_members?
-    @pagy, @members = pagy(@team.team_memberships.includes(:user).order(created_at: :desc))
   end
 
   private

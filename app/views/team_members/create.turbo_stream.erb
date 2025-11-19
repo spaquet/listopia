@@ -1,0 +1,23 @@
+<!-- app/views/team_members/create.turbo_stream.erb -->
+<%= turbo_stream.prepend "team_members" do %>
+  <%= turbo_frame_tag "team_member_#{@member.id}" do %>
+    <tr class="border-b border-gray-200 last:border-0 hover:bg-gray-50">
+      <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= @member.user.name %></td>
+      <td class="px-6 py-4 text-sm text-gray-600"><%= @member.user.email %></td>
+      <td class="px-6 py-4 text-sm">
+        <span class="px-3 py-1 text-xs font-medium rounded-full <%= @member.role == 'admin' ? 'bg-purple-100 text-purple-800' : @member.role == 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+          <%= @member.role.titleize %>
+        </span>
+      </td>
+      <td class="px-6 py-4 text-sm text-gray-600"><%= @member.created_at.strftime("%b %d, %Y") %></td>
+      <% if policy(@team).manage_members? %>
+        <td class="px-6 py-4 text-right">
+          <div class="flex items-center justify-end gap-3">
+            <%= button_to "Edit Role", organization_team_member_update_role_path(@organization, @team, @member), method: :patch, form: { class: "inline" }, class: "text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+            <%= button_to "Remove", organization_team_member_path(@organization, @team, @member), method: :delete, form: { data: { turbo_confirm: "Are you sure?" }, class: "inline" }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+          </div>
+        </td>
+      <% end %>
+    </tr>
+  <% end %>
+<% end %>

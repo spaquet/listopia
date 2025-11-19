@@ -45,6 +45,7 @@ class Team < ApplicationRecord
 
   # Callbacks
   before_validation :generate_slug, if: :name_changed?
+  after_create :add_creator_as_admin_member
 
   # Scopes
   scope :by_organization, ->(org) { where(organization: org) }
@@ -70,7 +71,7 @@ class Team < ApplicationRecord
 
   # Check if user is a member of this team
   def member?(user)
-    users.exists?(user)
+    users.exists?(user.id)
   end
 
   # Get user's role in this team
@@ -92,5 +93,16 @@ class Team < ApplicationRecord
   def user_is_admin?(user)
     role = user_role(user)
     role.in?(['admin', 'lead'])
+  end
+
+  private
+
+  # Add creator as admin member when team is created
+  def add_creator_as_admin_member
+    team_memberships.create!(
+      user: creator,
+      organization_membership_id: organization.membership_for(creator).id,
+      role: 'admin'
+    )
   end
 end

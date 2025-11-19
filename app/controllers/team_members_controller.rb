@@ -2,17 +2,7 @@ class TeamMembersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
   before_action :set_team
-  before_action :set_member, only: [:show, :edit, :update, :update_role, :remove]
-  before_action :authorize_access!
-
-  def index
-    authorize @team, :manage_members?
-    @pagy, @members = pagy(@team.team_memberships.includes(:user).order(created_at: :desc))
-  end
-
-  def show
-    authorize @team, :manage_members?
-  end
+  before_action :set_member, only: [:update_role, :remove]
 
   def new
     authorize @team, :manage_members?
@@ -23,33 +13,57 @@ class TeamMembersController < ApplicationController
   def create
     authorize @team, :manage_members?
 
-    user_id = params[:user_id]
-    user = User.find(user_id)
+    if params[:invitation_type] == 'bulk'
+      # Handle bulk email invitations
+      emails = params[:emails]
+      role = params[:role] || 'member'
 
-    # Verify user is in organization
-    org_membership = @organization.organization_memberships.find_by(user: user)
-    unless org_membership
-      redirect_to organization_team_members_path(@organization, @team), alert: "User is not a member of this organization."
-      return
-    end
+      service = TeamInvitationService.new(@team, current_user, emails, role)
+      results = service.invite_users
 
-    # Create team membership
-    membership = @team.team_memberships.build(
-      user: user,
-      organization_membership: org_membership,
-      role: params[:role] || 'member'
-    )
-
-    if membership.save
-      respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), notice: "Member added to team." }
-        format.turbo_stream
-      end
+      message = build_invitation_message(results)
+      redirect_to organization_team_path(@organization, @team), notice: message
     else
-      respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), alert: "Unable to add member." }
+      # Handle single user selection
+      user_id = params[:user_id]
+      user = User.find(user_id)
+
+      # Verify user is in organization
+      org_membership = @organization.organization_memberships.find_by(user: user)
+      unless org_membership
+        redirect_to organization_team_path(@organization, @team), alert: "User is not a member of this organization."
+        return
+      end
+
+      # Create team membership
+      membership = @team.team_memberships.build(
+        user: user,
+        organization_membership: org_membership,
+        role: params[:role] || 'member'
+      )
+
+      if membership.save
+        respond_to do |format|
+          format.html { redirect_to organization_team_path(@organization, @team), notice: "Member added to team." }
+          format.turbo_stream
+        end
+      else
+        respond_to do |format|
+          format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to add member." }
+        end
       end
     end
+  end
+
+  private
+
+  def build_invitation_message(results)
+    message_parts = []
+    message_parts << "Added #{results[:created].length} member(s)" if results[:created].any?
+    message_parts << "#{results[:already_member].length} already member(s)" if results[:already_member].any?
+    message_parts << "#{results[:invalid].length} invalid invitation(s)" if results[:invalid].any?
+
+    message_parts.join(", ")
   end
 
   def update_role
@@ -57,12 +71,12 @@ class TeamMembersController < ApplicationController
 
     if @member.update(role: params[:role])
       respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), notice: "Member role updated." }
+        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member role updated." }
         format.turbo_stream { render action: :update_role }
       end
     else
       respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), alert: "Unable to update role." }
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to update role." }
       end
     end
   end
@@ -72,17 +86,38 @@ class TeamMembersController < ApplicationController
 
     if @member.destroy
       respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), notice: "Member removed from team." }
+        format.html { redirect_to organization_team_path(@organization, @team), notice: "Member removed from team." }
         format.turbo_stream { render action: :remove }
       end
     else
       respond_to do |format|
-        format.html { redirect_to organization_team_members_path(@organization, @team), alert: "Unable to remove member." }
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to remove member." }
       end
     end
   end
 
-  private
+  def search
+    authorize @team, :manage_members?
+    query = params[:q].to_s.strip
+
+    # Get organization members not already in team
+    available_members = @organization.users.where.not(id: @team.users.select(:id))
+
+    if query.present?
+      # Search by email or name
+      @search_results = available_members.where(
+        "email ILIKE ? OR name ILIKE ?",
+        "%#{query}%",
+        "%#{query}%"
+      ).limit(10)
+    else
+      @search_results = []
+    end
+
+    respond_to do |format|
+      format.turbo_stream
+    end
+  end
 
   def set_organization
     @organization = Organization.find(params[:organization_id])
@@ -94,9 +129,5 @@ class TeamMembersController < ApplicationController
 
   def set_member
     @member = @team.team_memberships.find(params[:id])
-  end
-
-  def authorize_access!
-    authorize @team, :manage_members?
   end
 end

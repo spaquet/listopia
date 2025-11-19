@@ -174,6 +174,19 @@ Rails.application.routes.draw do
       get :switcher, as: :switcher
       patch :switch
     end
+
+    # Teams - user-facing team management
+    resources :teams do
+      resources :members, controller: "team_members", only: [:new, :create] do
+        collection do
+          get :search
+        end
+        member do
+          patch :update_role
+          delete :remove
+        end
+      end
+    end
   end
 
   # Admin routes
