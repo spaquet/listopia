@@ -4,6 +4,7 @@ class TeamMembersController < ApplicationController
   before_action :set_organization
   before_action :set_team
   before_action :set_member, only: [ :update_role, :remove ]
+  before_action :set_invitation, only: [ :resend_invitation, :cancel_invitation ]
 
   def new
     authorize @team, :manage_members?
@@ -126,6 +127,37 @@ class TeamMembersController < ApplicationController
     end
   end
 
+  def resend_invitation
+    authorize @team, :manage_members?
+
+    # Regenerate the invitation token so it's valid for another 7 days
+    @invitation.update(invitation_token: @invitation.generate_token_for(:invitation), invitation_sent_at: Time.current)
+
+    # Resend the invitation email
+    CollaborationMailer.team_member_invitation(@invitation).deliver_later
+
+    respond_to do |format|
+      format.html { redirect_to organization_team_path(@organization, @team), notice: "Invitation resent to #{@invitation.email}." }
+      format.turbo_stream { render action: :resend_invitation }
+    end
+  end
+
+  def cancel_invitation
+    authorize @team, :manage_members?
+
+    if @invitation.destroy
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), notice: "Invitation cancelled." }
+        format.turbo_stream { render action: :cancel_invitation }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to cancel invitation." }
+        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+      end
+    end
+  end
+
   private
 
   def build_invitation_message(results)
@@ -147,5 +179,9 @@ class TeamMembersController < ApplicationController
 
   def set_member
     @member = @team.team_memberships.find(params[:id])
+  end
+
+  def set_invitation
+    @invitation = Invitation.find(params[:id])
   end
 end

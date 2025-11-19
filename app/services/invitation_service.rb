@@ -19,7 +19,7 @@ class InvitationService
 
   def resend(invitation)
     invitation.update!(
-      invitation_token: invitation.generate_invitation_token,
+      invitation_token: invitation.generate_token_for(:invitation),
       invitation_sent_at: Time.current
     )
 
@@ -97,7 +97,7 @@ class InvitationService
         permission: permission,
         invited_by: @inviter,
         granted_roles: roles_to_grant,
-        invitation_token: existing_invitation.generate_invitation_token,
+        invitation_token: existing_invitation.generate_token_for(:invitation),
         invitation_sent_at: Time.current
       )
         CollaborationMailer.invitation(existing_invitation).deliver_later

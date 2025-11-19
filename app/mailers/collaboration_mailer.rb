@@ -6,7 +6,7 @@ class CollaborationMailer < ApplicationMailer
     @invitation = invitation
     @invitable = invitation.invitable
     @invited_by = invitation.invited_by
-    @invitation_url = accept_invitation_url(@invitation.invitation_token)
+    @invitation_url = accept_invitation_url(token: @invitation.invitation_token)
     @inviter_name = @invited_by&.name || "Someone"
 
     subject = "#{@inviter_name} invited you to collaborate on #{@invitable.title}"
@@ -23,7 +23,7 @@ class CollaborationMailer < ApplicationMailer
     @invited_by = invitation.invited_by
     @inviter = @invited_by
     @inviter_name = @invited_by&.name || "Someone"
-    @invitation_url = accept_invitation_url(@invitation.invitation_token)
+    @invitation_url = accept_invitation_url(token: @invitation.invitation_token)
 
     # Set @list for the template (handles both List and ListItem invitables)
     @list = case @invitable
@@ -137,6 +137,8 @@ class CollaborationMailer < ApplicationMailer
     @inviter = @team.creator
     @inviter_name = @inviter&.name || "Someone"
     @team_url = organization_team_url(@organization, @team)
+    @team_name = @team.name
+    @organization_name = @organization.name
 
     mail(
       to: @user.email,
@@ -153,6 +155,7 @@ class CollaborationMailer < ApplicationMailer
     @inviter_name = @inviter&.name || "Someone"
     @invitation_token = invitation.invitation_token
     @signup_url = new_registration_url
+    @accept_url = accept_invitation_url(token: @invitation_token)
     @team_name = @team.name
     @organization_name = @organization.name
 

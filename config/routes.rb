@@ -44,17 +44,16 @@ Rails.application.routes.draw do
   patch "settings/preferences", to: "users#update_preferences", as: :update_preferences_user
   patch "settings/notifications", to: "users#update_notification_settings", as: :update_notification_settings_user  # ADD this line
 
+  # Unified invitation acceptance (handles all types: User, List, ListItem, Team, Organization)
+  # MUST come before resources :invitations to match before the :id route
+  get "/invitations/accept/:token", to: "invitations#accept", as: "accept_invitation"
 
-  # Collaboration invitation acceptance
-  get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
-
-  # Organization invitation acceptance
+  # Organization invitation acceptance (alternative route)
   get "/organizations/invitations/accept/:token", to: "organization_invitations#accept", as: "accept_organization_invitation"
 
   # Invitations management (list sent/received invitations with management features)
   resources :invitations, only: [ :index, :show, :update ] do
     member do
-      patch :accept
       patch :decline
       delete :revoke
       patch :resend
@@ -184,6 +183,8 @@ Rails.application.routes.draw do
         member do
           patch :update_role
           delete :remove
+          post :resend_invitation
+          delete :cancel_invitation
         end
       end
     end

@@ -184,6 +184,9 @@ class InvitationsController < ApplicationController
       when "List", "ListItem"
         # Collaboration invitation
         accept_collaboration_invitation
+      when "Team"
+        # Team invitation
+        accept_team_invitation
       else
         redirect_to root_path, alert: "Unknown invitation type."
       end
@@ -386,6 +389,57 @@ class InvitationsController < ApplicationController
         format.html { redirect_to root_path, alert: result.errors.join(", ") }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("invitation", partial: "error", locals: { error: result.errors.join(", ") }), status: :unprocessable_entity }
       end
+    end
+  end
+
+  # Handle team member invitations
+  def accept_team_invitation
+    # Verify email match
+    unless current_user.email == @invitation.email
+      redirect_to root_path, alert: "This invitation is for #{@invitation.email}, but you're logged in as #{current_user.email}."
+      return
+    end
+
+    # Get the team from the invitation
+    team = @invitation.invitable
+
+    # Verify user is a member of the organization
+    org_membership = team.organization.organization_memberships.find_by(user: current_user)
+    unless org_membership
+      redirect_to root_path, alert: "You must be a member of the organization to join this team."
+      return
+    end
+
+    # Get the role from invitation metadata, default to 'member'
+    role = @invitation.metadata['role'] || 'member'
+
+    # Check if user is already a team member
+    if team.member?(current_user)
+      session.delete(:pending_invitation_token)
+      redirect_to organization_team_path(team.organization, team), notice: "You are already a member of this team."
+      return
+    end
+
+    # Create team membership
+    team_membership = TeamMembership.new(
+      team: team,
+      user: current_user,
+      organization_membership: org_membership,
+      role: role
+    )
+
+    if team_membership.save
+      # Mark invitation as accepted
+      @invitation.update(
+        user: current_user,
+        status: 'accepted',
+        invitation_accepted_at: Time.current
+      )
+
+      session.delete(:pending_invitation_token)
+      redirect_to organization_team_path(team.organization, team), notice: "You have successfully joined the team!"
+    else
+      redirect_to root_path, alert: "Unable to join team: #{team_membership.errors.full_messages.join(', ')}"
     end
   end
 

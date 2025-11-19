@@ -61,10 +61,7 @@ class ApplicationController < ActionController::Base
   # Require user to be in an organization
   def require_organization!
     unless current_organization
-      respond_to do |format|
-        format.html { redirect_to root_path, alert: "You must be a member of an organization to access this page." }
-        format.json { render json: { error: "Organization required" }, status: :forbidden }
-      end
+      redirect_to root_path, alert: "You must be a member of an organization to access this page."
     end
   end
 
@@ -79,7 +76,6 @@ class ApplicationController < ActionController::Base
     unless current_user
       respond_to do |format|
         format.html { redirect_to new_session_path, alert: "Please sign in to continue" }
-        format.json { render json: { error: "Authentication required" }, status: :unauthorized }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash_messages"), status: :unauthorized }
       end
     end
@@ -280,9 +276,6 @@ class ApplicationController < ActionController::Base
       format.html do
         flash[:alert] = "You are not authorized to #{action_name} this #{policy_name.underscore.humanize.downcase}."
         redirect_back(fallback_location: lists_path)
-      end
-      format.json do
-        render json: { error: "Not authorized to #{action_name}" }, status: :forbidden
       end
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(
