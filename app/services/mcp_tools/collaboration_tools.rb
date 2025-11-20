@@ -110,14 +110,19 @@ module McpTools
 
     # Tool Implementation - Disambiguation
     def list_resources_for_disambiguation(resource_type:, search_term:)
+      organization_id = @context[:organization_id]
+
       resources = case resource_type
       when "List"
-        @user.lists.where("title ILIKE ?", "%#{search_term}%").limit(10)
+        query = @user.lists.where("title ILIKE ?", "%#{search_term}%")
+        query = query.where(organization_id: organization_id) if organization_id.present?
+        query.limit(10)
       when "ListItem"
-        ListItem.joins(:list)
-                .where(lists: { user_id: @user.id })
-                .where("list_items.title ILIKE ?", "%#{search_term}%")
-                .limit(10)
+        query = ListItem.joins(:list)
+                        .where(lists: { user_id: @user.id })
+                        .where("list_items.title ILIKE ?", "%#{search_term}%")
+        query = query.where(lists: { organization_id: organization_id }) if organization_id.present?
+        query.limit(10)
       else
         return error_response("Invalid resource type. Must be 'List' or 'ListItem'")
       end

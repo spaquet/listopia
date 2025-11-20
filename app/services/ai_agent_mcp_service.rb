@@ -566,7 +566,8 @@ class AiAgentMcpService
       title: analysis["title"] || "New List",
       description: analysis["domain"] || "Created via AI",
       status: "active",
-      list_type: analysis["list_type"] || "personal"
+      list_type: analysis["list_type"] || "personal",
+      organization_id: @context[:organization_id]
     )
     lists_created << list
     log_debug "Created list: #{list.title}"
@@ -603,7 +604,8 @@ class AiAgentMcpService
       title: analysis["title"] || "Project",
       description: analysis["domain"] || "Created via AI",
       status: "active",
-      list_type: analysis["list_type"] || "professional"
+      list_type: analysis["list_type"] || "professional",
+      organization_id: @context[:organization_id]
     )
     lists_created << main_list
     log_debug "Created main list: #{main_list.title}"
@@ -628,7 +630,8 @@ class AiAgentMcpService
         title: sublist_data["title"],
         parent_list: main_list,
         status: "active",
-        list_type: analysis["list_type"] || "professional"
+        list_type: analysis["list_type"] || "professional",
+        organization_id: @context[:organization_id]
       )
       lists_created << sublist
       log_debug "  Created sublist: #{sublist.title}"
@@ -662,7 +665,8 @@ class AiAgentMcpService
       title: "New List",
       description: "Created via AI - please add items manually",
       status: "active",
-      list_type: "personal"
+      list_type: "personal",
+      organization_id: @context[:organization_id]
     )
 
     {

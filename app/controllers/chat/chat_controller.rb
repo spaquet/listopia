@@ -189,6 +189,7 @@ class Chat::ChatController < ApplicationController
       page: "#{controller_name}##{action_name}",
       current_page: params[:current_page],
       user_id: current_user.id,
+      organization_id: current_organization&.id,
       total_lists: current_user.accessible_lists.count,
       current_time: Time.current.iso8601
     }
