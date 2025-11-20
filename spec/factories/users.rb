@@ -29,11 +29,13 @@
 #  uid                      :string
 #  created_at               :datetime         not null
 #  updated_at               :datetime         not null
+#  current_organization_id  :uuid
 #  suspended_by_id          :uuid
 #
 # Indexes
 #
 #  index_users_on_account_metadata          (account_metadata) USING gin
+#  index_users_on_current_organization_id   (current_organization_id)
 #  index_users_on_deactivated_at            (deactivated_at)
 #  index_users_on_discarded_at              (discarded_at)
 #  index_users_on_email                     (email) UNIQUE

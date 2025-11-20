@@ -238,7 +238,7 @@ GEM
     mini_magick (5.3.1)
       logger
     mini_mime (1.1.5)
-    minitest (5.26.1)
+    minitest (5.26.2)
     msgpack (1.8.0)
     multi_json (1.17.0)
     multipart-post (2.4.1)
@@ -276,7 +276,7 @@ GEM
     noticed (2.9.3)
       rails (>= 6.1.0)
     ostruct (0.6.3)
-    pagy (43.0.6)
+    pagy (43.0.7)
       json
       yaml
     parallel (1.27.0)
@@ -403,7 +403,7 @@ GEM
       lint_roller (~> 1.1)
       rubocop (>= 1.75.0, < 2.0)
       rubocop-ast (>= 1.47.1, < 2.0)
-    rubocop-rails (2.33.4)
+    rubocop-rails (2.34.0)
       activesupport (>= 4.2.0)
       lint_roller (~> 1.1)
       rack (>= 1.1)

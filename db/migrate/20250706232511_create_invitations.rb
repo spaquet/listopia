@@ -4,6 +4,7 @@ class CreateInvitations < ActiveRecord::Migration[8.0]
     create_table :invitations, id: :uuid do |t|
       t.references :invitable, polymorphic: true, null: false, type: :uuid, index: true
       t.references :user, type: :uuid, foreign_key: true
+      t.uuid :organization_id
       t.string :email
       t.string :invitation_token
       t.datetime :invitation_sent_at
@@ -24,5 +25,6 @@ class CreateInvitations < ActiveRecord::Migration[8.0]
     add_index :invitations, :email
     add_index :invitations, :invitation_token, unique: true
     add_index :invitations, :status
+    add_index :invitations, :organization_id
   end
 end

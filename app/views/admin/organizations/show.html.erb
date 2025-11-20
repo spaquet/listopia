@@ -1,0 +1,135 @@
+<!-- app/views/admin/organizations/show.html.erb -->
+<div class="max-w-7xl mx-auto space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900"><%= @organization.name %></h1>
+      <p class="text-gray-600 mt-1">Organization: <%= @organization.slug %></p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <%= link_to admin_organizations_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors" do %>
+        <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        Back
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Organization Details -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Organization Info Card -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Organization Details</h2>
+        <dl class="space-y-4">
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">ID</dt>
+            <dd class="text-sm text-gray-900 font-mono"><%= @organization.id %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Slug</dt>
+            <dd class="text-sm text-gray-900"><%= @organization.slug %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Plan Size</dt>
+            <dd class="text-sm text-gray-900 capitalize"><%= @organization.size.humanize %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Status</dt>
+            <dd>
+              <% status_class = case @organization.status
+                when "active" then "bg-green-100 text-green-800"
+                when "suspended" then "bg-yellow-100 text-yellow-800"
+                else "bg-gray-100 text-gray-800"
+                end %>
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %>">
+                <%= @organization.status.humanize %>
+              </span>
+            </dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Created By</dt>
+            <dd class="text-sm text-gray-900"><%= link_to @organization.creator.name, admin_user_path(@organization.creator), class: "text-blue-600 hover:text-blue-700" %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Created</dt>
+            <dd class="text-sm text-gray-900"><%= @organization.created_at.strftime("%B %d, %Y at %l:%M %p") %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm font-medium text-gray-600">Updated</dt>
+            <dd class="text-sm text-gray-900"><%= @organization.updated_at.strftime("%B %d, %Y at %l:%M %p") %></dd>
+          </div>
+        </dl>
+      </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions Card -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
+        <div class="space-y-2">
+          <% if @organization.status_active? %>
+            <%= link_to suspend_admin_organization_path(@organization), method: :post,
+                data: { confirm: "Are you sure you want to suspend this organization?" },
+                class: "block w-full bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg hover:bg-yellow-200 transition-colors text-center text-sm font-medium" do %>
+              <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Suspend Organization
+            <% end %>
+          <% elsif @organization.status_suspended? %>
+            <%= link_to reactivate_admin_organization_path(@organization), method: :post,
+                data: { confirm: "Are you sure you want to reactivate this organization?" },
+                class: "block w-full bg-green-100 text-green-800 px-4 py-2 rounded-lg hover:bg-green-200 transition-colors text-center text-sm font-medium" do %>
+              <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Reactivate Organization
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Usage Card -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Usage</h2>
+        <dl class="space-y-3">
+          <div class="flex justify-between">
+            <dt class="text-sm text-gray-600">Total Members</dt>
+            <dd class="text-lg font-semibold text-gray-900"><%= @organization.users.count %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm text-gray-600">Teams</dt>
+            <dd class="text-lg font-semibold text-gray-900"><%= @organization.teams.count %></dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-sm text-gray-600">Lists</dt>
+            <dd class="text-lg font-semibold text-gray-900"><%= @organization.lists.count %></dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Management Card -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Management</h2>
+        <div class="space-y-2">
+          <%= link_to admin_users_path(organization_id: @organization.id), class: "block w-full bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200 transition-colors text-center text-sm font-medium" do %>
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            Manage Users
+          <% end %>
+          <%= link_to admin_organization_path(@organization), class: "block w-full bg-purple-100 text-purple-800 px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors text-center text-sm font-medium" do %>
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM4 20h16a2 2 0 002-2v-2a2 2 0 00-2-2H4a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+            </svg>
+            Manage Members
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

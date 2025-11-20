@@ -67,6 +67,9 @@ application.register("markdown-message", MarkdownMessageController)
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
 
+import ModalOpenerController from "./modal_opener_controller"
+application.register("modal-opener", ModalOpenerController)
+
 import NotificationFiltersController from "./notification_filters_controller"
 application.register("notification-filters", NotificationFiltersController)
 

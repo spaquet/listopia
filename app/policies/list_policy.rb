@@ -5,6 +5,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def show?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Owner, collaborators, or public lists
     record.owner == user ||
     record.collaborators.exists?(user: user) ||
@@ -16,6 +19,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def update?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Owner or write collaborators
     record.owner == user ||
     record.collaborators.permission_write.exists?(user: user)
@@ -26,6 +32,9 @@ class ListPolicy < ApplicationPolicy
   end
 
   def destroy?
+    # Check organization boundary first
+    return false if record.organization_id.present? && !user.in_organization?(record.organization)
+
     # Only the owner can delete a list
     record.owner == user
   end
@@ -62,10 +71,22 @@ class ListPolicy < ApplicationPolicy
   # Scope for index action
   class Scope < Scope
     def resolve
-      # Return lists the user owns or collaborates on
-      scope.joins("LEFT JOIN collaborators ON lists.id = collaborators.collaboratable_id AND collaborators.collaboratable_type = 'List'")
-           .where("lists.user_id = ? OR collaborators.user_id = ?", user.id, user.id)
-           .group("lists.id")
+      # Get user's active organization IDs
+      user_org_ids = user.organization_memberships
+                         .where(status: :active)
+                         .pluck(:organization_id)
+
+      # Lists in user's organizations where user is owner or collaborator
+      org_lists_ids = List.where(organization_id: user_org_ids)
+                          .where("user_id = ? OR id IN (SELECT collaboratable_id FROM collaborators WHERE collaboratable_type = 'List' AND user_id = ?)", user.id, user.id)
+                          .select(:id)
+                          .distinct
+
+      # Personal lists owned by user
+      personal_lists_ids = scope.where(organization_id: nil, user_id: user.id).select(:id)
+
+      # Combine both queries
+      scope.where("lists.id IN (?) OR lists.id IN (?)", org_lists_ids, personal_lists_ids)
     end
   end
 

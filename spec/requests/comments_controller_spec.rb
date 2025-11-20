@@ -4,8 +4,15 @@ require 'rails_helper'
 RSpec.describe CommentsController, type: :request do
   let(:user) { create(:user, :verified) }
   let(:list_owner) { create(:user, :verified) }
-  let(:list) { create(:list, owner: list_owner) }
+  let(:organization) { create(:organization, creator: list_owner) }
+  let(:list) { create(:list, owner: list_owner, organization: organization) }
   let(:list_item) { create(:list_item, list: list) }
+
+  before do
+    # Ensure both users are members of the organization
+    create(:organization_membership, organization: organization, user: list_owner, role: :owner)
+    create(:organization_membership, organization: organization, user: user, role: :member)
+  end
 
   def login_as(user)
     post session_path, params: { email: user.email, password: user.password }
@@ -118,6 +125,8 @@ RSpec.describe CommentsController, type: :request do
 
       it 'denies comment creation without permission' do
         other_user = create(:user, :verified)
+        # Add user to organization but without collaborator access to list
+        create(:organization_membership, organization: organization, user: other_user, role: :member)
         login_as(other_user)
 
         post list_comments_path(list),
@@ -192,7 +201,7 @@ RSpec.describe CommentsController, type: :request do
              params: { comment: { content: 'Test' } },
              headers: { accept: 'text/vnd.turbo-stream.html' }
 
-        # Returns 200 OK (likely still renders the form with errors)
+        # Returns 200 OK (renders the form with errors because user is not in the organization)
         expect(response).to have_http_status(:ok)
       end
     end
@@ -241,12 +250,13 @@ RSpec.describe CommentsController, type: :request do
     context 'unauthorized user' do
       it 'denies unauthorized user' do
         other_user = create(:user, :verified)
+        # Don't add user to organization - they should not have access
         login_as(other_user)
 
         delete list_comment_path(list, comment),
               headers: { accept: 'text/vnd.turbo-stream.html' }
 
-        # Should now return 403 Forbidden since we're authorizing the comment
+        # Should now return 403 Forbidden since user is not in the organization
         expect(response).to have_http_status(:forbidden)
       end
     end
@@ -269,12 +279,13 @@ RSpec.describe CommentsController, type: :request do
     context 'authorization' do
       it 'denies unauthorized user' do
         other_user = create(:user, :verified)
+        # Don't add user to organization - they should not have access
         login_as(other_user)
 
         delete list_list_item_comment_path(list, list_item, comment),
                headers: { accept: 'text/vnd.turbo-stream.html' }
 
-        # Returns 403 Forbidden
+        # Returns 403 Forbidden since user is not in the organization
         expect(response).to have_http_status(:forbidden)
       end
     end

@@ -10,12 +10,14 @@
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
 #  collaboratable_id   :uuid             not null
+#  organization_id     :uuid
 #  user_id             :uuid             not null
 #
 # Indexes
 #
 #  index_collaborators_on_collaboratable           (collaboratable_type,collaboratable_id)
 #  index_collaborators_on_collaboratable_and_user  (collaboratable_id,collaboratable_type,user_id) UNIQUE
+#  index_collaborators_on_organization_id          (organization_id)
 #  index_collaborators_on_user_id                  (user_id)
 #
 # Foreign Keys

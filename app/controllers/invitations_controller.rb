@@ -4,9 +4,9 @@
 # === InvitationsController Documentation ===
 #
 # PURPOSE
-#   Unified controller handling two distinct invitation types within a single resource.
-#   This approach reuses existing infrastructure and maintains a single source of truth
-#   for invitation management, rather than creating separate controllers.
+#   Unified controller handling four distinct invitation types (Platform, Collaboration, Team, and Organization)
+#   within a single resource. This approach reuses existing infrastructure and maintains a single
+#   source of truth for invitation management, rather than creating separate controllers.
 #
 # INVITATION TYPES
 #   1. Platform Invitations (invitable_type: "User")
@@ -21,12 +21,24 @@
 #      - Uses: CollaborationAcceptanceService.accept(current_user) - service layer
 #      - Result: Creates Collaborator record with permission/roles, triggers notifications
 #
+#   3. Team Invitations (invitable_type: "Team")
+#      - Organization admins invite users to join a team within the organization
+#      - Handled by: accept_team_invitation
+#      - Uses: TeamMembership creation with role assignment from invitation metadata
+#      - Result: Creates TeamMembership record, user gains team access
+#
+#   4. Organization Invitations (invitable_type: "Organization")
+#      - Organization admins invite users to join the organization
+#      - Handled by: accept_organization_invitation
+#      - Uses: OrganizationMembership creation with role assignment from invitation metadata
+#      - Result: Creates OrganizationMembership record, user gains organization access
+#
 # ARCHITECTURE PRINCIPLES
 #   - Single responsibility: This controller handles all invitation acceptance flows
 #   - Context-aware routing: Private methods route based on invitable_type
 #   - Service layer: Complex collaboration logic delegated to CollaborationAcceptanceService
-#   - Reusable patterns: Both flows use same authorization (Pundit), session management, and responses
-#   - Email verification: Both flows verify email match before acceptance
+#   - Reusable patterns: All flows use same authorization (Pundit), session management, and responses
+#   - Email verification: All flows verify email match before acceptance
 #
 # AUTHORIZATION FLOW
 #   - All actions protected by Pundit policies (InvitationPolicy)
@@ -61,8 +73,9 @@
 #   - RegistrationsController: Handles post-signup invitation acceptance (session token flow)
 #   - SessionsController: Handles post-login invitation acceptance (session token flow)
 #   - CollaborationAcceptanceService: Creates Collaborator, assigns roles, updates invitation status
-#   - InvitationService: Resends invitation emails for both types
-#   - CollaborationMailer: Sends notifications for collaboration invitations
+#   - OrganizationInvitationService: Creates Organization invitations with role assignment
+#   - InvitationService: Resends invitation emails for all invitation types
+#   - CollaborationMailer: Sends notifications for all invitation types
 #
 # NEW: INDEX ACTION (List Sent & Received Invitations)
 #   - index: Lists invitations sent by current user (with management options) and received by current user
@@ -184,6 +197,12 @@ class InvitationsController < ApplicationController
       when "List", "ListItem"
         # Collaboration invitation
         accept_collaboration_invitation
+      when "Team"
+        # Team invitation
+        accept_team_invitation
+      when "Organization"
+        # Organization invitation
+        accept_organization_invitation
       else
         redirect_to root_path, alert: "Unknown invitation type."
       end
@@ -197,10 +216,13 @@ class InvitationsController < ApplicationController
   def destroy
     authorize @invitation
 
+    # Store the ID before destroying
+    invitation_id = @invitation.id
+
     @invitation.destroy
 
     respond_to do |format|
-      format.turbo_stream { render turbo_stream: turbo_stream.remove(@invitation) }
+      format.turbo_stream { render turbo_stream: turbo_stream.remove("invitation_#{invitation_id}") }
       format.html { redirect_back(fallback_location: root_path, notice: "Invitation cancelled.") }
     end
   end
@@ -386,6 +408,102 @@ class InvitationsController < ApplicationController
         format.html { redirect_to root_path, alert: result.errors.join(", ") }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("invitation", partial: "error", locals: { error: result.errors.join(", ") }), status: :unprocessable_entity }
       end
+    end
+  end
+
+  # Handle team member invitations
+  def accept_team_invitation
+    # Verify email match
+    unless current_user.email == @invitation.email
+      redirect_to root_path, alert: "This invitation is for #{@invitation.email}, but you're logged in as #{current_user.email}."
+      return
+    end
+
+    # Get the team from the invitation
+    team = @invitation.invitable
+
+    # Verify user is a member of the organization
+    org_membership = team.organization.organization_memberships.find_by(user: current_user)
+    unless org_membership
+      redirect_to root_path, alert: "You must be a member of the organization to join this team."
+      return
+    end
+
+    # Get the role from invitation metadata, default to 'member'
+    role = @invitation.metadata["role"] || "member"
+
+    # Check if user is already a team member
+    if team.member?(current_user)
+      session.delete(:pending_invitation_token)
+      redirect_to organization_team_path(team.organization, team), notice: "You are already a member of this team."
+      return
+    end
+
+    # Create team membership
+    team_membership = TeamMembership.new(
+      team: team,
+      user: current_user,
+      organization_membership: org_membership,
+      role: role
+    )
+
+    if team_membership.save
+      # Mark invitation as accepted
+      @invitation.update(
+        user: current_user,
+        status: "accepted",
+        invitation_accepted_at: Time.current
+      )
+
+      session.delete(:pending_invitation_token)
+      redirect_to organization_team_path(team.organization, team), notice: "You have successfully joined the team!"
+    else
+      redirect_to root_path, alert: "Unable to join team: #{team_membership.errors.full_messages.join(', ')}"
+    end
+  end
+
+  # Handle organization member invitations
+  def accept_organization_invitation
+    # Verify email match
+    unless current_user.email == @invitation.email
+      redirect_to root_path, alert: "This invitation is for #{@invitation.email}, but you're logged in as #{current_user.email}."
+      return
+    end
+
+    # Get the organization from the invitation
+    organization = @invitation.invitable
+
+    # Check if user is already a member of the organization
+    if organization.organization_memberships.exists?(user: current_user)
+      session.delete(:pending_invitation_token)
+      redirect_to organization_path(organization), notice: "You are already a member of this organization."
+      return
+    end
+
+    # Get the role from invitation metadata, default to 'member'
+    role = @invitation.metadata["role"] || "member"
+
+    # Create organization membership
+    org_membership = OrganizationMembership.new(
+      organization: organization,
+      user: current_user,
+      role: role,
+      status: :active,
+      joined_at: Time.current
+    )
+
+    if org_membership.save
+      # Mark invitation as accepted
+      @invitation.update(
+        user: current_user,
+        status: "accepted",
+        invitation_accepted_at: Time.current
+      )
+
+      session.delete(:pending_invitation_token)
+      redirect_to organization_path(organization), notice: "You have successfully joined the organization!"
+    else
+      redirect_to root_path, alert: "Unable to join organization: #{org_membership.errors.full_messages.join(', ')}"
     end
   end
 

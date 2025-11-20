@@ -58,6 +58,9 @@ class ListItemPolicy < ApplicationPolicy
   private
 
   def list_readable?
+    # Check organization boundary first
+    return false if list_item.list.organization_id.present? && !user.in_organization?(list_item.list.organization)
+
     # Owner, list collaborators, item collaborators, or public lists
     return true if list_item.list.readable_by?(user)
     return true if list_item.collaborators.exists?(user: user)
@@ -65,6 +68,9 @@ class ListItemPolicy < ApplicationPolicy
   end
 
   def list_writable?
+    # Check organization boundary first
+    return false if list_item.list.organization_id.present? && !user.in_organization?(list_item.list.organization)
+
     # Owner of the list
     return true if list_item.list.owner == user
 

@@ -1,0 +1,29 @@
+<!-- app/views/team_members/resend_invitation.turbo_stream.erb -->
+<%= turbo_stream.replace "team_invitation_#{@invitation.id}" do %>
+  <div class="px-6 py-4 hover:bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-4 md:items-center opacity-75">
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Name</span>
+      <span class="text-sm font-medium text-gray-900">-</span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Email</span>
+      <span class="text-sm text-gray-600"><%= @invitation.email %></span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Role</span>
+      <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+        <%= @invitation.metadata['role']&.titleize || 'Member' %>
+      </span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Status</span>
+      <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+        Resent
+      </span>
+    </div>
+    <div class="flex items-center justify-start md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+      <%= button_to "Resend", resend_invitation_organization_team_member_path(@organization, @team, @invitation), method: :post, form: { local: false, class: "inline" }, class: "text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+      <%= button_to "Cancel", cancel_invitation_organization_team_member_path(@organization, @team, @invitation), method: :delete, form: { local: false, class: "inline", data: { turbo_confirm: "Are you sure?" } }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+    </div>
+  </div>
+<% end %>

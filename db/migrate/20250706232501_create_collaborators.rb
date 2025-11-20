@@ -4,6 +4,7 @@ class CreateCollaborators < ActiveRecord::Migration[8.0]
     create_table :collaborators, id: :uuid do |t|
       t.references :collaboratable, polymorphic: true, null: false, type: :uuid, index: true
       t.references :user, type: :uuid, null: false, foreign_key: true
+      t.uuid :organization_id
       t.integer :permission, default: 0, null: false
       t.string :granted_roles, array: true, default: [], null: false
       t.jsonb :metadata, default: {}, null: false
@@ -12,5 +13,6 @@ class CreateCollaborators < ActiveRecord::Migration[8.0]
     end
 
     add_index :collaborators, [ :collaboratable_id, :collaboratable_type, :user_id ], unique: true, name: "index_collaborators_on_collaboratable_and_user"
+    add_index :collaborators, :organization_id
   end
 end

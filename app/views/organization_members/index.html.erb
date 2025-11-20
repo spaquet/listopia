@@ -1,0 +1,77 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Members</h1>
+      <p class="mt-2 text-gray-600">Manage <%= @organization.name %> members</p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "← Back", organization_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+      <% if policy(@organization).invite_member? %>
+        <%= link_to "Invite Members", new_organization_member_path(@organization), class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @members.any? %>
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Name</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Email</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Role</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Status</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Joined</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <% @members.each do |membership| %>
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm text-gray-900"><%= membership.user.name %></td>
+              <td class="px-6 py-4 text-sm text-gray-600"><%= membership.user.email %></td>
+              <td class="px-6 py-4 text-sm">
+                <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <%= membership.role.titleize %>
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                <span class="px-2 py-1 rounded-full text-xs font-medium <%= membership.active? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
+                  <%= membership.status.titleize %>
+                </span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">
+                <%= membership.joined_at.strftime("%b %d, %Y") %>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                <% if policy(@organization).manage_members? && (membership.user_id != current_user.id || policy(@organization).update_member_role?) %>
+                  <div class="flex gap-2">
+                    <% if policy(@organization).update_member_role? %>
+                      <%= button_to "Change Role", organization_member_update_role_path(@organization, membership),
+                        method: :patch, params: { role: "admin" },
+                        class: "text-sm text-blue-600 hover:text-blue-800" %>
+                    <% end %>
+                    <% if policy(@organization).remove_member? && membership.user_id != current_user.id %>
+                      <%= button_to "Remove", organization_member_remove_path(@organization, membership),
+                        method: :delete, data: { confirm: "Remove this member?" },
+                        class: "text-sm text-red-600 hover:text-red-800" %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%= pagy_nav(@pagy) %>
+  <% else %>
+    <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <p class="text-gray-600 mb-4">No members in this organization yet.</p>
+      <% if policy(@organization).invite_member? %>
+        <%= link_to "Invite your first member", new_organization_member_path(@organization), class: "inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

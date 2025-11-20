@@ -1,5 +1,8 @@
 <!-- app/views/admin/users/_form.html.erb -->
 <%= form_with model: [:admin, @user], local: true, class: "space-y-6" do |f| %>
+  <% if @organization_id.present? %>
+    <%= hidden_field_tag :organization_id, @organization_id %>
+  <% end %>
   <div>
     <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-2" %>
     <%= f.text_field :name, 
@@ -63,9 +66,11 @@
     <p class="mt-1 text-xs text-gray-500">These notes are only visible to admins</p>
   </div>
   <div class="flex items-center justify-between pt-4">
-    <%= link_to "Cancel", @user.new_record? ? admin_users_path : admin_user_path(@user), 
-                class: "text-gray-600 hover:text-gray-900 font-medium" %>
-    <%= f.submit @user.new_record? ? "Create User" : "Update User", 
+    <% cancel_path = @user.new_record? ?
+                     admin_users_path(organization_id: @organization_id) :
+                     admin_user_path(@user) %>
+    <%= link_to "Cancel", cancel_path, class: "text-gray-600 hover:text-gray-900 font-medium" %>
+    <%= f.submit @user.new_record? ? "Create User" : "Update User",
                  class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
   </div>
 <% end %>

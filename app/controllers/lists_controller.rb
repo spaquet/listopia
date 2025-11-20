@@ -8,8 +8,12 @@ class ListsController < ApplicationController
 
   # Display all lists accessible to the current user
   def index
-    # Start with base scope from policy
-    base_scope = policy_scope(List)
+    # Start with base scope from policy, filtered by current organization
+    base_scope = if current_organization
+      policy_scope(List).where(organization_id: current_organization.id)
+    else
+      policy_scope(List).where(organization_id: nil)
+    end
 
     # Build the query step by step to avoid GROUP BY conflicts
     @lists = base_scope

@@ -1,18 +1,20 @@
 # app/services/user_filter_service.rb
 class UserFilterService
-  attr_reader :query, :status, :role, :verified, :sort_by
+  attr_reader :query, :status, :role, :verified, :sort_by, :organization_id
 
-  def initialize(query: nil, status: nil, role: nil, verified: nil, sort_by: nil)
+  def initialize(query: nil, status: nil, role: nil, verified: nil, sort_by: nil, organization_id: nil)
     @query = query&.strip
     @status = status
     @role = role
     @verified = verified
     @sort_by = sort_by || "recent"
+    @organization_id = organization_id
   end
 
   def filtered_users
     users = User.all
 
+    users = apply_organization_filter(users)
     users = apply_search(users)
     users = apply_status_filter(users)
     users = apply_role_filter(users)
@@ -23,6 +25,14 @@ class UserFilterService
   end
 
   private
+
+  def apply_organization_filter(users)
+    return users if @organization_id.blank?
+
+    users.joins(:organization_memberships)
+         .where(organization_memberships: { organization_id: @organization_id })
+         .distinct
+  end
 
   def apply_search(users)
     return users if @query.blank?

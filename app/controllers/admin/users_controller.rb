@@ -7,13 +7,26 @@ class Admin::UsersController < Admin::BaseController
   def index
     authorize User
 
+    # Get current admin's organizations for filtering
+    @admin_organizations = current_user.organizations.order(name: :asc)
+
+    # Get organization_id from params (default to current_organization if admin has one)
+    organization_id = params[:organization_id] || current_user.current_organization_id
+
+    # Validate that the organization_id belongs to the admin
+    if organization_id.present? && !current_user.in_organization?(organization_id)
+      flash.now[:alert] = "You don't have access to that organization"
+      organization_id = current_user.current_organization_id
+    end
+
     # Use ONLY params, no session fallback
     @filter_service = UserFilterService.new(
       query: params[:query],
       status: params[:status],
       role: params[:role],
       verified: params[:verified],
-      sort_by: params[:sort_by]
+      sort_by: params[:sort_by],
+      organization_id: organization_id
     )
 
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
@@ -23,10 +36,17 @@ class Admin::UsersController < Admin::BaseController
       status: @filter_service.status,
       role: @filter_service.role,
       verified: @filter_service.verified,
-      sort_by: @filter_service.sort_by
+      sort_by: @filter_service.sort_by,
+      organization_id: @filter_service.organization_id
     }
 
-    @total_users = User.count
+    # Count total users in selected organization if filtering by org
+    @total_users = organization_id.present? ?
+      User.joins(:organization_memberships)
+          .where(organization_memberships: { organization_id: organization_id })
+          .distinct
+          .count :
+      User.count
 
     respond_to do |format|
       format.html
@@ -47,6 +67,15 @@ class Admin::UsersController < Admin::BaseController
   def new
     @user = User.new
     authorize @user, :create?
+
+    # Store organization_id for creating user in specific organization
+    @organization_id = params[:organization_id]
+
+    # Validate organization access if provided
+    if @organization_id.present? && !current_user.in_organization?(@organization_id)
+      flash[:alert] = "You don't have access to that organization"
+      redirect_to admin_users_path and return
+    end
   end
 
   def create
@@ -58,12 +87,33 @@ class Admin::UsersController < Admin::BaseController
 
     authorize @user, :create?
 
+    # Get organization_id from params or current context
+    organization_id = params[:organization_id] || current_user.current_organization_id
+
+    # Validate organization access
+    if organization_id.present? && !current_user.in_organization?(organization_id)
+      @user.errors.add(:base, "Invalid organization")
+      render :new, status: :unprocessable_entity and return
+    end
+
     if @user.save
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
       @user.send_admin_invitation!
+
+      # Add user to the specified organization
+      if organization_id.present?
+        org = Organization.find(organization_id)
+        org.users << @user unless org.users.include?(@user)
+        # Set as current organization for admin-invited users
+        @user.update!(current_organization_id: org.id)
+      elsif @user.organizations.any?
+        # If no org specified but user has orgs, set the first one
+        @user.update!(current_organization_id: @user.organizations.first.id)
+      end
+
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
-        format.turbo_stream { redirect_to admin_users_path, status: :see_other }
+        format.turbo_stream { redirect_to admin_users_path(organization_id: organization_id), status: :see_other }
       end
     else
       render :new, status: :unprocessable_entity

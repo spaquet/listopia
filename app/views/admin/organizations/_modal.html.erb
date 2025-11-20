@@ -1,0 +1,67 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Modal panel -->
+    <div class="bg-white rounded-lg text-left overflow-hidden shadow-xl max-w-lg w-full mx-4">
+      <!-- Header -->
+      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+            Create Organization
+          </h3>
+          <button type="button" class="text-gray-400 hover:text-gray-500" onclick="document.getElementById('admin_modals').innerHTML = ''">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="bg-white px-4 py-5 sm:p-6">
+        <%= form_with model: [:admin, organization], local: true, class: "space-y-4" do |f| %>
+          <% if organization.errors.any? %>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 class="text-sm font-medium text-red-900 mb-2">
+                <%= pluralize(organization.errors.count, "error") %> prevented this organization from being saved:
+              </h3>
+              <ul class="text-sm text-red-700 list-disc list-inside">
+                <% organization.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div>
+            <%= f.label :name, "Organization Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
+            <%= f.text_field :name,
+              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+              placeholder: "My Organization",
+              required: true,
+              autofocus: true
+            %>
+            <p class="mt-1 text-sm text-gray-600">The name of your organization</p>
+          </div>
+
+          <div>
+            <%= f.label :size, "Organization Size", class: "block text-sm font-medium text-gray-900 mb-2" %>
+            <%= f.select :size,
+              [["Small (1-10 members)", "small"], ["Medium (11-50 members)", "medium"], ["Large (51-200 members)", "large"], ["Enterprise (200+ members)", "enterprise"]],
+              { selected: organization.size || "small" },
+              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            %>
+            <p class="mt-1 text-sm text-gray-600">Helps us provide the right support for your organization</p>
+          </div>
+
+          <!-- Footer -->
+          <div class="mt-6 flex gap-3">
+            <%= f.submit "Create Organization",
+              class: "flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+            %>
+            <button type="button" class="flex-1 px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 font-medium text-center transition-colors" onclick="document.getElementById('admin_modals').innerHTML = ''">
+              Cancel
+            </button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+</div>

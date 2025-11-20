@@ -891,6 +891,7 @@ CREATE TABLE public.collaborators (
     collaboratable_type character varying NOT NULL,
     collaboratable_id uuid NOT NULL,
     user_id uuid NOT NULL,
+    organization_id uuid,
     permission integer DEFAULT 0 NOT NULL,
     granted_roles character varying[] DEFAULT '{}'::character varying[] NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
@@ -954,6 +955,7 @@ CREATE TABLE public.invitations (
     invitable_type character varying NOT NULL,
     invitable_id uuid NOT NULL,
     user_id uuid,
+    organization_id uuid,
     email character varying,
     invitation_token character varying,
     invitation_sent_at timestamp(6) without time zone,
@@ -990,8 +992,8 @@ CREATE TABLE public.list_items (
     "position" integer DEFAULT 0,
     estimated_duration numeric(10,2) DEFAULT 0.0 NOT NULL,
     total_tracked_time numeric(10,2) DEFAULT 0.0 NOT NULL,
-    start_date timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    duration_days integer DEFAULT 0 NOT NULL,
+    start_date timestamp(6) without time zone,
+    duration_days integer,
     url character varying,
     metadata json DEFAULT '{}'::json,
     recurrence_rule character varying DEFAULT 'none'::character varying NOT NULL,
@@ -1017,6 +1019,8 @@ CREATE TABLE public.lists (
     public_slug character varying,
     list_type integer DEFAULT 0 NOT NULL,
     parent_list_id uuid,
+    organization_id uuid,
+    team_id uuid,
     metadata json DEFAULT '{}'::json,
     color_theme character varying DEFAULT 'blue'::character varying,
     created_at timestamp(6) without time zone NOT NULL,
@@ -1189,6 +1193,40 @@ CREATE TABLE public.notification_settings (
 
 
 --
+-- Name: organization_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.organization_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    role integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 1 NOT NULL,
+    joined_at timestamp(6) without time zone NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: organizations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.organizations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying NOT NULL,
+    slug character varying NOT NULL,
+    size integer DEFAULT 0 NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    created_by_id uuid NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: recovery_contexts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1291,6 +1329,39 @@ CREATE TABLE public.tags (
 
 
 --
+-- Name: team_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.team_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    team_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    organization_membership_id uuid NOT NULL,
+    role integer DEFAULT 0 NOT NULL,
+    joined_at timestamp(6) without time zone NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: teams; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.teams (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    name character varying NOT NULL,
+    slug character varying NOT NULL,
+    created_by_id uuid NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: time_entries; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1353,6 +1424,7 @@ CREATE TABLE public.users (
     deactivated_reason text,
     admin_notes text,
     account_metadata jsonb DEFAULT '{}'::jsonb,
+    current_organization_id uuid,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -1534,6 +1606,22 @@ ALTER TABLE ONLY public.notification_settings
 
 
 --
+-- Name: organization_memberships organization_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_memberships
+    ADD CONSTRAINT organization_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: organizations organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT organizations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: recovery_contexts recovery_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1587,6 +1675,22 @@ ALTER TABLE ONLY public.taggings
 
 ALTER TABLE ONLY public.tags
     ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: team_memberships team_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_memberships
+    ADD CONSTRAINT team_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: teams teams_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT teams_pkey PRIMARY KEY (id);
 
 
 --
@@ -1719,6 +1823,13 @@ CREATE UNIQUE INDEX index_collaborators_on_collaboratable_and_user ON public.col
 
 
 --
+-- Name: index_collaborators_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collaborators_on_organization_id ON public.collaborators USING btree (organization_id);
+
+
+--
 -- Name: index_collaborators_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1779,6 +1890,13 @@ CREATE UNIQUE INDEX index_invitations_on_invitation_token ON public.invitations 
 --
 
 CREATE INDEX index_invitations_on_invited_by_id ON public.invitations USING btree (invited_by_id);
+
+
+--
+-- Name: index_invitations_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_invitations_on_organization_id ON public.invitations USING btree (organization_id);
 
 
 --
@@ -1936,6 +2054,13 @@ CREATE INDEX index_lists_on_list_type ON public.lists USING btree (list_type);
 
 
 --
+-- Name: index_lists_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lists_on_organization_id ON public.lists USING btree (organization_id);
+
+
+--
 -- Name: index_lists_on_parent_list_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1968,6 +2093,13 @@ CREATE UNIQUE INDEX index_lists_on_public_slug ON public.lists USING btree (publ
 --
 
 CREATE INDEX index_lists_on_status ON public.lists USING btree (status);
+
+
+--
+-- Name: index_lists_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lists_on_team_id ON public.lists USING btree (team_id);
 
 
 --
@@ -2216,6 +2348,83 @@ CREATE INDEX index_notification_settings_on_user_id ON public.notification_setti
 
 
 --
+-- Name: index_organization_memberships_on_joined_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organization_memberships_on_joined_at ON public.organization_memberships USING btree (joined_at);
+
+
+--
+-- Name: index_organization_memberships_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organization_memberships_on_organization_id ON public.organization_memberships USING btree (organization_id);
+
+
+--
+-- Name: index_organization_memberships_on_organization_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_organization_memberships_on_organization_id_and_user_id ON public.organization_memberships USING btree (organization_id, user_id);
+
+
+--
+-- Name: index_organization_memberships_on_role; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organization_memberships_on_role ON public.organization_memberships USING btree (role);
+
+
+--
+-- Name: index_organization_memberships_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organization_memberships_on_status ON public.organization_memberships USING btree (status);
+
+
+--
+-- Name: index_organization_memberships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organization_memberships_on_user_id ON public.organization_memberships USING btree (user_id);
+
+
+--
+-- Name: index_organizations_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organizations_on_created_at ON public.organizations USING btree (created_at);
+
+
+--
+-- Name: index_organizations_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organizations_on_created_by_id ON public.organizations USING btree (created_by_id);
+
+
+--
+-- Name: index_organizations_on_size; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organizations_on_size ON public.organizations USING btree (size);
+
+
+--
+-- Name: index_organizations_on_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_organizations_on_slug ON public.organizations USING btree (slug);
+
+
+--
+-- Name: index_organizations_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organizations_on_status ON public.organizations USING btree (status);
+
+
+--
 -- Name: index_recovery_contexts_on_chat_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2384,6 +2593,76 @@ CREATE UNIQUE INDEX index_tags_on_name ON public.tags USING btree (name);
 
 
 --
+-- Name: index_team_memberships_on_joined_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_memberships_on_joined_at ON public.team_memberships USING btree (joined_at);
+
+
+--
+-- Name: index_team_memberships_on_organization_membership_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_memberships_on_organization_membership_id ON public.team_memberships USING btree (organization_membership_id);
+
+
+--
+-- Name: index_team_memberships_on_role; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_memberships_on_role ON public.team_memberships USING btree (role);
+
+
+--
+-- Name: index_team_memberships_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_memberships_on_team_id ON public.team_memberships USING btree (team_id);
+
+
+--
+-- Name: index_team_memberships_on_team_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_team_memberships_on_team_id_and_user_id ON public.team_memberships USING btree (team_id, user_id);
+
+
+--
+-- Name: index_team_memberships_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_team_memberships_on_user_id ON public.team_memberships USING btree (user_id);
+
+
+--
+-- Name: index_teams_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_teams_on_created_at ON public.teams USING btree (created_at);
+
+
+--
+-- Name: index_teams_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_teams_on_created_by_id ON public.teams USING btree (created_by_id);
+
+
+--
+-- Name: index_teams_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_teams_on_organization_id ON public.teams USING btree (organization_id);
+
+
+--
+-- Name: index_teams_on_organization_id_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_teams_on_organization_id_and_slug ON public.teams USING btree (organization_id, slug);
+
+
+--
 -- Name: index_tool_calls_on_message_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2416,6 +2695,13 @@ CREATE UNIQUE INDEX index_tool_calls_on_tool_call_id ON public.tool_calls USING 
 --
 
 CREATE INDEX index_users_on_account_metadata ON public.users USING gin (account_metadata);
+
+
+--
+-- Name: index_users_on_current_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_users_on_current_organization_id ON public.users USING btree (current_organization_id);
 
 
 --
@@ -2610,11 +2896,51 @@ ALTER TABLE ONLY public.recovery_contexts
 
 
 --
+-- Name: organization_memberships fk_rails_57cf70d280; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_memberships
+    ADD CONSTRAINT fk_rails_57cf70d280 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: team_memberships fk_rails_5aba9331a7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_memberships
+    ADD CONSTRAINT fk_rails_5aba9331a7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: team_memberships fk_rails_61c29b529e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_memberships
+    ADD CONSTRAINT fk_rails_61c29b529e FOREIGN KEY (team_id) REFERENCES public.teams(id);
+
+
+--
 -- Name: list_items fk_rails_671dc678fa; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.list_items
     ADD CONSTRAINT fk_rails_671dc678fa FOREIGN KEY (board_column_id) REFERENCES public.board_columns(id);
+
+
+--
+-- Name: team_memberships fk_rails_6dfe318707; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.team_memberships
+    ADD CONSTRAINT fk_rails_6dfe318707 FOREIGN KEY (organization_membership_id) REFERENCES public.organization_memberships(id);
+
+
+--
+-- Name: organization_memberships fk_rails_715ab7f4fe; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_memberships
+    ADD CONSTRAINT fk_rails_715ab7f4fe FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -2663,6 +2989,14 @@ ALTER TABLE ONLY public.tool_calls
 
 ALTER TABLE ONLY public.taggings
     ADD CONSTRAINT fk_rails_9fcd2e236b FOREIGN KEY (tag_id) REFERENCES public.tags(id);
+
+
+--
+-- Name: teams fk_rails_a068b3a692; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT fk_rails_a068b3a692 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
 
 
 --
@@ -2722,6 +3056,22 @@ ALTER TABLE ONLY public.chats
 
 
 --
+-- Name: organizations fk_rails_edec76c076; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organizations
+    ADD CONSTRAINT fk_rails_edec76c076 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: teams fk_rails_f07f0bd66d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teams
+    ADD CONSTRAINT fk_rails_f07f0bd66d FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_f37be66aa7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2736,6 +3086,10 @@ ALTER TABLE ONLY public.recovery_contexts
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251115200022'),
+('20251115200021'),
+('20251115200020'),
+('20251115200019'),
 ('20251103202838'),
 ('20251011000104'),
 ('20251010235748'),

@@ -12,10 +12,11 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   # Helper methods available in views
-  helper_method :current_user, :user_signed_in?, :chat_context
+  helper_method :current_user, :user_signed_in?, :chat_context, :current_organization, :current_organization=
 
   # Before actions
   before_action :set_current_user
+  before_action :set_current_organization
   before_action :store_location
 
   # AUTHENTICATION METHODS
@@ -30,12 +31,51 @@ class ApplicationController < ActionController::Base
     current_user.present?
   end
 
+  # ORGANIZATION CONTEXT METHODS
+
+  # Get the current organization (from session or user's default)
+  def current_organization
+    return nil unless current_user
+    return @current_organization if defined?(@current_organization)
+
+    # Try to get from session first
+    org_id = session[:current_organization_id]
+    org = Organization.find_by(id: org_id) if org_id.present?
+
+    # Fallback to user's current_organization_id
+    org ||= current_user.current_organization
+
+    # Fallback to user's first organization
+    org ||= current_user.organizations.first
+
+    @current_organization = org
+  end
+
+  # Set the current organization (for use in controllers)
+  def current_organization=(organization)
+    @current_organization = organization
+    session[:current_organization_id] = organization&.id
+    organization
+  end
+
+  # Require user to be in an organization
+  def require_organization!
+    unless current_organization
+      redirect_to root_path, alert: "You must be a member of an organization to access this page."
+    end
+  end
+
+  # Check if organization is required for this action
+  def organization_required?
+    # Can be overridden in subclasses to require organization for specific actions
+    false
+  end
+
   # Require user to be authenticated
   def authenticate_user!
     unless current_user
       respond_to do |format|
         format.html { redirect_to new_session_path, alert: "Please sign in to continue" }
-        format.json { render json: { error: "Authentication required" }, status: :unauthorized }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("flash", partial: "shared/flash_messages"), status: :unauthorized }
       end
     end
@@ -47,6 +87,17 @@ class ApplicationController < ActionController::Base
     session[:user_id] = user.id
     session[:user_signed_in_at] = Time.current.to_s
     @current_user = user
+
+    # Set the current organization in session from user's preferred org
+    # This ensures the user starts with their current_organization
+    if user.current_organization.present?
+      session[:current_organization_id] = user.current_organization.id
+    elsif user.organizations.any?
+      # Fallback to first organization if user has no current_organization set
+      org = user.organizations.first
+      session[:current_organization_id] = org.id
+      user.update!(current_organization_id: org.id)
+    end
   end
 
   # Sign out the current user
@@ -115,6 +166,20 @@ class ApplicationController < ActionController::Base
     Current.request_id = request.request_id if request.respond_to?(:request_id)
     Current.user_agent = request.user_agent if request.respond_to?(:user_agent)
     Current.ip_address = request.remote_ip if request.respond_to?(:remote_ip)
+  end
+
+  # Set current organization context from session or user default
+  def set_current_organization
+    return unless current_user
+
+    org = current_organization
+    Current.organization = org if defined?(Current)
+
+    # Sync the user's current_organization_id if it's different from the session
+    # This ensures the database is kept in sync with the session choice
+    if org.present? && current_user.current_organization_id != org.id
+      current_user.update_column(:current_organization_id, org.id)
+    end
   end
 
   # Authorization helper - check if user can access resource
@@ -211,9 +276,6 @@ class ApplicationController < ActionController::Base
       format.html do
         flash[:alert] = "You are not authorized to #{action_name} this #{policy_name.underscore.humanize.downcase}."
         redirect_back(fallback_location: lists_path)
-      end
-      format.json do
-        render json: { error: "Not authorized to #{action_name}" }, status: :forbidden
       end
       format.turbo_stream do
         render turbo_stream: turbo_stream.replace(

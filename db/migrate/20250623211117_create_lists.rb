@@ -18,6 +18,10 @@ class CreateLists < ActiveRecord::Migration[8.0]
       # Parent-child relationships for hierarchical lists
       t.references :parent_list, null: true, foreign_key: { to_table: :lists }, type: :uuid
 
+      # Organization context
+      t.uuid :organization_id
+      t.uuid :team_id
+
       # Metadata
       t.json :metadata, default: {}
       t.string :color_theme, default: 'blue'
@@ -32,6 +36,8 @@ class CreateLists < ActiveRecord::Migration[8.0]
     add_index :lists, :public_permission
     add_index :lists, :created_at
     add_index :lists, :list_type
+    add_index :lists, :organization_id
+    add_index :lists, :team_id
 
     # Parent-child relationship indexes for efficient hierarchy queries
     # Note: :parent_list_id index is automatically created by t.references above

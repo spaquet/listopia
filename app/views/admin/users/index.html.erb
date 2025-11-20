@@ -5,16 +5,39 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-      <p class="text-gray-600 mt-1">Manage and monitor all users in your organization</p>
+      <p class="text-gray-600 mt-1">Manage and monitor users</p>
+      <% if @filters[:organization_id].present? %>
+        <% org = Organization.find(@filters[:organization_id]) %>
+        <p class="text-sm text-blue-600 mt-2">
+          <span class="font-semibold"><%= org.name %></span>
+        </p>
+      <% end %>
     </div>
     <div class="flex items-center space-x-3">
+      <% if @admin_organizations.any? %>
+        <%= form_with url: admin_users_path, method: :get, local: true, class: "inline" do |f| %>
+          <%= f.hidden_field :query, value: @filters[:query] %>
+          <%= f.hidden_field :status, value: @filters[:status] %>
+          <%= f.hidden_field :role, value: @filters[:role] %>
+          <%= f.hidden_field :verified, value: @filters[:verified] %>
+          <%= f.hidden_field :sort_by, value: @filters[:sort_by] %>
+          <%= f.select :organization_id,
+              options_for_select(
+                @admin_organizations.map { |org| [org.name, org.id] },
+                @filters[:organization_id]
+              ),
+              { include_blank: false },
+              class: "px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm",
+              onchange: "this.form.submit()" %>
+        <% end %>
+      <% end %>
       <%= link_to admin_root_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors" do %>
         <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>
         Back
       <% end %>
-      <%= link_to new_admin_user_path, class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center" do %>
+      <%= link_to new_admin_user_path(organization_id: @filters[:organization_id]), class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center" do %>
         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>

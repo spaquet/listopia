@@ -44,14 +44,16 @@ Rails.application.routes.draw do
   patch "settings/preferences", to: "users#update_preferences", as: :update_preferences_user
   patch "settings/notifications", to: "users#update_notification_settings", as: :update_notification_settings_user  # ADD this line
 
+  # Unified invitation acceptance (handles all types: User, List, ListItem, Team, Organization)
+  # MUST come before resources :invitations to match before the :id route
+  get "/invitations/accept/:token", to: "invitations#accept", as: "accept_invitation"
 
-  # Collaboration invitation acceptance
-  get "/invitations/accept", to: "collaborations#accept", as: "accept_invitation"
+  # Organization invitation acceptance (alternative route)
+  get "/organizations/invitations/accept/:token", to: "organization_invitations#accept", as: "accept_organization_invitation"
 
   # Invitations management (list sent/received invitations with management features)
   resources :invitations, only: [ :index, :show, :update ] do
     member do
-      patch :accept
       patch :decline
       delete :revoke
       patch :resend
@@ -165,6 +167,29 @@ Rails.application.routes.draw do
   get "setup_password/:token", to: "registrations#setup_password", as: :setup_password_registration
   post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
 
+  # Organizations - switcher and switching only
+  resources :organizations, only: [] do
+    collection do
+      get :switcher, as: :switcher
+      patch :switch
+    end
+
+    # Teams - user-facing team management
+    resources :teams do
+      resources :members, controller: "team_members", only: [ :new, :create ] do
+        collection do
+          get :search
+        end
+        member do
+          patch :update_role
+          delete :remove
+          post :resend_invitation
+          delete :cancel_invitation
+        end
+      end
+    end
+  end
+
   # Admin routes
   namespace :admin do
     root "dashboard#index"
@@ -176,6 +201,40 @@ Rails.application.routes.draw do
       end
       collection do
         post :bulk_action
+      end
+    end
+
+    resources :organizations do
+      member do
+        post :suspend
+        post :reactivate
+        get :audit_logs
+      end
+
+      resources :members, controller: "organization_members" do
+        member do
+          patch :update_role
+          delete :remove
+        end
+      end
+
+      resources :invitations, controller: "organization_invitations" do
+        member do
+          patch :resend
+          delete :revoke
+        end
+      end
+
+      resources :teams do
+        member do
+          get :members
+        end
+        resources :members, controller: "team_members" do
+          member do
+            patch :update_role
+            delete :remove
+          end
+        end
       end
     end
 

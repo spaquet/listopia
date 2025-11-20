@@ -1,0 +1,167 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900"><%= @team.name %></h1>
+      <p class="mt-2 text-gray-600">Team in <%= @organization.name %></p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "← Back", organization_teams_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+      <% if policy(@team).update? %>
+        <%= link_to "Edit", edit_organization_team_path(@organization, @team), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="text-sm text-gray-600">Members</div>
+      <div class="text-3xl font-bold text-gray-900"><%= @team.users.count %></div>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="text-sm text-gray-600">Lists</div>
+      <div class="text-3xl font-bold text-gray-900"><%= @team.lists.count %></div>
+    </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="text-sm text-gray-600">Created</div>
+      <div class="text-lg font-bold text-gray-900"><%= @team.created_at.strftime("%b %d, %Y") %></div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Team Details</h2>
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <dt class="text-sm font-medium text-gray-600">Team Name</dt>
+        <dd class="mt-1 text-gray-900"><%= @team.name %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-600">Slug</dt>
+        <dd class="mt-1 text-gray-900"><%= @team.slug %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-600">Created By</dt>
+        <dd class="mt-1 text-gray-900"><%= @team.creator.name %></dd>
+      </div>
+      <div>
+        <dt class="text-sm font-medium text-gray-600">Organization</dt>
+        <dd class="mt-1 text-gray-900"><%= @organization.name %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <% if policy(@team).manage_members? %>
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Team Members</h2>
+        <%= link_to "Add Member", new_organization_team_member_path(@organization, @team), class: "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm" %>
+      </div>
+
+      <% pending_invitations = Invitation.where(invitable_type: 'Team', invitable_id: @team.id, status: 'pending') %>
+      <% if @team.users.any? || pending_invitations.any? %>
+        <div class="hidden md:grid md:grid-cols-5 gap-4 px-6 py-3 border-b border-gray-200 bg-gray-50 font-semibold text-sm text-gray-900">
+          <div>Name</div>
+          <div>Email</div>
+          <div>Role</div>
+          <div>Status</div>
+          <div class="text-right">Actions</div>
+        </div>
+        <%= turbo_frame_tag "team_members" do %>
+          <div class="divide-y divide-gray-200">
+            <!-- Active Members -->
+            <% @team.team_memberships.order(created_at: :desc).each do |membership| %>
+              <div id="team_member_<%= membership.id %>" class="px-6 py-4 hover:bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-4 md:items-center">
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Name</span>
+                  <span class="text-sm font-medium text-gray-900"><%= membership.user.name %></span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Email</span>
+                  <span class="text-sm text-gray-600"><%= membership.user.email %></span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Role</span>
+                  <span class="px-3 py-1 text-xs font-medium rounded-full <%= membership.role == 'admin' ? 'bg-purple-100 text-purple-800' : membership.role == 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                    <%= membership.role.titleize %>
+                  </span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Status</span>
+                  <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    Active
+                  </span>
+                </div>
+                <% if policy(@team).manage_members? && membership.user != current_user %>
+                  <div class="flex items-center justify-start md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+                    <div class="relative group">
+                      <button type="button" class="text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold">
+                        Edit Role ▼
+                      </button>
+                      <div class="absolute bottom-full right-0 mb-1 w-40 bg-white border border-gray-300 rounded-lg shadow-lg hidden group-hover:block z-10">
+                        <% %w[member lead admin].each do |role| %>
+                          <div class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                            <% if membership.role != role %>
+                              <%= button_to role.titleize, update_role_organization_team_member_path(@organization, @team, membership, role: role), method: :patch, form: { local: false, class: "w-full text-left" }, class: "w-full text-left bg-none border-0 cursor-pointer font-normal p-0" %>
+                            <% else %>
+                              <span><%= role.titleize %></span>
+                              <span class="font-bold">✓</span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+                    <%= button_to "Remove", remove_organization_team_member_path(@organization, @team, membership), method: :delete, form: { local: false, class: "inline" }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold", data: { turbo_confirm: "Are you sure?" } %>
+                  </div>
+                <% elsif membership.user == current_user %>
+                  <div class="flex items-center justify-start md:justify-end pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+                    <span class="text-xs text-gray-500">You</span>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <!-- Pending Invitations -->
+            <% pending_invitations.each do |invitation| %>
+              <div id="team_invitation_<%= invitation.id %>" class="px-6 py-4 hover:bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-4 md:items-center opacity-75">
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Name</span>
+                  <span class="text-sm font-medium text-gray-900">-</span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Email</span>
+                  <span class="text-sm text-gray-600"><%= invitation.email %></span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Role</span>
+                  <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                    <%= invitation.metadata['role']&.titleize || 'Member' %>
+                  </span>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                  <span class="text-xs font-semibold text-gray-600 md:hidden">Status</span>
+                  <span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                    Invited
+                  </span>
+                </div>
+                <div class="flex items-center justify-start md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+                  <%= button_to "Resend", resend_invitation_organization_team_member_path(@organization, @team, invitation), method: :post, form: { local: false, class: "inline" }, class: "text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+                  <%= button_to "Cancel", cancel_invitation_organization_team_member_path(@organization, @team, invitation), method: :delete, form: { local: false, class: "inline", data: { turbo_confirm: "Are you sure?" } }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="px-6 py-12 text-center">
+          <p class="text-gray-600 mb-4">No members in this team yet.</p>
+          <%= link_to "Add the first member", new_organization_team_member_path(@organization, @team), class: "text-blue-600 hover:text-blue-800 font-medium" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div class="flex gap-2">
+    <% if policy(@team).destroy? %>
+      <%= link_to "Delete Team", organization_team_path(@organization, @team), method: :delete, data: { confirm: "Are you sure? This action cannot be undone." }, class: "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700" %>
+    <% end %>
+  </div>
+</div>

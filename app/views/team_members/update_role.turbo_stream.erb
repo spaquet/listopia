@@ -1,0 +1,49 @@
+<!-- app/views/team_members/update_role.turbo_stream.erb -->
+<%= turbo_stream.replace "team_member_#{@member.id}" do %>
+  <div class="px-6 py-4 hover:bg-gray-50 grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-4 md:items-center border-b border-gray-200">
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Name</span>
+      <span class="text-sm font-medium text-gray-900"><%= @member.user.name %></span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Email</span>
+      <span class="text-sm text-gray-600"><%= @member.user.email %></span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Role</span>
+      <span class="px-3 py-1 text-xs font-medium rounded-full <%= @member.role == 'admin' ? 'bg-purple-100 text-purple-800' : @member.role == 'lead' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+        <%= @member.role.titleize %>
+      </span>
+    </div>
+    <div class="flex flex-col md:flex-row md:items-center gap-2">
+      <span class="text-xs font-semibold text-gray-600 md:hidden">Joined</span>
+      <span class="text-sm text-gray-600"><%= @member.created_at.strftime("%b %d, %Y") %></span>
+    </div>
+    <% if policy(@team).manage_members? && @member.user != current_user %>
+      <div class="flex items-center justify-start md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+        <div class="relative group">
+          <button type="button" class="text-sm text-blue-600 hover:text-blue-800 bg-none border-0 cursor-pointer p-0 font-semibold">
+            Edit Role ▼
+          </button>
+          <div class="absolute bottom-full right-0 mb-1 w-40 bg-white border border-gray-300 rounded-lg shadow-lg hidden group-hover:block z-10">
+            <% %w[member lead admin].each do |role| %>
+              <div class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between">
+                <% if @member.role != role %>
+                  <%= button_to role.titleize, update_role_organization_team_member_path(@organization, @team, @member, role: role), method: :patch, form: { local: false, class: "w-full text-left" }, class: "w-full text-left bg-none border-0 cursor-pointer font-normal p-0" %>
+                <% else %>
+                  <span><%= role.titleize %></span>
+                  <span class="font-bold">✓</span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+        <%= button_to "Remove", remove_organization_team_member_path(@organization, @team, @member), method: :delete, form: { local: false, class: "inline" }, class: "text-sm text-red-600 hover:text-red-800 bg-none border-0 cursor-pointer p-0 font-semibold", data: { turbo_confirm: "Are you sure?" } %>
+      </div>
+    <% elsif @member.user == current_user %>
+      <div class="flex items-center justify-start md:justify-end pt-2 md:pt-0 border-t md:border-t-0 border-gray-200 md:border-gray-200">
+        <span class="text-xs text-gray-500">You</span>
+      </div>
+    <% end %>
+  </div>
+<% end %>

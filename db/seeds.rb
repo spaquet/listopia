@@ -61,6 +61,89 @@ alex = User.create!(
 )
 puts "✓ Created user: #{alex.email}"
 
+# Create a user outside the organization
+john = User.create!(
+  email: "john@example.com",
+  password: "password123",
+  password_confirmation: "password123",
+  name: "John Smith",
+  email_verified_at: Time.current
+)
+puts "✓ Created user: #{john.email} (not in Listopia organization)"
+
+# Create a personal organization for John
+john_org = Organization.create!(
+  name: "John's Workspace",
+  size: "small",
+  status: "active",
+  created_by_id: john.id
+)
+
+OrganizationMembership.create!(
+  organization: john_org,
+  user: john,
+  role: :owner,
+  status: :active,
+  joined_at: Time.current
+)
+
+john.update!(current_organization_id: john_org.id)
+puts "✓ Created personal organization for John: #{john_org.name}"
+
+# ============================================================================
+# ORGANIZATIONS
+# ============================================================================
+puts "\n🏢 Creating organizations..."
+
+listopia_org = Organization.create!(
+  name: "Listopia",
+  size: "small",
+  status: "active",
+  creator: mike
+)
+puts "✓ Created organization: #{listopia_org.name}"
+
+# ============================================================================
+# ORGANIZATION MEMBERSHIPS
+# ============================================================================
+puts "\n👥 Setting up organization memberships..."
+
+OrganizationMembership.create!(
+  organization: listopia_org,
+  user: mike,
+  role: :owner,
+  status: :active
+)
+mike.update!(current_organization_id: listopia_org.id)
+puts "✓ Mike joined as owner (current_organization set)"
+
+OrganizationMembership.create!(
+  organization: listopia_org,
+  user: emma,
+  role: :member,
+  status: :active
+)
+emma.update!(current_organization_id: listopia_org.id)
+puts "✓ Emma joined as member (current_organization set)"
+
+OrganizationMembership.create!(
+  organization: listopia_org,
+  user: sarah,
+  role: :member,
+  status: :active
+)
+sarah.update!(current_organization_id: listopia_org.id)
+puts "✓ Sarah joined as member (current_organization set)"
+
+OrganizationMembership.create!(
+  organization: listopia_org,
+  user: alex,
+  role: :member,
+  status: :active
+)
+alex.update!(current_organization_id: listopia_org.id)
+puts "✓ Alex joined as member (current_organization set)"
+
 # ============================================================================
 # LISTS
 # ============================================================================
@@ -71,7 +154,8 @@ mike_work = mike.lists.create!(
   title: "Q4 Project Planning",
   description: "Key initiatives and milestones for Q4 2025",
   list_type: "professional",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{mike_work.title}"
 
@@ -79,7 +163,8 @@ mike_personal = mike.lists.create!(
   title: "Home Renovation",
   description: "Tasks for kitchen and bathroom remodel",
   list_type: "personal",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{mike_personal.title}"
 
@@ -89,7 +174,8 @@ emma_travel = emma.lists.create!(
   description: "Planning our summer vacation across Europe",
   list_type: "personal",
   status: "active",
-  is_public: true
+  is_public: true,
+  organization: listopia_org
 )
 puts "✓ Created list: #{emma_travel.title}"
 
@@ -97,7 +183,8 @@ emma_blog = emma.lists.create!(
   title: "Blog Content Calendar",
   description: "Article ideas and publishing schedule",
   list_type: "professional",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{emma_blog.title}"
 
@@ -106,7 +193,8 @@ sarah_fitness = sarah.lists.create!(
   title: "Fitness Goals 2025",
   description: "Training plan and health objectives",
   list_type: "personal",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{sarah_fitness.title}"
 
@@ -114,7 +202,8 @@ sarah_learning = sarah.lists.create!(
   title: "Learning Path: Rails 8",
   description: "Study resources and practice projects",
   list_type: "professional",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{sarah_learning.title}"
 
@@ -123,7 +212,8 @@ alex_startup = alex.lists.create!(
   title: "Startup Launch Checklist",
   description: "Everything needed to launch our SaaS product",
   list_type: "professional",
-  status: "active"
+  status: "active",
+  organization: listopia_org
 )
 puts "✓ Created list: #{alex_startup.title}"
 
@@ -358,21 +448,35 @@ puts "\n🎉 Seeding completed successfully!"
 puts "=" * 50
 puts "📊 SUMMARY:"
 puts "Users created: #{User.count}"
+puts "Organizations created: #{Organization.count}"
+puts "Organization memberships: #{OrganizationMembership.count}"
 puts "Lists created: #{List.count}"
 puts "  - Professional lists: #{List.where(list_type: 'professional').count}"
 puts "  - Personal lists: #{List.where(list_type: 'personal').count}"
 puts "  - Public lists: #{List.where(is_public: true).count}"
+puts "  - Organization-scoped lists: #{List.where.not(organization_id: nil).count}"
 puts "List items created: #{ListItem.count}"
 puts "  - Completed items: #{ListItem.status_completed.count}"
 puts "  - In Progress items: #{ListItem.status_in_progress.count}"
 puts "  - Pending items: #{ListItem.status_pending.count}"
 puts "Collaborations: #{Collaborator.count}"
 puts "Pending invitations: #{Invitation.pending.count}"
-puts "\n👥 USER ACCESS:"
-puts "• Mike (mike@listopia.com): ADMIN - 2 lists + collaborator on 2 others"
-puts "• Emma (emma@listopia.com): 2 lists (1 public) + 1 collaboration"
-puts "• Sarah (sarah@listopia.com): 2 lists + collaborator on 1 other"
-puts "• Alex (alex@listopia.com): 1 list"
+puts "\n🏢 ORGANIZATIONS:"
+puts "\n📍 Listopia (Shared Organization)"
+puts "👥 MEMBERS:"
+puts "• Mike (mike@listopia.com): ADMIN & Owner - 2 lists + collaborator on 2 others"
+puts "  └─ current_organization_id: #{mike.current_organization_id} ✓"
+puts "• Emma (emma@listopia.com): Member - 2 lists (1 public) + 1 collaboration"
+puts "  └─ current_organization_id: #{emma.current_organization_id} ✓"
+puts "• Sarah (sarah@listopia.com): Member - 2 lists + collaborator on 1 other"
+puts "  └─ current_organization_id: #{sarah.current_organization_id} ✓"
+puts "• Alex (alex@listopia.com): Member - 1 list"
+puts "  └─ current_organization_id: #{alex.current_organization_id} ✓"
+puts "\n📍 John's Workspace (Personal Organization)"
+puts "👤 OWNER:"
+puts "• John (john@example.com): Owner - separate organization for cross-org testing"
+puts "  └─ current_organization_id: #{john.current_organization_id} ✓"
 puts "\n🔐 All user passwords: password123"
 puts "🌐 Public list: #{emma_travel.title}"
-puts "\n✨ Ready to explore Listopia with status-based tracking!"
+puts "\n✅ All users have current_organization_id properly set!"
+puts "✨ Ready to explore Listopia with organization-scoped access control!"

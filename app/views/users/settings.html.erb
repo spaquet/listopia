@@ -1,10 +1,20 @@
 <!-- app/views/users/settings.html.erb -->
-<div class="max-w-2xl mx-auto space-y-6">
-  <!-- Page Header -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h1 class="text-2xl font-bold text-gray-900">Account Settings</h1>
-    <p class="text-gray-600 mt-1">Manage your password, account preferences, and notification settings.</p>
-  </div>
+<div class="max-w-6xl mx-auto">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Sidebar -->
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-4">
+        <%= render "shared/settings_sidebar" %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="lg:col-span-3 space-y-6">
+      <!-- Page Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h1 class="text-2xl font-bold text-gray-900">Account Settings</h1>
+        <p class="text-gray-600 mt-1">Manage your password, account preferences, and notification settings.</p>
+      </div>
   <!-- Change Password -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-lg font-medium text-gray-900 mb-4">Change Password</h2>
@@ -277,9 +287,11 @@
       </div>
     </div>
   </div>
-  <!-- Navigation -->
-  <div class="text-center">
-    <%= link_to "← Back to Profile", profile_path, 
-                class: "text-blue-600 hover:text-blue-800 font-medium" %>
+      <!-- Navigation -->
+      <div class="text-center">
+        <%= link_to "← Back to Profile", profile_path,
+                    class: "text-blue-600 hover:text-blue-800 font-medium" %>
+      </div>
+    </div>
   </div>
 </div>
