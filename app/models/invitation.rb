@@ -67,9 +67,9 @@ class Invitation < ApplicationRecord
   scope :accepted, -> { where(status: "accepted") }
   scope :expired, -> { where(status: "expired") }
 
-  before_create :generate_invitation_token
   before_create :set_invitation_sent_at
   before_validation :set_default_status, on: :create
+  before_save :clear_invitation_token
 
   def pending?
     status == "pending"
@@ -121,10 +121,6 @@ class Invitation < ApplicationRecord
     end
   end
 
-  def generate_invitation_token
-    self.invitation_token = generate_token_for(:invitation)
-  end
-
   def self.find_by_invitation_token(token)
     find_by_token_for(:invitation, token)
   rescue ActiveSupport::MessageVerifier::InvalidSignature, ActiveSupport::MessageEncryptor::InvalidMessage
@@ -169,5 +165,9 @@ class Invitation < ApplicationRecord
 
   def set_default_status
     self.status ||= "pending"
+  end
+
+  def clear_invitation_token
+    self.invitation_token = nil
   end
 end

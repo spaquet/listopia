@@ -31,6 +31,18 @@ class Admin::UsersController < Admin::BaseController
 
     @users = @filter_service.filtered_users.includes(:roles).limit(100)
 
+    # Fetch pending invitations for the organization to show in the user list
+    @pending_invitations = if organization_id.present?
+      Invitation.where(
+        organization_id: organization_id,
+        invitable_type: "Organization",
+        status: "pending",
+        user_id: nil  # Only show invitations for users who haven't accepted yet
+      ).order(created_at: :desc)
+    else
+      []
+    end
+
     @filters = {
       query: @filter_service.query,
       status: @filter_service.status,
@@ -45,7 +57,7 @@ class Admin::UsersController < Admin::BaseController
       User.joins(:organization_memberships)
           .where(organization_memberships: { organization_id: organization_id })
           .distinct
-          .count :
+          .count + @pending_invitations.count :
       User.count
 
     respond_to do |format|
