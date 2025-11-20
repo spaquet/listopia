@@ -276,7 +276,7 @@ GEM
     noticed (2.9.3)
       rails (>= 6.1.0)
     ostruct (0.6.3)
-    pagy (43.0.7)
+    pagy (43.1.0)
       json
       yaml
     parallel (1.27.0)
