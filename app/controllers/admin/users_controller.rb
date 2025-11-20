@@ -1,6 +1,6 @@
 # app/controllers/admin/users_controller.rb
 class Admin::UsersController < Admin::BaseController
-  before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status]
+  before_action :set_user, only: %i[show edit update destroy toggle_admin toggle_status resend_invitation]
 
   helper_method :locale_options, :timezone_options
 
@@ -85,6 +85,9 @@ class Admin::UsersController < Admin::BaseController
     # uses the generate_temp_password method from User model
     @user.generate_temp_password
 
+    # Set status to pending_verification until user accepts invitation
+    @user.status = "pending_verification"
+
     authorize @user, :create?
 
     # Get organization_id from params or current context
@@ -100,10 +103,30 @@ class Admin::UsersController < Admin::BaseController
       @user.add_role(:admin) if params[:user][:make_admin] == "1"
       @user.send_admin_invitation!
 
-      # Add user to the specified organization
+      # Create pending invitation for the specified organization
       if organization_id.present?
         org = Organization.find(organization_id)
-        org.users << @user unless org.users.include?(@user)
+
+        # Add user to organization with pending status
+        membership = OrganizationMembership.find_or_create_by!(
+          organization: org,
+          user: @user
+        ) do |m|
+          m.status = :pending
+          m.role = :member
+        end
+
+        # Create a pending invitation
+        invitation = Invitation.create!(
+          user: @user,
+          organization: org,
+          invitable: org,
+          invitable_type: "Organization",
+          email: @user.email,
+          invited_by: current_user,
+          status: "pending",
+          permission: "read"
+        )
         # Set as current organization for admin-invited users
         @user.update!(current_organization_id: org.id)
       elsif @user.organizations.any?
@@ -192,6 +215,36 @@ class Admin::UsersController < Admin::BaseController
     else
       @user.make_admin!
       message = "Admin privileges granted."
+    end
+
+    respond_to do |format|
+      format.html { redirect_to admin_users_path, notice: message }
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace("user_#{@user.id}",
+          partial: "user_row", locals: { user: @user, current_user: current_user })
+      end
+    end
+  end
+
+  def resend_invitation
+    authorize @user, :toggle_status?
+
+    # Find the pending invitation for this user (created for Organization)
+    invitation = Invitation.find_by(user_id: @user.id, status: "pending", invitable_type: "Organization")
+
+    if invitation
+      # Resend the invitation
+      invitation.update!(
+        invitation_token: invitation.generate_token_for(:invitation),
+        invitation_sent_at: Time.current
+      )
+
+      # Send the email
+      AdminMailer.user_invitation(@user, invitation.invitation_token).deliver_later
+
+      message = "Invitation resent to #{@user.email}"
+    else
+      message = "No pending invitation found for this user."
     end
 
     respond_to do |format|

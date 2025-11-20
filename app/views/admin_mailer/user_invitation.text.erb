@@ -1,4 +1,13 @@
 Welcome to Listopia, <%= @user.name %>!
-An administrator has created an account for you. Visit the link below to verify your email and set your password:
-<%= @verification_url %>
-This link will expire in 24 hours.
+
+An administrator has created an account for you on Listopia. To get started, please set your password by visiting the link below:
+
+<%= @setup_url %>
+
+This link will expire in 24 hours. If it expires, please contact your administrator.
+
+---
+
+If you didn't expect this invitation, please contact your administrator.
+
+© Listopia. All rights reserved.
