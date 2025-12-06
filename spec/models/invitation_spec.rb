@@ -311,7 +311,6 @@ RSpec.describe Invitation, type: :model do
         expect(collaborator.user).to eq(accepting_user)
       end
     end
-
   end
 
   describe 'class methods' do

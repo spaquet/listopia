@@ -137,7 +137,7 @@ class AiAgentMcpService
         # Case 1: User already has an account on Listopia
         # Check if already member
         if organization.organization_memberships.exists?(user: user)
-          return {
+          {
             success: false,
             error: "This user is already a member of #{organization.name}.",
             type: "already_member"

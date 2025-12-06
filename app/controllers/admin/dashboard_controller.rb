@@ -7,7 +7,7 @@ class Admin::DashboardController < Admin::BaseController
     @stats = {
       total_users: org_users.count,
       active_users: org_users.where(status: "active").count,
-      admin_users: org_memberships.where(role: [:admin, :owner]).count,
+      admin_users: org_memberships.where(role: [ :admin, :owner ]).count,
       new_users_this_month: org_users.where("users.created_at >= ?", Time.current.beginning_of_month).count
     }
   end
