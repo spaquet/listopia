@@ -41,6 +41,39 @@ class DashboardController < ApplicationController
     end
   end
 
+  # Kanban board view of all items from active lists
+  def items_kanban
+    # Get active lists accessible by user
+    if current_organization
+      lists = policy_scope(List).where(organization_id: current_organization.id, status: :active)
+    else
+      lists = policy_scope(List).where(organization_id: nil, status: :active)
+    end
+
+    # Load all items from active lists with their associations
+    @items = ListItem.where(list: lists)
+                     .includes(:list, :board_column, :assigned_user)
+                     .reorder(:position, :created_at)
+
+    # Group items by board column (using a pseudo-column structure)
+    # We create virtual columns for display purposes
+    @column_names = [ "To Do", "In Progress", "Done" ]
+    @items_by_column = {}
+
+    @column_names.each do |column_name|
+      @items_by_column[column_name] = @items.select do |item|
+        case column_name
+        when "To Do"
+          item.status_pending?
+        when "In Progress"
+          item.status_in_progress?
+        when "Done"
+          item.status_completed?
+        end
+      end
+    end
+  end
+
   # New action for switching focus in the sidebar
   def focus_list
     list_id = params[:list_id]

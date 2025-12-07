@@ -32,6 +32,9 @@ class ListItemsController < ApplicationController
 
   def update
     if @list_item.update(list_item_params)
+      # Reload list associations to get fresh count data for stats
+      @list.reload
+
       respond_to do |format|
         format.html { redirect_to list_list_item_path(@list, @list_item), notice: "Item was successfully updated." }
         format.turbo_stream # Renders update.turbo_stream.erb
@@ -122,8 +125,16 @@ class ListItemsController < ApplicationController
   # Toggle completion status using the new status enum
   def toggle_completion
     new_status = @list_item.status_completed? ? :pending : :completed
+    new_column = if new_status == :completed
+                   @list.board_columns.find_by(name: "Done")
+    elsif new_status == :pending
+                   @list.board_columns.find_by(name: "To Do")
+    end
 
-    if @list_item.update(status: new_status)
+    if @list_item.update(status: new_status, board_column_id: new_column&.id)
+      # Reload list associations to get fresh count data for stats
+      @list.reload
+
       respond_to do |format|
         format.html { redirect_to @list }
         format.turbo_stream

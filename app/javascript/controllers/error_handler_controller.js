@@ -175,8 +175,8 @@ export default class extends Controller {
       }
       
       return `
-        <button data-action="click->error-handler#${action}" 
-                class="inline-flex items-center px-2 py-1 mt-2 mr-2 text-xs font-medium bg-white bg-opacity-20 hover:bg-opacity-30 rounded border border-white border-opacity-50 transition-colors duration-200">
+        <button data-action="click->error-handler#${action}"
+                class="inline-flex items-center px-2 py-1 mt-2 mr-2 text-xs font-medium bg-white bg-opacity-90 hover:bg-opacity-100 text-gray-900 rounded border border-white transition-colors duration-200">
           ${buttonText[action] || action}
         </button>
       `

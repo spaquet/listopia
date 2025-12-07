@@ -16,7 +16,7 @@
     <%# Add this meta tag to block search engines %>
     <meta name="robots" content="noindex, nofollow">
   </head>
-  <body class="bg-gray-50 min-h-screen">
+  <body class="bg-gray-50 min-h-screen" data-controller="error-handler">
     <%= render "shared/navigation" %>
     <%= render "shared/flash_messages" %>
     <div class="py-6">
@@ -24,5 +24,7 @@
         <%= yield %>
       </main>
     </div>
+    <!-- Error Handler Notification Container -->
+    <div data-error-handler-target="notification" class="hidden"></div>
   </body>
 </html>

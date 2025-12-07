@@ -1,7 +1,9 @@
 <!-- app/views/lists/kanban.html.erb -->
 <div class="space-y-6">
   <!-- Header Section -->
-  <%= render "lists/header", list: @list %>
+  <div id="list-header-<%= @list.id %>">
+    <%= render "lists/header", list: @list %>
+  </div>
 
   <!-- Kanban Board -->
 <div class="overflow-x-auto pb-6" data-controller="kanban">
@@ -13,7 +15,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <h3 class="text-sm font-semibold text-gray-900"><%= column.name %></h3>
-              <span class="column-count inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full" data-column-id="<%= column.id %>">
+              <span id="column-count-<%= column.id %>" class="column-count inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full" data-column-id="<%= column.id %>">
                 <%= column.list_items.count %>
               </span>
             </div>
@@ -33,3 +35,6 @@
   </div>
 </div>
 </div>
+
+<!-- Subscribe to real-time header updates -->
+<%= turbo_stream_from "list_#{@list.id}_header" %>

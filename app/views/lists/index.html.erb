@@ -6,6 +6,14 @@
       <h1 class="text-2xl font-bold text-gray-900">My Lists</h1>
       <p class="text-gray-600 mt-1">Organize your thoughts, tasks, and projects</p>
     </div>
+    <div class="mt-4 sm:mt-0 flex gap-2">
+      <%= link_to dashboard_items_kanban_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+        Items Kanban
+      <% end %>
+    </div>
   </div>
   <!-- Filters and Search -->
   <%= render "lists/filters" %>
