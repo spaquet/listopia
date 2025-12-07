@@ -223,16 +223,16 @@ class ListItem < ApplicationRecord
     return unless column
 
     new_status = case column.name
-                 when "To Do"
+    when "To Do"
                    :pending
-                 when "In Progress"
+    when "In Progress"
                    :in_progress
-                 when "Done"
+    when "Done"
                    :completed
-                 else
+    else
                    # Keep current status if column name doesn't match known columns
                    status
-                 end
+    end
 
     # Update status and timestamp
     self.status = new_status

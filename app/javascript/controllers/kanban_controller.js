@@ -24,18 +24,54 @@ export default class extends Controller {
     const cards = this.element.querySelectorAll("[data-kanban-target='card']")
     const columns = this.element.querySelectorAll("[data-kanban-target='column']")
 
+    // Store bound handlers so we can remove them later
+    if (!this.dragHandlers) {
+      this.dragHandlers = new WeakMap()
+    }
+
     // Make cards draggable
     cards.forEach(card => {
+      // Check if this card already has handlers
+      if (this.dragHandlers.has(card)) {
+        const handlers = this.dragHandlers.get(card)
+        card.removeEventListener("dragstart", handlers.dragstart)
+        card.removeEventListener("dragend", handlers.dragend)
+      }
+
       card.draggable = true
-      card.addEventListener("dragstart", (e) => this.handleDragStart(e))
-      card.addEventListener("dragend", (e) => this.handleDragEnd(e))
+
+      // Create bound handlers for this card
+      const dragstart = (e) => this.handleDragStart(e)
+      const dragend = (e) => this.handleDragEnd(e)
+
+      card.addEventListener("dragstart", dragstart)
+      card.addEventListener("dragend", dragend)
+
+      // Store handlers for potential cleanup
+      this.dragHandlers.set(card, { dragstart, dragend })
     })
 
     // Make columns drop zones
     columns.forEach(column => {
-      column.addEventListener("dragover", (e) => this.handleDragOver(e))
-      column.addEventListener("drop", (e) => this.handleDrop(e))
-      column.addEventListener("dragleave", (e) => this.handleDragLeave(e))
+      // Check if this column already has handlers
+      if (this.dragHandlers.has(column)) {
+        const handlers = this.dragHandlers.get(column)
+        column.removeEventListener("dragover", handlers.dragover)
+        column.removeEventListener("drop", handlers.drop)
+        column.removeEventListener("dragleave", handlers.dragleave)
+      }
+
+      // Create bound handlers for this column
+      const dragover = (e) => this.handleDragOver(e)
+      const drop = (e) => this.handleDrop(e)
+      const dragleave = (e) => this.handleDragLeave(e)
+
+      column.addEventListener("dragover", dragover)
+      column.addEventListener("drop", drop)
+      column.addEventListener("dragleave", dragleave)
+
+      // Store handlers for potential cleanup
+      this.dragHandlers.set(column, { dragover, drop, dragleave })
     })
   }
 
@@ -125,11 +161,12 @@ export default class extends Controller {
       // Process the Turbo Stream response
       Turbo.renderStreamMessage(html)
 
-      // Re-initialize drag-and-drop after DOM update
-      this.initializeDragAndDrop()
-
-      // Update column counts
-      this.updateColumnCounts()
+      // Wait for Turbo to finish DOM updates, then re-initialize drag-and-drop
+      // Use setTimeout with 0 to defer to next event loop after Turbo processing
+      requestAnimationFrame(() => {
+        this.initializeDragAndDrop()
+        this.updateColumnCounts()
+      })
     })
     .catch(error => {
       console.error("Error updating item column:", error)
