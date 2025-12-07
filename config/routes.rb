@@ -65,6 +65,7 @@ Rails.application.routes.draw do
   # Dashboard routes
   get "dashboard", to: "dashboard#index"
   get "dashboard/kanban", to: "dashboard#kanban", as: :dashboard_kanban
+  get "dashboard/items_kanban", to: "dashboard#items_kanban", as: :dashboard_items_kanban
   get "dashboard/focus_list", to: "dashboard#focus_list", as: :dashboard_focus_list
   post "dashboard/execute_action", to: "dashboard#execute_action", as: :dashboard_execute_action
 

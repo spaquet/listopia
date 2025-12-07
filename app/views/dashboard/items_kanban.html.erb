@@ -1,0 +1,181 @@
+<!-- app/views/dashboard/items_kanban.html.erb -->
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">All Items Kanban</h1>
+      <p class="text-gray-600 mt-1">Kanban view of all items from your active lists</p>
+    </div>
+    <%= link_to lists_path, class: "mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors duration-200" do %>
+      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+      </svg>
+      Back to Lists
+    <% end %>
+  </div>
+
+  <!-- Kanban Board -->
+  <div class="overflow-x-auto pb-6" data-controller="kanban">
+    <div class="flex gap-6 min-w-min">
+      <% @column_names.each do |column_name| %>
+        <div class="flex flex-col w-96 flex-shrink-0 bg-gray-50 rounded-lg border border-gray-200">
+          <!-- Column Header -->
+          <div class="px-5 py-4 border-b border-gray-200 bg-white rounded-t-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm font-semibold text-gray-900"><%= column_name %></h3>
+                <span class="column-count inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
+                  <%= @items_by_column[column_name]&.length || 0 %>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column Items -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-3"
+               id="column_<%= column_name.parameterize %>"
+               data-column-name="<%= column_name %>"
+               data-kanban-target="column">
+            <% @items_by_column[column_name]&.each do |item| %>
+              <div id="item_<%= item.id %>"
+                   class="group relative bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 p-4 cursor-move"
+                   data-item-id="<%= item.id %>"
+                   data-list-id="<%= item.list.id %>"
+                   data-kanban-target="card">
+
+                <!-- Quick Actions (on hover) -->
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-1 pointer-events-none group-hover:pointer-events-auto">
+                  <!-- Edit -->
+                  <%= link_to edit_list_list_item_path(item.list, item),
+                              data: { turbo_frame: "modal" },
+                              class: "p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all pointer-events-auto",
+                              title: "Edit" do %>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                  <% end %>
+
+                  <!-- Delete -->
+                  <% if can_access_list?(item.list, current_user, :edit) %>
+                    <%= button_to list_list_item_path(item.list, item),
+                                  method: :delete,
+                                  data: { turbo_confirm: "Delete this item?" },
+                                  class: "p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all pointer-events-auto",
+                                  title: "Delete" do %>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    <% end %>
+                  <% end %>
+                </div>
+
+                <!-- List Badge -->
+                <div class="mb-2">
+                  <%= link_to list_path(item.list), class: "inline-block" do %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <%= item.list.title %>
+                    </span>
+                  <% end %>
+                </div>
+
+                <!-- Item Type Icon -->
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <div class="flex items-center space-x-2">
+                    <%= item_type_icon(item.item_type) %>
+                    <span class="text-xs text-gray-600"><%= item.item_type.titleize.gsub('_', ' ') %></span>
+                  </div>
+                </div>
+
+                <!-- Title -->
+                <h4 class="font-medium text-sm text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <%= link_to item.title, list_list_item_path(item.list, item), data: { turbo_frame: "modal" }, class: "hover:underline" %>
+                </h4>
+
+                <!-- Priority & Status badges -->
+                <div class="flex items-center space-x-2 mb-3">
+                  <!-- Priority -->
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%=
+                    case item.priority
+                    when 'low'
+                      'bg-gray-100 text-gray-700'
+                    when 'medium'
+                      'bg-yellow-100 text-yellow-700'
+                    when 'high'
+                      'bg-orange-100 text-orange-700'
+                    when 'urgent'
+                      'bg-red-100 text-red-700'
+                    end %>">
+                    <%= item.priority.capitalize %>
+                  </span>
+
+                  <!-- Status -->
+                  <% if item.status_completed? %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                      ✓ Done
+                    </span>
+                  <% elsif item.status_in_progress? %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                      In Progress
+                    </span>
+                  <% end %>
+                </div>
+
+                <!-- Due Date (if present) -->
+                <% if item.due_date.present? %>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="<%= 'text-red-500 font-medium' if item.due_date < Time.current && !item.status_completed? %>">
+                      <%= item.due_date.strftime("%b %d") %>
+                    </span>
+                  </div>
+                <% end %>
+
+                <!-- Assignee -->
+                <% if item.assigned_user.present? %>
+                  <div class="flex items-center text-xs text-gray-600 pt-2 border-t border-gray-100">
+                    <div class="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-xs font-bold mr-1.5 shrink-0">
+                      <%= item.assigned_user.email[0].upcase %>
+                    </div>
+                    <span><%= format_assignee_name(item.assigned_user) %></span>
+                  </div>
+                <% end %>
+
+                <!-- Completion Checkbox (if pending or in progress) -->
+                <% if (item.status_pending? || item.status_in_progress?) && current_user && can_access_list?(item.list, current_user) %>
+                  <div class="mt-3 pt-3 border-t border-gray-100">
+                    <%= button_to toggle_completion_list_list_item_path(item.list, item),
+                                  method: :patch,
+                                  data: { turbo_stream: true },
+                                  class: "w-full flex items-center justify-center px-2 py-1.5 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors" do %>
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      Mark Complete
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <% if @items.empty? %>
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      </svg>
+      <p class="mt-2 text-sm font-medium text-gray-900">No items in active lists</p>
+      <p class="mt-1 text-sm text-gray-500">Create items or mark lists as active to see them here</p>
+      <%= link_to "Create a list", new_list_path, class: "mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700" %>
+    </div>
+  <% end %>
+</div>
+
+<!-- Subscribe to real-time updates -->
+<%= turbo_stream_from "user_list_items_#{current_user.id}" %>

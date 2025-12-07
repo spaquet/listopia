@@ -10,12 +10,26 @@ export default class extends Controller {
     // Bind turbo:load listener to re-initialize after page transitions
     this.boundTurboLoad = () => this.initializeDragAndDrop()
     document.addEventListener("turbo:load", this.boundTurboLoad)
+
+    // Listen for custom event to re-initialize after Turbo Stream updates
+    this.boundReInitialize = () => this.initializeDragAndDrop()
+    this.element.addEventListener("kanban:reinitialize", this.boundReInitialize)
+
+    // Also listen on document for bubbled custom events
+    this.boundDocumentReInitialize = () => this.initializeDragAndDrop()
+    document.addEventListener("kanban:reinitialize", this.boundDocumentReInitialize)
   }
 
   disconnect() {
     // Clean up event listeners
     if (this.boundTurboLoad) {
       document.removeEventListener("turbo:load", this.boundTurboLoad)
+    }
+    if (this.boundReInitialize) {
+      this.element.removeEventListener("kanban:reinitialize", this.boundReInitialize)
+    }
+    if (this.boundDocumentReInitialize) {
+      document.removeEventListener("kanban:reinitialize", this.boundDocumentReInitialize)
     }
   }
 
@@ -166,7 +180,14 @@ export default class extends Controller {
     column.classList.remove("bg-blue-50", "ring-2", "ring-blue-400")
 
     const itemId = event.dataTransfer.getData("item-id")
-    const columnId = column.dataset.columnId
+
+    // Get columnId - try data attribute first (for list-specific kanban),
+    // then fall back to extracting from the element ID (for items_kanban)
+    let columnId = column.dataset.columnId
+    if (!columnId && column.id) {
+      // Extract from id like "column_to-do" or "column_<uuid>"
+      columnId = column.id.replace("column_", "")
+    }
 
     if (itemId && columnId) {
       // Update the item's board_column via a hidden form submission with Turbo
@@ -175,14 +196,47 @@ export default class extends Controller {
   }
 
   updateItemColumn(itemId, columnId) {
-    // Find the list ID from the current URL or DOM
-    const listId = this.getListId()
+    // Find the item card element to get list ID
+    const cardElement = document.querySelector(`[data-item-id="${itemId}"]`)
+    if (!cardElement) return
+
+    // Try to get list ID from card's data attribute (for items_kanban view)
+    let listId = cardElement.dataset.listId
+
+    // Fall back to getting from URL or element (for list-specific kanban)
+    if (!listId) {
+      listId = this.getListId()
+    }
+
     if (!listId) return
+
+    // Determine what status/column to set based on the target column
+    // For items_kanban, columnId will be a parameterized string like "to-do", "in-progress", "done"
+    // For list-specific kanban, columnId will be a UUID
+    const statusMap = {
+      "to-do": "pending",
+      "in-progress": "in_progress",
+      "done": "completed"
+    }
+
+    let updatePayload = {}
+
+    // If columnId matches a status column name (items_kanban), update status
+    if (statusMap[columnId]) {
+      updatePayload["list_item[status]"] = statusMap[columnId]
+      // Clear board_column_id so the turbo_stream response uses the items_kanban branch
+      updatePayload["list_item[board_column_id]"] = ""
+    } else {
+      // Otherwise it's a board column ID (list-specific kanban), update board_column_id
+      updatePayload["list_item[board_column_id]"] = columnId
+    }
 
     // Build the FormData with the update payload
     const formData = new FormData()
     formData.append("_method", "patch")
-    formData.append("list_item[board_column_id]", columnId)
+    Object.entries(updatePayload).forEach(([key, value]) => {
+      formData.append(key, value)
+    })
     formData.append("authenticity_token", this.getCsrfToken())
 
     // Make the PATCH request with Turbo-compatible headers
