@@ -76,6 +76,13 @@ export default class extends Controller {
   }
 
   handleDragStart(event) {
+    // Don't allow dragging if the user clicked on an interactive element
+    const target = event.target
+    if (target.closest("a") || target.closest("button") || target.closest("form")) {
+      event.preventDefault()
+      return
+    }
+
     const card = event.target.closest("[data-kanban-target='card']")
     if (!card) return
 
