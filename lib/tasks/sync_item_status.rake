@@ -11,15 +11,15 @@ namespace :listopia do
 
         if item.board_column
           new_status = case item.board_column.name
-                       when "To Do"
-                         :pending
-                       when "In Progress"
-                         :in_progress
-                       when "Done"
-                         :completed
-                       else
-                         item.status
-                       end
+          when "To Do"
+            :pending
+          when "In Progress"
+            :in_progress
+          when "Done"
+            :completed
+          else
+            item.status
+          end
 
           if old_status != new_status
             item.status = new_status
