@@ -8,6 +8,11 @@ class InvitationService
   end
 
   def invite(email, permission, grant_roles = {})
+    # Validate organization boundaries
+    unless validate_organization_boundary
+      return failure("Cannot invite users across organization boundaries")
+    end
+
     existing_user = User.find_by(email: email)
 
     if existing_user
@@ -200,6 +205,28 @@ class InvitationService
         list_id: @invitable.list.id,
         notification_type: "invitation_resent"
       ).deliver(user)
+    end
+  end
+
+  def validate_organization_boundary
+    # Get the resource's organization
+    resource_organization = get_resource_organization
+    return true if resource_organization.nil?
+
+    # Ensure inviter is in the resource's organization
+    unless @inviter.organization_memberships.exists?(organization_id: resource_organization.id)
+      return false
+    end
+
+    true
+  end
+
+  def get_resource_organization
+    case @invitable
+    when List
+      @invitable.organization
+    when ListItem
+      @invitable.list.organization
     end
   end
 end

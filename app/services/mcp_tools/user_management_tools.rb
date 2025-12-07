@@ -10,23 +10,33 @@ module McpTools
 
     # List users with optional filters
     def list_users(filters: {})
-      return unauthorized_error unless user.admin?
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
 
-      scope = User.all
+      # Check if user is admin in this organization
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
+      # Scope to organization members only
+      scope = User.joins(:organization_memberships)
+                  .where(organization_memberships: { organization_id: organization_id })
+                  .distinct
 
       # Apply filters
       scope = scope.where(status: filters["status"]) if filters["status"]
       scope = scope.search_by_email(filters["email"]) if filters["email"].present?
       scope = scope.search_by_name(filters["name"]) if filters["name"].present?
-      scope = scope.with_role(:admin) if filters["admin"] == true
 
       users = scope.order(created_at: :desc).limit(50)
+      total_in_org = User.joins(:organization_memberships)
+                         .where(organization_memberships: { organization_id: organization_id })
+                         .distinct.count
 
       {
         success: true,
         users: users.map { |u| u.profile_summary(include_sensitive: true) },
         count: users.count,
-        total_count: User.count
+        total_count: total_in_org
       }
     end
 
@@ -79,7 +89,12 @@ module McpTools
 
     # Create a new user (admin only)
     def create_user(name:, email:, password:, make_admin: false)
-      return unauthorized_error unless user.admin?
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      # Check if user is admin in this organization
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
 
       new_user = User.new(
         name: name,
@@ -91,11 +106,20 @@ module McpTools
       )
 
       if new_user.save
+        # Create organization membership for the new user
+        organization = Organization.find(organization_id)
+        OrganizationMembership.create!(
+          user: new_user,
+          organization: organization,
+          role: make_admin ? "admin" : "member",
+          status: "active"
+        )
+
         new_user.make_admin! if make_admin
 
         {
           success: true,
-          message: "User created successfully#{make_admin ? ' with admin privileges' : ''}",
+          message: "User created successfully#{make_admin ? ' with admin privileges' : ''} and added to organization",
           user: new_user.profile_summary
         }
       else
@@ -108,6 +132,12 @@ module McpTools
 
     # Delete user (admin only)
     def delete_user(user_id:)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -132,6 +162,13 @@ module McpTools
 
     # Suspend user (admin only)
     def suspend_user(user_id:, reason: nil)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      # Check if user is admin in this organization
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -172,6 +209,12 @@ module McpTools
 
     # Deactivate user (admin only)
     def deactivate_user(user_id:, reason: nil)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -192,6 +235,12 @@ module McpTools
 
     # Reactivate user (admin only)
     def reactivate_user(user_id:)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -212,6 +261,12 @@ module McpTools
 
     # Grant admin privileges (admin only)
     def grant_admin(user_id:)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -232,6 +287,12 @@ module McpTools
 
     # Revoke admin privileges (admin only)
     def revoke_admin(user_id:)
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
 
@@ -252,7 +313,11 @@ module McpTools
 
     # Update admin notes (admin only)
     def update_user_notes(user_id:, notes:)
-      return unauthorized_error unless user.admin?
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
 
       target_user = find_user(user_id)
       return target_user if target_user[:success] == false
@@ -268,19 +333,28 @@ module McpTools
 
     # Get user statistics (admin only)
     def get_user_statistics
-      return unauthorized_error unless user.admin?
+      organization_id = @context[:organization_id]
+      return unauthorized_error("No organization context provided") unless organization_id.present?
+
+      org_membership = user.organization_memberships.find_by(organization_id: organization_id)
+      return unauthorized_error unless org_membership&.can_manage_members?
+
+      # Scope statistics to organization
+      org_users = User.joins(:organization_memberships)
+                      .where(organization_memberships: { organization_id: organization_id })
+                      .distinct
 
       {
         success: true,
         statistics: {
-          total_users: User.count,
-          active_users: User.active_users.count,
-          suspended_users: User.suspended_users.count,
-          deactivated_users: User.deactivated_users.count,
-          pending_verification: User.where(email_verified_at: nil).count,
-          admin_users: User.with_role(:admin).count,
-          users_signed_in_today: User.where("last_sign_in_at > ?", 24.hours.ago).count,
-          users_signed_in_this_week: User.where("last_sign_in_at > ?", 1.week.ago).count
+          total_users: org_users.count,
+          active_users: org_users.where(status: "active").count,
+          suspended_users: org_users.where(status: "suspended").count,
+          deactivated_users: org_users.where(status: "deactivated").count,
+          pending_verification: org_users.where(email_verified_at: nil).count,
+          admin_users: org_users.with_role(:admin).count,
+          users_signed_in_today: org_users.where("last_sign_in_at > ?", 24.hours.ago).count,
+          users_signed_in_this_week: org_users.where("last_sign_in_at > ?", 1.week.ago).count
         }
       }
     end
@@ -291,10 +365,18 @@ module McpTools
       target = User.find_by(id: user_id)
 
       if target.nil?
-        { success: false, error: "User not found" }
-      else
-        { success: true, user: target }
+        return { success: false, error: "User not found" }
       end
+
+      # Check organization boundary
+      organization_id = @context[:organization_id]
+      if organization_id.present?
+        unless target.organization_memberships.exists?(organization_id: organization_id)
+          return { success: false, error: "User not found in this organization" }
+        end
+      end
+
+      { success: true, user: target }
     end
 
     def unauthorized_error(message = "Not authorized to perform this action")

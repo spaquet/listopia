@@ -202,13 +202,6 @@ RSpec.describe Invitation, type: :model do
     let(:inviter) { create(:user) }
 
     describe 'before_create' do
-      it 'generates invitation token' do
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
-        expect(invitation.invitation_token).to be_nil
-        invitation.save!
-        expect(invitation.invitation_token).to be_present
-      end
-
       it 'sets invitation_sent_at' do
         invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
         expect(invitation.invitation_sent_at).to be_nil
@@ -318,29 +311,6 @@ RSpec.describe Invitation, type: :model do
         expect(collaborator.user).to eq(accepting_user)
       end
     end
-
-    describe '#generate_invitation_token' do
-      it 'generates a token' do
-        invitation = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
-        invitation.generate_invitation_token
-        expect(invitation.invitation_token).to be_present
-        expect(invitation.invitation_token).to be_a(String)
-      end
-
-      it 'generates different tokens for different invitations with time separation' do
-        invitation1 = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test1@example.com')
-        invitation1.generate_invitation_token
-        token1 = invitation1.invitation_token
-
-        sleep(0.01)
-
-        invitation2 = build(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
-        invitation2.generate_invitation_token
-        token2 = invitation2.invitation_token
-
-        expect(token1).not_to eq(token2)
-      end
-    end
   end
 
   describe 'class methods' do
@@ -350,8 +320,9 @@ RSpec.describe Invitation, type: :model do
     describe '.find_by_invitation_token' do
       it 'finds invitation by valid token' do
         invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
-        expect(invitation.invitation_token).to be_present
-        expect(invitation.invitation_token).to be_a(String)
+        token = invitation.generate_token_for(:invitation)
+        found = Invitation.find_by_invitation_token(token)
+        expect(found).to eq(invitation)
       end
 
       it 'returns nil for invalid token' do
@@ -361,7 +332,7 @@ RSpec.describe Invitation, type: :model do
 
       it 'returns nil for expired token' do
         invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
-        token = invitation.invitation_token
+        token = invitation.generate_token_for(:invitation)
 
         Timecop.freeze(Time.current + 8.days) do
           found = Invitation.find_by_invitation_token(token)
@@ -384,17 +355,6 @@ RSpec.describe Invitation, type: :model do
       invitation = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test@example.com')
       expect(invitation.created_at).to be_present
       expect(invitation.updated_at).to be_present
-    end
-
-    it 'has unique invitation token' do
-      invitation1 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test1@example.com')
-      invitation2 = create(:invitation, invitable: invitable, invited_by: inviter, email: 'test2@example.com')
-
-      expect {
-        ActiveRecord::Base.connection.execute(
-          "UPDATE invitations SET invitation_token = '#{invitation1.invitation_token}' WHERE id = '#{invitation2.id}'"
-        )
-      }.to raise_error(ActiveRecord::StatementInvalid)
     end
   end
 

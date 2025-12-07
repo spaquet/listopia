@@ -95,17 +95,33 @@ class AiAgentMcpService
   private
 
   def create_user_from_analysis(params)
-    # Validate permissions
-    unless @user.admin?
+    # Validate organization context
+    organization_id = @context[:organization_id]
+    unless organization_id.present?
       return {
         success: false,
-        error: "Only administrators can create users.",
+        error: "No organization context provided.",
         unauthorized: true
       }
     end
 
+    # Check if user is admin in this organization
+    org_membership = @user.organization_memberships.find_by(organization_id: organization_id)
+    unless org_membership&.can_manage_members?
+      return {
+        success: false,
+        error: "You don't have permission to create users in this organization.",
+        unauthorized: true
+      }
+    end
+
+    # Support both string and symbol keys
+    email = params["email"] || params[:email]
+    name = params["name"] || params[:name]
+    make_admin = params["make_admin"] || params[:make_admin]
+
     # Validate required parameters
-    unless params["email"].present?
+    unless email.present?
       return {
         success: false,
         error: "Email is required to create a user.",
@@ -113,55 +129,75 @@ class AiAgentMcpService
       }
     end
 
-    # Check if user already exists
-    if User.exists?(email: params["email"])
-      return {
-        success: false,
-        error: "User with this email already exists.",
-        errors: [ "Email has already been taken" ]
-      }
-    end
-
     begin
-      # Create the user WITHOUT generating password
-      new_user = User.new(
-        name: params["name"] || params["email"].split("@").first.capitalize,
-        email: params["email"],
-        bio: params["bio"],
-        locale: params["locale"] || "en",
-        timezone: params["timezone"] || "UTC",
-        admin_notes: params["admin_notes"]
-      )
+      organization = Organization.find(organization_id)
+      user = User.find_by(email: email)
 
-      # Mark email as verified for admin-created users
-      new_user.email_verified_at = Time.current
+      if user.present?
+        # Case 1: User already has an account on Listopia
+        # Check if already member
+        if organization.organization_memberships.exists?(user: user)
+          {
+            success: false,
+            error: "This user is already a member of #{organization.name}.",
+            type: "already_member"
+          }
+        else
+          # Add existing user as member/admin to organization
+          membership = OrganizationMembership.create!(
+            organization: organization,
+            user: user,
+            role: make_admin == true ? "admin" : "member",
+            status: "active",
+            joined_at: Time.current
+          )
 
-      if new_user.save
-        # Add admin role if requested
-        new_user.add_role(:admin) if params["make_admin"] == true
+          user.add_role(:admin) if make_admin == true
 
-        log_debug "✓ User created: #{new_user.email}"
+          log_debug "✓ Existing user #{user.email} added to organization #{organization.name}"
+
+          {
+            success: true,
+            message: "User #{user.email} added to #{organization.name}.",
+            type: "existing_user",
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              status: user.status
+            }
+          }
+        end
+      else
+        # Case 2: User doesn't exist - create invitation
+        # Extract name from email if not provided
+        user_name = name.presence || email.split("@").first.capitalize
+
+        invitation = Invitation.create!(
+          organization: organization,
+          email: email,
+          invited_by: @user,
+          invitable_type: "Organization",
+          invitable_id: organization.id,
+          permission: :read,
+          status: "pending",
+          metadata: { role: make_admin == true ? "admin" : "member", name: user_name }
+        )
+
+        # Send invitation email
+        CollaborationMailer.organization_invitation(invitation).deliver_later
+
+        log_debug "✓ Invitation created for #{email} in organization #{organization.name}"
 
         {
           success: true,
-          message: "User #{new_user.email} created successfully.",
-          user: {
-            id: new_user.id,
-            name: new_user.name,
-            email: new_user.email,
-            status: new_user.status,
-            admin: new_user.admin?,
-            sign_in_count: new_user.sign_in_count,
-            last_sign_in_at: new_user.last_sign_in_at
+          message: "Invitation sent to #{email}.",
+          type: "invitation",
+          invitation: {
+            id: invitation.id,
+            email: invitation.email,
+            status: invitation.status
           }
-        }
-      else
-        log_error "Failed to create user: #{new_user.errors.full_messages.join(', ')}"
-
-        {
-          success: false,
-          error: "Failed to create user.",
-          errors: new_user.errors.full_messages
         }
       end
     rescue => e
@@ -566,7 +602,8 @@ class AiAgentMcpService
       title: analysis["title"] || "New List",
       description: analysis["domain"] || "Created via AI",
       status: "active",
-      list_type: analysis["list_type"] || "personal"
+      list_type: analysis["list_type"] || "personal",
+      organization_id: @context[:organization_id]
     )
     lists_created << list
     log_debug "Created list: #{list.title}"
@@ -603,7 +640,8 @@ class AiAgentMcpService
       title: analysis["title"] || "Project",
       description: analysis["domain"] || "Created via AI",
       status: "active",
-      list_type: analysis["list_type"] || "professional"
+      list_type: analysis["list_type"] || "professional",
+      organization_id: @context[:organization_id]
     )
     lists_created << main_list
     log_debug "Created main list: #{main_list.title}"
@@ -628,7 +666,8 @@ class AiAgentMcpService
         title: sublist_data["title"],
         parent_list: main_list,
         status: "active",
-        list_type: analysis["list_type"] || "professional"
+        list_type: analysis["list_type"] || "professional",
+        organization_id: @context[:organization_id]
       )
       lists_created << sublist
       log_debug "  Created sublist: #{sublist.title}"
@@ -662,7 +701,8 @@ class AiAgentMcpService
       title: "New List",
       description: "Created via AI - please add items manually",
       status: "active",
-      list_type: "personal"
+      list_type: "personal",
+      organization_id: @context[:organization_id]
     )
 
     {
@@ -758,6 +798,10 @@ class AiAgentMcpService
       Examples:
       - "list all users" -> {"action": "list_users", "parameters": {}}
       - "show me suspended users" -> {"action": "list_users", "parameters": {"filters": {"status": "suspended"}}}
+      - "invite user John with email john@example.com" -> {"action": "create_user", "parameters": {"name": "John", "email": "john@example.com"}}
+      - "create user Max with email max@test.com" -> {"action": "create_user", "parameters": {"name": "Max", "email": "max@test.com"}}
+      - "create user john@example.com" -> {"action": "create_user", "parameters": {"email": "john@example.com"}}
+      - "invite liam@example.com" -> {"action": "create_user", "parameters": {"email": "liam@example.com"}}
       - "suspend user john@example.com for violating terms" -> {"action": "suspend_user", "parameters": {"email": "john@example.com", "reason": "violating terms"}}
       - "make user jane@example.com an admin" -> {"action": "grant_admin", "parameters": {"email": "jane@example.com"}}
       - "update my email to newemail@example.com" -> {"action": "update_user", "parameters": {"email": "newemail@example.com"}}
@@ -941,93 +985,6 @@ class AiAgentMcpService
       error: "Failed to execute collaboration action: #{e.message}"
     }
   end
-
-# ============================================================================
-# Update create_user_from_analysis to use symbol keys
-
-def create_user_from_analysis(params)
-  # Validate permissions
-  unless @user.admin?
-    return {
-      success: false,
-      error: "Only administrators can create users.",
-      unauthorized: true
-    }
-  end
-
-  # Validate required parameters (use symbol keys)
-  unless params[:email].present?
-    return {
-      success: false,
-      error: "Email is required to create a user.",
-      errors: [ "Email cannot be blank" ]
-    }
-  end
-
-  # Check if user already exists
-  if User.exists?(email: params[:email])
-    return {
-      success: false,
-      error: "User with this email already exists.",
-      errors: [ "Email has already been taken" ]
-    }
-  end
-
-  begin
-    # Create the user WITHOUT generating password
-    new_user = User.new(
-      name: params[:name] || params[:email].split("@").first.capitalize,
-      email: params[:email],
-      bio: params[:bio],
-      locale: params[:locale] || "en",
-      timezone: params[:timezone] || "UTC",
-      admin_notes: params[:admin_notes]
-    )
-
-    # Generate temp password using User model method
-    new_user.generate_temp_password
-
-    if new_user.save
-      # Add admin role if requested
-      new_user.add_role(:admin) if params[:make_admin] == true
-
-      # Send admin invitation email
-      new_user.send_admin_invitation!
-
-      log_debug "✓ User created: #{new_user.email}"
-
-      {
-        success: true,
-        message: "User #{new_user.email} created successfully.",
-        user: {
-          id: new_user.id,
-          name: new_user.name,
-          email: new_user.email,
-          status: new_user.status,
-          admin: new_user.admin?,
-          sign_in_count: new_user.sign_in_count,
-          last_sign_in_at: new_user.last_sign_in_at
-        }
-      }
-    else
-      log_error "Failed to create user: #{new_user.errors.full_messages.join(', ')}"
-
-      {
-        success: false,
-        error: "Failed to create user.",
-        errors: new_user.errors.full_messages
-      }
-    end
-  rescue => e
-    log_error "Error in create_user_from_analysis: #{e.message}", e
-
-    {
-      success: false,
-      error: "An unexpected error occurred while creating the user.",
-      errors: [ e.message ]
-    }
-  end
-end
 
   # Build response for user management actions
   def build_user_management_response(um_result)

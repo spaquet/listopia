@@ -119,6 +119,16 @@ class RegistrationsController < ApplicationController
       # Now verify the email and sign them in
       @user.verify_email!
 
+      # Set user status to active (from pending_verification)
+      @user.update!(status: :active)
+
+      # Check if user has a pending organization invitation
+      pending_invitation = Invitation.find_by(
+        user_id: @user.id,
+        status: "pending",
+        invitable_type: "Organization"
+      )
+
       # Ensure the user has a current_organization set before signing in
       # (sign_in will use this to set the session)
       if @user.current_organization_id.nil? && @user.organizations.any?
@@ -127,7 +137,20 @@ class RegistrationsController < ApplicationController
 
       sign_in(@user)
 
-      redirect_to dashboard_path, notice: "Password set successfully! Welcome to Listopia!"
+      # If user has a pending organization invitation, auto-accept it
+      if pending_invitation
+        pending_invitation.update!(
+          status: "accepted",
+          invitation_accepted_at: Time.current
+        )
+        # Also update the organization membership to active
+        membership = pending_invitation.organization.organization_memberships.find_by(user: @user)
+        membership.update!(status: :active) if membership && membership.status_pending?
+
+        redirect_to dashboard_path, notice: "Password set successfully! You've been added to #{pending_invitation.organization.name}."
+      else
+        redirect_to dashboard_path, notice: "Password set successfully! Welcome to Listopia!"
+      end
     else
       flash.now[:alert] = @user.errors[:password].first || "Password update failed"
       render :setup_password, status: :unprocessable_entity, locals: { token: token }

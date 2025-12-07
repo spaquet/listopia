@@ -30,6 +30,12 @@
       <% users.each do |user| %>
         <%= render "user_row", user: user, current_user: current_user %>
       <% end %>
+      <!-- Pending Invitations -->
+      <% if defined?(@pending_invitations) && @pending_invitations.any? %>
+        <% @pending_invitations.each do |invitation| %>
+          <%= render "invitation_row", invitation: invitation %>
+        <% end %>
+      <% end %>
     </div>
   </div>
 <% else %>

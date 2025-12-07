@@ -198,6 +198,7 @@ Rails.application.routes.draw do
       member do
         post :toggle_admin
         post :toggle_status
+        post :resend_invitation
       end
       collection do
         post :bulk_action

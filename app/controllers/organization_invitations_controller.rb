@@ -97,8 +97,8 @@ class OrganizationInvitationsController < ApplicationController
         m.joined_at = Time.current
       end
 
-      # Update membership if it was suspended
-      if membership.status_suspended? || membership.status_revoked?
+      # Update membership if it was suspended or pending
+      if membership.status_suspended? || membership.status_revoked? || membership.status_pending?
         membership.update!(status: :active)
       end
 
@@ -109,8 +109,11 @@ class OrganizationInvitationsController < ApplicationController
         invitation_accepted_at: Time.current
       )
 
-      # Set current organization if user doesn't have one
-      user.update!(current_organization_id: invitation.organization.id) if user.current_organization.nil?
+      # Update user status to active once they accept invitation
+      user.update!(
+        current_organization_id: invitation.organization.id,
+        status: "active"
+      )
     end
 
     redirect_to organization_path(invitation.organization), notice: "You've successfully joined #{invitation.organization.name}!"
