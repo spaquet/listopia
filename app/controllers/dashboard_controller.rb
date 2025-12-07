@@ -57,7 +57,7 @@ class DashboardController < ApplicationController
 
     # Group items by board column (using a pseudo-column structure)
     # We create virtual columns for display purposes
-    @column_names = ["To Do", "In Progress", "Done"]
+    @column_names = [ "To Do", "In Progress", "Done" ]
     @items_by_column = {}
 
     @column_names.each do |column_name|

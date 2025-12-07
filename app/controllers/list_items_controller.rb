@@ -127,9 +127,9 @@ class ListItemsController < ApplicationController
     new_status = @list_item.status_completed? ? :pending : :completed
     new_column = if new_status == :completed
                    @list.board_columns.find_by(name: "Done")
-                 elsif new_status == :pending
+    elsif new_status == :pending
                    @list.board_columns.find_by(name: "To Do")
-                 end
+    end
 
     if @list_item.update(status: new_status, board_column_id: new_column&.id)
       # Reload list associations to get fresh count data for stats
