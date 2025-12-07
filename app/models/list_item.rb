@@ -212,11 +212,13 @@ class ListItem < ApplicationRecord
   end
 
   # Sync status with board column when column changes
+  # This ensures the status enum stays in sync with the board column assignment
   def sync_status_with_board_column
-    return unless board_column_id_changed?
-
-    # Set flag for view to know this is a kanban update
-    self.is_kanban_update = true
+    # Only sync if:
+    # 1. board_column_id is being changed (user dragging to new column in kanban)
+    # 2. Item is being created with a board_column (new item assigned to column)
+    # 3. Skip if status was manually changed by user (different from what column would set)
+    return unless board_column_id_changed? || (new_record? && board_column_id.present?)
 
     # Map board column names to item statuses
     column = board_column
@@ -234,16 +236,18 @@ class ListItem < ApplicationRecord
                    status
     end
 
-    # Update status and timestamp
-    self.status = new_status
-    self.status_changed_at = Time.current
+    # Only update if the status would actually change
+    if self.status != new_status
+      self.status = new_status
+      self.status_changed_at = Time.current
 
-    # If moving to completed, set the completed_at timestamp
-    if new_status == :completed
-      self.completed_at = Time.current
-    elsif new_status != :completed
-      # Clear completed_at if moving away from completed status
-      self.completed_at = nil
+      # If moving to completed, set the completed_at timestamp
+      if new_status == :completed
+        self.completed_at = Time.current
+      elsif new_status != :completed
+        # Clear completed_at if moving away from completed status
+        self.completed_at = nil
+      end
     end
   end
 

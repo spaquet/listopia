@@ -36,19 +36,26 @@ export default class extends Controller {
         const handlers = this.dragHandlers.get(card)
         card.removeEventListener("dragstart", handlers.dragstart)
         card.removeEventListener("dragend", handlers.dragend)
+        card.removeEventListener("mousedown", handlers.mousedown)
+        card.removeEventListener("mouseup", handlers.mouseup)
       }
 
-      card.draggable = true
+      // Start with draggable = false
+      card.draggable = false
 
       // Create bound handlers for this card
       const dragstart = (e) => this.handleDragStart(e)
       const dragend = (e) => this.handleDragEnd(e)
+      const mousedown = (e) => this.handleMouseDown(e)
+      const mouseup = (e) => this.handleMouseUp(e)
 
       card.addEventListener("dragstart", dragstart)
       card.addEventListener("dragend", dragend)
+      card.addEventListener("mousedown", mousedown)
+      card.addEventListener("mouseup", mouseup)
 
       // Store handlers for potential cleanup
-      this.dragHandlers.set(card, { dragstart, dragend })
+      this.dragHandlers.set(card, { dragstart, dragend, mousedown, mouseup })
     })
 
     // Make columns drop zones
@@ -75,16 +82,43 @@ export default class extends Controller {
     })
   }
 
-  handleDragStart(event) {
-    // Don't allow dragging if the user clicked on an interactive element
-    const target = event.target
-    if (target.closest("a") || target.closest("button") || target.closest("form")) {
-      event.preventDefault()
+  handleMouseDown(event) {
+    const card = event.target.closest("[data-kanban-target='card']")
+    if (!card) return
+
+    // Check if mousedown is on an interactive element or inside one
+    const interactiveElement = event.target.closest("a, button, form, [role='button'], input, textarea, select, svg")
+    if (interactiveElement) {
+      // Don't make the card draggable - let the click handler work
+      card.draggable = false
+
+      // If we clicked on an SVG, walk up to find if there's a link
+      if (event.target.closest("svg")) {
+        const parentLink = event.target.closest("a")
+        if (parentLink) {
+          // SVG is inside a link - allow the link click
+          return
+        }
+      }
+
       return
     }
 
+    // Only make the card draggable if clicking on empty card area
+    card.draggable = true
+  }
+
+  handleMouseUp(event) {
+    // Reset draggable state after mouse is released
     const card = event.target.closest("[data-kanban-target='card']")
-    if (!card) return
+    if (card) {
+      card.draggable = false
+    }
+  }
+
+  handleDragStart(event) {
+    const card = event.target.closest("[data-kanban-target='card']")
+    if (!card || !card.draggable) return
 
     // Store data in the drag event
     event.dataTransfer.effectAllowed = "move"
