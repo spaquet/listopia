@@ -64,6 +64,7 @@ Rails.application.routes.draw do
 
   # Dashboard routes
   get "dashboard", to: "dashboard#index"
+  get "dashboard/kanban", to: "dashboard#kanban", as: :dashboard_kanban
   get "dashboard/focus_list", to: "dashboard#focus_list", as: :dashboard_focus_list
   post "dashboard/execute_action", to: "dashboard#execute_action", as: :dashboard_execute_action
 
@@ -81,6 +82,7 @@ Rails.application.routes.draw do
   # Lists
   resources :lists do
     member do
+      get :kanban
       patch :toggle_status
       patch :toggle_public_access
       post :duplicate
@@ -107,6 +109,7 @@ Rails.application.routes.draw do
       member do
         patch :toggle_completion
         get :share
+        get :visit_url
       end
 
       # Collaborations on ListItems

@@ -1,47 +1,13 @@
 {
   "ignored_warnings": [
     {
-      "warning_type": "Cross-Site Scripting",
-      "warning_code": 4,
-      "fingerprint": "10c06a8f9cde5bd0052113059ccb23057dce47d7570e8c4875c6072d8e5a18a6",
-      "check_name": "LinkToHref",
-      "message": "Potentially unsafe model attribute in `link_to` href",
-      "file": "app/views/list_items/show.html.erb",
-      "line": 116,
-      "link": "https://brakemanscanner.org/docs/warning_types/link_to_href",
-      "code": "link_to(List.find(params[:list_id]).list_items.find(params[:id]).url, List.find(params[:list_id]).list_items.find(params[:id]).url, :target => \"_blank\", :rel => \"noopener noreferrer\", :class => \"text-blue-600 hover:text-blue-700 hover:underline truncate\")",
-      "render_path": [
-        {
-          "type": "controller",
-          "class": "ListItemsController",
-          "method": "show",
-          "line": 82,
-          "file": "app/controllers/list_items_controller.rb",
-          "rendered": {
-            "name": "list_items/show",
-            "file": "app/views/list_items/show.html.erb"
-          }
-        }
-      ],
-      "location": {
-        "type": "template",
-        "template": "list_items/show"
-      },
-      "user_input": "List.find(params[:list_id]).list_items.find(params[:id]).url",
-      "confidence": "Weak",
-      "cwe_id": [
-        79
-      ],
-      "note": ""
-    },
-    {
       "warning_type": "SQL Injection",
       "warning_code": 0,
       "fingerprint": "322a18faacf7dc746ae5f6ac3352735206ae00ad388f65a8e9f5649064775fed",
       "check_name": "SQL",
       "message": "Possible SQL injection",
       "file": "app/controllers/list_items_controller.rb",
-      "line": 207,
+      "line": 232,
       "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
       "code": "List.find(params[:list_id]).list_items.where(:id => ((params[:item_ids] or []))).update_all((params[:updates] or {}).permit(:status, :priority, :assigned_user_id))",
       "render_path": null,
@@ -54,6 +20,29 @@
       "confidence": "High",
       "cwe_id": [
         89
+      ],
+      "note": ""
+    },
+    {
+      "warning_type": "Redirect",
+      "warning_code": 18,
+      "fingerprint": "3ff18c45613916b8d03ce7523056b00ee48c8409b3e72d103f76455880052eb1",
+      "check_name": "Redirect",
+      "message": "Possible unprotected redirect",
+      "file": "app/controllers/list_items_controller.rb",
+      "line": 97,
+      "link": "https://brakemanscanner.org/docs/warning_types/redirect/",
+      "code": "redirect_to(List.find(params[:list_id]).list_items.find(params[:id]).url, :allow_other_host => true)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ListItemsController",
+        "method": "visit_url"
+      },
+      "user_input": "List.find(params[:list_id]).list_items.find(params[:id]).url",
+      "confidence": "Weak",
+      "cwe_id": [
+        601
       ],
       "note": ""
     }

@@ -68,6 +68,10 @@ class ListPolicy < ApplicationPolicy
     record.owner == user # Only owner can toggle public access
   end
 
+  def kanban?
+    show? # Same permissions as show - can view in kanban if can view in list view
+  end
+
   # Scope for index action
   class Scope < Scope
     def resolve

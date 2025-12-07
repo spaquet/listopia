@@ -1,18 +1,33 @@
 <!-- app/views/list_items/update.turbo_stream.erb -->
-<%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
-  <%= render "list_items/item", item: @list_item, list: @list %>
-<% end %>
-<!-- Update list stats after update -->
-<%= turbo_stream.replace "list-stats" do %>
-  <% stats = list_completion_stats(@list) %>
-  <div class="flex items-center space-x-6 text-sm text-gray-600">
-    <div class="flex items-center">
-      <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
-      <span class="ml-1">completed</span>
+<% if @list_item.board_column_id.present? %>
+  <!-- Kanban view: board column was updated, move card between columns -->
+  <% new_column_id = @list_item.board_column_id %>
+
+  <!-- Remove card from its old location -->
+  <%= turbo_stream.remove "item_#{@list_item.id}" %>
+
+  <!-- Append updated card to new column -->
+  <%= turbo_stream.append "column_#{new_column_id}" do %>
+    <%= render "list_items/kanban_card", item: @list_item, list: @list %>
+  <% end %>
+<% else %>
+  <!-- Regular list view: replace the item card -->
+  <%= turbo_stream.replace "list_item_#{@list_item.id}" do %>
+    <%= render "list_items/item", item: @list_item, list: @list %>
+  <% end %>
+
+  <!-- Update list stats -->
+  <%= turbo_stream.replace "list-stats" do %>
+    <% stats = list_completion_stats(@list) %>
+    <div class="flex items-center space-x-6 text-sm text-gray-600">
+      <div class="flex items-center">
+        <span class="font-medium"><%= stats[:completed] %>/<%= stats[:total] %></span>
+        <span class="ml-1">completed</span>
+      </div>
+      <div class="flex-1 max-w-xs">
+        <%= progress_bar(stats[:percentage]) %>
+      </div>
+      <span class="font-medium"><%= stats[:percentage] %>%</span>
     </div>
-    <div class="flex-1 max-w-xs">
-      <%= progress_bar(stats[:percentage]) %>
-    </div>
-    <span class="font-medium"><%= stats[:percentage] %>%</span>
-  </div>
+  <% end %>
 <% end %>

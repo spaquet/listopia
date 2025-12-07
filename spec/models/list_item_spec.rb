@@ -4,6 +4,7 @@
 # Table name: list_items
 #
 #  id                  :uuid             not null, primary key
+#  completed_at        :datetime
 #  description         :text
 #  due_date            :datetime
 #  duration_days       :integer
@@ -33,6 +34,7 @@
 #  index_list_items_on_assigned_user_id             (assigned_user_id)
 #  index_list_items_on_assigned_user_id_and_status  (assigned_user_id,status)
 #  index_list_items_on_board_column_id              (board_column_id)
+#  index_list_items_on_completed_at                 (completed_at)
 #  index_list_items_on_created_at                   (created_at)
 #  index_list_items_on_due_date                     (due_date)
 #  index_list_items_on_due_date_and_status          (due_date,status)

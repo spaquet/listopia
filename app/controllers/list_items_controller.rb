@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share, :visit_url ]
   before_action :authorize_list_access!
 
   def create
@@ -34,12 +34,7 @@ class ListItemsController < ApplicationController
     if @list_item.update(list_item_params)
       respond_to do |format|
         format.html { redirect_to list_list_item_path(@list, @list_item), notice: "Item was successfully updated." }
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }),
-            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
-          ]
-        end
+        format.turbo_stream # Renders update.turbo_stream.erb
         format.json { render json: @list_item }
       end
     else
@@ -91,6 +86,17 @@ class ListItemsController < ApplicationController
                                                 partial: "list_items/inline_edit_form",
                                                 locals: { item: @list_item, list: @list })
       end
+    end
+  end
+
+  # Redirect to the item's URL
+  def visit_url
+    authorize @list_item, :show?
+
+    if valid_redirect_url?(@list_item.url)
+      redirect_to @list_item.url, allow_other_host: true
+    else
+      redirect_to list_list_item_path(@list, @list_item), alert: "This item doesn't have a valid URL."
     end
   end
 
@@ -258,11 +264,27 @@ class ListItemsController < ApplicationController
     end
   end
 
+  def valid_redirect_url?(url)
+    return false if url.blank?
+
+    # Allow http in development/test, https in production
+    allowed_schemes = Rails.env.production? ? [ "https://" ] : [ "http://", "https://" ]
+    return false unless allowed_schemes.any? { |scheme| url.start_with?(scheme) }
+
+    # Validate URL structure
+    begin
+      URI.parse(url)
+      true
+    rescue URI::InvalidURIError
+      false
+    end
+  end
+
   def list_item_params
     params.require(:list_item).permit(
       :title, :description, :item_type, :priority, :status,
       :due_date, :assigned_user_id, :url, :position,
-      :estimated_duration, :duration_days, :start_date
+      :estimated_duration, :duration_days, :start_date, :board_column_id
     )
   end
 end

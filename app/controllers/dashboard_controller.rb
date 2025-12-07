@@ -21,6 +21,26 @@ class DashboardController < ApplicationController
     @recent_items = generate_recent_items
   end
 
+  # Kanban board view of all lists grouped by status
+  def kanban
+    # Get lists accessible by user with status grouping
+    if current_organization
+      lists = policy_scope(List).where(organization_id: current_organization.id)
+    else
+      lists = policy_scope(List).where(organization_id: nil)
+    end
+
+    # Group lists by status for kanban view
+    @lists_by_status = lists.includes(:owner, :collaborators)
+                            .order(updated_at: :desc)
+                            .group_by(&:status)
+
+    # Ensure all statuses have a group (even if empty)
+    List.statuses.each_key do |status|
+      @lists_by_status[status] ||= []
+    end
+  end
+
   # New action for switching focus in the sidebar
   def focus_list
     list_id = params[:list_id]

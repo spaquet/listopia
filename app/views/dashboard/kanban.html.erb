@@ -1,0 +1,97 @@
+<!-- app/views/dashboard/kanban.html.erb -->
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900">Board View</h1>
+    <p class="mt-2 text-gray-600">See all your lists organized by status</p>
+  </div>
+
+  <!-- View Toggle -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <%= link_to root_path,
+                  class: "inline-flex items-center px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors" do %>
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"></path>
+        </svg>
+        Dashboard View
+      <% end %>
+      <span class="inline-flex items-center px-3 py-2 text-sm text-gray-900 border border-blue-300 rounded-lg bg-blue-50 font-medium">
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+        Board View
+      </span>
+    </div>
+
+    <%= link_to new_list_path,
+                class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200" do %>
+      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+      New List
+    <% end %>
+  </div>
+
+  <!-- Kanban Columns -->
+  <div class="overflow-x-auto pb-6">
+    <div class="flex gap-6 min-w-min">
+      <% @lists_by_status.each do |status, lists| %>
+        <div class="flex flex-col w-96 flex-shrink-0 bg-gray-50 rounded-lg border border-gray-200">
+          <!-- Column Header -->
+          <div class="px-5 py-4 border-b border-gray-200 bg-white rounded-t-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm font-semibold text-gray-900">
+                  <%= status.humanize %>
+                </h3>
+                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
+                  <%= lists.count %>
+                </span>
+              </div>
+              <!-- Status Icon -->
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white <%=
+                case status
+                when 'draft'
+                  'bg-gray-400'
+                when 'active'
+                  'bg-green-500'
+                when 'completed'
+                  'bg-blue-500'
+                when 'archived'
+                  'bg-yellow-500'
+                end %>">
+                <% case status %>
+                <% when 'draft' %>
+                  ◯
+                <% when 'active' %>
+                  ●
+                <% when 'completed' %>
+                  ✓
+                <% when 'archived' %>
+                  ⊘
+                <% end %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Column Items -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-3">
+            <% if lists.any? %>
+              <% lists.each do |list| %>
+                <%= render "lists/kanban_list_card", list: list %>
+              <% end %>
+            <% else %>
+              <div class="text-center py-12">
+                <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                <p class="mt-2 text-xs text-gray-500">No lists</p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
