@@ -268,7 +268,7 @@ class ListItemsController < ApplicationController
     return false if url.blank?
 
     # Allow http in development/test, https in production
-    allowed_schemes = Rails.env.production? ? ['https://'] : ['http://', 'https://']
+    allowed_schemes = Rails.env.production? ? [ "https://" ] : [ "http://", "https://" ]
     return false unless allowed_schemes.any? { |scheme| url.start_with?(scheme) }
 
     # Validate URL structure
