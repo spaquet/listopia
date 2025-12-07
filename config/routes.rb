@@ -109,6 +109,7 @@ Rails.application.routes.draw do
       member do
         patch :toggle_completion
         get :share
+        get :visit_url
       end
 
       # Collaborations on ListItems

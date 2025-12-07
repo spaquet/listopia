@@ -2,7 +2,7 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share, :visit_url ]
   before_action :authorize_list_access!
 
   def create
@@ -86,6 +86,17 @@ class ListItemsController < ApplicationController
                                                 partial: "list_items/inline_edit_form",
                                                 locals: { item: @list_item, list: @list })
       end
+    end
+  end
+
+  # Redirect to the item's URL
+  def visit_url
+    authorize @list_item, :show?
+
+    if valid_redirect_url?(@list_item.url)
+      redirect_to @list_item.url, allow_other_host: true
+    else
+      redirect_to list_list_item_path(@list, @list_item), alert: "This item doesn't have a valid URL."
     end
   end
 
@@ -250,6 +261,22 @@ class ListItemsController < ApplicationController
   def authorize_list_access!
     unless @list.readable_by?(current_user)
       redirect_to lists_path, alert: "You don't have permission to access this list."
+    end
+  end
+
+  def valid_redirect_url?(url)
+    return false if url.blank?
+
+    # Allow http in development/test, https in production
+    allowed_schemes = Rails.env.production? ? ['https://'] : ['http://', 'https://']
+    return false unless allowed_schemes.any? { |scheme| url.start_with?(scheme) }
+
+    # Validate URL structure
+    begin
+      URI.parse(url)
+      true
+    rescue URI::InvalidURIError
+      false
     end
   end
 

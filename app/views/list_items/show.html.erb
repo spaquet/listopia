@@ -103,7 +103,8 @@
         <% if @list_item.url.present? %>
           <div>
             <h3 class="text-sm font-semibold text-gray-900 mb-2">Link</h3>
-            <%= link_to @list_item.url, @list_item.url, target: '_blank', rel: 'noopener noreferrer',
+            <%= link_to @list_item.url, visit_url_list_list_item_path(@list, @list_item),
+                        target: '_blank', rel: 'noopener noreferrer',
                         class: "text-blue-600 hover:text-blue-700 hover:underline break-all" %>
           </div>
         <% end %>
