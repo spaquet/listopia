@@ -52,6 +52,9 @@ application.register("inline-edit", InlineEditController)
 import InvitationFilterController from "./invitation_filter_controller"
 application.register("invitation-filter", InvitationFilterController)
 
+import KanbanController from "./kanban_controller"
+application.register("kanban", KanbanController)
+
 import KeyboardShortcutsController from "./keyboard_shortcuts_controller"
 application.register("keyboard-shortcuts", KeyboardShortcutsController)
 

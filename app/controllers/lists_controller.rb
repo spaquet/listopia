@@ -3,8 +3,8 @@ class ListsController < ApplicationController
   include ListBroadcasting
 
   before_action :authenticate_user!, except: [ :show, :show_by_slug ]
-  before_action :set_list, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status, :ai_context ]
-  before_action :authorize_list_access!, only: [ :show, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :ai_context ]
+  before_action :set_list, only: [ :show, :kanban, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :toggle_status, :ai_context ]
+  before_action :authorize_list_access!, only: [ :show, :kanban, :edit, :update, :destroy, :share, :toggle_public_access, :duplicate, :ai_context ]
 
   # Display all lists accessible to the current user
   def index
@@ -100,6 +100,13 @@ class ListsController < ApplicationController
     @new_list_item = @list.list_items.build if can_collaborate_on_list?
 
     # Track list views for analytics (optional)
+    track_list_view if current_user
+  end
+
+  # Display list in kanban board view grouped by board columns
+  def kanban
+    authorize @list
+    @board_columns = @list.board_columns.order(:position)
     track_list_view if current_user
   end
 

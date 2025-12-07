@@ -4,6 +4,7 @@
 # Table name: list_items
 #
 #  id                  :uuid             not null, primary key
+#  completed_at        :datetime
 #  description         :text
 #  due_date            :datetime
 #  duration_days       :integer
@@ -33,6 +34,7 @@
 #  index_list_items_on_assigned_user_id             (assigned_user_id)
 #  index_list_items_on_assigned_user_id_and_status  (assigned_user_id,status)
 #  index_list_items_on_board_column_id              (board_column_id)
+#  index_list_items_on_completed_at                 (completed_at)
 #  index_list_items_on_created_at                   (created_at)
 #  index_list_items_on_due_date                     (due_date)
 #  index_list_items_on_due_date_and_status          (due_date,status)
@@ -56,7 +58,7 @@
 class ListItem < ApplicationRecord
   include Turbo::Broadcastable
 
-  attr_accessor :skip_notifications, :previous_title_value
+  attr_accessor :skip_notifications, :previous_title_value, :is_kanban_update
 
   # Logidzy for auditing changes
   has_logidze
@@ -134,7 +136,7 @@ class ListItem < ApplicationRecord
 
   # Callbacks - Use after_commit to avoid issues during transactions
   before_destroy :notify_item_destroyed
-  before_save :track_status_change, :track_title_change
+  before_save :track_status_change, :track_title_change, :sync_status_with_board_column
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
   after_create :assign_default_board_column
@@ -206,6 +208,42 @@ class ListItem < ApplicationRecord
   def track_title_change
     if title_changed?
       self.previous_title_value = title_was
+    end
+  end
+
+  # Sync status with board column when column changes
+  def sync_status_with_board_column
+    return unless board_column_id_changed?
+
+    # Set flag for view to know this is a kanban update
+    self.is_kanban_update = true
+
+    # Map board column names to item statuses
+    column = board_column
+    return unless column
+
+    new_status = case column.name
+                 when "To Do"
+                   :pending
+                 when "In Progress"
+                   :in_progress
+                 when "Done"
+                   :completed
+                 else
+                   # Keep current status if column name doesn't match known columns
+                   status
+                 end
+
+    # Update status and timestamp
+    self.status = new_status
+    self.status_changed_at = Time.current
+
+    # If moving to completed, set the completed_at timestamp
+    if new_status == :completed
+      self.completed_at = Time.current
+    elsif new_status != :completed
+      # Clear completed_at if moving away from completed status
+      self.completed_at = nil
     end
   end
 

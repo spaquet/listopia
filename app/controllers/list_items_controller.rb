@@ -34,12 +34,7 @@ class ListItemsController < ApplicationController
     if @list_item.update(list_item_params)
       respond_to do |format|
         format.html { redirect_to list_list_item_path(@list, @list_item), notice: "Item was successfully updated." }
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace(@list_item, partial: "list_items/item", locals: { item: @list_item, list: @list }),
-            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
-          ]
-        end
+        format.turbo_stream # Renders update.turbo_stream.erb
         format.json { render json: @list_item }
       end
     else
@@ -262,7 +257,7 @@ class ListItemsController < ApplicationController
     params.require(:list_item).permit(
       :title, :description, :item_type, :priority, :status,
       :due_date, :assigned_user_id, :url, :position,
-      :estimated_duration, :duration_days, :start_date
+      :estimated_duration, :duration_days, :start_date, :board_column_id
     )
   end
 end

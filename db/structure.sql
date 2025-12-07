@@ -1000,7 +1000,8 @@ CREATE TABLE public.list_items (
     recurrence_end_date timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    board_column_id uuid
+    board_column_id uuid,
+    completed_at timestamp(6) without time zone
 );
 
 
@@ -1932,6 +1933,13 @@ CREATE INDEX index_list_items_on_assigned_user_id_and_status ON public.list_item
 --
 
 CREATE INDEX index_list_items_on_board_column_id ON public.list_items USING btree (board_column_id);
+
+
+--
+-- Name: index_list_items_on_completed_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_list_items_on_completed_at ON public.list_items USING btree (completed_at);
 
 
 --
@@ -3086,6 +3094,7 @@ ALTER TABLE ONLY public.recovery_contexts
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251206170353'),
 ('20251115200022'),
 ('20251115200021'),
 ('20251115200020'),

@@ -17,7 +17,7 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
   </head>
-  <body class="bg-gray-50 min-h-screen">
+  <body class="bg-gray-50 min-h-screen" data-controller="error-handler">
     <%= render "shared/navigation" %>
     <%= render "shared/flash_messages" %>
     <!-- Main Content -->
@@ -27,6 +27,8 @@
     <!-- Modal Containers -->
     <%= turbo_frame_tag "modal" %>
     <%= turbo_frame_tag "org_switcher_modal" %>
+    <!-- Error Handler Notification Container -->
+    <div data-error-handler-target="notification" class="hidden"></div>
     <!-- Persistent Chat Component (only for authenticated users) -->
     <% if user_signed_in? %>
       <% unless controller_name == 'dashboard' && action_name == 'index' %>
