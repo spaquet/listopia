@@ -3,7 +3,7 @@
      Handles both regular markdown messages and templated messages
 -->
 
-<div class="chat-message <%= message.role %> mb-4"
+<div class="chat-message <%= message.role %> <%= message.system_message? ? 'mb-2' : 'mb-3' %>"
      data-message-id="<%= message.id %>"
      id="message-<%= message.id %>">
 
@@ -18,7 +18,7 @@
                    message: message %>
       <% else %>
         <!-- Fall back to markdown rendering -->
-        <div class="message-content prose prose-sm max-w-none">
+        <div class="message-content <%= message.system_message? ? 'text-sm' : 'prose prose-sm max-w-none' %>">
           <% if message.user_message? && (has_mentions?(message) || has_references?(message)) %>
             <%= render_message_with_mentions(message) %>
           <% else %>

@@ -30,7 +30,8 @@ class MessageTemplate
     "rag_sources" => "RAGSourcesTemplate",
     "error" => "ErrorTemplate",
     "success" => "SuccessTemplate",
-    "info" => "InfoTemplate"
+    "info" => "InfoTemplate",
+    "help" => "HelpTemplate"
   }.freeze
 
   # Get template class by type
@@ -316,6 +317,20 @@ class InfoTemplate < BaseTemplate
       message: dig_data("message"),
       details: dig_data("details"),
       icon: dig_data("icon") || "ℹ️"
+    }
+  end
+end
+
+# Template for help command
+class HelpTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["commands"].is_a?(Array) && data["features"].is_a?(Array)
+  end
+
+  def render_data
+    {
+      commands: dig_data("commands"),
+      features: dig_data("features")
     }
   end
 end

@@ -301,9 +301,24 @@ class ChatsController < ApplicationController
   end
 
   def handle_help_command(user_message)
-    help_text = "/search, /browse, /clear, /new\n@name #list for mentions"
+    template_data = {
+      commands: [
+        { name: "/search", description: "Search lists" },
+        { name: "/browse", description: "Browse lists" },
+        { name: "/clear", description: "Clear chat" },
+        { name: "/new", description: "New conversation" }
+      ],
+      features: [
+        { symbol: "@name", description: "Mention someone" },
+        { symbol: "#list", description: "Reference a list" }
+      ]
+    }
 
-    Message.create_system(chat: @chat, content: help_text)
+    Message.create_templated(
+      chat: @chat,
+      template_type: "help",
+      template_data: template_data
+    )
   end
 
   def handle_clear_command

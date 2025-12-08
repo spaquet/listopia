@@ -50,23 +50,15 @@ export default class extends Controller {
     const content = this.messageInputTarget.value.trim()
     if (!content) return
 
-    // Disable submit button during request
-    this.submitButtonTarget.disabled = true
+    // Clear input immediately
+    this.messageInputTarget.value = ""
+    this.messageInputTarget.focus()
 
+    // All messages (including commands) go to server
     try {
-      // Check if this is a command
-      if (content.startsWith("/")) {
-        await this.handleCommand(content)
-      } else {
-        await this.submitMessageToServer(content)
-      }
+      await this.submitMessageToServer(content)
     } catch (error) {
       console.error("Error submitting message:", error)
-      this.showErrorNotification("Failed to send message")
-    } finally {
-      this.submitButtonTarget.disabled = false
-      this.messageInputTarget.value = ""
-      this.messageInputTarget.focus()
     }
   }
 
@@ -88,108 +80,6 @@ export default class extends Controller {
     }, 50)
   }
 
-  /**
-   * Handle command parsing and execution
-   */
-  async handleCommand(input) {
-    const [command, ...args] = input.split(" ")
-
-    switch (command) {
-      case "/search":
-        await this.handleSearchCommand(args.join(" "))
-        break
-      case "/help":
-        this.showHelpCommand()
-        break
-      case "/clear":
-        this.clearChat()
-        break
-      case "/new":
-        this.createNewChat()
-        break
-      default:
-        this.showErrorNotification(`Unknown command: ${command}`)
-    }
-  }
-
-  /**
-   * Handle /search command
-   */
-  async handleSearchCommand(query) {
-    if (!query.trim()) {
-      this.showErrorNotification("Please provide a search query")
-      return
-    }
-
-    // Show loading state
-    this.addSystemMessage("Searching for '" + query + "'...")
-
-    try {
-      const response = await fetch("/search", {
-        method: "GET",
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "Accept": "application/json"
-        },
-        body: new URLSearchParams({
-          q: query,
-          chat_id: this.chatIdValue
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error("Search failed")
-      }
-
-      const data = await response.json()
-      this.addSearchResultsMessage(data.results || [])
-    } catch (error) {
-      this.showErrorNotification("Search failed: " + error.message)
-    }
-  }
-
-  /**
-   * Show help command output
-   */
-  showHelpCommand() {
-    const helpContent = `
-Available Commands:
-• /search <query> - Find your lists and items
-• /browse - Browse all available lists
-• /help - Show this help message
-• /clear - Clear chat history
-• /new - Start a new conversation
-
-Tips:
-• Start a normal message to chat with the assistant
-• Use markdown for formatting
-• All responses can be rated for quality
-    `.trim()
-
-    this.addSystemMessage(helpContent)
-  }
-
-  /**
-   * Clear chat history
-   */
-  clearChat() {
-    if (confirm("Clear chat history? This cannot be undone.")) {
-      this.messagesContainerTarget.innerHTML = ""
-      this.addSystemMessage("Chat history cleared.")
-    }
-  }
-
-  /**
-   * Create new chat
-   */
-  createNewChat() {
-    const form = document.createElement("form")
-    form.method = "POST"
-    form.action = "/chats"
-    form.style.display = "none"
-    document.body.appendChild(form)
-    form.submit()
-  }
 
   /**
    * Handle command input for showing command palette
@@ -256,22 +146,26 @@ Tips:
   }
 
   /**
-   * Submit regular message to server
+   * Submit message to server using form submission
    */
   async submitMessageToServer(content) {
-    const response = await fetch(`/chats/${this.chatIdValue}/messages`, {
+    // Create a form submission using the message form
+    const formData = new FormData(this.messageFormTarget)
+
+    // Override the content field
+    formData.set("message[content]", content)
+
+    const response = await fetch(this.messageFormTarget.action, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": this.getCsrfToken()
+        "X-CSRF-Token": this.getCsrfToken(),
+        "Accept": "text/vnd.turbo-stream.html"
       },
-      body: JSON.stringify({
-        message: { content: content }
-      })
+      body: formData
     })
 
     if (!response.ok) {
-      throw new Error("Failed to submit message")
+      throw new Error(`Failed to submit message: ${response.statusText}`)
     }
 
     // Response should be a Turbo Stream
