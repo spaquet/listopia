@@ -11,18 +11,18 @@
 
       <div class="space-y-4">
         <div class="flex items-center">
-          <input type="checkbox" id="email_enabled" name="notification_preferences[email_enabled]" value="1"
-                 <%= 'checked' if @preferences.email_enabled? %> class="h-4 w-4 rounded border-gray-300">
-          <label for="email_enabled" class="ml-3 text-sm font-medium text-gray-700">
+          <input type="checkbox" id="email_notifications" name="notification_preferences[email_notifications]" value="1"
+                 <%= 'checked' if @preferences.email_notifications? %> class="h-4 w-4 rounded border-gray-300">
+          <label for="email_notifications" class="ml-3 text-sm font-medium text-gray-700">
             Email Notifications
           </label>
           <p class="ml-3 text-sm text-gray-500">Receive notifications via email</p>
         </div>
 
         <div class="flex items-center">
-          <input type="checkbox" id="push_enabled" name="notification_preferences[push_enabled]" value="1"
-                 <%= 'checked' if @preferences.push_enabled? %> class="h-4 w-4 rounded border-gray-300" disabled>
-          <label for="push_enabled" class="ml-3 text-sm font-medium text-gray-500">
+          <input type="checkbox" id="push_notifications" name="notification_preferences[push_notifications]" value="1"
+                 <%= 'checked' if @preferences.push_notifications? %> class="h-4 w-4 rounded border-gray-300" disabled>
+          <label for="push_notifications" class="ml-3 text-sm font-medium text-gray-500">
             Push Notifications
           </label>
           <p class="ml-3 text-sm text-gray-400">(Coming soon)</p>
@@ -35,37 +35,27 @@
       <h2 class="text-xl font-semibold text-gray-900 mb-4">Quiet Hours</h2>
 
       <div class="space-y-4">
-        <div class="flex items-center">
-          <input type="checkbox" id="quiet_hours_enabled" name="notification_preferences[quiet_hours_enabled]" value="1"
-                 <%= 'checked' if @preferences.quiet_hours_enabled? %> class="h-4 w-4 rounded border-gray-300">
-          <label for="quiet_hours_enabled" class="ml-3 text-sm font-medium text-gray-700">
-            Enable Quiet Hours
-          </label>
-          <p class="ml-3 text-sm text-gray-500">Pause notifications during specific times</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="quiet_hours_start" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+            <input type="time" id="quiet_hours_start" name="notification_preferences[quiet_hours_start]"
+                   value="<%= @preferences.quiet_hours_start&.strftime('%H:%M') %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <p class="mt-1 text-xs text-gray-500">Leave empty to disable</p>
+          </div>
+          <div>
+            <label for="quiet_hours_end" class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+            <input type="time" id="quiet_hours_end" name="notification_preferences[quiet_hours_end]"
+                   value="<%= @preferences.quiet_hours_end&.strftime('%H:%M') %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          </div>
         </div>
 
-        <% if @preferences.quiet_hours_enabled? %>
-          <div class="ml-7 grid grid-cols-2 gap-4">
-            <div>
-              <label for="quiet_hours_start" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-              <input type="time" id="quiet_hours_start" name="notification_preferences[quiet_hours_start]"
-                     value="<%= @preferences.quiet_hours_start %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-            </div>
-            <div>
-              <label for="quiet_hours_end" class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-              <input type="time" id="quiet_hours_end" name="notification_preferences[quiet_hours_end]"
-                     value="<%= @preferences.quiet_hours_end %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-            </div>
-          </div>
-
-          <div>
-            <label for="timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
-            <input type="text" id="timezone" name="notification_preferences[timezone]"
-                   value="<%= @preferences.timezone || 'UTC' %>" placeholder="UTC"
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
-            <p class="mt-1 text-xs text-gray-500">e.g., America/New_York, Europe/London</p>
-          </div>
-        <% end %>
+        <div>
+          <label for="timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+          <input type="text" id="timezone" name="notification_preferences[timezone]"
+                 value="<%= @preferences.timezone || 'UTC' %>" placeholder="UTC"
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <p class="mt-1 text-xs text-gray-500">e.g., America/New_York, Europe/London</p>
+        </div>
       </div>
     </div>
 
@@ -74,39 +64,63 @@
       <h2 class="text-xl font-semibold text-gray-900 mb-4">Notification Types</h2>
 
       <div class="space-y-4">
-        <% @notification_types.each do |type, config| %>
-          <div class="border-b border-gray-200 pb-4 last:border-b-0">
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <h3 class="text-sm font-medium text-gray-900"><%= config[:label] %></h3>
-                <p class="text-sm text-gray-500"><%= config[:description] %></p>
-              </div>
-            </div>
-
-            <div class="flex gap-4">
-              <% ['immediate', 'daily_digest', 'weekly_digest', 'disabled'].each do |frequency| %>
-                <label class="flex items-center">
-                  <input type="radio" name="notification_preferences[<%= type %>_frequency]"
-                         value="<%= frequency %>"
-                         <%= 'checked' if (@preferences.type_preferences&.[](type.to_s)&.[]('frequency') || 'immediate') == frequency %>
-                         class="h-4 w-4 rounded border-gray-300">
-                  <span class="ml-2 text-sm text-gray-700">
-                    <% case frequency %>
-                    <% when 'immediate' %>
-                      Immediately
-                    <% when 'daily_digest' %>
-                      Daily Digest
-                    <% when 'weekly_digest' %>
-                      Weekly Digest
-                    <% when 'disabled' %>
-                      Disabled
-                    <% end %>
-                  </span>
-                </label>
-              <% end %>
-            </div>
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="collaboration_notifications" name="notification_preferences[collaboration_notifications]" value="1"
+                   <%= 'checked' if @preferences.collaboration_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="collaboration_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Collaboration Events
+            </label>
           </div>
-        <% end %>
+          <p class="text-sm text-gray-500 ml-7">User added/removed from lists</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="list_activity_notifications" name="notification_preferences[list_activity_notifications]" value="1"
+                   <%= 'checked' if @preferences.list_activity_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="list_activity_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              List Activity
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">List titles and updates</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="item_activity_notifications" name="notification_preferences[item_activity_notifications]" value="1"
+                   <%= 'checked' if @preferences.item_activity_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="item_activity_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Item Activity
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">Item creation, updates, and deletion</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="status_change_notifications" name="notification_preferences[status_change_notifications]" value="1"
+                   <%= 'checked' if @preferences.status_change_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="status_change_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Status Changes
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">List status changes</p>
+        </div>
+
+        <div>
+          <label for="notification_frequency" class="block text-sm font-medium text-gray-900 mb-2">
+            Notification Frequency
+          </label>
+          <select id="notification_frequency" name="notification_preferences[notification_frequency]"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <option value="immediate" <%= 'selected' if @preferences.notification_frequency == 'immediate' %>>Immediate</option>
+            <option value="daily_digest" <%= 'selected' if @preferences.notification_frequency == 'daily_digest' %>>Daily Digest</option>
+            <option value="weekly_digest" <%= 'selected' if @preferences.notification_frequency == 'weekly_digest' %>>Weekly Digest</option>
+            <option value="disabled" <%= 'selected' if @preferences.notification_frequency == 'disabled' %>>Disabled</option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Choose how frequently you want to receive notifications</p>
+        </div>
       </div>
     </div>
 
