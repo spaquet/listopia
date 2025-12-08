@@ -441,6 +441,224 @@ Invitation.create!(
 puts "✓ Created invitation for editor@techblog.com to #{emma_blog.title}"
 
 # ============================================================================
+# COMMENTS - For Search and RAG Testing
+# ============================================================================
+puts "\n💬 Creating comments..."
+
+# Comments on Mike's Q4 Planning list
+comment1 = Comment.create!(
+  commentable: mike_work,
+  user: emma,
+  content: "We should prioritize the hiring effort - critical for Q4 timeline. Strong technical candidates are in high demand right now."
+)
+puts "✓ Created comment on #{mike_work.title}"
+
+comment2 = Comment.create!(
+  commentable: mike_work,
+  user: sarah,
+  content: "Great plan! I think we should also consider updating our tech stack to Rails 8. The new features would help us move faster on development."
+)
+puts "✓ Created comment on #{mike_work.title}"
+
+comment3 = Comment.create!(
+  commentable: mike_work,
+  user: alex,
+  content: "The feature beta launch timing looks good. We should ensure all infrastructure and monitoring are ready before beta to catch issues early."
+)
+puts "✓ Created comment on #{mike_work.title}"
+
+# Comments on Emma's Travel list
+comment4 = Comment.create!(
+  commentable: emma_travel,
+  user: mike,
+  content: "The Paris itinerary looks amazing! Don't miss the Louvre Museum and try some authentic French cuisine. Book restaurants in advance."
+)
+puts "✓ Created comment on #{emma_travel.title}"
+
+comment5 = Comment.create!(
+  commentable: emma_travel,
+  user: sarah,
+  content: "Europe trip is the best! Pro tip: Get a local SIM card when you arrive. Much cheaper than roaming and you'll have reliable data."
+)
+puts "✓ Created comment on #{emma_travel.title}"
+
+comment6 = Comment.create!(
+  commentable: emma_travel,
+  user: alex,
+  content: "Make sure your international driving permit is valid for Italy and Spain too. Also check rental car insurance requirements."
+)
+puts "✓ Created comment on #{emma_travel.title}"
+
+# Comments on Emma's Blog list
+comment7 = Comment.create!(
+  commentable: emma_blog,
+  user: sarah,
+  content: "The Rails 8 article is highly relevant. Everyone wants to know about the new authentication system and Solid Queue features."
+)
+puts "✓ Created comment on #{emma_blog.title}"
+
+comment8 = Comment.create!(
+  commentable: emma_blog,
+  user: alex,
+  content: "Great idea to cover AI integration trends. Include information about LLM APIs, embeddings, and vector databases in your research."
+)
+puts "✓ Created comment on #{emma_blog.title}"
+
+# Comments on Sarah's Learning list
+comment9 = Comment.create!(
+  commentable: sarah_learning,
+  user: mike,
+  content: "Rails 8 is fantastic. The authentication improvements and Solid ecosystem are game changers. Your learning path is well structured."
+)
+puts "✓ Created comment on #{sarah_learning.title}"
+
+comment10 = Comment.create!(
+  commentable: sarah_learning,
+  user: emma,
+  content: "Have you looked at Turbo Streams for real-time features? It's incredibly powerful for building interactive applications without JavaScript."
+)
+puts "✓ Created comment on #{sarah_learning.title}"
+
+# Comments on specific list items
+comment11 = Comment.create!(
+  commentable: mike_work.list_items.find { |item| item.title == "Define Q4 OKRs" },
+  user: sarah,
+  content: "The OKRs look ambitious but achievable. Engineering capacity might be tight with the hiring effort. Let's discuss in planning."
+)
+puts "✓ Created comment on list item"
+
+comment12 = Comment.create!(
+  commentable: alex_startup.list_items.find { |item| item.title == "Set up payment processing" },
+  user: emma,
+  content: "Stripe is excellent for SaaS. Make sure to test webhook integrations and handle subscription lifecycle events properly."
+)
+puts "✓ Created comment on list item"
+
+comment13 = Comment.create!(
+  commentable: sarah_fitness.list_items.find { |item| item.title == "Schedule nutritionist appointment" },
+  user: mike,
+  content: "Great move on the nutrition focus. A professional can help you optimize your diet for endurance training and recovery."
+)
+puts "✓ Created comment on list item"
+
+# Comments on Alex's startup
+comment14 = Comment.create!(
+  commentable: alex_startup,
+  user: mike,
+  content: "The startup launch checklist is comprehensive. Have you considered implementing search and RAG features for your product? It's a game changer."
+)
+puts "✓ Created comment on #{alex_startup.title}"
+
+comment15 = Comment.create!(
+  commentable: alex_startup,
+  user: emma,
+  content: "The CI/CD setup is critical. Automated testing and deployments will save you tons of time during the launch phase and beyond."
+)
+puts "✓ Created comment on #{alex_startup.title}"
+
+# ============================================================================
+# CHATS - For RAG Testing
+# ============================================================================
+puts "\n🤖 Creating chats for RAG testing..."
+
+# Create a chat for Mike
+mike_chat = Chat.create!(
+  user_id: mike.id,
+  title: "Work Planning Assistant",
+  organization_id: listopia_org.id,
+  status: "active",
+  metadata: { rag_enabled: true }
+)
+puts "✓ Created chat for Mike with RAG enabled"
+
+# Create messages in Mike's chat
+msg1 = mike_chat.messages.create!(
+  role: "user",
+  content: "What are my key Q4 priorities?",
+  user_id: mike.id
+)
+
+msg2 = mike_chat.messages.create!(
+  role: "assistant",
+  content: "Based on your lists and comments, your key Q4 priorities are:\n1. Define Q4 OKRs and objectives\n2. Schedule team planning sessions\n3. Hire 2 senior engineers\n4. Launch new feature beta\n5. Review budget allocations",
+  user_id: nil,
+  metadata: { rag_sources: [] }
+)
+puts "✓ Created messages in Mike's chat"
+
+# Create a chat for Emma
+emma_chat = Chat.create!(
+  user_id: emma.id,
+  title: "Travel & Content Planning",
+  organization_id: listopia_org.id,
+  status: "active",
+  metadata: { rag_enabled: true }
+)
+puts "✓ Created chat for Emma with RAG enabled"
+
+msg3 = emma_chat.messages.create!(
+  role: "user",
+  content: "Give me a summary of my Europe trip planning",
+  user_id: emma.id
+)
+
+msg4 = emma_chat.messages.create!(
+  role: "assistant",
+  content: "Your Europe trip 2025 is well planned! You have flights and hotels booked for Paris (5 nights), Rome (4 nights), and Barcelona (6 nights). Upcoming tasks include applying for an international driving permit, booking a Colosseum tour, and creating a packing list.",
+  user_id: nil,
+  metadata: { rag_sources: [] }
+)
+puts "✓ Created messages in Emma's chat"
+
+# Create a chat for Sarah
+sarah_chat = Chat.create!(
+  user_id: sarah.id,
+  title: "Learning & Fitness Coach",
+  organization_id: listopia_org.id,
+  status: "active",
+  metadata: { rag_enabled: true }
+)
+puts "✓ Created chat for Sarah with RAG enabled"
+
+msg5 = sarah_chat.messages.create!(
+  role: "user",
+  content: "What should I focus on this week?",
+  user_id: sarah.id
+)
+
+msg6 = sarah_chat.messages.create!(
+  role: "assistant",
+  content: "This week you should focus on: 1) Completing your Rails 8 authentication learning module, 2) Meal prepping for the week, 3) Continuing your Solid Queue study, and 4) Your morning runs and strength training.",
+  user_id: nil,
+  metadata: { rag_sources: [] }
+)
+puts "✓ Created messages in Sarah's chat"
+
+# Create a chat for Alex
+alex_chat = Chat.create!(
+  user_id: alex.id,
+  title: "Startup Launch Planning",
+  organization_id: listopia_org.id,
+  status: "active",
+  metadata: { rag_enabled: true }
+)
+puts "✓ Created chat for Alex with RAG enabled"
+
+msg7 = alex_chat.messages.create!(
+  role: "user",
+  content: "What's blocking our launch?",
+  user_id: alex.id
+)
+
+msg8 = alex_chat.messages.create!(
+  role: "assistant",
+  content: "Based on your startup checklist, the critical blocking items are: 1) Design landing page (in progress), 2) Set up payment processing (Stripe integration - due in 10 days), 3) Write product documentation, 4) Line up beta testers. Once these are complete, you can proceed with the Product Hunt launch.",
+  user_id: nil,
+  metadata: { rag_sources: [] }
+)
+puts "✓ Created messages in Alex's chat"
+
+# ============================================================================
 # SUMMARY
 # ============================================================================
 
@@ -461,6 +679,11 @@ puts "  - In Progress items: #{ListItem.status_in_progress.count}"
 puts "  - Pending items: #{ListItem.status_pending.count}"
 puts "Collaborations: #{Collaborator.count}"
 puts "Pending invitations: #{Invitation.pending.count}"
+puts "\n💬 SEARCH & RAG DATA:"
+puts "Comments created: #{Comment.count}"
+puts "Chats created: #{Chat.count}"
+puts "Chat messages created: #{Message.count}"
+puts "  - Chats with RAG enabled: #{Chat.where("metadata->>'rag_enabled' = 'true'").count}"
 puts "\n🏢 ORGANIZATIONS:"
 puts "\n📍 Listopia (Shared Organization)"
 puts "👥 MEMBERS:"
@@ -478,5 +701,17 @@ puts "• John (john@example.com): Owner - separate organization for cross-org t
 puts "  └─ current_organization_id: #{john.current_organization_id} ✓"
 puts "\n🔐 All user passwords: password123"
 puts "🌐 Public list: #{emma_travel.title}"
+puts "\n💡 SEARCH & RAG TESTING:"
+puts "✨ All lists and items have rich content for semantic search"
+puts "✨ Comments provide discussion context for RAG to pull from"
+puts "✨ Chats demonstrate RAG in action with message examples"
+puts "✨ Try searching for: 'Rails 8', 'hiring', 'payment', 'travel', 'authentication'"
+puts "✨ RAG will pull relevant lists, items, and comments as context"
 puts "\n✅ All users have current_organization_id properly set!"
 puts "✨ Ready to explore Listopia with organization-scoped access control!"
+puts "\n🚀 NEXT STEPS:"
+puts "1. Run migrations: bundle exec rails db:migrate (if not already done)"
+puts "2. Start server: bin/dev"
+puts "3. Log in as any user (password: password123)"
+puts "4. Try the search feature at /search"
+puts "5. Send a message in chat to see RAG in action with source attribution"

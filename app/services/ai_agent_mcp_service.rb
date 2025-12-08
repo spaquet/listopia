@@ -18,11 +18,24 @@ class AiAgentMcpService
     log_debug "=" * 80
 
     # SAVE USER MESSAGE to database
-    @chat.messages.create!(
+    user_message = @chat.messages.create!(
       role: "user",
       content: message_content,
       user: @user
     )
+
+    # NEW: Assemble RAG context from user's lists/items/comments (if enabled)
+    rag_context = nil
+    if @chat.rag_enabled?
+      rag_context = assemble_rag_context(message_content)
+      if rag_context.present?
+        log_debug "RAG CONTEXT: Found #{rag_context[:context_sources].count} relevant sources"
+        # Store RAG sources in user message metadata for reference
+        user_message.update(metadata: { rag_sources: rag_context[:context_sources] })
+      end
+    else
+      log_debug "RAG: Disabled for this chat"
+    end
 
     # STEP 1: Content moderation
     moderation_result = moderate_content(message_content)
@@ -50,11 +63,12 @@ class AiAgentMcpService
     # Build assistant response text
     assistant_text = build_assistant_response(result)
 
-    # SAVE ASSISTANT MESSAGE to database
+    # SAVE ASSISTANT MESSAGE to database with RAG context metadata
     assistant_message = @chat.messages.create!(
       role: "assistant",
       content: assistant_text,
-      user: nil
+      user: nil,
+      metadata: rag_context.present? ? { rag_sources: rag_context[:context_sources] } : {}
     )
 
     # NEW: Determine message type based on results
@@ -1089,6 +1103,22 @@ class AiAgentMcpService
       error_msg = collab_result[:error] || "Collaboration action failed"
       "❌ #{error_msg}"
     end
+  end
+
+  # NEW: Assemble RAG context from user's accessible content
+  def assemble_rag_context(query)
+    rag_result = RagService.call(
+      query: query,
+      user: @user,
+      max_context_items: 5
+    )
+
+    return nil unless rag_result.success?
+
+    rag_result.data
+  rescue => e
+    log_warning "RAG context assembly failed: #{e.message}"
+    nil
   end
 
   def log_debug(message)

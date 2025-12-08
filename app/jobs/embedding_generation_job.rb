@@ -2,13 +2,8 @@ class EmbeddingGenerationJob < ApplicationJob
   queue_as :default
 
   # Prevent duplicate embedding generation for the same record
-  include GoodJob::ActiveJobExtensions::Concurrency
-  good_job_control_concurrency_with(
-    key: ->(record_class, record_id) { "embeddings:#{record_class}:#{record_id}" },
-    perform: 1
-  )
-
-  sidekiq_options lock: { type: :until_executed, on_conflict: :log } if defined?(Sidekiq)
+  # Solid Queue uses a different concurrency model than GoodJob
+  # We'll implement deduplication via a lock in the service instead
 
   def perform(model_name, record_id)
     model = model_name.constantize

@@ -46,4 +46,26 @@
 #
 class Chat < ApplicationRecord
   acts_as_chat messages_foreign_key: :chat_id
+
+  # RAG Toggle via metadata
+  # Default to enabled (true) for new chats
+  def rag_enabled?
+    metadata&.dig("rag_enabled") != false
+  end
+
+  def enable_rag!
+    self.metadata ||= {}
+    self.metadata["rag_enabled"] = true
+    save!
+  end
+
+  def disable_rag!
+    self.metadata ||= {}
+    self.metadata["rag_enabled"] = false
+    save!
+  end
+
+  def toggle_rag!
+    rag_enabled? ? disable_rag! : enable_rag!
+  end
 end

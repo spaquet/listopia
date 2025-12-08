@@ -5,6 +5,8 @@
 #  id                        :uuid             not null, primary key
 #  color_theme               :string           default("blue")
 #  description               :text
+#  embedding                 :vector
+#  embedding_generated_at    :datetime
 #  is_public                 :boolean          default(FALSE), not null
 #  list_collaborations_count :integer          default(0), not null
 #  list_items_count          :integer          default(0), not null
@@ -12,6 +14,8 @@
 #  metadata                  :json
 #  public_permission         :integer          default("public_read"), not null
 #  public_slug               :string
+#  requires_embedding_update :boolean          default(FALSE)
+#  search_document           :tsvector
 #  status                    :integer          default("draft"), not null
 #  title                     :string           not null
 #  created_at                :datetime         not null
@@ -33,6 +37,7 @@
 #  index_lists_on_parent_list_id_and_created_at  (parent_list_id,created_at)
 #  index_lists_on_public_permission              (public_permission)
 #  index_lists_on_public_slug                    (public_slug) UNIQUE
+#  index_lists_on_search_document                (search_document) USING gin
 #  index_lists_on_status                         (status)
 #  index_lists_on_team_id                        (team_id)
 #  index_lists_on_user_id                        (user_id)

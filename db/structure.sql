@@ -39,6 +39,20 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
+-- Name: vector; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
+
+
+--
 -- Name: logidze_capture_exception(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -915,7 +929,11 @@ CREATE TABLE public.comments (
     content text NOT NULL,
     metadata json DEFAULT '{}'::json,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1004,7 +1022,11 @@ CREATE TABLE public.list_items (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     board_column_id uuid,
-    completed_at timestamp(6) without time zone
+    completed_at timestamp(6) without time zone,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1030,7 +1052,11 @@ CREATE TABLE public.lists (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     list_items_count integer DEFAULT 0 NOT NULL,
-    list_collaborations_count integer DEFAULT 0 NOT NULL
+    list_collaborations_count integer DEFAULT 0 NOT NULL,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1326,7 +1352,11 @@ CREATE TABLE public.tags (
     name character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    taggings_count integer DEFAULT 0
+    taggings_count integer DEFAULT 0,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1888,6 +1918,13 @@ CREATE INDEX index_comments_on_commentable ON public.comments USING btree (comme
 
 
 --
+-- Name: index_comments_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_search_document ON public.comments USING gin (search_document);
+
+
+--
 -- Name: index_comments_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2056,6 +2093,13 @@ CREATE INDEX index_list_items_on_priority ON public.list_items USING btree (prio
 
 
 --
+-- Name: index_list_items_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_list_items_on_search_document ON public.list_items USING gin (search_document);
+
+
+--
 -- Name: index_list_items_on_skip_notifications; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2137,6 +2181,13 @@ CREATE INDEX index_lists_on_public_permission ON public.lists USING btree (publi
 --
 
 CREATE UNIQUE INDEX index_lists_on_public_slug ON public.lists USING btree (public_slug);
+
+
+--
+-- Name: index_lists_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lists_on_search_document ON public.lists USING gin (search_document);
 
 
 --
@@ -2620,6 +2671,13 @@ CREATE INDEX index_taggings_on_tenant ON public.taggings USING btree (tenant);
 --
 
 CREATE UNIQUE INDEX index_tags_on_name ON public.tags USING btree (name);
+
+
+--
+-- Name: index_tags_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tags_on_search_document ON public.tags USING gin (search_document);
 
 
 --
@@ -3141,6 +3199,8 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208050101'),
+('20251208050100'),
 ('20251208050000'),
 ('20251208043416'),
 ('20251208043414'),

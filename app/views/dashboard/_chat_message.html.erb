@@ -1,12 +1,16 @@
 <!-- app/views/dashboard/_chat_message.html.erb -->
-<div class="flex gap-4 <%= message.role == 'user' ? 'justify-end' : '' %>" 
+<%
+  # NEW: Get RAG sources from metadata
+  rag_sources = message.metadata.present? ? message.metadata["rag_sources"] : nil
+%>
+<div class="flex gap-4 <%= message.role == 'user' ? 'justify-end' : '' %>"
      data-message-id="<%= message.id %>"
      data-controller="markdown-message">
   <% if message.role_assistant? %>
     <!-- Assistant Avatar -->
     <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
       <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
       </svg>
     </div>
@@ -27,10 +31,10 @@
           </div>
           <div class="space-y-1.5">
             <% lists_created.each do |list| %>
-              <%= link_to list_path(list), 
+              <%= link_to list_path(list),
                           class: "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors #{message.role == 'user' ? 'bg-blue-500 hover:bg-blue-400 text-white' : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'}" do %>
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 <span class="text-sm font-medium flex-1"><%= list.title %></span>
@@ -38,6 +42,34 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
               <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- NEW: RAG Sources Attribution -->
+      <% if rag_sources.present? && message.role_assistant? %>
+        <div class="mt-3 pt-3 border-t border-gray-300">
+          <div class="text-xs font-semibold mb-2 text-gray-600 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2 1 1 0 110 2H4m6 0a1 1 0 110-2 1 1 0 010 2m-6 4a1 1 0 110-2 1 1 0 010 2m0 6a1 1 0 110-2 1 1 0 010 2m6-6a1 1 0 100-2 1 1 0 000 2m0 6a1 1 0 100-2 1 1 0 000 2"></path>
+            </svg>
+            <%= rag_sources.count == 1 ? 'Source' : 'Sources' %>
+          </div>
+          <div class="space-y-1">
+            <% rag_sources.each do |source| %>
+              <div class="text-xs">
+                <% if source["url"].present? %>
+                  <%= link_to source["title"], source["url"],
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      class: "text-blue-600 hover:text-blue-700 underline" %>
+                <% else %>
+                  <%= source["title"] %>
+                <% end %>
+                <span class="text-gray-400">(<%= source["type"] %>)</span>
+              </div>
             <% end %>
           </div>
         </div>
