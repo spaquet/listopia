@@ -1,0 +1,66 @@
+<!-- app/views/message_templates/_search_results.html.erb
+     Search results template for displaying /search command output
+-->
+
+<% search_data = data %>
+<div class="space-y-3">
+  <!-- Results Header -->
+  <div class="flex items-center justify-between">
+    <h3 class="font-semibold text-gray-900">
+      Found <%= search_data[:total_count] || 0 %> result<%= search_data[:total_count] != 1 ? "s" : "" %>
+    </h3>
+    <% if search_data[:query].present? %>
+      <span class="text-sm text-gray-500 italic">for "<%= search_data[:query] %>"</span>
+    <% end %>
+  </div>
+
+  <!-- Results List -->
+  <% if search_data[:results].present? && search_data[:results].length > 0 %>
+    <div class="space-y-2">
+      <% search_data[:results].each do |result| %>
+        <a href="<%= result[:url] %>"
+           class="block hover:bg-blue-50 rounded p-2 transition-colors border border-gray-200"
+           target="_blank"
+           rel="noopener noreferrer">
+
+          <!-- Result Title -->
+          <p class="font-medium text-blue-600 hover:text-blue-700">
+            <%= result[:title] %>
+            <% if result[:type].present? %>
+              <span class="ml-2 px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded">
+                <%= result[:type].titleize %>
+              </span>
+            <% end %>
+          </p>
+
+          <!-- Result Description -->
+          <% if result[:description].present? %>
+            <p class="text-sm text-gray-600 mt-1 line-clamp-2">
+              <%= result[:description] %>
+            </p>
+          <% end %>
+
+          <!-- Result Metadata -->
+          <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+            <% if result[:owner].present? %>
+              <span>👤 <%= result[:owner] %></span>
+            <% end %>
+            <% if result[:created_at].present? %>
+              <span>📅 <%= time_ago_in_words(result[:created_at]) %> ago</span>
+            <% end %>
+            <% if result[:item_count].present? %>
+              <span>📝 <%= result[:item_count] %> items</span>
+            <% end %>
+          </div>
+        </a>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-4 text-gray-600">
+      <p class="text-sm">No results found</p>
+      <% if search_data[:query].present? %>
+        <p class="text-xs text-gray-500 mt-1">Try a different search term</p>
+      <% end %>
+    </div>
+  <% end %>
+</div>

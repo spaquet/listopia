@@ -1092,6 +1092,24 @@ ALTER SEQUENCE public.logidze_data_id_seq OWNED BY public.logidze_data.id;
 
 
 --
+-- Name: message_feedbacks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.message_feedbacks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    message_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    chat_id uuid NOT NULL,
+    rating integer NOT NULL,
+    feedback_type integer,
+    comment text,
+    helpfulness_score integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: messages; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1118,7 +1136,8 @@ CREATE TABLE public.messages (
     model_id_string character varying,
     token_count integer,
     processing_time numeric(8,3),
-    organization_id uuid
+    organization_id uuid,
+    template_type character varying
 );
 
 
@@ -1595,6 +1614,14 @@ ALTER TABLE ONLY public.lists
 
 ALTER TABLE ONLY public.logidze_data
     ADD CONSTRAINT logidze_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: message_feedbacks message_feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT message_feedbacks_pkey PRIMARY KEY (id);
 
 
 --
@@ -2268,6 +2295,34 @@ CREATE UNIQUE INDEX index_logidze_loggable ON public.logidze_data USING btree (l
 
 
 --
+-- Name: index_message_feedbacks_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_chat_id ON public.message_feedbacks USING btree (chat_id);
+
+
+--
+-- Name: index_message_feedbacks_on_message_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_message_feedbacks_on_message_id_and_user_id ON public.message_feedbacks USING btree (message_id, user_id);
+
+
+--
+-- Name: index_message_feedbacks_on_rating; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_rating ON public.message_feedbacks USING btree (rating);
+
+
+--
+-- Name: index_message_feedbacks_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_user_id_and_created_at ON public.message_feedbacks USING btree (user_id, created_at);
+
+
+--
 -- Name: index_messages_on_chat_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2279,6 +2334,13 @@ CREATE INDEX index_messages_on_chat_and_tool_call_id ON public.messages USING bt
 --
 
 CREATE INDEX index_messages_on_chat_id ON public.messages USING btree (chat_id);
+
+
+--
+-- Name: index_messages_on_chat_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_chat_id_and_created_at ON public.messages USING btree (chat_id, created_at);
 
 
 --
@@ -2335,6 +2397,13 @@ CREATE INDEX index_messages_on_organization_id_and_user_id ON public.messages US
 --
 
 CREATE INDEX index_messages_on_role ON public.messages USING btree (role);
+
+
+--
+-- Name: index_messages_on_template_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_template_type ON public.messages USING btree (template_type);
 
 
 --
@@ -2985,6 +3054,14 @@ ALTER TABLE ONLY public.recovery_contexts
 
 
 --
+-- Name: message_feedbacks fk_rails_54dd88c416; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_54dd88c416 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: messages fk_rails_552873cb52; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2998,6 +3075,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.organization_memberships
     ADD CONSTRAINT fk_rails_57cf70d280 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: message_feedbacks fk_rails_588822f63b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_588822f63b FOREIGN KEY (chat_id) REFERENCES public.chats(id);
 
 
 --
@@ -3070,6 +3155,14 @@ ALTER TABLE ONLY public.list_items
 
 ALTER TABLE ONLY public.chats
     ADD CONSTRAINT fk_rails_81b9fd7c23 FOREIGN KEY (team_id) REFERENCES public.teams(id);
+
+
+--
+-- Name: message_feedbacks fk_rails_84df82fe83; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_84df82fe83 FOREIGN KEY (message_id) REFERENCES public.messages(id);
 
 
 --
@@ -3199,6 +3292,8 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208120001'),
+('20251208120000'),
 ('20251208050101'),
 ('20251208050100'),
 ('20251208050000'),

@@ -72,6 +72,20 @@ Rails.application.routes.draw do
   # Search routes
   get "search", to: "search#index", as: :search
 
+  # Chat routes - unified chat system
+  resources :chats do
+    member do
+      patch :archive
+      patch :restore
+    end
+
+    # Create message endpoint
+    post :create_message, action: :create_message, on: :member
+  end
+
+  # Message feedback routes
+  resources :message_feedbacks, only: [:create], path: "chats/:chat_id/messages/:message_id/feedbacks"
+
   # Lists
   resources :lists do
     member do

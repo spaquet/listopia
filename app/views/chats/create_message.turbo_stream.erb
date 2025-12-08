@@ -1,0 +1,37 @@
+<!-- app/views/chats/create_message.turbo_stream.erb
+     Turbo Stream response for submitting a message to chat
+     Appends user message and assistant response to message container
+-->
+
+<% if @user_message.present? %>
+  <!-- Append user message -->
+  <%= turbo_stream.append("unified-chat [data-unified-chat-target='messagesContainer']") do %>
+    <%= render "shared/chat_message", message: @user_message, chat_context: @chat_context %>
+  <% end %>
+
+  <!-- Append assistant response if present -->
+  <% if @assistant_message.present? %>
+    <%= turbo_stream.append("unified-chat [data-unified-chat-target='messagesContainer']") do %>
+      <%= render "shared/chat_message", message: @assistant_message, chat_context: @chat_context %>
+    <% end %>
+  <% end %>
+
+  <!-- Clear the input field and restore focus -->
+  <%= turbo_stream.update("unified-chat [data-unified-chat-target='messageInput']") do %>
+    <input type="text"
+           name="content"
+           placeholder="Type a message or command (try /search, /help)..."
+           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+           data-unified-chat-target="messageInput"
+           autocomplete="off">
+  <% end %>
+
+  <!-- Auto-scroll to bottom -->
+  <script>
+    const container = document.querySelector('[data-unified-chat-target="messagesContainer"]');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+    document.querySelector('[data-unified-chat-target="messageInput"]').focus();
+  </script>
+<% end %>

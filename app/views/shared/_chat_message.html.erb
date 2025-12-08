@@ -1,0 +1,141 @@
+<!-- app/views/shared/_chat_message.html.erb
+     Unified chat message rendering with template support
+     Handles both regular markdown messages and templated messages
+-->
+
+<div class="chat-message <%= message.role %> mb-4"
+     data-message-id="<%= message.id %>"
+     id="message-<%= message.id %>">
+
+  <div class="flex <%= message.user_message? ? 'justify-end' : 'justify-start' %>">
+    <!-- Message Container -->
+    <div class="<%= message_bubble_classes(message) %>">
+      <!-- Message Content -->
+      <% if message.template_type.present? %>
+        <!-- Render template if present -->
+        <%= render "message_templates/#{message.template_type}",
+                   data: message.metadata["template_data"],
+                   message: message %>
+      <% else %>
+        <!-- Fall back to markdown rendering -->
+        <div class="message-content prose prose-sm max-w-none">
+          <%= render_markdown(message.content) %>
+        </div>
+      <% end %>
+
+      <!-- RAG Sources (if present) -->
+      <% if message.metadata["rag_sources"].present? && message.assistant_message? %>
+        <div class="mt-3 pt-3 border-t border-gray-300 border-opacity-30">
+          <%= render "message_templates/rag_sources",
+                     sources: message.metadata["rag_sources"] %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Message Footer (Rating, timestamp, etc.) -->
+  <% if message.assistant_message? %>
+    <div class="flex justify-start mt-2 text-xs text-gray-500">
+      <div class="ml-2 flex items-center gap-2">
+        <!-- Timestamp -->
+        <span><%= time_ago_in_words(message.created_at) %> ago</span>
+
+        <!-- Message Rating Buttons -->
+        <div class="flex items-center gap-1 border-l border-gray-300 border-opacity-30 pl-2"
+             data-controller="message-rating"
+             data-message-id="<%= message.id %>"
+             data-chat-id="<%= chat_context&.chat&.id %>">
+
+          <button class="hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50"
+                  data-action="message-rating#rate"
+                  data-rating="helpful"
+                  title="Helpful">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.646 7.23a2 2 0 01-1.788 1.106H7a2 2 0 01-2-2V9a6 6 0 0112-3z"></path>
+            </svg>
+          </button>
+
+          <button class="hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50"
+                  data-action="message-rating#rate"
+                  data-rating="unhelpful"
+                  title="Unhelpful">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.646-7.23a2 2 0 011.788-1.106H17a2 2 0 012 2v7a6 6 0 01-12 3z"></path>
+            </svg>
+          </button>
+
+          <!-- Report as harmful -->
+          <button class="hover:text-orange-600 transition-colors p-1 rounded hover:bg-orange-50"
+                  data-action="click->message-rating#showReportModal"
+                  title="Report harmful content">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  /* Message bubble styling based on role */
+  .chat-message.user .message-content {
+    @apply text-white;
+  }
+
+  .chat-message.assistant .message-content {
+    @apply text-gray-900;
+  }
+
+  /* Code block styling inside messages */
+  .message-content pre {
+    @apply bg-gray-900 text-gray-100 p-3 rounded-lg text-xs overflow-x-auto;
+  }
+
+  .message-content code {
+    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .message-content pre code {
+    @apply bg-transparent p-0;
+  }
+
+  /* Link styling */
+  .message-content a {
+    @apply text-blue-600 hover:underline;
+  }
+
+  .chat-message.user .message-content a {
+    @apply text-blue-100 hover:underline;
+  }
+
+  /* List styling */
+  .message-content ul,
+  .message-content ol {
+    @apply ml-4 my-2;
+  }
+
+  .message-content li {
+    @apply my-1;
+  }
+
+  /* Table styling */
+  .message-content table {
+    @apply border-collapse w-full text-sm my-2;
+  }
+
+  .message-content th,
+  .message-content td {
+    @apply border border-gray-300 px-2 py-1;
+  }
+
+  .message-content th {
+    @apply bg-gray-100 font-semibold;
+  }
+
+  /* Blockquote styling */
+  .message-content blockquote {
+    @apply border-l-4 border-gray-300 pl-4 my-2 text-gray-600;
+  }
+</style>

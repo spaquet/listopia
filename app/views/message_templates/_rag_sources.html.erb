@@ -1,0 +1,43 @@
+<!-- app/views/message_templates/_rag_sources.html.erb
+     Template for displaying RAG sources used in response
+-->
+
+<div class="text-xs space-y-1">
+  <p class="font-semibold text-gray-700 mb-2">📚 Sources:</p>
+
+  <% if sources.present? %>
+    <% sources.each_with_index do |source, idx| %>
+      <div class="flex items-start gap-2 text-gray-600">
+        <span class="text-gray-500 flex-shrink-0">[<%= idx + 1 %>]</span>
+
+        <div class="flex-1 min-w-0">
+          <!-- Source Title -->
+          <% if source[:url].present? %>
+            <a href="<%= source[:url] %>"
+               class="text-blue-600 hover:text-blue-700 hover:underline truncate"
+               target="_blank"
+               rel="noopener noreferrer">
+              <%= source[:title] || source[:name] || "Untitled" %>
+            </a>
+          <% else %>
+            <span><%= source[:title] || source[:name] || "Untitled" %></span>
+          <% end %>
+
+          <!-- Source Info -->
+          <% if source[:type].present? || source[:score].present? %>
+            <span class="text-gray-500 ml-1">
+              <% if source[:type].present? %>
+                • <%= source[:type] %>
+              <% end %>
+              <% if source[:score].present? %>
+                • Relevance: <%= (source[:score] * 100).round %>%
+              <% end %>
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <p class="text-gray-500 italic">No sources available</p>
+  <% end %>
+</div>

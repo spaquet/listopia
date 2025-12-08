@@ -94,6 +94,11 @@ class User < ApplicationRecord
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
   has_one :notification_settings, class_name: "NotificationSetting", dependent: :destroy
 
+  # Chat associations
+  has_many :chats, dependent: :destroy
+  has_many :messages, dependent: :destroy
+  has_many :message_feedbacks, dependent: :destroy
+
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true

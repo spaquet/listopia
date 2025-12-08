@@ -1,0 +1,11 @@
+<!-- app/views/chats/create.turbo_stream.erb
+     Turbo Stream response for creating a new chat
+     Replaces the chat panel with a new empty chat
+-->
+
+<%= turbo_stream.replace("unified-chat") do %>
+  <%= render "chat/unified_chat",
+             chat: @chat,
+             context: @chat_context,
+             message_history: @messages %>
+<% end %>

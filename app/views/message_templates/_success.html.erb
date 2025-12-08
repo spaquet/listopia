@@ -1,0 +1,38 @@
+<!-- app/views/message_templates/_success.html.erb
+     Template for displaying success messages
+-->
+
+<% success_data = data %>
+<div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+  <div class="flex items-start gap-3">
+    <!-- Icon -->
+    <div class="text-xl flex-shrink-0">✅</div>
+
+    <!-- Content -->
+    <div class="flex-1">
+      <h3 class="font-semibold text-green-900">Success</h3>
+
+      <!-- Message -->
+      <p class="text-sm text-green-800 mt-1">
+        <%= success_data[:message] %>
+      </p>
+
+      <!-- Details -->
+      <% if success_data[:details].present? %>
+        <p class="text-sm text-green-700 mt-2">
+          <%= success_data[:details] %>
+        </p>
+      <% end %>
+
+      <!-- Action Button -->
+      <% if success_data[:action_url].present? && success_data[:action_text].present? %>
+        <div class="mt-3">
+          <a href="<%= success_data[:action_url] %>"
+             class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors">
+            <%= success_data[:action_text] %>
+          </a>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

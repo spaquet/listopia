@@ -58,9 +58,14 @@ gem "positioning"
 
 # AI/LLM Integration
 gem "ruby_llm"
+gem "neighbor"
 
 # JSON processing for MCP responses
 gem "multi_json"
+
+# Markdown rendering with syntax highlighting
+gem "redcarpet"
+gem "rouge"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

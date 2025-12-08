@@ -1,7 +1,7 @@
 class AddEmbeddingVectors < ActiveRecord::Migration[8.0]
   def change
     # Enable pgvector extension
-    enable_extension 'vector'
+    enable_extension 'vector' unless extension_enabled?('vector')
 
     # ===== Lists =====
     # Note: pgvector 'vector' type is fixed at 1536 dimensions

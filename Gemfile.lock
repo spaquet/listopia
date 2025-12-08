@@ -242,6 +242,8 @@ GEM
     msgpack (1.8.0)
     multi_json (1.18.0)
     multipart-post (2.4.1)
+    neighbor (0.6.0)
+      activerecord (>= 7.1)
     net-http (0.8.0)
       uri (>= 0.11.1)
     net-imap (0.5.12)
@@ -361,11 +363,13 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
+    redcarpet (3.6.1)
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
     rolify (6.0.1)
+    rouge (4.6.1)
     rspec-core (3.13.6)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.5)
@@ -540,6 +544,7 @@ DEPENDENCIES
   letter_opener
   logidze
   multi_json
+  neighbor
   noticed
   pagy
   pg (~> 1.6)
@@ -550,7 +555,9 @@ DEPENDENCIES
   pundit
   rails (~> 8.1.0)
   rails-controller-testing
+  redcarpet
   rolify
+  rouge
   rspec-rails
   rspec-retry
   rubocop-rails-omakase

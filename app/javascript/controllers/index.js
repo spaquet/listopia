@@ -7,12 +7,6 @@ import { application } from "./application"
 import AutoSaveController from "./auto_save_controller"
 application.register("auto-save", AutoSaveController)
 
-import ChatController from "./chat_controller"
-application.register("chat", ChatController)
-
-import ChatKeyboardController from "./chat_keyboard_controller"
-application.register("chat-keyboard", ChatKeyboardController)
-
 import ClipboardController from "./clipboard_controller"
 application.register("clipboard", ClipboardController)
 
@@ -27,12 +21,6 @@ application.register("custom-select", CustomSelectController)
 
 import DashboardActionController from "./dashboard_action_controller"
 application.register("dashboard-action", DashboardActionController)
-
-import DashboardChatInputController from "./dashboard_chat_input_controller"
-application.register("dashboard-chat-input", DashboardChatInputController)
-
-import DashboardChatScrollController from "./dashboard_chat_scroll_controller"
-application.register("dashboard-chat-scroll", DashboardChatScrollController)
 
 import DateCalculatorController from "./date_calculator_controller"
 application.register("date-calculator", DateCalculatorController)
@@ -67,6 +55,9 @@ application.register("markdown", MarkdownController)
 import MarkdownMessageController from "./markdown_message_controller"
 application.register("markdown-message", MarkdownMessageController)
 
+import MessageRatingController from "./message_rating_controller"
+application.register("message-rating", MessageRatingController)
+
 import ModalController from "./modal_controller"
 application.register("modal", ModalController)
 
@@ -78,6 +69,9 @@ application.register("notification-filters", NotificationFiltersController)
 
 import NotificationsController from "./notifications_controller"
 application.register("notifications", NotificationsController)
+
+import OrganizationFilterController from "./organization_filter_controller"
+application.register("organization-filter", OrganizationFilterController)
 
 import ProgressAnimationController from "./progress_animation_controller"
 application.register("progress-animation", ProgressAnimationController)
@@ -93,6 +87,9 @@ application.register("sortable", SortableController)
 
 import ToggleController from "./toggle_controller"
 application.register("toggle", ToggleController)
+
+import UnifiedChatController from "./unified_chat_controller"
+application.register("unified-chat", UnifiedChatController)
 
 import UserFilterController from "./user_filter_controller"
 application.register("user-filter", UserFilterController)
