@@ -74,9 +74,21 @@ export default class extends Controller {
    * Insert command into input when suggestion is clicked
    */
   insertCommand(event) {
-    const command = event.target.dataset.command
-    this.messageInputTarget.value = command + " "
-    this.messageInputTarget.focus()
+    event.preventDefault()
+    const button = event.target.closest("button")
+    if (!button) return
+
+    const command = button.dataset.command
+    this.messageInputTarget.value = command
+    this.hideCommandPalette()
+
+    // Auto-submit the command after brief delay to ensure UI updates
+    setTimeout(() => {
+      this.submitMessageToServer(command).catch(error => {
+        console.error("Error executing command:", error)
+        this.showErrorNotification("Failed to execute command")
+      })
+    }, 50)
   }
 
   /**
