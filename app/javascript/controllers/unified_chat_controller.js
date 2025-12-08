@@ -8,8 +8,7 @@ export default class extends Controller {
     "messagesContainer",
     "messageForm",
     "messageInput",
-    "submitButton",
-    "commandPalette"
+    "submitButton"
   ]
 
   static values = {
@@ -211,15 +210,16 @@ Tips:
    * Show command palette
    */
   showCommandPalette(beforeCaret) {
-    // Create palette if it doesn't exist
-    if (!this.hasPaletteTarget) {
-      const palette = document.createElement("div")
+    // Get or create palette element
+    let palette = document.querySelector("[data-unified-chat-target='commandPalette']")
+
+    if (!palette) {
+      palette = document.createElement("div")
       palette.dataset.unifiedChatTarget = "commandPalette"
-      palette.className = "absolute bottom-20 left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+      palette.className = "absolute bottom-20 left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50"
       this.messageFormTarget.appendChild(palette)
     }
 
-    const palette = this.commandPaletteTarget
     palette.innerHTML = `
       <div class="p-2">
         <button class="block w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm" data-action="click->unified-chat#insertCommand" data-command="/search">
@@ -240,8 +240,9 @@ Tips:
    * Hide command palette
    */
   hideCommandPalette() {
-    if (this.hasPaletteTarget) {
-      this.commandPaletteTarget.style.display = "none"
+    const palette = document.querySelector("[data-unified-chat-target='commandPalette']")
+    if (palette) {
+      palette.style.display = "none"
     }
   }
 
@@ -396,14 +397,4 @@ Tips:
     return text.replace(/[&<>"']/g, m => map[m])
   }
 
-  /**
-   * Check if command palette target exists
-   */
-  hasPaletteTarget() {
-    try {
-      return this.commandPaletteTarget !== undefined
-    } catch {
-      return false
-    }
-  }
 }

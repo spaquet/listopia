@@ -94,11 +94,12 @@
     </div>
 
     <!-- Input Area -->
-    <div class="border-t border-gray-200 p-4 bg-gray-50">
+    <div class="border-t border-gray-200 p-4 bg-gray-50 relative">
       <%= form_with url: create_message_chat_path(chat),
                      method: :post,
                      local: true,
-                     class: "flex gap-2" do |f| %>
+                     class: "flex gap-2 relative",
+                     data: { unified_chat_target: "messageForm" } do |f| %>
         <!-- Message Input -->
         <%= f.text_field :content,
                          placeholder: "Type a message or command (try /search, /help)...",
