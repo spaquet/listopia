@@ -69,6 +69,9 @@ Rails.application.routes.draw do
   get "dashboard/focus_list", to: "dashboard#focus_list", as: :dashboard_focus_list
   post "dashboard/execute_action", to: "dashboard#execute_action", as: :dashboard_execute_action
 
+  # Search routes
+  get "search", to: "search#index", as: :search
+
 
   # Chat functionality
   namespace :chat do

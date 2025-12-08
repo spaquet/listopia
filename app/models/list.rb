@@ -54,8 +54,17 @@ class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
 
+  # Embedding & Search
+  include SearchableEmbeddable
+  include PgSearch::Model
+
   # Logidzy for auditing changes
   has_logidze
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { title: 'A', description: 'B' },
+    using: { tsearch: { prefix: true } }
 
   # Callbacks
   before_update :track_status_change
@@ -246,6 +255,14 @@ class List < ApplicationRecord
     if parent_list_id.present? && parent_list_id == id
       errors.add(:parent_list_id, "cannot be the same as the list itself")
     end
+  end
+
+  def content_changed?
+    title_changed? || description_changed?
+  end
+
+  def content_for_embedding
+    "#{title}\n\n#{description}"
   end
 
   def track_status_change

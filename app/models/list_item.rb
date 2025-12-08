@@ -57,11 +57,18 @@
 # app/models/list_item.rb
 class ListItem < ApplicationRecord
   include Turbo::Broadcastable
+  include SearchableEmbeddable
+  include PgSearch::Model
 
   attr_accessor :skip_notifications, :previous_title_value, :is_kanban_update
 
   # Logidzy for auditing changes
   has_logidze
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { title: 'A', description: 'B' },
+    using: { tsearch: { prefix: true } }
 
   # Track changes for notifications
   attribute :previous_assigned_user_id
@@ -169,6 +176,14 @@ class ListItem < ApplicationRecord
   end
 
   private
+
+  def content_changed?
+    title_changed? || description_changed?
+  end
+
+  def content_for_embedding
+    "#{title}\n\n#{description}"
+  end
 
   def validate_url_format
     return if url.blank?

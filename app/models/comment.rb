@@ -21,8 +21,17 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class Comment < ApplicationRecord
+  # Embedding & Search
+  include SearchableEmbeddable
+  include PgSearch::Model
+
   # Logidzy for auditing changes
   has_logidze
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { content: 'A' },
+    using: { tsearch: { prefix: true } }
 
   # Add role support
   resourcify
@@ -38,6 +47,14 @@ class Comment < ApplicationRecord
   after_commit :notify_mentions, on: :create
 
   private
+
+  def content_changed?
+    super
+  end
+
+  def content_for_embedding
+    content
+  end
 
   # Notify about new comment
   def notify_comment_created
