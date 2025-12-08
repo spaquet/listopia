@@ -267,8 +267,14 @@ class ChatsController < ApplicationController
     lists = policy_scope(List).where(organization_id: current_organization.id)
 
     # Apply filter if provided
-    filter = filter_arg.strip.downcase if filter_arg.present?
-    lists = lists.where(status: filter) if filter.present?
+    filter = nil
+    if filter_arg.present?
+      filter = filter_arg.strip.downcase
+      # Validate filter is a valid List status
+      if List.statuses.key?(filter)
+        lists = lists.where(status: filter)
+      end
+    end
 
     # Format for display
     template_data = {
