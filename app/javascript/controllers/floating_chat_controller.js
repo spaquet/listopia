@@ -46,6 +46,7 @@ export default class extends Controller {
 
     // Show chat container
     this.chatContainerTarget.classList.remove("hidden")
+    this.chatContainerTarget.setAttribute("aria-hidden", "false")
 
     // Focus input field
     setTimeout(() => {
@@ -54,10 +55,6 @@ export default class extends Controller {
         input.focus()
       }
     }, 100)
-
-    // Announce to screen readers
-    this.chatContainerTarget.setAttribute("aria-hidden", "false")
-    this.toggleButtonTarget.setAttribute("aria-hidden", "true")
   }
 
   // Collapse the chat window back to button
@@ -70,10 +67,10 @@ export default class extends Controller {
 
     // Hide chat container
     this.chatContainerTarget.classList.add("hidden")
-
-    // Announce to screen readers
     this.chatContainerTarget.setAttribute("aria-hidden", "true")
-    this.toggleButtonTarget.setAttribute("aria-hidden", "false")
+
+    // Return focus to toggle button
+    this.toggleButtonTarget.focus()
   }
 
   // Close on escape key
