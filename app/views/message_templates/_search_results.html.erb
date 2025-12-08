@@ -45,9 +45,6 @@
             <% if result[:owner].present? %>
               <span>👤 <%= result[:owner] %></span>
             <% end %>
-            <% if result[:created_at].present? %>
-              <span>📅 <%= time_ago_in_words(result[:created_at]) %> ago</span>
-            <% end %>
             <% if result[:item_count].present? %>
               <span>📝 <%= result[:item_count] %> items</span>
             <% end %>
