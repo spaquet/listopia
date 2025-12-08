@@ -17,6 +17,9 @@ export default class extends Controller {
   }
 
   connect() {
+    // Scroll to bottom immediately on connect
+    this.autoScrollToBottom()
+
     // Auto-focus input on connect
     setTimeout(() => this.messageInputTarget.focus(), 100)
 
