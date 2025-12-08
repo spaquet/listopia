@@ -895,7 +895,9 @@ CREATE TABLE public.chats (
     last_stable_at timestamp(6) without time zone,
     organization_id uuid,
     team_id uuid,
-    visibility character varying DEFAULT 'private'::character varying
+    visibility character varying DEFAULT 'private'::character varying,
+    focused_resource_type character varying,
+    focused_resource_id uuid
 );
 
 
@@ -1816,6 +1818,13 @@ CREATE INDEX index_board_columns_on_list_id ON public.board_columns USING btree 
 --
 
 CREATE INDEX index_chats_on_conversation_state ON public.chats USING btree (conversation_state);
+
+
+--
+-- Name: index_chats_on_focused_resource_type_and_focused_resource_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_focused_resource_type_and_focused_resource_id ON public.chats USING btree (focused_resource_type, focused_resource_id);
 
 
 --
@@ -3292,6 +3301,7 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208182655'),
 ('20251208120001'),
 ('20251208120000'),
 ('20251208050101'),
