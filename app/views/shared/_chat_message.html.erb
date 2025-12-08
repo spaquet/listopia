@@ -19,8 +19,17 @@
       <% else %>
         <!-- Fall back to markdown rendering -->
         <div class="message-content <%= message.system_message? ? 'text-sm' : 'prose prose-sm max-w-none' %>">
-          <% if message.user_message? && (has_mentions?(message) || has_references?(message)) %>
-            <%= render_message_with_mentions(message) %>
+          <% if message.user_message? %>
+            <!-- User message with command formatting -->
+            <% if message.content.start_with?("/") %>
+              <!-- Format command messages: bold command part -->
+              <% parts = message.content.split(" ", 2) %>
+              <strong><%= parts[0] %></strong><% if parts[1].present? %> <%= parts[1] %><% end %>
+            <% elsif has_mentions?(message) || has_references?(message) %>
+              <%= render_message_with_mentions(message) %>
+            <% else %>
+              <%= render_markdown(message.content) %>
+            <% end %>
           <% else %>
             <%= render_markdown(message.content) %>
           <% end %>
@@ -37,8 +46,12 @@
     </div>
   </div>
 
-  <!-- Message Footer (Rating, timestamp, etc.) -->
-  <% if message.assistant_message? %>
+  <!-- Message Footer (Timestamp and Rating) -->
+  <% if message.user_message? %>
+    <div class="flex justify-end mt-1 text-xs text-gray-400 pr-2">
+      <span><%= time_ago_in_words(message.created_at) %> ago</span>
+    </div>
+  <% elsif message.assistant_message? %>
     <div class="flex justify-start mt-2 text-xs text-gray-500">
       <div class="ml-2 flex items-center gap-2">
         <!-- Timestamp -->
@@ -88,7 +101,7 @@
 <style>
   /* Message bubble styling based on role */
   .chat-message.user .message-content {
-    @apply text-white;
+    @apply text-gray-900;
   }
 
   .chat-message.assistant .message-content {
@@ -111,10 +124,6 @@
   /* Link styling */
   .message-content a {
     @apply text-blue-600 hover:underline;
-  }
-
-  .chat-message.user .message-content a {
-    @apply text-blue-100 hover:underline;
   }
 
   /* List styling */
