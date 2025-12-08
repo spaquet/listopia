@@ -69,8 +69,6 @@ class User < ApplicationRecord
   # Core associations
   has_many :lists, dependent: :destroy
   has_many :sessions, dependent: :destroy
-  has_many :chats, dependent: :destroy
-  has_many :messages, dependent: :destroy
 
   # Organization & Team associations
   has_many :organization_memberships, dependent: :destroy

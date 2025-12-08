@@ -29,11 +29,5 @@
     <%= turbo_frame_tag "org_switcher_modal" %>
     <!-- Error Handler Notification Container -->
     <div data-error-handler-target="notification" class="hidden"></div>
-    <!-- Persistent Chat Component (only for authenticated users) -->
-    <% if user_signed_in? %>
-      <% unless controller_name == 'dashboard' && action_name == 'index' %>
-        <%= render "chat/persistent_chat" %>
-      <% end %>
-    <% end %>
   </body>
 </html>
