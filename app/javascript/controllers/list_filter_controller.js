@@ -16,16 +16,12 @@ export default class extends Controller {
     console.log("[ListFilter] Controller connected v1.0")
     this.debounceTimeout = null
     this.updateClearButtonVisibility()
-    
-    // Restore focus to search input after Turbo Stream update
-    document.addEventListener("turbo:load", this.restoreSearchFocus.bind(this))
   }
 
   disconnect() {
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout)
     }
-    document.removeEventListener("turbo:load", this.restoreSearchFocus.bind(this))
   }
 
   // Handle search input with debounce
@@ -134,22 +130,5 @@ export default class extends Controller {
   // Show loading indicator with subtle animation
   showLoadingIndicator() {
     console.log("[ListFilter] Loading...")
-  }
-
-  // Restore focus to search input after Turbo Stream update completes
-  restoreSearchFocus(event) {
-    // Check if search input exists and should have focus
-    if (this.hasSearchInputTarget && this.searchInputTarget.value.length > 0) {
-      // Delay slightly to ensure DOM is fully updated
-      setTimeout(() => {
-        this.searchInputTarget.focus()
-        // Move cursor to end of input
-        this.searchInputTarget.setSelectionRange(
-          this.searchInputTarget.value.length,
-          this.searchInputTarget.value.length
-        )
-        console.log("[ListFilter] Focus restored to search input")
-      }, 10)
-    }
   }
 }
