@@ -51,8 +51,6 @@ class Comment < ApplicationRecord
   after_commit :notify_comment_created, on: :create
   after_commit :notify_mentions, on: :create
 
-  private
-
   def content_changed?
     super
   end
@@ -60,6 +58,8 @@ class Comment < ApplicationRecord
   def content_for_embedding
     content
   end
+
+  private
 
   # Notify about new comment
   def notify_comment_created

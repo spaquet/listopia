@@ -180,8 +180,6 @@ class ListItem < ApplicationRecord
     list.collaboratable_by?(user) || assigned_user == user
   end
 
-  private
-
   def content_changed?
     title_changed? || description_changed?
   end
@@ -189,6 +187,8 @@ class ListItem < ApplicationRecord
   def content_for_embedding
     "#{title}\n\n#{description}"
   end
+
+  private
 
   def validate_url_format
     return if url.blank?

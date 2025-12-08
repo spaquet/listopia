@@ -4,18 +4,18 @@
 
 <% search_data = data %>
 <div class="space-y-3">
-  <!-- Results Header -->
-  <div class="flex items-center justify-between">
-    <h3 class="font-semibold text-gray-900">
-      Found <%= search_data[:total_count] || 0 %> result<%= search_data[:total_count] != 1 ? "s" : "" %>
-    </h3>
-    <% if search_data[:query].present? %>
-      <span class="text-sm text-gray-500 italic">for "<%= search_data[:query] %>"</span>
-    <% end %>
-  </div>
-
   <!-- Results List -->
   <% if search_data[:results].present? && search_data[:results].length > 0 %>
+    <!-- Results Header -->
+    <div class="mb-2">
+      <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+        <%= search_data[:total_count] || 0 %> result<%= search_data[:total_count] != 1 ? "s" : "" %>
+        <% if search_data[:query].present? %>
+          for "<%= search_data[:query] %>"
+        <% end %>
+      </h4>
+    </div>
+
     <div class="space-y-2">
       <% search_data[:results].each do |result| %>
         <a href="<%= result[:url] %>"
@@ -56,11 +56,17 @@
       <% end %>
     </div>
   <% else %>
-    <div class="text-center py-4 text-gray-600">
-      <p class="text-sm">No results found</p>
-      <% if search_data[:query].present? %>
-        <p class="text-xs text-gray-500 mt-1">Try a different search term</p>
-      <% end %>
+    <!-- No Results State -->
+    <div>
+      <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">No results found</h4>
+      <p class="text-sm text-gray-600">
+        <% if search_data[:query].present? %>
+          No items match your search for "<span class="font-semibold text-gray-700"><%= search_data[:query] %></span>"
+        <% else %>
+          Try searching for something
+        <% end %>
+      </p>
+      <p class="text-xs text-gray-500 mt-2">Tip: Try a different term or use /browse to explore</p>
     </div>
   <% end %>
 </div>

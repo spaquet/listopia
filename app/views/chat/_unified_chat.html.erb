@@ -38,7 +38,8 @@
     </div>
 
     <!-- Messages Container -->
-    <div class="flex-1 overflow-y-auto p-3 space-y-3"
+    <div id="chat-messages-<%= chat.id %>"
+         class="flex-1 overflow-y-auto p-3 space-y-3"
          data-unified-chat-target="messagesContainer">
 
       <% if message_history.blank? %>

@@ -31,7 +31,10 @@ class SearchService < ApplicationService
 
     @models.each do |model|
       if @use_vector && has_embedding?(model)
-        results.concat(vector_search(model))
+        vector_results = vector_search(model)
+        results.concat(vector_results)
+        # If vector search returns no results, fall back to keyword search
+        results.concat(keyword_search(model)) if vector_results.empty?
       else
         results.concat(keyword_search(model))
       end

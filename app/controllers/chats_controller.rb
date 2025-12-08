@@ -200,7 +200,8 @@ class ChatsController < ApplicationController
     # Check if message is a command
     if user_message.content.start_with?("/")
       handle_command(user_message)
-      nil  # Commands don't return a message
+      # Return the last created message (the command response)
+      @chat.messages.order(:created_at).last
     else
       # For now, just acknowledge the message
       # In full implementation, this would call RubyLLM to generate a response
@@ -244,8 +245,18 @@ class ChatsController < ApplicationController
       return
     end
 
-    # Perform search
-    results = Search::Service.new(current_user, current_organization).search(query)
+    # Perform search using SearchService
+    search_result = SearchService.new(query: query, user: current_user).call
+
+    if search_result.failure?
+      Message.create_system(
+        chat: @chat,
+        content: "Search failed: #{search_result.errors.first}"
+      )
+      return
+    end
+
+    results = search_result.data || []
 
     # Create search results template message
     template_data = {
@@ -343,16 +354,73 @@ class ChatsController < ApplicationController
     end
   end
 
-  def format_search_result(result)
+  def format_search_result(record)
+    created_at_str = begin
+      record.created_at.strftime("%b %d, %Y")
+    rescue
+      "Unknown"
+    end
+
     {
-      title: result[:title],
-      description: result[:description],
-      url: result[:url],
-      type: result[:type],
-      owner: result[:owner],
-      created_at: result[:created_at],
-      item_count: result[:item_count]
+      id: record.id,
+      type: record.class.name,
+      title: extract_search_title(record),
+      description: extract_search_description(record),
+      url: search_result_url(record),
+      created_at: created_at_str
     }
+  end
+
+  def extract_search_title(record)
+    case record
+    when List
+      record.title
+    when ListItem
+      record.title
+    when Comment
+      "Comment by #{record.user.name}"
+    when ActsAsTaggableOn::Tag
+      record.name
+    else
+      "Unknown"
+    end
+  end
+
+  def extract_search_description(record)
+    case record
+    when List
+      record.description
+    when ListItem
+      record.description
+    when Comment
+      record.content
+    when ActsAsTaggableOn::Tag
+      nil
+    else
+      nil
+    end
+  end
+
+  def search_result_url(record)
+    case record
+    when List
+      list_path(record)
+    when ListItem
+      list_item_path(record.list, record)
+    when Comment
+      case record.commentable
+      when List
+        list_path(record.commentable)
+      when ListItem
+        list_item_path(record.commentable.list, record.commentable)
+      else
+        root_path
+      end
+    when ActsAsTaggableOn::Tag
+      root_path
+    else
+      root_path
+    end
   end
 
   # Create security/moderation log entry

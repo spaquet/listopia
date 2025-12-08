@@ -74,10 +74,18 @@ export default class extends Controller {
     this.messageInputTarget.value = command
     this.hideCommandPalette()
 
-    // Auto-submit the form after brief delay to ensure UI updates
-    setTimeout(() => {
-      this.messageFormTarget.requestSubmit()
-    }, 50)
+    // Commands that auto-submit (don't require parameters)
+    const autoSubmitCommands = ['/help', '/clear', '/new']
+
+    // Auto-submit only for commands that don't need parameters
+    if (autoSubmitCommands.includes(command)) {
+      setTimeout(() => {
+        this.messageFormTarget.requestSubmit()
+      }, 50)
+    } else {
+      // For /search and /browse, focus input and let user add parameters
+      this.messageInputTarget.focus()
+    }
   }
 
 
@@ -168,9 +176,18 @@ export default class extends Controller {
       throw new Error(`Failed to submit message: ${response.statusText}`)
     }
 
-    // Response should be a Turbo Stream
-    const text = await response.text()
-    // Turbo will automatically process the stream
+    // Get the response text and process it as a Turbo Stream
+    const responseText = await response.text()
+
+    // Parse the response and manually process turbo-stream elements
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(responseText, 'text/html')
+    const streams = doc.querySelectorAll('turbo-stream')
+
+    // Append each stream element to the document for Turbo to process
+    streams.forEach((stream) => {
+      document.body.appendChild(stream)
+    })
   }
 
   /**

@@ -254,20 +254,20 @@ class List < ApplicationRecord
     update_column(:organization_id, team.organization_id) if organization_id != team.organization_id
   end
 
-  private
-
-  def cannot_be_parent_of_itself
-    if parent_list_id.present? && parent_list_id == id
-      errors.add(:parent_list_id, "cannot be the same as the list itself")
-    end
-  end
-
   def content_changed?
     title_changed? || description_changed?
   end
 
   def content_for_embedding
     "#{title}\n\n#{description}"
+  end
+
+  private
+
+  def cannot_be_parent_of_itself
+    if parent_list_id.present? && parent_list_id == id
+      errors.add(:parent_list_id, "cannot be the same as the list itself")
+    end
   end
 
   def track_status_change
