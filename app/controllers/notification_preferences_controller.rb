@@ -51,5 +51,4 @@ class NotificationPreferencesController < ApplicationController
       @preferences.update(update_params) if update_params.any?
     end
   end
-
 end
