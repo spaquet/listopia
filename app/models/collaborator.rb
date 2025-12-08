@@ -46,6 +46,9 @@ class Collaborator < ApplicationRecord
   validates :permission, presence: true
   validate :user_must_be_in_same_organization
 
+  # Callbacks
+  after_commit :notify_permission_changed, on: :update, if: :saved_change_to_permission?
+
   # Scopes
   scope :readers, -> { where(permission: :read) }
   scope :writers, -> { where(permission: :write) }
@@ -70,5 +73,13 @@ class Collaborator < ApplicationRecord
     return if user&.in_organization?(organization)
 
     errors.add(:user, "must be in the same organization as the resource")
+  end
+
+  def notify_permission_changed
+    return unless Current.user
+
+    old_permission = permission_before_last_save
+    NotificationService.new(Current.user)
+                      .notify_permission_changed(self, old_permission)
   end
 end

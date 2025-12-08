@@ -32,4 +32,26 @@ class Comment < ApplicationRecord
 
   validates :content, presence: true, length: { minimum: 1, maximum: 5000 }
   validates :user_id, presence: true
+
+  # Callbacks
+  after_commit :notify_comment_created, on: :create
+  after_commit :notify_mentions, on: :create
+
+  private
+
+  # Notify about new comment
+  def notify_comment_created
+    return unless user && commentable
+
+    NotificationService.new(user)
+                      .notify_item_commented(self)
+  end
+
+  # Notify mentioned users
+  def notify_mentions
+    return unless user && commentable
+
+    NotificationService.new(user)
+                      .notify_mentions(self)
+  end
 end

@@ -88,6 +88,168 @@ class NotificationService < ApplicationService
     success(message: "Notifications marked as seen")
   end
 
+  # Notify when user is assigned to an item
+  def notify_item_assigned(item, assignee)
+    return unless item&.list && @current_user && assignee
+
+    # Only notify the assigned user
+    ListItemAssignmentNotifier.with(
+      actor_id: @current_user.id,
+      list_id: item.list.id,
+      item_id: item.id,
+      item_title: item.title
+    ).deliver([ assignee ])
+
+    success(message: "Assignment notification sent")
+  end
+
+  # Notify about a new comment
+  def notify_item_commented(comment)
+    return unless comment && @current_user
+
+    commentable = comment.commentable
+    list = case commentable
+    when ListItem
+      commentable.list
+    when List
+      commentable
+    else
+      return
+    end
+
+    return unless list
+
+    # Get all relevant recipients
+    recipients = comment_notification_recipients(commentable, list)
+    return if recipients.empty?
+
+    ListItemCommentNotifier.with(
+      actor_id: @current_user.id,
+      list_id: list.id,
+      commentable_id: commentable.id,
+      commentable_type: commentable.class.name,
+      commentable_title: commentable.title,
+      comment_preview: comment.content,
+      comment_id: comment.id
+    ).deliver(recipients)
+
+    success(message: "Comment notification sent")
+  end
+
+  # Notify when item is completed
+  def notify_item_completed(item)
+    return unless item&.list && @current_user
+
+    recipients = list_notification_recipients(item.list)
+    return if recipients.empty?
+
+    ListItemCompletionNotifier.with(
+      actor_id: @current_user.id,
+      list_id: item.list.id,
+      item_id: item.id,
+      item_title: item.title
+    ).deliver(recipients)
+
+    success(message: "Item completion notification sent")
+  end
+
+  # Notify when item priority changes
+  def notify_priority_changed(item, previous_priority)
+    return unless item&.list && @current_user && item.priority_high? || item.priority_urgent?
+
+    recipients = list_notification_recipients(item.list)
+    return if recipients.empty?
+
+    ListItemPriorityChangedNotifier.with(
+      actor_id: @current_user.id,
+      list_id: item.list.id,
+      item_id: item.id,
+      item_title: item.title,
+      previous_priority: previous_priority,
+      new_priority: item.priority
+    ).deliver(recipients)
+
+    success(message: "Priority change notification sent")
+  end
+
+  # Notify when collaborator permission changes
+  def notify_permission_changed(collaborator, old_permission)
+    return unless collaborator && collaborator.user
+
+    ListPermissionChangedNotifier.with(
+      actor_id: @current_user.id,
+      list_id: collaborator.collaboratable.id,
+      old_permission: old_permission,
+      new_permission: collaborator.permission
+    ).deliver([ collaborator.user ])
+
+    success(message: "Permission change notification sent")
+  end
+
+  # Notify about team invitation
+  def notify_team_invited(invitation)
+    return unless invitation && invitation.team
+
+    recipient = invitation.user || User.find_by(email: invitation.email)
+    return unless recipient
+
+    TeamInvitationNotifier.with(
+      actor_id: @current_user&.id,
+      team_name: invitation.team.name,
+      organization_id: invitation.team.organization_id
+    ).deliver([ recipient ])
+
+    success(message: "Team invitation notification sent")
+  end
+
+  # Notify when list is archived
+  def notify_list_archived(list)
+    return unless list && @current_user
+
+    recipients = list_notification_recipients(list)
+    return if recipients.empty?
+
+    ListArchivedNotifier.with(
+      actor_id: @current_user.id,
+      list_id: list.id,
+      list_title: list.title,
+      organization_id: list.organization_id
+    ).deliver(recipients)
+
+    success(message: "List archived notification sent")
+  end
+
+  # Notify users mentioned in a comment
+  def notify_mentions(comment)
+    return unless comment && @current_user
+
+    mentioned_users = extract_mentions(comment.content)
+    return if mentioned_users.empty?
+
+    commentable = comment.commentable
+    list = case commentable
+    when ListItem
+      commentable.list
+    when List
+      commentable
+    else
+      return
+    end
+
+    return unless list
+
+    MentionNotifier.with(
+      actor_id: @current_user.id,
+      list_id: list.id,
+      commentable_id: commentable.id,
+      commentable_type: commentable.class.name,
+      commentable_title: commentable.title,
+      comment_id: comment.id
+    ).deliver(mentioned_users)
+
+    success(message: "Mention notifications sent")
+  end
+
   # Get notification stats for current user
   def notification_stats
     {
@@ -98,6 +260,45 @@ class NotificationService < ApplicationService
   end
 
   private
+
+  def comment_notification_recipients(commentable, list)
+    recipients = []
+
+    case commentable
+    when ListItem
+      # Notify the item assignee if applicable
+      recipients << commentable.assigned_user if commentable.assigned_user && commentable.assigned_user != @current_user
+
+      # Notify item collaborators
+      item_collaborators = commentable.collaborator_users.where.not(id: @current_user.id)
+      recipients.concat(item_collaborators)
+    when List
+      # Notify list owner
+      recipients << list.owner if list.owner != @current_user
+
+      # Notify list collaborators
+      collaborators = list.collaborators.where.not(id: @current_user.id)
+      recipients.concat(collaborators.map(&:user))
+    end
+
+    recipients.uniq.compact
+  end
+
+  def extract_mentions(text)
+    return [] unless text.present?
+
+    # Extract @username mentions from the text
+    mention_pattern = /@(\w+)/
+    mentioned_handles = text.scan(mention_pattern).flatten.uniq
+
+    # Find users by email or name
+    mentioned_users = mentioned_handles.flat_map do |handle|
+      User.where("email ILIKE ? OR CONCAT(first_name, ' ', last_name) ILIKE ?", "%#{handle}%", "%#{handle}%")
+           .where.not(id: @current_user.id)
+    end.uniq
+
+    mentioned_users
+  end
 
   def list_notification_recipients(list)
     # Get all users who should receive notifications for this list

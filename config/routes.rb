@@ -150,6 +150,9 @@ Rails.application.routes.draw do
     end
   end
 
+  # Notification preferences
+  resource :notification_preferences, only: [ :show, :update ]
+
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 

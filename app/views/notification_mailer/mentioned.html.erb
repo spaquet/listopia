@@ -1,0 +1,19 @@
+<div class="email-header">
+  <h1 style="margin: 0; color: #ffffff; font-size: 20px;">You Were Mentioned</h1>
+</div>
+
+<div class="email-body">
+  <p>Hi <%= @user.name %>,</p>
+
+  <p><strong><%= @actor_name %></strong> mentioned you in a comment on <strong><%= @commentable_title %></strong>:</p>
+
+  <div style="background-color: #f3f4f6; padding: 16px; border-left: 4px solid #F59E0B; margin: 20px 0; border-radius: 4px;">
+    <p style="margin: 0; color: #1F2937;">
+      <em><%= @comment_preview %></em>
+    </p>
+  </div>
+
+  <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+    You were mentioned in a comment. Check out what was said!
+  </p>
+</div>

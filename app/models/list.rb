@@ -65,6 +65,7 @@ class List < ApplicationRecord
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
   after_commit :notify_status_change, on: :update, if: :saved_change_to_status?
+  after_commit :notify_list_archived, on: :update, if: :status_archived?
 
   # Associations
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
@@ -259,6 +260,12 @@ class List < ApplicationRecord
 
   def notify_title_change
     NotificationService.new.notify_list_title_change(self)
+  end
+
+  def notify_list_archived
+    return unless Current.user && status_archived?
+
+    NotificationService.new(Current.user).notify_list_archived(self)
   end
 
   def create_default_board_columns

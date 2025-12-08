@@ -1,0 +1,23 @@
+<div class="email-header">
+  <h1 style="margin: 0; color: #ffffff; font-size: 20px;">List Archived</h1>
+</div>
+
+<div class="email-body">
+  <p>Hi <%= @user.name %>,</p>
+
+  <p><strong><%= @actor_name %></strong> archived a list you collaborate on:</p>
+
+  <div style="background-color: #f3f4f6; padding: 16px; border-left: 4px solid #6B7280; margin: 20px 0; border-radius: 4px;">
+    <h3 style="margin: 0; color: #1F2937;">
+      <%= @list_title %>
+    </h3>
+  </div>
+
+  <p style="color: #6B7280; font-size: 14px;">
+    This list is now archived and no longer active. You can still access it from your archive if needed, but it won't appear in your active lists.
+  </p>
+
+  <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+    You received this email because you were a collaborator on this list.
+  </p>
+</div>

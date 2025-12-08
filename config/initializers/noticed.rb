@@ -34,4 +34,21 @@ Rails.application.config.to_prepare do
       update!(seen_at: Time.current) unless seen?
     end
   end
+
+  # Configure email delivery for notifications
+  Noticed::Event.class_eval do
+    # Override email delivery to respect user preferences
+    def self.deliver_by_email_to(users, **params)
+      notifier = with(**params)
+
+      # Filter users who want email notifications for this type
+      email_recipients = Array(users).select do |user|
+        user.wants_notification?(notifier.notification_type, :email)
+      end
+
+      if email_recipients.any?
+        notifier.deliver_by(:email, email_recipients)
+      end
+    end
+  end
 end

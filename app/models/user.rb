@@ -155,6 +155,14 @@ class User < ApplicationRecord
     notifications.where(seen_at: nil).count
   end
 
+  def wants_digest_notifications?(frequency = :daily)
+    settings = notification_preferences
+    return false if settings.notifications_disabled?
+
+    digest_prefs = settings.type_preferences&.dig("digest") || {}
+    digest_prefs["frequency"] == frequency.to_s
+  end
+
   # Email verification methods
   def email_verified?
     email_verified_at.present?

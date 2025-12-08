@@ -63,6 +63,10 @@ class ListItem < ApplicationRecord
   # Logidzy for auditing changes
   has_logidze
 
+  # Track changes for notifications
+  attribute :previous_assigned_user_id
+  attribute :previous_priority_value
+
   # Associations
   belongs_to :list, counter_cache: true
   belongs_to :assigned_user, class_name: "User", optional: true
@@ -136,9 +140,12 @@ class ListItem < ApplicationRecord
 
   # Callbacks - Use after_commit to avoid issues during transactions
   before_destroy :notify_item_destroyed
-  before_save :track_status_change, :track_title_change, :sync_status_with_board_column
+  before_save :track_status_change, :track_title_change, :track_assignment_change, :track_priority_change, :sync_status_with_board_column
   after_commit :notify_item_created, on: :create
   after_commit :notify_item_updated, on: :update
+  after_commit :notify_item_assigned, on: :update, if: :assignment_changed?
+  after_commit :notify_priority_changed, on: :update, if: :priority_changed?
+  after_commit :notify_item_completed, on: :update, if: :completion_changed?
   after_create :assign_default_board_column
 
   # Methods
@@ -301,5 +308,55 @@ class ListItem < ApplicationRecord
 
     default_column = list.board_columns.find_by(name: "To Do")
     update_column(:board_column_id, default_column&.id) if default_column
+  end
+
+  # Track assignment changes for notifications
+  def track_assignment_change
+    if assigned_user_id_changed?
+      @previous_assigned_user_id = assigned_user_id_was
+    end
+  end
+
+  def assignment_changed?
+    assigned_user_id_changed? && assigned_user.present?
+  end
+
+  # Track priority changes for notifications
+  def track_priority_change
+    if priority_changed?
+      @previous_priority_value = priority_was
+    end
+  end
+
+  def priority_changed?
+    super && (priority_high? || priority_urgent?)
+  end
+
+  def completion_changed?
+    status_completed? && @previous_status_value == "pending" || @previous_status_value == "in_progress"
+  end
+
+  # Notify when item is assigned
+  def notify_item_assigned
+    return if skip_notifications || !Current.user || !assigned_user
+
+    NotificationService.new(Current.user)
+                      .notify_item_assigned(self, assigned_user)
+  end
+
+  # Notify when priority changes to high/urgent
+  def notify_priority_changed
+    return if skip_notifications || !Current.user || !(@previous_priority_value.present?)
+
+    NotificationService.new(Current.user)
+                      .notify_priority_changed(self, @previous_priority_value)
+  end
+
+  # Notify when item is completed
+  def notify_item_completed
+    return if skip_notifications || !Current.user
+
+    NotificationService.new(Current.user)
+                      .notify_item_completed(self)
   end
 end

@@ -1,0 +1,148 @@
+<div class="max-w-4xl mx-auto py-10 px-4">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Notification Preferences</h1>
+    <p class="text-gray-600">Manage how you receive notifications from Listopia</p>
+  </div>
+
+  <%= form_with url: notification_preferences_path, method: :patch, local: true, class: "space-y-8" do |f| %>
+    <!-- Email Settings -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Delivery Channels</h2>
+
+      <div class="space-y-4">
+        <div class="flex items-center">
+          <input type="checkbox" id="email_notifications" name="notification_preferences[email_notifications]" value="1"
+                 <%= 'checked' if @preferences.email_notifications? %> class="h-4 w-4 rounded border-gray-300">
+          <label for="email_notifications" class="ml-3 text-sm font-medium text-gray-700">
+            Email Notifications
+          </label>
+          <p class="ml-3 text-sm text-gray-500">Receive notifications via email</p>
+        </div>
+
+        <div class="flex items-center">
+          <input type="checkbox" id="push_notifications" name="notification_preferences[push_notifications]" value="1"
+                 <%= 'checked' if @preferences.push_notifications? %> class="h-4 w-4 rounded border-gray-300" disabled>
+          <label for="push_notifications" class="ml-3 text-sm font-medium text-gray-500">
+            Push Notifications
+          </label>
+          <p class="ml-3 text-sm text-gray-400">(Coming soon)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiet Hours -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Quiet Hours</h2>
+
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="quiet_hours_start" class="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+            <input type="time" id="quiet_hours_start" name="notification_preferences[quiet_hours_start]"
+                   value="<%= @preferences.quiet_hours_start&.strftime('%H:%M') %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <p class="mt-1 text-xs text-gray-500">Leave empty to disable</p>
+          </div>
+          <div>
+            <label for="quiet_hours_end" class="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+            <input type="time" id="quiet_hours_end" name="notification_preferences[quiet_hours_end]"
+                   value="<%= @preferences.quiet_hours_end&.strftime('%H:%M') %>" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          </div>
+        </div>
+
+        <div>
+          <label for="timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+          <select id="timezone" name="notification_preferences[timezone]"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <% ActiveSupport::TimeZone.all.each do |tz| %>
+              <option value="<%= tz.name %>" <%= 'selected' if @preferences.timezone == tz.name %>>
+                <%= tz.name %> (<%= tz.formatted_offset %>)
+              </option>
+            <% end %>
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Select your timezone for quiet hours</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Type Preferences -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Notification Types</h2>
+
+      <div class="space-y-4">
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="collaboration_notifications" name="notification_preferences[collaboration_notifications]" value="1"
+                   <%= 'checked' if @preferences.collaboration_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="collaboration_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Collaboration Events
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">User added/removed from lists</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="list_activity_notifications" name="notification_preferences[list_activity_notifications]" value="1"
+                   <%= 'checked' if @preferences.list_activity_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="list_activity_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              List Activity
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">List titles and updates</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="item_activity_notifications" name="notification_preferences[item_activity_notifications]" value="1"
+                   <%= 'checked' if @preferences.item_activity_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="item_activity_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Item Activity
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">Item creation, updates, and deletion</p>
+        </div>
+
+        <div class="border-b border-gray-200 pb-4">
+          <div class="flex items-center mb-2">
+            <input type="checkbox" id="status_change_notifications" name="notification_preferences[status_change_notifications]" value="1"
+                   <%= 'checked' if @preferences.status_change_notifications? %> class="h-4 w-4 rounded border-gray-300">
+            <label for="status_change_notifications" class="ml-3 text-sm font-medium text-gray-900">
+              Status Changes
+            </label>
+          </div>
+          <p class="text-sm text-gray-500 ml-7">List status changes</p>
+        </div>
+
+        <div>
+          <label for="notification_frequency" class="block text-sm font-medium text-gray-900 mb-2">
+            Notification Frequency
+          </label>
+          <select id="notification_frequency" name="notification_preferences[notification_frequency]"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md">
+            <option value="immediate" <%= 'selected' if @preferences.notification_frequency == 'immediate' %>>Immediate</option>
+            <option value="daily_digest" <%= 'selected' if @preferences.notification_frequency == 'daily_digest' %>>Daily Digest</option>
+            <option value="weekly_digest" <%= 'selected' if @preferences.notification_frequency == 'weekly_digest' %>>Weekly Digest</option>
+            <option value="disabled" <%= 'selected' if @preferences.notification_frequency == 'disabled' %>>Disabled</option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500">Choose how frequently you want to receive notifications</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex justify-end gap-3">
+      <%= link_to "Cancel", notifications_path, class: "px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" %>
+      <%= f.submit "Save Preferences", class: "px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" %>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  label[for="push_enabled"] {
+    cursor: not-allowed;
+  }
+</style>
