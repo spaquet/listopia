@@ -98,7 +98,7 @@ class NotificationService < ApplicationService
       list_id: item.list.id,
       item_id: item.id,
       item_title: item.title
-    ).deliver([assignee])
+    ).deliver([ assignee ])
 
     success(message: "Assignment notification sent")
   end
@@ -181,7 +181,7 @@ class NotificationService < ApplicationService
       list_id: collaborator.collaboratable.id,
       old_permission: old_permission,
       new_permission: collaborator.permission
-    ).deliver([collaborator.user])
+    ).deliver([ collaborator.user ])
 
     success(message: "Permission change notification sent")
   end
@@ -197,7 +197,7 @@ class NotificationService < ApplicationService
       actor_id: @current_user&.id,
       team_name: invitation.team.name,
       organization_id: invitation.team.organization_id
-    ).deliver([recipient])
+    ).deliver([ recipient ])
 
     success(message: "Team invitation notification sent")
   end

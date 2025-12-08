@@ -149,11 +149,11 @@ class NotificationMailer < ApplicationMailer
     @summary_items = @event.params[:summary_items] || []
 
     subject_text = case @frequency
-                   when "weekly"
+    when "weekly"
                      "Weekly digest: Your activity summary"
-                   else
+    else
                      "Daily digest: Your activity summary"
-                   end
+    end
 
     mail(
       to: @user.email,

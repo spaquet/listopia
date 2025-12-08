@@ -22,19 +22,19 @@ class NotificationPreferencesController < ApplicationController
     if params[:notification_preferences].present?
       params[:notification_preferences].each do |key, value|
         case key
-        when 'email_enabled'
-          @preferences.update(email_enabled: value == '1')
-        when 'sms_enabled'
-          @preferences.update(sms_enabled: value == '1')
-        when 'push_enabled'
-          @preferences.update(push_enabled: value == '1')
-        when 'quiet_hours_enabled'
-          @preferences.update(quiet_hours_enabled: value == '1')
-        when 'quiet_hours_start'
+        when "email_enabled"
+          @preferences.update(email_enabled: value == "1")
+        when "sms_enabled"
+          @preferences.update(sms_enabled: value == "1")
+        when "push_enabled"
+          @preferences.update(push_enabled: value == "1")
+        when "quiet_hours_enabled"
+          @preferences.update(quiet_hours_enabled: value == "1")
+        when "quiet_hours_start"
           @preferences.update(quiet_hours_start: value) if value.present?
-        when 'quiet_hours_end'
+        when "quiet_hours_end"
           @preferences.update(quiet_hours_end: value) if value.present?
-        when 'timezone'
+        when "timezone"
           @preferences.update(timezone: value) if value.present?
         else
           # Handle individual notification type preferences
@@ -46,15 +46,15 @@ class NotificationPreferencesController < ApplicationController
 
   def update_notification_type_preference(key, value)
     # Parse keys like "item_assignment_frequency" into type and channel
-    parts = key.split('_')
+    parts = key.split("_")
     if parts.size >= 3
       frequency = parts[-1]
-      type = parts[0..-2].join('_')
+      type = parts[0..-2].join("_")
 
       if notification_types_config.keys.map(&:to_s).include?(type)
         preferences = @preferences.type_preferences ||= {}
         preferences[type] ||= {}
-        preferences[type]['frequency'] = frequency
+        preferences[type]["frequency"] = frequency
         @preferences.update(type_preferences: preferences)
       end
     end

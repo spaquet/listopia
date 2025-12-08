@@ -159,8 +159,8 @@ class User < ApplicationRecord
     settings = notification_preferences
     return false if settings.notifications_disabled?
 
-    digest_prefs = settings.type_preferences&.dig('digest') || {}
-    digest_prefs['frequency'] == frequency.to_s
+    digest_prefs = settings.type_preferences&.dig("digest") || {}
+    digest_prefs["frequency"] == frequency.to_s
   end
 
   # Email verification methods

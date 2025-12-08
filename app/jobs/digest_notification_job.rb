@@ -53,9 +53,9 @@ class DigestNotificationJob < ApplicationJob
     # Get notifications from the past day
     notifications = user.notifications.where(created_at: time_range)
 
-    item_activities = notifications.where(event: { notification_type: ['item_activity', 'item_assignment', 'item_completion'] }).count
-    comments = notifications.where(event: { notification_type: 'item_comment' }).count
-    status_changes = notifications.where(event: { notification_type: 'status_change' }).count
+    item_activities = notifications.where(event: { notification_type: [ "item_activity", "item_assignment", "item_completion" ] }).count
+    comments = notifications.where(event: { notification_type: "item_comment" }).count
+    status_changes = notifications.where(event: { notification_type: "status_change" }).count
 
     {
       item_count: item_activities,
@@ -72,9 +72,9 @@ class DigestNotificationJob < ApplicationJob
     # Get notifications from the past week
     notifications = user.notifications.where(created_at: time_range)
 
-    item_activities = notifications.where(event: { notification_type: ['item_activity', 'item_assignment', 'item_completion'] }).count
-    comments = notifications.where(event: { notification_type: 'item_comment' }).count
-    status_changes = notifications.where(event: { notification_type: 'status_change' }).count
+    item_activities = notifications.where(event: { notification_type: [ "item_activity", "item_assignment", "item_completion" ] }).count
+    comments = notifications.where(event: { notification_type: "item_comment" }).count
+    status_changes = notifications.where(event: { notification_type: "status_change" }).count
 
     {
       item_count: item_activities,
@@ -99,7 +99,7 @@ class DigestNotificationJob < ApplicationJob
       comment_count: digest_data[:comment_count],
       status_count: digest_data[:status_count],
       summary_items: digest_data[:summary_items]
-    ).deliver([user])
+    ).deliver([ user ])
   end
 
   def self.next_run_time(frequency)
