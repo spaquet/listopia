@@ -15,7 +15,8 @@ export default class extends Controller {
   connect() {
     console.log("[ListFilter] Controller connected v1.0")
     this.debounceTimeout = null
-    this.updateClearButtonVisibility()
+    // Delay update to allow permanent elements to be re-attached
+    setTimeout(() => this.updateClearButtonVisibility(), 0)
   }
 
   disconnect() {
@@ -78,8 +79,31 @@ export default class extends Controller {
     // Show loading indicator
     this.showLoadingIndicator()
 
-    // Use Turbo's visitAction to reload with the new URL and stream response
-    Turbo.visit(url, { action: "replace" })
+    // Use fetch with Turbo Stream response to update only the lists grid
+    fetch(url, {
+      headers: {
+        "Accept": "text/vnd.turbo-stream.html"
+      }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Network response was not ok")
+      return response.text()
+    })
+    .then(html => {
+      // Process each turbo-stream action in the response
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, "text/html")
+      const turboStreams = doc.querySelectorAll("turbo-stream")
+
+      turboStreams.forEach(element => {
+        Turbo.connectStreamElement(element)
+      })
+
+      // Update URL without full page reload
+      window.history.replaceState({}, "", url)
+      console.log("[ListFilter] Filters applied successfully")
+    })
+    .catch(error => console.error("Error fetching filtered results:", error))
   }
 
   // Clear all filters
@@ -95,21 +119,52 @@ export default class extends Controller {
     this.formTarget.reset()
 
     // Reset all filter inputs to empty
-    this.searchInputTarget.value = ""
+    if (this.hasSearchInputTarget) {
+      this.searchInputTarget.value = ""
+    }
 
     this.updateClearButtonVisibility()
 
-    console.log("[ListFilter] Navigating to base lists path")
+    console.log("[ListFilter] Clearing all filters")
 
     // Show loading indicator
     this.showLoadingIndicator()
 
-    // Visit the base URL without filters
-    Turbo.visit(this.formTarget.action, { action: "replace" })
+    // Fetch base URL without filters using Turbo Stream
+    const baseUrl = this.formTarget.action.split("?")[0]
+    fetch(baseUrl, {
+      headers: {
+        "Accept": "text/vnd.turbo-stream.html"
+      }
+    })
+    .then(response => {
+      if (!response.ok) throw new Error("Network response was not ok")
+      return response.text()
+    })
+    .then(html => {
+      // Process each turbo-stream action in the response
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, "text/html")
+      const turboStreams = doc.querySelectorAll("turbo-stream")
+
+      turboStreams.forEach(element => {
+        Turbo.connectStreamElement(element)
+      })
+
+      // Update URL without full page reload
+      window.history.replaceState({}, "", baseUrl)
+      console.log("[ListFilter] All filters cleared successfully")
+    })
+    .catch(error => console.error("Error clearing filters:", error))
   }
 
   // Show/hide clear filters button based on whether any filters are active
   updateClearButtonVisibility() {
+    // Check if targets exist before accessing them
+    if (!this.hasSearchInputTarget || !this.hasClearBtnTarget) {
+      return
+    }
+
     const hasSearch = this.searchInputTarget.value.trim() !== ""
 
     // Check if any filter is applied by looking at the current URL params
