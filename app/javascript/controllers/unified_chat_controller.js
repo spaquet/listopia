@@ -82,12 +82,9 @@ export default class extends Controller {
     this.messageInputTarget.value = command
     this.hideCommandPalette()
 
-    // Auto-submit the command after brief delay to ensure UI updates
+    // Auto-submit the form after brief delay to ensure UI updates
     setTimeout(() => {
-      this.submitMessageToServer(command).catch(error => {
-        console.error("Error executing command:", error)
-        this.showErrorNotification("Failed to execute command")
-      })
+      this.messageFormTarget.requestSubmit()
     }, 50)
   }
 
