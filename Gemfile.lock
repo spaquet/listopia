@@ -470,7 +470,7 @@ GEM
     thruster (0.1.16-arm64-darwin)
     thruster (0.1.16-x86_64-linux)
     timecop (0.9.10)
-    timeout (0.4.4)
+    timeout (0.5.0)
     tsort (0.2.0)
     turbo-rails (2.0.20)
       actionpack (>= 7.1.0)
