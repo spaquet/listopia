@@ -301,20 +301,7 @@ class ChatsController < ApplicationController
   end
 
   def handle_help_command(user_message)
-    help_text = <<~HELP
-      **Commands**
-      `/search <query>` - Search lists and items
-      `/browse [status]` - Browse all lists
-      `/clear` - Clear chat history
-      `/new` - Start new conversation
-
-      **Features**
-      @username - Mention collaborators
-      #listname - Reference lists
-      Normal text - Chat with AI assistant
-
-      Type `/` to see available commands.
-    HELP
+    help_text = "/search, /browse, /clear, /new\n@name #list for mentions"
 
     Message.create_system(chat: @chat, content: help_text)
   end
