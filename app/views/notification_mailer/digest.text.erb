@@ -1,0 +1,34 @@
+<% if @frequency == "weekly" %>
+WEEKLY DIGEST
+=============
+<% else %>
+DAILY DIGEST
+============
+<% end %>
+
+Hi <%= @user.name %>,
+
+Here's a summary of your activity on Listopia:
+
+<% if @item_count.to_i > 0 %>
+Items:            <%= @item_count %>
+<% end %>
+<% if @comment_count.to_i > 0 %>
+Comments:         <%= @comment_count %>
+<% end %>
+<% if @status_count.to_i > 0 %>
+Status Changes:   <%= @status_count %>
+<% end %>
+
+<% if @summary_items.any? %>
+Recent Activity:
+<% @summary_items.each do |item| %>
+  - <%= item %>
+<% end %>
+<% end %>
+
+View all notifications: <%= root_url %>
+
+---
+You received this digest because you have digest notifications enabled in your preferences.
+Manage preferences: [preferences URL]

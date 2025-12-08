@@ -1,0 +1,72 @@
+<div class="email-header">
+  <h1 style="margin: 0; color: #ffffff; font-size: 20px;">
+    <% if @frequency == "weekly" %>
+      Weekly Digest
+    <% else %>
+      Daily Digest
+    <% end %>
+  </h1>
+</div>
+
+<div class="email-body">
+  <p>Hi <%= @user.name %>,</p>
+
+  <p>Here's a summary of your activity on Listopia:</p>
+
+  <div style="background-color: #f3f4f6; padding: 16px; border-radius: 4px; margin: 20px 0;">
+    <div style="display: flex; justify-content: space-around; text-align: center;">
+      <% if @item_count.to_i > 0 %>
+        <div>
+          <h3 style="margin: 0; font-size: 24px; color: #3B82F6;">
+            <%= @item_count %>
+          </h3>
+          <p style="margin: 5px 0 0 0; color: #6B7280; font-size: 12px;">
+            Items
+          </p>
+        </div>
+      <% end %>
+      <% if @comment_count.to_i > 0 %>
+        <div>
+          <h3 style="margin: 0; font-size: 24px; color: #10B981;">
+            <%= @comment_count %>
+          </h3>
+          <p style="margin: 5px 0 0 0; color: #6B7280; font-size: 12px;">
+            Comments
+          </p>
+        </div>
+      <% end %>
+      <% if @status_count.to_i > 0 %>
+        <div>
+          <h3 style="margin: 0; font-size: 24px; color: #F59E0B;">
+            <%= @status_count %>
+          </h3>
+          <p style="margin: 5px 0 0 0; color: #6B7280; font-size: 12px;">
+            Status Changes
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <% if @summary_items.any? %>
+    <div>
+      <h3 style="color: #1F2937; margin-bottom: 12px;">Recent Activity:</h3>
+      <ul style="list-style: none; padding: 0;">
+        <% @summary_items.each do |item| %>
+          <li style="padding: 8px; border-bottom: 1px solid #e5e7eb;">
+            <%= item %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <p>
+    <%= link_to "View All Notifications", root_url, class: "button" %>
+  </p>
+
+  <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+    You received this digest because you have digest notifications enabled in your preferences.
+    <a href="#" style="color: #3B82F6;">Manage preferences</a>
+  </p>
+</div>

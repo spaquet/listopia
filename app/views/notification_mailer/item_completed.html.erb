@@ -1,0 +1,26 @@
+<div class="email-header">
+  <h1 style="margin: 0; color: #ffffff; font-size: 20px;">Task Completed</h1>
+</div>
+
+<div class="email-body">
+  <p>Hi <%= @user.name %>,</p>
+
+  <p><strong><%= @actor_name %></strong> completed a task:</p>
+
+  <div style="background-color: #f3f4f6; padding: 16px; border-left: 4px solid #10B981; margin: 20px 0; border-radius: 4px;">
+    <h3 style="margin: 0 0 8px 0; color: #1F2937;">
+      <strike><%= @item_title %></strike>
+    </h3>
+    <p style="margin: 0; color: #6B7280; font-size: 14px;">
+      on <strong><%= @list_title %></strong>
+    </p>
+  </div>
+
+  <p>
+    <%= link_to "View List", @list_url, class: "button" %>
+  </p>
+
+  <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+    Great work! You received this email because you collaborate on this list.
+  </p>
+</div>
