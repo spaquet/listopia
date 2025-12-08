@@ -224,11 +224,11 @@ class ChatsController < ApplicationController
       handle_clear_command
     when "/new"
       # This would trigger creating a new chat in the UI
-      Message.create_system(@chat, "Creating new conversation...")
+      Message.create_system(chat: @chat, content: "Creating new conversation...")
     else
       Message.create_system(
-        @chat,
-        "Unknown command: #{command}. Type /help for available commands."
+        chat: @chat,
+        content: "Unknown command: #{command}. Type /help for available commands."
       )
     end
   end
@@ -238,8 +238,8 @@ class ChatsController < ApplicationController
 
     if query.blank?
       Message.create_system(
-        @chat,
-        "Please provide a search query. Example: /search budget"
+        chat: @chat,
+        content: "Please provide a search query. Example: /search budget"
       )
       return
     end
@@ -326,12 +326,12 @@ class ChatsController < ApplicationController
       - Search results help you find items quickly
     HELP
 
-    Message.create_system(@chat, help_text)
+    Message.create_system(chat: @chat, content: help_text)
   end
 
   def handle_clear_command
     @chat.messages.destroy_all
-    Message.create_system(@chat, "Chat history cleared.")
+    Message.create_system(chat: @chat, content: "Chat history cleared.")
   end
 
   def add_placeholder_response(user_message)
