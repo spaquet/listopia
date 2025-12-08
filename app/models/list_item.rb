@@ -329,7 +329,7 @@ class ListItem < ApplicationRecord
   end
 
   def priority_changed?
-    priority_changed? && (priority_high? || priority_urgent?)
+    super && (priority_high? || priority_urgent?)
   end
 
   def completion_changed?

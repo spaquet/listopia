@@ -65,7 +65,7 @@ class List < ApplicationRecord
   # Notification Callbacks
   after_commit :notify_title_change, on: :update, if: :saved_change_to_title?
   after_commit :notify_status_change, on: :update, if: :saved_change_to_status?
-  after_commit :notify_list_archived, on: :update, if: :saved_change_to_status_to_archived?
+  after_commit :notify_list_archived, on: :update, if: :status_archived?
 
   # Associations
   belongs_to :owner, class_name: "User", foreign_key: "user_id"

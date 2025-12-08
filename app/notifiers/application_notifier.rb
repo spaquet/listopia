@@ -8,6 +8,7 @@ class ApplicationNotifier < Noticed::Event
 
   deliver_by :email do |config|
     config.mailer = "NotificationMailer"
+    config.method = :deliver_notification
   end
 
   # Helper to get the actor (user who triggered the notification)

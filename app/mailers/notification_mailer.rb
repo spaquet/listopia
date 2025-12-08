@@ -2,6 +2,19 @@
 class NotificationMailer < ApplicationMailer
   default from: "noreply@listopia.com"
 
+  # Noticed integration - routes to appropriate method based on notification_type
+  def deliver_notification(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+
+    # Route to appropriate method based on notification type
+    method_name = @event.notification_type&.underscore
+    return unless respond_to?(method_name, true)
+
+    send(method_name, notification)
+  end
+
   # Generic notification delivery
   def notification_email(notification)
     @notification = notification

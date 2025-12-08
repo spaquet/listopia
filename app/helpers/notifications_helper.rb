@@ -102,8 +102,8 @@ module NotificationsHelper
 
     # Replace @username with highlighted mention links
     highlighted = text.gsub(/@(\w+)/) do |match|
-      username = $1
-      user = User.find_by("username = ? OR email = ?", username, username)
+      handle = $1
+      user = User.where("email ILIKE ? OR CONCAT(first_name, ' ', last_name) ILIKE ?", "%#{handle}%", "%#{handle}%").first
 
       if user
         content_tag :span, match,

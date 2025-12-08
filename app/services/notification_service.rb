@@ -289,13 +289,15 @@ class NotificationService < ApplicationService
 
     # Extract @username mentions from the text
     mention_pattern = /@(\w+)/
-    mentioned_usernames = text.scan(mention_pattern).flatten.uniq
+    mentioned_handles = text.scan(mention_pattern).flatten.uniq
 
-    # Find users by username or email
-    mentioned_users = User.where("username = ? OR email = ?", mentioned_usernames, mentioned_usernames)
-                         .where.not(id: @current_user.id)
+    # Find users by email or name
+    mentioned_users = mentioned_handles.flat_map do |handle|
+      User.where("email ILIKE ? OR CONCAT(first_name, ' ', last_name) ILIKE ?", "%#{handle}%", "%#{handle}%")
+           .where.not(id: @current_user.id)
+    end.uniq
 
-    mentioned_users.to_a
+    mentioned_users
   end
 
   def list_notification_recipients(list)
