@@ -19,6 +19,7 @@ class MessageTemplate
 
     # Search & discovery
     "search_results" => "SearchResultsTemplate",
+    "browse_results" => "BrowseResultsTemplate",
     "command_result" => "CommandResultTemplate",
 
     # File uploads

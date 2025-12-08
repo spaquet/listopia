@@ -19,7 +19,11 @@
       <% else %>
         <!-- Fall back to markdown rendering -->
         <div class="message-content prose prose-sm max-w-none">
-          <%= render_markdown(message.content) %>
+          <% if message.user_message? && (has_mentions?(message) || has_references?(message)) %>
+            <%= render_message_with_mentions(message) %>
+          <% else %>
+            <%= render_markdown(message.content) %>
+          <% end %>
         </div>
       <% end %>
 

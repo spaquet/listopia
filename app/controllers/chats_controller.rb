@@ -81,6 +81,24 @@ class ChatsController < ApplicationController
       content: content
     )
 
+    # Parse mentions and references in message
+    mention_parser = ChatMentionParser.new(
+      message: content,
+      user: current_user,
+      organization: current_organization
+    )
+    parse_result = mention_parser.call
+
+    # Store mention and reference metadata
+    @user_message.update(
+      metadata: {
+        mentions: parse_result[:mentions],
+        references: parse_result[:references],
+        has_mentions: parse_result[:has_mentions],
+        has_references: parse_result[:has_references]
+      }
+    )
+
     # SECURITY CHECK 2: Check content moderation (OpenAI)
     moderation_service = ContentModerationService.new(
       content: content,
@@ -193,6 +211,8 @@ class ChatsController < ApplicationController
     case command
     when "/search"
       handle_search_command(user_message, args)
+    when "/browse"
+      handle_browse_command(user_message, args)
     when "/help"
       handle_help_command(user_message)
     when "/clear"
@@ -237,19 +257,68 @@ class ChatsController < ApplicationController
     )
   end
 
+  def handle_browse_command(user_message, filter_arg)
+    # Get all lists for current user's organization
+    lists = policy_scope(List).where(organization_id: current_organization.id)
+
+    # Apply filter if provided
+    filter = filter_arg.strip.downcase if filter_arg.present?
+    lists = lists.where(status: filter) if filter.present?
+
+    # Format for display
+    template_data = {
+      filter: filter || "all",
+      lists: lists.map { |list| {
+        id: list.id,
+        title: list.title,
+        description: list.description,
+        status: list.status,
+        owner: list.owner.name,
+        items_count: list.list_items.count,
+        created_at: list.created_at.strftime("%b %d, %Y"),
+        url: list_path(list)
+      }},
+      total_count: lists.count
+    }
+
+    # Create browse results message
+    Message.create_templated(
+      chat: @chat,
+      template_type: "browse_results",
+      template_data: template_data
+    )
+  end
+
   def handle_help_command(user_message)
     help_text = <<~HELP
-      **Available Commands:**
-      - `/search <query>` - Search your lists and items
-      - `/browse` - Browse all available lists
+      ## 📚 Chat Commands
+
+      ### Basic Commands
+      - `/search <query>` - Search your lists and items by keyword
+      - `/browse [filter]` - Browse all your lists (e.g., `/browse active` or `/browse archived`)
       - `/help` - Show this help message
       - `/clear` - Clear chat history
       - `/new` - Start a new conversation
 
-      **Tips:**
-      - Start a normal message to chat with the assistant
-      - Use markdown for formatting in your messages
-      - Rate responses to help improve the assistant
+      ### Chat Features
+      - **Message Mentions**: Use `@username` to mention specific collaborators
+      - **List/Item References**: Use `#listname` to reference lists or items
+      - **Markdown**: Format messages with **bold**, *italic*, `code`, etc.
+      - **AI Assistant**: Ask questions about your lists and get AI-powered responses
+      - **Rate Responses**: Use the 👍 👎 reaction buttons to rate assistant responses
+
+      ### Examples
+      - `/search budget planning` - Find all lists related to budgeting
+      - `/browse active` - View only active lists
+      - `@john can you review this?` - Mention a team member
+      - `#Project-Q4 timeline` - Reference a specific list
+      - `What's in #MyList and can you summarize it?` - Ask about a specific list
+
+      ### Tips
+      - Type `/` to see available commands
+      - Normal messages go to the AI assistant
+      - Use markdown for better formatting
+      - Search results help you find items quickly
     HELP
 
     Message.create_system(@chat, help_text)

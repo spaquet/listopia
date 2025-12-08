@@ -1,0 +1,79 @@
+<!-- app/views/message_templates/_browse_results.html.erb
+     Displays browsable list of all lists in organization
+     Allows filtering by status (active, draft, archived, completed)
+-->
+
+<div class="space-y-4">
+  <!-- Header -->
+  <div class="border-b border-gray-200 pb-3">
+    <h3 class="font-semibold text-gray-900">
+      📂 Browsing Lists
+      <span class="text-sm text-gray-500 font-normal">
+        (<%= data[:total_count] %> <%= 'list'.pluralize(data[:total_count]) %>
+        <% if data[:filter] && data[:filter] != "all" %>
+          with status: <span class="font-medium text-blue-600"><%= data[:filter] %></span>
+        <% end %>)
+      </span>
+    </h3>
+  </div>
+
+  <!-- Empty State -->
+  <% if data[:lists].empty? %>
+    <div class="bg-gray-50 rounded-lg p-6 text-center">
+      <p class="text-gray-600">
+        No lists found<% if data[:filter] && data[:filter] != "all" %> with status "<%= data[:filter] %>"<% end %>.
+      </p>
+      <p class="text-sm text-gray-500 mt-2">
+        Try creating a new list or adjust your filter.
+      </p>
+    </div>
+  <% else %>
+    <!-- Lists Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+      <% data[:lists].each do |list| %>
+        <a href="<%= list[:url] %>"
+           class="block p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all bg-white">
+
+          <!-- List Title -->
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <h4 class="font-semibold text-gray-900 truncate flex-1">
+              <%= list[:title] %>
+            </h4>
+            <!-- Status Badge -->
+            <span class="text-xs font-medium px-2 py-1 rounded whitespace-nowrap
+              <% case list[:status] %>
+                <% when 'active' %>bg-green-100 text-green-800
+                <% when 'draft' %>bg-yellow-100 text-yellow-800
+                <% when 'completed' %>bg-blue-100 text-blue-800
+                <% when 'archived' %>bg-gray-100 text-gray-800
+              <% end %>">
+              <%= list[:status] %>
+            </span>
+          </div>
+
+          <!-- Description -->
+          <% if list[:description].present? %>
+            <p class="text-sm text-gray-600 truncate mb-2">
+              <%= list[:description] %>
+            </p>
+          <% end %>
+
+          <!-- Metadata -->
+          <div class="flex items-center justify-between text-xs text-gray-500 space-x-2">
+            <div class="flex items-center gap-3">
+              <span title="Owner">👤 <%= list[:owner] %></span>
+              <span title="Items">📋 <%= list[:items_count] %> item<% if list[:items_count] != 1 %>s<% end %></span>
+            </div>
+            <span class="text-right"><%= list[:created_at] %></span>
+          </div>
+        </a>
+      <% end %>
+    </div>
+
+    <!-- Filter Tips -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900 mt-4">
+      <p class="font-medium mb-1">💡 Filter Tips</p>
+      <p class="text-blue-800">Try these filters: `/browse active`, `/browse draft`, `/browse completed`, `/browse archived`</p>
+    </div>
+  <% end %>
+</div>

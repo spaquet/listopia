@@ -203,4 +203,117 @@ module ChatHelper
       end
     end
   end
+
+  # Render message content with processed mentions and references
+  def render_message_with_mentions(message)
+    content = message.content
+    mentions = message.metadata&.dig("mentions") || []
+    references = message.metadata&.dig("references") || []
+
+    # Replace mentions with rich links
+    mentions.each do |mention|
+      mention_text = mention["mention_text"]
+      user_id = mention["id"]
+      user_name = mention["name"]
+      user_email = mention["email"]
+
+      link_html = content_tag(
+        :a,
+        mention_text,
+        href: user_path(user_id),
+        class: "mention-link text-blue-600 hover:underline font-medium",
+        title: "#{user_name} (#{user_email})",
+        data: { mention_id: user_id }
+      )
+
+      content = content.gsub(mention_text, link_html.to_s)
+    end
+
+    # Replace references with rich links
+    references.each do |reference|
+      reference_text = reference["reference_text"]
+      ref_type = reference["type"]
+      ref_id = reference["id"]
+      ref_url = reference["url"]
+
+      link_text = case ref_type
+                  when "list"
+                    "#{reference_text} (#{reference['title']})"
+                  when "item"
+                    "#{reference_text} (#{reference['title']} in #{reference['list_title']})"
+                  when "team"
+                    "#{reference_text} (#{reference['name']})"
+                  else
+                    reference_text
+                  end
+
+      link_html = content_tag(
+        :a,
+        link_text,
+        href: ref_url,
+        class: "reference-link text-green-600 hover:underline font-medium",
+        title: "#{ref_type.titleize}: #{reference['title'] || reference['name']}",
+        data: { reference_id: ref_id, reference_type: ref_type }
+      )
+
+      content = content.gsub(reference_text, link_html.to_s)
+    end
+
+    # Render remaining markdown
+    render_markdown(content).html_safe
+  end
+
+  # Get all mentions from a message
+  def message_mentions(message)
+    message.metadata&.dig("mentions") || []
+  end
+
+  # Get all references from a message
+  def message_references(message)
+    message.metadata&.dig("references") || []
+  end
+
+  # Check if message has any mentions
+  def has_mentions?(message)
+    message.metadata&.dig("has_mentions") || false
+  end
+
+  # Check if message has any references
+  def has_references?(message)
+    message.metadata&.dig("has_references") || false
+  end
+
+  # Render mention badge
+  def render_mention_badge(mention)
+    content_tag(
+      :span,
+      class: "inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium"
+    ) do
+      concat content_tag(:span, "👤", title: "User mention")
+      concat mention["name"]
+    end
+  end
+
+  # Render reference badge
+  def render_reference_badge(reference)
+    icon = case reference["type"]
+           when "list"
+             "📝"
+           when "item"
+             "✓"
+           when "team"
+             "👥"
+           else
+             "🔗"
+           end
+
+    title = reference["title"] || reference["name"]
+    content_tag(
+      :span,
+      class: "inline-flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium"
+    ) do
+      concat content_tag(:span, icon, title: "#{reference['type']} reference")
+      concat title
+    end
+  end
 end
