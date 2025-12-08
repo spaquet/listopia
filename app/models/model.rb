@@ -27,5 +27,5 @@
 #  index_models_on_provider_and_model_id  (provider,model_id) UNIQUE
 #
 class Model < ApplicationRecord
-  acts_as_model
+  acts_as_model chats_foreign_key: :model_id
 end

@@ -1,4 +1,4 @@
-class CreateModels < ActiveRecord::Migration[8.0]
+class CreateModels < ActiveRecord::Migration[8.1]
   def change
     create_table :models do |t|
       t.string :model_id, null: false
@@ -17,21 +17,23 @@ class CreateModels < ActiveRecord::Migration[8.0]
 
       t.timestamps
 
-      t.index [ :provider, :model_id ], unique: true
+      t.index [:provider, :model_id], unique: true
       t.index :provider
       t.index :family
 
       t.index :capabilities, using: :gin
       t.index :modalities, using: :gin
+
     end
 
-    # Load models from JSON
+    # Load models from JSON only if RubyLLM is available
     say_with_time "Loading models from models.json" do
-      RubyLLM.models.load_from_json!
-      model_class = 'Model'.constantize
-      model_class.save_to_database
-
-      "Loaded #{model_class.count} models"
+      begin
+        RubyLLM.models.load_from_json!
+        Model.save_to_database
+      rescue => e
+        Rails.logger.warn("Failed to load RubyLLM models: #{e.message}")
+      end
     end
   end
 end

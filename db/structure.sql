@@ -866,6 +866,11 @@ CREATE TABLE public.board_columns (
 
 CREATE TABLE public.chats (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    model_id bigint,
+    conversation_state character varying DEFAULT 'stable'::character varying,
+    last_cleanup_at timestamp(6) without time zone,
     user_id uuid NOT NULL,
     title character varying(255),
     context json DEFAULT '{}'::json,
@@ -874,11 +879,9 @@ CREATE TABLE public.chats (
     metadata json DEFAULT '{}'::json,
     model_id_string character varying,
     last_stable_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    conversation_state character varying DEFAULT 'stable'::character varying,
-    last_cleanup_at timestamp(6) without time zone,
-    model_id bigint
+    organization_id uuid,
+    team_id uuid,
+    visibility character varying DEFAULT 'private'::character varying
 );
 
 
@@ -1068,30 +1071,28 @@ ALTER SEQUENCE public.logidze_data_id_seq OWNED BY public.logidze_data.id;
 
 CREATE TABLE public.messages (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    chat_id uuid NOT NULL,
-    user_id uuid,
-    model_id bigint,
     role character varying NOT NULL,
     content text,
-    tool_calls json DEFAULT '[]'::json,
-    tool_call_results json DEFAULT '[]'::json,
-    context_snapshot json DEFAULT '{}'::json,
+    content_raw json,
+    input_tokens integer,
+    output_tokens integer,
+    cached_tokens integer,
+    cache_creation_tokens integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    chat_id uuid NOT NULL,
+    model_id bigint,
+    tool_call_id uuid,
+    user_id uuid,
     message_type character varying DEFAULT 'text'::character varying,
     metadata json DEFAULT '{}'::json,
+    context_snapshot json DEFAULT '{}'::json,
     llm_provider character varying,
     llm_model character varying,
     model_id_string character varying,
-    tool_call_id character varying,
     token_count integer,
-    input_tokens integer,
-    output_tokens integer,
     processing_time numeric(8,3),
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    cached_tokens integer,
-    cache_creation_tokens integer,
-    content_raw json,
-    CONSTRAINT tool_messages_must_have_tool_call_id CHECK ((((role)::text <> 'tool'::text) OR (tool_call_id IS NOT NULL)))
+    organization_id uuid
 );
 
 
@@ -1386,12 +1387,12 @@ CREATE TABLE public.time_entries (
 
 CREATE TABLE public.tool_calls (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    message_id uuid NOT NULL,
     tool_call_id character varying NOT NULL,
     name character varying NOT NULL,
     arguments jsonb DEFAULT '{}'::jsonb,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    message_id uuid NOT NULL
 );
 
 
@@ -1782,10 +1783,45 @@ CREATE INDEX index_chats_on_model_id ON public.chats USING btree (model_id);
 
 
 --
--- Name: index_chats_on_model_id_string; Type: INDEX; Schema: public; Owner: -
+-- Name: index_chats_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_chats_on_model_id_string ON public.chats USING btree (model_id_string);
+CREATE INDEX index_chats_on_organization_id ON public.chats USING btree (organization_id);
+
+
+--
+-- Name: index_chats_on_organization_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_organization_id_and_created_at ON public.chats USING btree (organization_id, created_at);
+
+
+--
+-- Name: index_chats_on_organization_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_organization_id_and_user_id ON public.chats USING btree (organization_id, user_id);
+
+
+--
+-- Name: index_chats_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_status ON public.chats USING btree (status);
+
+
+--
+-- Name: index_chats_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_team_id ON public.chats USING btree (team_id);
+
+
+--
+-- Name: index_chats_on_team_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_team_id_and_user_id ON public.chats USING btree (team_id, user_id);
 
 
 --
@@ -1807,6 +1843,13 @@ CREATE INDEX index_chats_on_user_id_and_created_at ON public.chats USING btree (
 --
 
 CREATE INDEX index_chats_on_user_id_and_status ON public.chats USING btree (user_id, status);
+
+
+--
+-- Name: index_chats_on_visibility; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_visibility ON public.chats USING btree (visibility);
 
 
 --
@@ -2188,31 +2231,10 @@ CREATE INDEX index_messages_on_chat_id ON public.messages USING btree (chat_id);
 
 
 --
--- Name: index_messages_on_chat_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+-- Name: index_messages_on_llm_provider; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_messages_on_chat_id_and_created_at ON public.messages USING btree (chat_id, created_at);
-
-
---
--- Name: index_messages_on_chat_id_and_role; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_chat_id_and_role ON public.messages USING btree (chat_id, role);
-
-
---
--- Name: index_messages_on_chat_id_and_role_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_chat_id_and_role_and_created_at ON public.messages USING btree (chat_id, role, created_at);
-
-
---
--- Name: index_messages_on_chat_id_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_chat_id_and_tool_call_id ON public.messages USING btree (chat_id, tool_call_id) WHERE (tool_call_id IS NOT NULL);
+CREATE INDEX index_messages_on_llm_provider ON public.messages USING btree (llm_provider);
 
 
 --
@@ -2244,17 +2266,24 @@ CREATE INDEX index_messages_on_model_id_string ON public.messages USING btree (m
 
 
 --
+-- Name: index_messages_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_organization_id ON public.messages USING btree (organization_id);
+
+
+--
+-- Name: index_messages_on_organization_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_organization_id_and_user_id ON public.messages USING btree (organization_id, user_id);
+
+
+--
 -- Name: index_messages_on_role; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_messages_on_role ON public.messages USING btree (role);
-
-
---
--- Name: index_messages_on_role_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_role_and_tool_call_id ON public.messages USING btree (role, tool_call_id) WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL));
 
 
 --
@@ -2276,13 +2305,6 @@ CREATE INDEX index_messages_on_user_id ON public.messages USING btree (user_id);
 --
 
 CREATE INDEX index_messages_on_user_id_and_created_at ON public.messages USING btree (user_id, created_at);
-
-
---
--- Name: index_messages_unique_tool_call_id_per_chat; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_messages_unique_tool_call_id_per_chat ON public.messages USING btree (chat_id, tool_call_id) WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL));
 
 
 --
@@ -2678,13 +2700,6 @@ CREATE INDEX index_tool_calls_on_message_id ON public.tool_calls USING btree (me
 
 
 --
--- Name: index_tool_calls_on_message_id_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_tool_calls_on_message_id_and_created_at ON public.tool_calls USING btree (message_id, created_at);
-
-
---
 -- Name: index_tool_calls_on_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2896,11 +2911,27 @@ ALTER TABLE ONLY public.collaborators
 
 
 --
+-- Name: messages fk_rails_41c70a97c6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT fk_rails_41c70a97c6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_51e01bf1ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.recovery_contexts
     ADD CONSTRAINT fk_rails_51e01bf1ba FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: messages fk_rails_552873cb52; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT fk_rails_552873cb52 FOREIGN KEY (tool_call_id) REFERENCES public.tool_calls(id);
 
 
 --
@@ -2973,6 +3004,14 @@ ALTER TABLE ONLY public.invitations
 
 ALTER TABLE ONLY public.list_items
     ADD CONSTRAINT fk_rails_7f2175ff1c FOREIGN KEY (assigned_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: chats fk_rails_81b9fd7c23; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_81b9fd7c23 FOREIGN KEY (team_id) REFERENCES public.teams(id);
 
 
 --
@@ -3088,24 +3127,37 @@ ALTER TABLE ONLY public.recovery_contexts
 
 
 --
+-- Name: chats fk_rails_f5e99d4d5f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_f5e99d4d5f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208050000'),
+('20251208043416'),
+('20251208043414'),
+('20251208043412'),
+('20251208043410'),
+('20251208043409'),
+('20251208043408'),
+('20251208043407'),
+('20251208043406'),
 ('20251206170353'),
 ('20251115200022'),
 ('20251115200021'),
 ('20251115200020'),
 ('20251115200019'),
-('20251103202838'),
 ('20251011000104'),
 ('20251010235748'),
 ('20251010235747'),
-('20250910233319'),
-('20250730204201'),
-('20250723185557'),
 ('20250707182418'),
 ('20250707014433'),
 ('20250706232534'),
@@ -3124,10 +3176,6 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20250706224541'),
 ('20250703034216'),
 ('20250630212045'),
-('20250628043943'),
-('20250628004955'),
-('20250628004938'),
-('20250628004925'),
 ('20250624223654'),
 ('20250624223653'),
 ('20250623211535'),
