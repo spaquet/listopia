@@ -31,14 +31,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
       <% data[:lists].each do |list| %>
         <a href="<%= list[:url] %>"
-           class="block p-4 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all bg-white">
+           class="block p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-sm transition-all bg-white">
 
-          <!-- List Title -->
-          <div class="flex items-start justify-between gap-2 mb-2">
-            <h4 class="font-semibold text-gray-900 truncate flex-1">
-              <%= list[:title] %>
-            </h4>
-            <!-- Status Badge -->
+          <!-- Line 1: Status and Last Updated -->
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <!-- Status Badge (left) -->
             <% badge_class = case list[:status]
               when 'active' then 'bg-green-100 text-green-800'
               when 'draft' then 'bg-yellow-100 text-yellow-800'
@@ -49,22 +46,22 @@
             <span class="text-xs font-medium px-2 py-1 rounded whitespace-nowrap <%= badge_class %>">
               <%= list[:status] %>
             </span>
+            <!-- Last Updated (right, small) -->
+            <span class="text-xs text-gray-400 ml-auto"><%= list[:updated_at] %></span>
           </div>
 
-          <!-- Description -->
-          <% if list[:description].present? %>
-            <p class="text-sm text-gray-600 truncate mb-2">
-              <%= list[:description] %>
-            </p>
-          <% end %>
+          <!-- Line 2: List Title (truncated) -->
+          <h4 class="font-semibold text-sm text-gray-900 truncate mb-2">
+            <%= list[:title] %>
+          </h4>
 
-          <!-- Metadata -->
-          <div class="flex items-center justify-between text-xs text-gray-500">
-            <div class="flex items-center gap-4">
-              <span><%= list[:owner] %></span>
-              <span><%= list[:items_count] %> item<% if list[:items_count] != 1 %>s<% end %></span>
-            </div>
-            <span class="text-right text-gray-400"><%= list[:created_at] %></span>
+          <!-- Line 3: Items Count and Completion -->
+          <div class="flex items-center justify-between text-xs text-gray-600">
+            <span><%= list[:items_count] %> item<% if list[:items_count].to_i == 1 %><% else %>s<% end %></span>
+            <% if list[:completed_count].present? && list[:items_count].to_i > 0 %>
+              <% completion_percent = ((list[:completed_count].to_f / list[:items_count].to_f) * 100).round %>
+              <span class="text-gray-500"><%= completion_percent %>% complete</span>
+            <% end %>
           </div>
         </a>
       <% end %>
