@@ -33,7 +33,7 @@ FactoryBot.define do
     end
 
     trait :with_rag_sources do
-      metadata { { rag_sources: [{ title: "Source 1", content: "Content" }] } }
+      metadata { { rag_sources: [ { title: "Source 1", content: "Content" } ] } }
     end
 
     trait :with_feedback do

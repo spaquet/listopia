@@ -128,7 +128,7 @@ RSpec.describe Chat, type: :model do
 
       it "returns recent messages in correct order" do
         recent = chat.recent_messages(2)
-        expect(recent).to eq([@msg2, @msg3])
+        expect(recent).to eq([ @msg2, @msg3 ])
       end
 
       it "defaults to 20 messages" do

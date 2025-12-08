@@ -291,7 +291,7 @@ RSpec.describe Message, type: :model do
       end
 
       it "stores rag_sources in metadata" do
-        sources = [{ "title" => "Source 1", "url" => "http://example.com" }]
+        sources = [ { "title" => "Source 1", "url" => "http://example.com" } ]
         message = Message.create_assistant(chat: chat, content: "Hello", rag_sources: sources)
         expect(message.reload.rag_sources).to eq(sources)
       end
@@ -373,27 +373,27 @@ RSpec.describe Message, type: :model do
     let(:chat) { create(:chat) }
 
     it "stores and retrieves template_data" do
-      template_data = { "query" => "test", "results" => [1, 2, 3] }
+      template_data = { "query" => "test", "results" => [ 1, 2, 3 ] }
       message = create(:message, chat: chat, template_type: "search_results", metadata: { template_data: template_data })
       expect(message.reload.template_data).to eq(template_data)
     end
 
     it "stores and retrieves rag_sources" do
-      sources = [{ "title" => "Doc 1", "content" => "..." }, { "title" => "Doc 2", "content" => "..." }]
+      sources = [ { "title" => "Doc 1", "content" => "..." }, { "title" => "Doc 2", "content" => "..." } ]
       message = create(:message, chat: chat, metadata: { rag_sources: sources })
       expect(message.reload.rag_sources).to eq(sources)
     end
 
     it "stores and retrieves attachments" do
-      attachments = [{ "type" => "file", "name" => "doc.pdf", "url" => "/files/doc.pdf" }]
+      attachments = [ { "type" => "file", "name" => "doc.pdf", "url" => "/files/doc.pdf" } ]
       message = create(:message, chat: chat, metadata: { attachments: attachments })
       expect(message.reload.attachments).to eq(attachments)
     end
 
     it "handles multiple metadata fields together" do
       template_data = { "query" => "test" }
-      rag_sources = [{ "title" => "Source" }]
-      attachments = [{ "type" => "image" }]
+      rag_sources = [ { "title" => "Source" } ]
+      attachments = [ { "type" => "image" } ]
       message = create(:message, chat: chat,
                       metadata: { template_data: template_data, rag_sources: rag_sources, attachments: attachments })
       reloaded = message.reload

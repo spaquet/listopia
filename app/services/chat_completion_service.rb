@@ -3,6 +3,12 @@
 # Service for handling chat message processing using RubyLLM
 # Integrates with RubyLLM 1.9+ for unified LLM provider support
 # Supports OpenAI, Anthropic Claude, Google Gemini, and more
+#
+# Features:
+# - Tool/function calling for managing users, teams, organizations, lists
+# - Smart routing to existing app pages instead of chat responses
+# - Prompt injection detection and content moderation
+# - Full message history context for conversation
 
 class ChatCompletionService < ApplicationService
   def initialize(chat, user_message, context = nil)
@@ -21,6 +27,20 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check if message should navigate to a page instead
+      routing_service = ChatRoutingService.new(
+        user_message: @user_message,
+        chat: @chat,
+        user: @context.user,
+        organization: @context.organization
+      )
+      routing_result = routing_service.call
+
+      if routing_result.success? && routing_result.data[:action] == :navigate
+        # Create a navigation message instead of calling LLM
+        return handle_navigation(routing_result.data)
+      end
+
       # Get or determine the model to use
       model = @chat.metadata["model"] || default_model
 
@@ -28,17 +48,31 @@ class ChatCompletionService < ApplicationService
       message_history = build_message_history(model)
 
       # Get system prompt based on context
-      system_prompt = @context.system_prompt
+      system_prompt = enhanced_system_prompt
 
-      # Call RubyLLM with the message history
-      response = call_llm(model, system_prompt, message_history)
+      # Get available tools for the LLM
+      tools_service = LLMToolsService.new(
+        user: @context.user,
+        organization: @context.organization,
+        chat_context: @context
+      )
+      tools_result = tools_service.call
+      tools = tools_result.success? ? tools_result.data : []
+
+      # Call RubyLLM with tool support
+      response = call_llm_with_tools(model, system_prompt, message_history, tools)
 
       return failure(errors: [ "LLM call failed" ]) if response.blank?
 
-      # Create assistant message
+      # Handle tool calls if present
+      if response.is_a?(Hash) && response[:type] == :tool_call
+        return handle_tool_call(response)
+      end
+
+      # Create assistant message with the response
       assistant_message = Message.create_assistant(
         chat: @chat,
-        content: response
+        content: response.is_a?(String) ? response : response.to_s
       )
 
       # Update chat with last message time
@@ -52,6 +86,90 @@ class ChatCompletionService < ApplicationService
   end
 
   private
+
+  # Handle navigation routing - create a system message that tells frontend to navigate
+  def handle_navigation(routing_data)
+    path = routing_data[:path]
+    filters = routing_data[:filters]
+
+    # Create a special navigation message
+    nav_message = Message.new(
+      chat: @chat,
+      role: :assistant,
+      content: "Navigating to #{routing_data[:description]}...",
+      template_type: "navigation",
+      metadata: {
+        navigation: {
+          path: path,
+          filters: filters
+        }
+      }
+    )
+
+    # Mark as navigation so frontend knows to redirect
+    @chat.update(last_message_at: Time.current)
+
+    success(data: nav_message)
+  end
+
+  # Handle tool calls from the LLM
+  def handle_tool_call(tool_call_data)
+    tool_name = tool_call_data[:tool_name]
+    tool_input = tool_call_data[:tool_input]
+
+    # Execute the tool
+    executor = LLMToolExecutorService.new(
+      tool_name: tool_name,
+      tool_input: tool_input,
+      user: @context.user,
+      organization: @context.organization,
+      chat_context: @context
+    )
+
+    result = executor.call
+
+    if result.failure?
+      error_message = Message.create_assistant(
+        chat: @chat,
+        content: "I encountered an error: #{result.errors.first}"
+      )
+      return success(data: error_message)
+    end
+
+    tool_result = result.data
+
+    # Create a message with the tool result
+    tool_message = Message.new(
+      chat: @chat,
+      role: :assistant,
+      content: format_tool_result(tool_result),
+      template_type: tool_result[:type],
+      metadata: {
+        tool_call: tool_name,
+        tool_result: tool_result
+      }
+    )
+
+    @chat.update(last_message_at: Time.current)
+
+    success(data: tool_message)
+  end
+
+  # Format tool result for display
+  def format_tool_result(result)
+    case result[:type]
+    when "navigation"
+      "Opening #{result[:message]}"
+    when "list"
+      "Found #{result[:total_count]} #{result[:resource_type].pluralize.downcase}."
+    when "resource"
+      "Successfully #{result[:action]} #{result[:resource_type]}."
+    when "search_results"
+      "Found #{result[:total_count]} results for '#{result[:query]}'."
+    else
+      "Operation completed successfully."
+    end
+  end
 
   # Determine the default LLM model and provider
   def default_model
@@ -155,5 +273,82 @@ class ChatCompletionService < ApplicationService
         response.to_s
       end
     end
+  end
+
+  # Call RubyLLM with tool support
+  def call_llm_with_tools(model, system_prompt, message_history, tools)
+    model_config = parse_model(model)
+
+    # Create RubyLLM::Chat instance
+    llm_chat = RubyLLM::Chat.new(
+      provider: model_config[:provider],
+      model: model_config[:model]
+    )
+
+    # Set additional options
+    llm_chat.temperature = 0.7 if llm_chat.respond_to?(:temperature=)
+    llm_chat.max_tokens = 2000 if llm_chat.respond_to?(:max_tokens=)
+
+    # Add system prompt with tool instructions
+    enhanced_prompt = system_prompt + "\n\nYou have access to tools to help manage the app. " \
+                     "When the user asks you to show a list of users, teams, or organizations, " \
+                     "or to perform actions like creating or updating resources, " \
+                     "use the appropriate tool to accomplish the task."
+
+    llm_chat.add_message(role: "system", content: enhanced_prompt) if enhanced_prompt.present?
+
+    # Add message history
+    message_history[0...-1].each do |msg|
+      llm_chat.add_message(role: msg[:role], content: msg[:content])
+    end
+
+    # Add current user message
+    llm_chat.add_message(role: "user", content: @user_message.content)
+
+    # Set tools if the LLM supports them
+    if llm_chat.respond_to?(:tools=) && tools.present?
+      llm_chat.tools = tools
+    end
+
+    # Get completion with tool support
+    response = llm_chat.complete
+
+    # Check if response includes tool calls
+    if response.is_a?(Hash) && response[:tool_calls].present?
+      # Return first tool call for execution
+      tool_call = response[:tool_calls].first
+      {
+        type: :tool_call,
+        tool_name: tool_call[:name] || tool_call["name"],
+        tool_input: tool_call[:arguments] || tool_call["arguments"] || {}
+      }
+    else
+      # Return text response
+      extract_response_content(response)
+    end
+  rescue => e
+    Rails.logger.error("RubyLLM error: #{e.class} - #{e.message}")
+    Rails.logger.error(e.backtrace.join("\n"))
+    nil
+  end
+
+  # Build an enhanced system prompt that explains available tools and features
+  def enhanced_system_prompt
+    base_prompt = @context.system_prompt
+
+    # Add tool instructions
+    tool_instructions = <<~PROMPT
+      You can help users by:
+      1. Answering questions about their data
+      2. Navigating them to specific pages (when they ask to "show all users", "list organizations", etc.)
+      3. Creating new resources (users, teams, lists) when requested
+      4. Updating existing resources (changing roles, statuses, etc.)
+      5. Searching for information across the app
+
+      When a user asks to view something like "show me active users" or "list all organizations",
+      recognize their intent and help them navigate to the appropriate page or retrieve the information.
+    PROMPT
+
+    "#{base_prompt}\n\n#{tool_instructions}"
   end
 end

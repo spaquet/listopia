@@ -1,0 +1,113 @@
+<!-- app/views/message_templates/_resource.html.erb
+     Renders resource creation/update results from tool calls
+-->
+
+<div class="tool-result bg-green-50 rounded-lg border border-green-200">
+  <!-- Header -->
+  <div class="px-4 py-3 bg-green-100 border-b border-green-200">
+    <div class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <h3 class="text-sm font-semibold text-green-900">
+        <%= message.content %>
+      </h3>
+    </div>
+  </div>
+
+  <!-- Resource Details -->
+  <div class="p-4 space-y-2">
+    <% item = data[:item] %>
+    <% if item.present? %>
+      <div class="grid grid-cols-2 gap-4">
+        <% if item[:name].present? || item[:title].present? %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700">Name</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <%= item[:name] || item[:title] %>
+            </p>
+          </div>
+        <% end %>
+
+        <% if item[:email].present? %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700">Email</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <%= item[:email] %>
+            </p>
+          </div>
+        <% end %>
+
+        <% if item[:role].present? %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700">Role</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <%= item[:role].humanize %>
+              </span>
+            </p>
+          </div>
+        <% end %>
+
+        <% if item[:status].present? %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700">Status</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <%= status_badge_class(item[:status]) %>">
+                <%= item[:status].humanize %>
+              </span>
+            </p>
+          </div>
+        <% end %>
+
+        <% if item[:created_at].present? %>
+          <div>
+            <label class="block text-xs font-medium text-gray-700">Created</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <%= item[:created_at] %>
+            </p>
+          </div>
+        <% end %>
+
+        <% if item[:description].present? %>
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-700">Description</label>
+            <p class="text-sm text-gray-900 mt-1">
+              <%= item[:description] %>
+            </p>
+          </div>
+        <% end %>
+      </div>
+
+      <% if item[:url].present? %>
+        <div class="pt-3 border-t border-green-200">
+          <a href="<%= item[:url] %>"
+             class="inline-flex items-center gap-2 text-sm font-medium text-green-700 hover:text-green-800">
+            View resource
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </a>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="text-sm text-green-900">Operation completed successfully.</p>
+    <% end %>
+  </div>
+
+  <!-- Hidden tool result data -->
+  <div data-tool-result="<%= data.to_json %>"></div>
+</div>
+
+<% def status_badge_class(status) %>
+  <% case status %>
+  <% when 'active', 'pending' %>
+    bg-green-100 text-green-800
+  <% when 'suspended', 'archived' %>
+    bg-red-100 text-red-800
+  <% when 'inactive' %>
+    bg-gray-100 text-gray-800
+  <% else %>
+    bg-gray-100 text-gray-800
+  <% end %>
+<% end %>

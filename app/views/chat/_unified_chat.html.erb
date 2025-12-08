@@ -4,9 +4,10 @@
 -->
 
 <div id="unified-chat"
-     data-controller="unified-chat"
+     data-controller="unified-chat chat-navigation"
      data-unified-chat-location-value="<%= context.location %>"
      data-unified-chat-chat-id-value="<%= chat.id %>"
+     data-chat-navigation-chat-id-value="<%= chat.id %>"
      class="<%= context.ui_config[:position] %> <% if context.in_location?(:floating) %>shadow-2xl rounded-lg border border-gray-200<% end %>">
 
   <!-- Chat Container -->
