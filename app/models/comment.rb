@@ -35,7 +35,7 @@ class Comment < ApplicationRecord
 
   # Full-text search scope
   pg_search_scope :search_by_keyword,
-    against: { content: 'A' },
+    against: { content: "A" },
     using: { tsearch: { prefix: true } }
 
   # Add role support

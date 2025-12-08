@@ -6,13 +6,13 @@ class SearchService < ApplicationService
   def initialize(query:, user:, models: nil, limit: 20, use_vector: true)
     @query = query
     @user = user
-    @models = Array(models || [List, ListItem, Comment, ActsAsTaggableOn::Tag]).compact
+    @models = Array(models || [ List, ListItem, Comment, ActsAsTaggableOn::Tag ]).compact
     @limit = limit
     @use_vector = use_vector && embedding_api_available?
   end
 
   def call
-    return failure(errors: ["Query cannot be blank"]) if @query.blank?
+    return failure(errors: [ "Query cannot be blank" ]) if @query.blank?
 
     results = search_all_models
     ranked_results = rank_results(results)
@@ -21,7 +21,7 @@ class SearchService < ApplicationService
     success(data: scoped_results.take(@limit))
   rescue StandardError => e
     Rails.logger.error("Search failed: #{e.class} - #{e.message}")
-    failure(errors: [e.message], message: "Search failed")
+    failure(errors: [ e.message ], message: "Search failed")
   end
 
   private

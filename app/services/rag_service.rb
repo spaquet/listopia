@@ -11,18 +11,18 @@ class RagService < ApplicationService
   end
 
   def call
-    return failure(errors: ["User not found"]) unless @user
-    return failure(errors: ["Query cannot be blank"]) if @query.blank?
+    return failure(errors: [ "User not found" ]) unless @user
+    return failure(errors: [ "Query cannot be blank" ]) if @query.blank?
 
     # Search for relevant context
     search_result = SearchService.call(
       query: @query,
       user: @user,
-      models: [List, ListItem, Comment],
+      models: [ List, ListItem, Comment ],
       limit: @max_context_items
     )
 
-    return failure(errors: ["Search failed"]) unless search_result.success?
+    return failure(errors: [ "Search failed" ]) unless search_result.success?
 
     context_items = build_context(search_result.data)
     enhanced_prompt = build_prompt(context_items)
@@ -35,7 +35,7 @@ class RagService < ApplicationService
     })
   rescue StandardError => e
     Rails.logger.error("RAG context assembly failed: #{e.class} - #{e.message}")
-    failure(errors: [e.message], message: "RAG context assembly failed")
+    failure(errors: [ e.message ], message: "RAG context assembly failed")
   end
 
   private

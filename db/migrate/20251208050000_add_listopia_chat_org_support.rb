@@ -47,31 +47,31 @@ class AddListopiaChatOrgSupport < ActiveRecord::Migration[8.1]
     # ===== Indexes for Performance =====
     # Chat indexes
     add_index :chats, :user_id unless index_exists?(:chats, :user_id)
-    add_index :chats, [:user_id, :created_at] unless index_exists?(:chats, [:user_id, :created_at])
-    add_index :chats, [:user_id, :status] unless index_exists?(:chats, [:user_id, :status])
+    add_index :chats, [ :user_id, :created_at ] unless index_exists?(:chats, [ :user_id, :created_at ])
+    add_index :chats, [ :user_id, :status ] unless index_exists?(:chats, [ :user_id, :status ])
     add_index :chats, :status unless index_exists?(:chats, :status)
     add_index :chats, :last_message_at unless index_exists?(:chats, :last_message_at)
     add_index :chats, :last_stable_at unless index_exists?(:chats, :last_stable_at)
 
     # Organization/Team indexes
     add_index :chats, :organization_id unless index_exists?(:chats, :organization_id)
-    add_index :chats, [:organization_id, :user_id] unless index_exists?(:chats, [:organization_id, :user_id])
-    add_index :chats, [:organization_id, :created_at] unless index_exists?(:chats, [:organization_id, :created_at])
+    add_index :chats, [ :organization_id, :user_id ] unless index_exists?(:chats, [ :organization_id, :user_id ])
+    add_index :chats, [ :organization_id, :created_at ] unless index_exists?(:chats, [ :organization_id, :created_at ])
     add_index :chats, :team_id unless index_exists?(:chats, :team_id)
-    add_index :chats, [:team_id, :user_id] unless index_exists?(:chats, [:team_id, :user_id])
+    add_index :chats, [ :team_id, :user_id ] unless index_exists?(:chats, [ :team_id, :user_id ])
     add_index :chats, :visibility unless index_exists?(:chats, :visibility)
 
     # Message indexes
     add_index :messages, :user_id unless index_exists?(:messages, :user_id)
-    add_index :messages, [:user_id, :created_at] unless index_exists?(:messages, [:user_id, :created_at])
+    add_index :messages, [ :user_id, :created_at ] unless index_exists?(:messages, [ :user_id, :created_at ])
     add_index :messages, :message_type unless index_exists?(:messages, :message_type)
     add_index :messages, :llm_provider unless index_exists?(:messages, :llm_provider)
-    add_index :messages, [:llm_provider, :llm_model] unless index_exists?(:messages, [:llm_provider, :llm_model])
+    add_index :messages, [ :llm_provider, :llm_model ] unless index_exists?(:messages, [ :llm_provider, :llm_model ])
     add_index :messages, :model_id_string unless index_exists?(:messages, :model_id_string)
     add_index :messages, :tool_call_id unless index_exists?(:messages, :tool_call_id)
 
     # Organization indexes
     add_index :messages, :organization_id unless index_exists?(:messages, :organization_id)
-    add_index :messages, [:organization_id, :user_id] unless index_exists?(:messages, [:organization_id, :user_id])
+    add_index :messages, [ :organization_id, :user_id ] unless index_exists?(:messages, [ :organization_id, :user_id ])
   end
 end

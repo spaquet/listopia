@@ -72,7 +72,7 @@ class ListItem < ApplicationRecord
 
   # Full-text search scope
   pg_search_scope :search_by_keyword,
-    against: { title: 'A', description: 'B' },
+    against: { title: "A", description: "B" },
     using: { tsearch: { prefix: true } }
 
   # Track changes for notifications

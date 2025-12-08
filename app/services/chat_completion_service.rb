@@ -17,8 +17,8 @@ class ChatCompletionService < ApplicationService
   end
 
   def call
-    return failure(errors: ["Chat not found"]) unless @chat
-    return failure(errors: ["User message not found"]) unless @user_message
+    return failure(errors: [ "Chat not found" ]) unless @chat
+    return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
       # Get or determine the model to use
@@ -33,7 +33,7 @@ class ChatCompletionService < ApplicationService
       # Call RubyLLM with the message history
       response = call_llm(model, system_prompt, message_history)
 
-      return failure(errors: ["LLM call failed"]) if response.blank?
+      return failure(errors: [ "LLM call failed" ]) if response.blank?
 
       # Create assistant message
       assistant_message = Message.create_assistant(
@@ -47,7 +47,7 @@ class ChatCompletionService < ApplicationService
       success(data: assistant_message)
     rescue StandardError => e
       Rails.logger.error("Chat completion failed: #{e.class} - #{e.message}")
-      failure(errors: [e.message], message: "Failed to generate response")
+      failure(errors: [ e.message ], message: "Failed to generate response")
     end
   end
 

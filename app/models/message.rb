@@ -9,6 +9,7 @@
 # Table name: messages
 #
 #  id                    :uuid             not null, primary key
+#  blocked               :boolean          default(FALSE)
 #  cache_creation_tokens :integer
 #  cached_tokens         :integer
 #  content               :text
@@ -35,6 +36,7 @@
 #
 # Indexes
 #
+#  index_messages_on_blocked                      (blocked)
 #  index_messages_on_chat_and_tool_call_id        (chat_id,tool_call_id) WHERE (tool_call_id IS NOT NULL)
 #  index_messages_on_chat_id                      (chat_id)
 #  index_messages_on_chat_id_and_created_at       (chat_id,created_at)
@@ -66,7 +68,7 @@ class Message < ApplicationRecord
   has_many :feedbacks, class_name: "MessageFeedback", dependent: :destroy
 
   # Store template data in metadata
-  store :metadata, accessors: [:template_data, :rag_sources, :attachments], coder: JSON
+  store :metadata, accessors: [ :template_data, :rag_sources, :attachments ], coder: JSON
 
   enum :role, { user: "user", assistant: "assistant", system: "system", tool: "tool" }
 

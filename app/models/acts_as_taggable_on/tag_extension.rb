@@ -9,7 +9,7 @@ module ActsAsTaggableOn
 
       # Full-text search scope
       pg_search_scope :search_by_keyword,
-        against: { name: 'A' },
+        against: { name: "A" },
         using: { tsearch: { prefix: true } }
     end
 

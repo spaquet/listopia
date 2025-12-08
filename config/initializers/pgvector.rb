@@ -17,5 +17,5 @@ ActiveRecord::Type.register(:vector, VectorType)
 
 # Also register it with the PostgreSQL adapter
 if defined?(ActiveRecord::ConnectionAdapters::PostgreSQLAdapter)
-  ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:vector] = { name: 'vector' }
+  ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:vector] = { name: "vector" }
 end

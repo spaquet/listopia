@@ -84,7 +84,7 @@ Rails.application.routes.draw do
   end
 
   # Message feedback routes
-  resources :message_feedbacks, only: [:create], path: "chats/:chat_id/messages/:message_id/feedbacks"
+  resources :message_feedbacks, only: [ :create ], path: "chats/:chat_id/messages/:message_id/feedbacks"
 
   # Lists
   resources :lists do

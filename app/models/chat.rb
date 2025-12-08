@@ -60,7 +60,7 @@ class Chat < ApplicationRecord
 
   has_many :messages, dependent: :destroy
 
-  store :metadata, accessors: [:rag_enabled, :model, :system_prompt], coder: JSON
+  store :metadata, accessors: [ :rag_enabled, :model, :system_prompt ], coder: JSON
 
   enum :status, { active: "active", archived: "archived", deleted: "deleted" }
 
@@ -104,7 +104,7 @@ class Chat < ApplicationRecord
 
   # Get conversation turn count (user + assistant pairs)
   def turn_count
-    (user_message_count.to_f / [assistant_message_count, 1].max).ceil
+    (user_message_count.to_f / [ assistant_message_count, 1 ].max).ceil
   end
 
   # Auto-generate title from first user message

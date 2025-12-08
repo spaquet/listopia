@@ -12,8 +12,8 @@ class CreateMessageFeedbacks < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :message_feedbacks, [:message_id, :user_id], unique: true
-    add_index :message_feedbacks, [:user_id, :created_at]
+    add_index :message_feedbacks, [ :message_id, :user_id ], unique: true
+    add_index :message_feedbacks, [ :user_id, :created_at ]
     add_index :message_feedbacks, :chat_id
     add_index :message_feedbacks, :rating
 

@@ -78,12 +78,12 @@ module ChatHelper
         div span class
       ],
       attributes: {
-        "a" => ["href", "target", "rel", "title"],
-        "img" => ["src", "alt", "title"],
-        "code" => ["class"],
-        "pre" => ["class"],
-        "div" => ["class", "data-language"],
-        "span" => ["class"]
+        "a" => [ "href", "target", "rel", "title" ],
+        "img" => [ "src", "alt", "title" ],
+        "code" => [ "class" ],
+        "pre" => [ "class" ],
+        "div" => [ "class", "data-language" ],
+        "span" => [ "class" ]
       }
     )
   end

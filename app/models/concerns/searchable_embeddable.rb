@@ -13,7 +13,7 @@ module SearchableEmbeddable
     before_save :mark_embedding_stale, if: :content_changed?
 
     # Schedule embedding generation after save
-    after_commit :schedule_embedding_generation, on: [:create, :update]
+    after_commit :schedule_embedding_generation, on: [ :create, :update ]
   end
 
   class_methods do

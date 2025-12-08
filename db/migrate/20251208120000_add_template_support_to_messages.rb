@@ -9,7 +9,7 @@ class AddTemplateSupportToMessages < ActiveRecord::Migration[8.1]
     add_index :messages, :template_type, if_not_exists: true
     add_index :messages, :chat_id, if_not_exists: true
     add_index :messages, :user_id, if_not_exists: true
-    add_index :messages, [:chat_id, :created_at], if_not_exists: true
+    add_index :messages, [ :chat_id, :created_at ], if_not_exists: true
 
     add_foreign_key :messages, :chats, if_not_exists: true
     add_foreign_key :messages, :users, if_not_exists: true

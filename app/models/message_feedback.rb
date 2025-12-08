@@ -45,7 +45,7 @@ class MessageFeedback < ApplicationRecord
   validates :chat_id, presence: true
 
   # Only one feedback per user per message
-  validates :user_id, uniqueness: { scope: [:message_id], message: "can only rate a message once" }
+  validates :user_id, uniqueness: { scope: [ :message_id ], message: "can only rate a message once" }
 
   scope :by_user, ->(user) { where(user_id: user.id) }
   scope :by_chat, ->(chat) { where(chat_id: chat.id) }

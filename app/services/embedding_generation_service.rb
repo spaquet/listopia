@@ -7,15 +7,15 @@ class EmbeddingGenerationService < ApplicationService
   end
 
   def call
-    return failure(errors: ["Record not found"]) unless @record
+    return failure(errors: [ "Record not found" ]) unless @record
 
     content = @record.content_for_embedding
-    return failure(errors: ["No content to embed"]) if content.blank?
+    return failure(errors: [ "No content to embed" ]) if content.blank?
 
     Rails.logger.info("Generating embedding for #{@record.class.name} #{@record.id}")
 
     embedding_vector = fetch_embedding(content)
-    return failure(errors: ["Failed to generate embedding"]) if embedding_vector.nil?
+    return failure(errors: [ "Failed to generate embedding" ]) if embedding_vector.nil?
 
     @record.update_columns(
       embedding: embedding_vector,
@@ -27,7 +27,7 @@ class EmbeddingGenerationService < ApplicationService
     success(data: @record)
   rescue StandardError => e
     Rails.logger.error("Embedding generation failed for #{@record.class.name} #{@record.id}: #{e.message}")
-    failure(errors: [e.message], message: "Embedding generation failed")
+    failure(errors: [ e.message ], message: "Embedding generation failed")
   end
 
   private

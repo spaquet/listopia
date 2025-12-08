@@ -5,8 +5,8 @@
 
 class ChatsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_chat, except: [:index, :create]
-  before_action :authorize_chat, except: [:index, :create]
+  before_action :set_chat, except: [ :index, :create ]
+  before_action :authorize_chat, except: [ :index, :create ]
 
   # List all chats for current user
   def index
@@ -49,6 +49,31 @@ class ChatsController < ApplicationController
 
     return if content.blank?
 
+    # SECURITY CHECK 1: Detect prompt injection attempts
+    injection_detector = PromptInjectionDetector.new(message: content, context: @chat.focused_resource)
+    injection_result = injection_detector.call
+
+    if injection_result[:detected] && injection_result[:risk_level] == "high"
+      create_security_log(
+        violation_type: :prompt_injection,
+        action_taken: :blocked,
+        detected_patterns: injection_result[:patterns],
+        risk_score: injection_result[:risk_score],
+        details: "High-risk prompt injection attempt detected"
+      )
+      return render_security_error("Suspicious input detected and blocked for security reasons", 422)
+    end
+
+    if injection_result[:detected]
+      create_security_log(
+        violation_type: :prompt_injection,
+        action_taken: :warned,
+        detected_patterns: injection_result[:patterns],
+        risk_score: injection_result[:risk_score],
+        details: "Medium-risk prompt injection attempt - message allowed"
+      )
+    end
+
     # Create user message
     @user_message = Message.create_user(
       chat: @chat,
@@ -56,7 +81,33 @@ class ChatsController < ApplicationController
       content: content
     )
 
-    # Process message (handle commands, generate response, etc.)
+    # SECURITY CHECK 2: Check content moderation (OpenAI)
+    moderation_service = ContentModerationService.new(
+      content: content,
+      user: current_user,
+      chat: @chat
+    )
+    moderation_result = moderation_service.call
+
+    if moderation_result[:flagged]
+      @user_message.update(blocked: true)
+      violation_type = categorize_moderation_violation(moderation_result[:categories])
+      create_security_log(
+        violation_type: violation_type,
+        action_taken: :blocked,
+        message: @user_message,
+        detected_patterns: moderation_result[:categories].select { |_k, v| v }.keys.map(&:to_s),
+        moderation_scores: moderation_result[:scores],
+        details: "Content flagged by OpenAI moderation"
+      )
+
+      # Check if auto-archive threshold is exceeded
+      ModerationLog.check_auto_archive(@chat, current_organization)
+
+      return render_security_error("This message violates content policies and cannot be sent", 422)
+    end
+
+    # Process message normally (handle commands, generate response, etc.)
     @assistant_message = process_message(@user_message)
 
     @chat_context = @chat.build_context(location: :dashboard)
@@ -236,5 +287,73 @@ class ChatsController < ApplicationController
       created_at: result[:created_at],
       item_count: result[:item_count]
     }
+  end
+
+  # Create security/moderation log entry
+  def create_security_log(violation_type:, action_taken:, message: nil, **details)
+    ModerationLog.create!(
+      chat: @chat,
+      message: message,
+      user: current_user,
+      organization: current_organization,
+      violation_type: violation_type,
+      action_taken: action_taken,
+      **details
+    )
+  rescue StandardError => e
+    Rails.logger.error("Failed to create security log: #{e.message}")
+  end
+
+  # Render error for blocked messages
+  def render_security_error(error_message, status = 422)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "unified-chat [data-unified-chat-target='messagesContainer']",
+          partial: "shared/chat_message",
+          locals: {
+            message: create_error_message(error_message),
+            chat_context: @chat.build_context(location: :dashboard)
+          }
+        ), status: status
+      end
+      format.json { render json: { error: error_message }, status: status }
+    end
+  end
+
+  # Create a temporary error message object (not saved to DB)
+  def create_error_message(text)
+    Message.new(
+      content: text,
+      role: :tool,
+      template_type: "error",
+      metadata: { error_message: text }
+    )
+  end
+
+  # Categorize moderation violation based on flagged categories
+  def categorize_moderation_violation(flagged_categories)
+    return :other if flagged_categories.blank?
+
+    # Map OpenAI moderation categories to our violation types
+    if flagged_categories[:self_harm] || flagged_categories[:self_harm_intent] || flagged_categories[:self_harm_instructions]
+      :self_harm
+    elsif flagged_categories[:sexual_minors]
+      :sexual_content
+    elsif flagged_categories[:sexual]
+      :sexual_content
+    elsif flagged_categories[:violence_graphic]
+      :violence
+    elsif flagged_categories[:violence]
+      :violence
+    elsif flagged_categories[:harassment_threatening] || flagged_categories[:harassment]
+      :harassment
+    elsif flagged_categories[:hate_threatening]
+      :hate_speech
+    elsif flagged_categories[:hate]
+      :hate_speech
+    else
+      :other
+    end
   end
 end

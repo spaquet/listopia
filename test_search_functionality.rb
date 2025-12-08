@@ -13,9 +13,9 @@ puts "\n1️⃣  CHECKING DATABASE COLUMNS"
 puts "-" * 80
 
 models_to_check = {
-  List => [:embedding, :embedding_generated_at, :requires_embedding_update, :search_document],
-  ListItem => [:embedding, :embedding_generated_at, :requires_embedding_update, :search_document],
-  Comment => [:embedding, :embedding_generated_at, :requires_embedding_update, :search_document],
+  List => [ :embedding, :embedding_generated_at, :requires_embedding_update, :search_document ],
+  ListItem => [ :embedding, :embedding_generated_at, :requires_embedding_update, :search_document ],
+  Comment => [ :embedding, :embedding_generated_at, :requires_embedding_update, :search_document ]
 }
 
 models_to_check.each do |model, required_columns|
@@ -37,7 +37,7 @@ end
 puts "\n2️⃣  CHECKING SEARCHABLE CONCERN INCLUSION"
 puts "-" * 80
 
-models_with_concern = [List, ListItem, Comment]
+models_with_concern = [ List, ListItem, Comment ]
 models_with_concern.each do |model|
   if model.included_modules.include?(SearchableEmbeddable)
     puts "✅ #{model.name} includes SearchableEmbeddable"
@@ -78,7 +78,7 @@ end
 test_lists = [
   { title: "Implement Authentication System", description: "Add OAuth2 and JWT support" },
   { title: "Refactor Database Schema", description: "Optimize queries and add indexes" },
-  { title: "Build User Dashboard", description: "Create responsive dashboard with analytics" },
+  { title: "Build User Dashboard", description: "Create responsive dashboard with analytics" }
 ]
 
 created_lists = test_lists.map do |attrs|
@@ -98,7 +98,7 @@ created_lists.each_with_index do |list, idx|
   item_attrs = [
     { title: "Design API endpoints", description: "RESTful API design" },
     { title: "Write unit tests", description: "80% code coverage target" },
-    { title: "Set up CI/CD", description: "GitHub Actions workflow" },
+    { title: "Set up CI/CD", description: "GitHub Actions workflow" }
   ]
 
   item_attrs.each_with_index do |attrs, position|
@@ -119,7 +119,7 @@ created_lists.first(2).each do |list|
   comment_attrs = [
     "This is a critical feature",
     "We need to prioritize this",
-    "Should coordinate with the backend team",
+    "Should coordinate with the backend team"
   ]
 
   comment_attrs.each do |content|
@@ -147,7 +147,7 @@ search_queries = [
   "database",
   "dashboard",
   "test",
-  "critical feature",
+  "critical feature"
 ]
 
 search_queries.each do |query|
@@ -176,7 +176,7 @@ puts "-" * 80
 
 rag_queries = [
   "What am I working on?",
-  "Tell me about the authentication work",
+  "Tell me about the authentication work"
 ]
 
 rag_queries.each do |query|
@@ -214,7 +214,7 @@ puts "  content_for_embedding: #{test_list.send(:content_for_embedding)[0..80]}.
 puts "\n8️⃣  TESTING KEYWORD SEARCH"
 puts "-" * 80
 
-keyword_searches = ["authentication", "tests", "design"]
+keyword_searches = [ "authentication", "tests", "design" ]
 
 keyword_searches.each do |keyword|
   puts "\nKeyword: '#{keyword}'"

@@ -1139,7 +1139,8 @@ CREATE TABLE public.messages (
     token_count integer,
     processing_time numeric(8,3),
     organization_id uuid,
-    template_type character varying
+    template_type character varying,
+    blocked boolean DEFAULT false
 );
 
 
@@ -1183,6 +1184,27 @@ CREATE SEQUENCE public.models_id_seq
 --
 
 ALTER SEQUENCE public.models_id_seq OWNED BY public.models.id;
+
+
+--
+-- Name: moderation_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.moderation_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    chat_id uuid,
+    message_id uuid,
+    user_id uuid,
+    organization_id uuid,
+    violation_type integer DEFAULT 0,
+    action_taken integer DEFAULT 0,
+    detected_patterns jsonb DEFAULT '[]'::jsonb,
+    moderation_scores jsonb DEFAULT '{}'::jsonb,
+    prompt_injection_risk character varying DEFAULT 'low'::character varying,
+    details text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
 
 
 --
@@ -1640,6 +1662,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.models
     ADD CONSTRAINT models_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: moderation_logs moderation_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT moderation_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -2332,6 +2362,13 @@ CREATE INDEX index_message_feedbacks_on_user_id_and_created_at ON public.message
 
 
 --
+-- Name: index_messages_on_blocked; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_blocked ON public.messages USING btree (blocked);
+
+
+--
 -- Name: index_messages_on_chat_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2469,6 +2506,62 @@ CREATE INDEX index_models_on_provider ON public.models USING btree (provider);
 --
 
 CREATE UNIQUE INDEX index_models_on_provider_and_model_id ON public.models USING btree (provider, model_id);
+
+
+--
+-- Name: index_moderation_logs_on_action_taken; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_action_taken ON public.moderation_logs USING btree (action_taken);
+
+
+--
+-- Name: index_moderation_logs_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_chat_id ON public.moderation_logs USING btree (chat_id);
+
+
+--
+-- Name: index_moderation_logs_on_message_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_message_id ON public.moderation_logs USING btree (message_id);
+
+
+--
+-- Name: index_moderation_logs_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_organization_id ON public.moderation_logs USING btree (organization_id);
+
+
+--
+-- Name: index_moderation_logs_on_organization_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_organization_id_and_created_at ON public.moderation_logs USING btree (organization_id, created_at);
+
+
+--
+-- Name: index_moderation_logs_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_user_id ON public.moderation_logs USING btree (user_id);
+
+
+--
+-- Name: index_moderation_logs_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_user_id_and_created_at ON public.moderation_logs USING btree (user_id, created_at);
+
+
+--
+-- Name: index_moderation_logs_on_violation_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_violation_type ON public.moderation_logs USING btree (violation_type);
 
 
 --
@@ -3007,6 +3100,14 @@ ALTER TABLE ONLY public.notification_settings
 
 
 --
+-- Name: moderation_logs fk_rails_0f166e8887; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_0f166e8887 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: messages fk_rails_0f670de7ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3063,6 +3164,14 @@ ALTER TABLE ONLY public.recovery_contexts
 
 
 --
+-- Name: moderation_logs fk_rails_5212b548a1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_5212b548a1 FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
 -- Name: message_feedbacks fk_rails_54dd88c416; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3100,6 +3209,14 @@ ALTER TABLE ONLY public.message_feedbacks
 
 ALTER TABLE ONLY public.team_memberships
     ADD CONSTRAINT fk_rails_5aba9331a7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: moderation_logs fk_rails_61576f3f6e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_61576f3f6e FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -3279,6 +3396,14 @@ ALTER TABLE ONLY public.teams
 
 
 --
+-- Name: moderation_logs fk_rails_f309c5a816; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_f309c5a816 FOREIGN KEY (message_id) REFERENCES public.messages(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_f37be66aa7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3301,6 +3426,8 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208185450'),
+('20251208185230'),
 ('20251208182655'),
 ('20251208120001'),
 ('20251208120000'),
