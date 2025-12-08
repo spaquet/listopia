@@ -90,13 +90,16 @@ export default class extends Controller {
       return response.text()
     })
     .then(html => {
-      // Process each turbo-stream action in the response
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(html, "text/html")
-      const turboStreams = doc.querySelectorAll("turbo-stream")
+      // Create a temporary container and insert the turbo-stream HTML
+      const template = document.createElement("template")
+      template.innerHTML = html
 
+      // Process all turbo-stream elements
+      const turboStreams = template.content.querySelectorAll("turbo-stream")
       turboStreams.forEach(element => {
-        Turbo.connectStreamElement(element)
+        // Append to document so Turbo can process it
+        document.body.appendChild(element)
+        // Turbo will automatically process turbo-stream elements when connected to DOM
       })
 
       // Update URL without full page reload
@@ -142,13 +145,16 @@ export default class extends Controller {
       return response.text()
     })
     .then(html => {
-      // Process each turbo-stream action in the response
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(html, "text/html")
-      const turboStreams = doc.querySelectorAll("turbo-stream")
+      // Create a temporary container and insert the turbo-stream HTML
+      const template = document.createElement("template")
+      template.innerHTML = html
 
+      // Process all turbo-stream elements
+      const turboStreams = template.content.querySelectorAll("turbo-stream")
       turboStreams.forEach(element => {
-        Turbo.connectStreamElement(element)
+        // Append to document so Turbo can process it
+        document.body.appendChild(element)
+        // Turbo will automatically process turbo-stream elements when connected to DOM
       })
 
       // Update URL without full page reload
