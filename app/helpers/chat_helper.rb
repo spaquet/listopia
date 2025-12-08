@@ -237,15 +237,15 @@ module ChatHelper
       ref_url = reference["url"]
 
       link_text = case ref_type
-                  when "list"
+      when "list"
                     "#{reference_text} (#{reference['title']})"
-                  when "item"
+      when "item"
                     "#{reference_text} (#{reference['title']} in #{reference['list_title']})"
-                  when "team"
+      when "team"
                     "#{reference_text} (#{reference['name']})"
-                  else
+      else
                     reference_text
-                  end
+      end
 
       link_html = content_tag(
         :a,
@@ -297,15 +297,15 @@ module ChatHelper
   # Render reference badge
   def render_reference_badge(reference)
     icon = case reference["type"]
-           when "list"
+    when "list"
              "📝"
-           when "item"
+    when "item"
              "✓"
-           when "team"
+    when "team"
              "👥"
-           else
+    else
              "🔗"
-           end
+    end
 
     title = reference["title"] || reference["name"]
     content_tag(

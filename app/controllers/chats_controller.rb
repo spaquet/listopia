@@ -44,7 +44,12 @@ class ChatsController < ApplicationController
 
   # Submit message to chat
   def create_message
-    message_params = params.require(:message).permit(:content)
+    begin
+      message_params = params.require(:message).permit(:content)
+    rescue ActionController::ParameterMissing
+      return render_security_error("Message content is required", 422)
+    end
+
     content = message_params[:content].strip
 
     return if content.blank?
