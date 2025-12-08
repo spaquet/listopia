@@ -1,7 +1,9 @@
 <!-- app/views/lists/_filters.html.erb -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
      data-controller="list-filter"
-     data-list-filter-debounce-delay="300">
+     data-list-filter-debounce-delay="300"
+     data-turbo-permanent
+     id="lists-filter-container">
   <div class="flex flex-col space-y-4">
     <!-- Search -->
     <div class="w-full">

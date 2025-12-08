@@ -290,19 +290,25 @@ class ApplicationController < ActionController::Base
 
   # Initialize floating chat for all pages (only for signed-in users)
   # Exclude dashboard page since it has integrated chat sidebar
+  # Uses the same chat instance as the dashboard for unified experience
   def initialize_floating_chat
     return unless user_signed_in? && current_organization.present?
     return if on_dashboard_page?
 
-    # Get or create an active floating chat for the user
+    # Get the most recent active chat for the user (same as dashboard)
     @floating_chat = current_user.chats
       .active
       .by_organization(current_organization)
-      .where(title: "Floating Chat")
-      .first_or_create!(
+      .recent
+      .first
+
+    # If no active chat exists, create one
+    unless @floating_chat.present?
+      @floating_chat = current_user.chats.create!(
         organization: current_organization,
-        title: "Floating Chat"
+        title: "Main Chat"
       )
+    end
 
     # Build context for floating location
     @floating_chat_context = @floating_chat.build_context(location: :floating)

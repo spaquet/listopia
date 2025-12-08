@@ -162,6 +162,7 @@ class DashboardController < ApplicationController
   # Initialize or fetch the active chat for dashboard
   def initialize_dashboard_chat
     # Get the most recent active chat for the user in this organization
+    # This is the same chat used for floating chat (unified across app)
     chat = current_user.chats
                       .by_organization(current_organization)
                       .active
@@ -172,7 +173,7 @@ class DashboardController < ApplicationController
     unless chat.present?
       chat = current_user.chats.create!(
         organization: current_organization,
-        title: "Dashboard Chat"
+        title: "Main Chat"
       )
     end
 

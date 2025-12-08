@@ -1,6 +1,7 @@
 <!-- app/views/chat/_floating_chat.html.erb
      Floating chat widget that appears on all pages (bottom-right corner)
-     Toggles between collapsed and expanded states
+     Renders unified chat in a floating container that toggles between collapsed and expanded
+     Uses the same chat instance as the dashboard for unified message history
 -->
 
 <div id="floating-chat-widget"
@@ -20,73 +21,42 @@
     </svg>
   </button>
 
-  <!-- Chat container (expanded state) -->
+  <!-- Chat container (expanded state) with close button -->
   <div id="floating-chat-container"
        data-floating-chat-target="chatContainer"
-       class="floating-chat-container hidden w-96 max-w-[90vw] rounded-lg shadow-2xl border border-gray-200 overflow-hidden bg-white"
-       style="height: 500px;">
+       class="floating-chat-container hidden w-96 max-w-[90vw] rounded-lg shadow-2xl border border-gray-200 overflow-hidden bg-white flex flex-col"
+       style="height: 500px;"
+       aria-hidden="true">
 
-    <!-- Chat Header with close button -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-      <div class="flex items-center gap-2">
-        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-        <h3 class="font-semibold text-gray-900 text-sm">Listopia Assistant</h3>
-      </div>
-      <button data-action="floating-chat#collapse"
-              data-floating-chat-target="closeButton"
-              class="text-gray-500 hover:text-gray-700 transition-colors"
-              title="Collapse chat"
-              aria-label="Collapse chat">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
+    <!-- Close button (positioned at top-right) -->
+    <button data-action="floating-chat#collapse"
+            data-floating-chat-target="closeButton"
+            class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors z-10 p-1"
+            title="Collapse chat"
+            aria-label="Collapse chat">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
 
-    <!-- Chat Messages Container -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4"
-         data-unified-chat-target="messagesContainer">
-      <!-- Messages will be loaded here -->
-      <div class="flex flex-col items-center justify-center h-full gap-2 text-center">
-        <div class="text-3xl">💬</div>
-        <p class="text-sm text-gray-600">Start a conversation</p>
-        <p class="text-xs text-gray-500">Ask anything or use commands</p>
-      </div>
-    </div>
-
-    <!-- Input Area -->
-    <div class="border-t border-gray-200 p-3 bg-gray-50">
-      <div class="flex gap-2">
-        <!-- Message Input -->
-        <input type="text"
-               id="floating-message-input"
-               data-unified-chat-target="messageInput"
-               data-action="keydown->unified-chat#submitOnEnter"
-               placeholder="Type a message..."
-               class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-               autocomplete="off">
-
-        <!-- Submit Button -->
-        <button data-action="unified-chat#submitMessage"
-                data-unified-chat-target="submitButton"
-                class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Send message">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-          </svg>
-        </button>
-      </div>
+    <!-- Unified chat component wrapped for floating context -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <%= render "chat/unified_chat",
+                 chat: @floating_chat,
+                 context: @floating_chat_context,
+                 message_history: @floating_chat.present? ? @floating_chat.recent_messages(50) : [] %>
     </div>
   </div>
 </div>
 
 <style>
-  /* Floating chat animations */
-  .floating-chat-container {
+  /* Floating chat container positioning and animations */
+  #floating-chat-container {
+    position: relative;
     animation: slideIn 0.3s ease-out;
   }
 
-  .floating-chat-container.hidden {
+  #floating-chat-container.hidden {
     animation: slideOut 0.3s ease-out;
   }
 
@@ -115,5 +85,21 @@
   /* Hide toggle button when chat is open */
   .floating-chat-toggle.hidden {
     display: none;
+  }
+
+  /* Adjust unified chat for floating context */
+  #floating-chat-container #unified-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  #floating-chat-container #unified-chat > div:first-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 </style>
