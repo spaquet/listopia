@@ -34,6 +34,9 @@ application.register("error-handler", ErrorHandlerController)
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
 
+import FloatingChatController from "./floating_chat_controller"
+application.register("floating-chat", FloatingChatController)
+
 import InlineEditController from "./inline_edit_controller"
 application.register("inline-edit", InlineEditController)
 

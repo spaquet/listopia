@@ -29,5 +29,9 @@
     <%= turbo_frame_tag "org_switcher_modal" %>
     <!-- Error Handler Notification Container -->
     <div data-error-handler-target="notification" class="hidden"></div>
+    <!-- Floating Chat Widget (on all pages) -->
+    <% if user_signed_in? && @floating_chat.present? && @floating_chat_context.present? %>
+      <%= render "chat/floating_chat" %>
+    <% end %>
   </body>
 </html>
