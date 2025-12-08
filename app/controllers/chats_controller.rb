@@ -302,34 +302,18 @@ class ChatsController < ApplicationController
 
   def handle_help_command(user_message)
     help_text = <<~HELP
-      ## 📚 Chat Commands
+      **Commands**
+      `/search <query>` - Search lists and items
+      `/browse [status]` - Browse all lists
+      `/clear` - Clear chat history
+      `/new` - Start new conversation
 
-      ### Basic Commands
-      - `/search <query>` - Search your lists and items by keyword
-      - `/browse [filter]` - Browse all your lists (e.g., `/browse active` or `/browse archived`)
-      - `/help` - Show this help message
-      - `/clear` - Clear chat history
-      - `/new` - Start a new conversation
+      **Features**
+      @username - Mention collaborators
+      #listname - Reference lists
+      Normal text - Chat with AI assistant
 
-      ### Chat Features
-      - **Message Mentions**: Use `@username` to mention specific collaborators
-      - **List/Item References**: Use `#listname` to reference lists or items
-      - **Markdown**: Format messages with **bold**, *italic*, `code`, etc.
-      - **AI Assistant**: Ask questions about your lists and get AI-powered responses
-      - **Rate Responses**: Use the 👍 👎 reaction buttons to rate assistant responses
-
-      ### Examples
-      - `/search budget planning` - Find all lists related to budgeting
-      - `/browse active` - View only active lists
-      - `@john can you review this?` - Mention a team member
-      - `#Project-Q4 timeline` - Reference a specific list
-      - `What's in #MyList and can you summarize it?` - Ask about a specific list
-
-      ### Tips
-      - Type `/` to see available commands
-      - Normal messages go to the AI assistant
-      - Use markdown for better formatting
-      - Search results help you find items quickly
+      Type `/` to see available commands.
     HELP
 
     Message.create_system(chat: @chat, content: help_text)

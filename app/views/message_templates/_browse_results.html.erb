@@ -5,15 +5,14 @@
 
 <div class="space-y-4">
   <!-- Header -->
-  <div class="border-b border-gray-200 pb-3">
-    <h3 class="font-semibold text-gray-900">
-      📂 Browsing Lists
-      <span class="text-sm text-gray-500 font-normal">
-        (<%= data[:total_count] %> <%= 'list'.pluralize(data[:total_count]) %>
-        <% if data[:filter] && data[:filter] != "all" %>
-          with status: <span class="font-medium text-blue-600"><%= data[:filter] %></span>
-        <% end %>)
-      </span>
+  <div class="border-b border-gray-200 pb-2 mb-3">
+    <h3 class="font-medium text-sm text-gray-900">
+      Lists
+      <% if data[:filter] && data[:filter] != "all" %>
+        <span class="text-xs text-gray-500">(<%= data[:filter] %>, <%= data[:total_count] %>)</span>
+      <% else %>
+        <span class="text-xs text-gray-500">(<%= data[:total_count] %>)</span>
+      <% end %>
     </h3>
   </div>
 
@@ -60,21 +59,15 @@
           <% end %>
 
           <!-- Metadata -->
-          <div class="flex items-center justify-between text-xs text-gray-500 space-x-2">
-            <div class="flex items-center gap-3">
-              <span title="Owner">👤 <%= list[:owner] %></span>
-              <span title="Items">📋 <%= list[:items_count] %> item<% if list[:items_count] != 1 %>s<% end %></span>
+          <div class="flex items-center justify-between text-xs text-gray-500">
+            <div class="flex items-center gap-4">
+              <span><%= list[:owner] %></span>
+              <span><%= list[:items_count] %> item<% if list[:items_count] != 1 %>s<% end %></span>
             </div>
-            <span class="text-right"><%= list[:created_at] %></span>
+            <span class="text-right text-gray-400"><%= list[:created_at] %></span>
           </div>
         </a>
       <% end %>
-    </div>
-
-    <!-- Filter Tips -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-900 mt-4">
-      <p class="font-medium mb-1">💡 Filter Tips</p>
-      <p class="text-blue-800">Try these filters: `/browse active`, `/browse draft`, `/browse completed`, `/browse archived`</p>
     </div>
   <% end %>
 </div>
