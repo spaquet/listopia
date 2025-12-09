@@ -222,7 +222,8 @@ class ChatCompletionService < ApplicationService
   def build_message_history(model)
     recent_messages = @chat.messages.ordered.last(20)
 
-    messages = recent_messages.map do |msg|
+    # Only include messages with content and that are user/assistant roles
+    messages = recent_messages.select { |msg| msg.content.present? && ['user', 'assistant'].include?(msg.role) }.map do |msg|
       {
         role: msg.role.to_s,
         content: msg.content

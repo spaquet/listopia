@@ -1,24 +1,20 @@
 <!-- app/views/message_templates/_error.html.erb
      Template for displaying error messages
 -->
-
 <% error_data = data %>
-<div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-4 border border-red-200">
+<div class="bg-linear-to-r from-red-50 to-pink-50 rounded-lg p-4 border border-red-200">
   <div class="flex items-start gap-3">
     <!-- Icon -->
-    <div class="text-xl flex-shrink-0">⚠️</div>
-
+    <div class="text-xl shrink-0">⚠️</div>
     <!-- Content -->
     <div class="flex-1">
       <h3 class="font-semibold text-red-900">
         <%= error_data[:error_code] ? "Error #{error_data[:error_code]}" : "Something went wrong" %>
       </h3>
-
       <!-- Message -->
       <p class="text-sm text-red-800 mt-1">
         <%= error_data[:message] %>
       </p>
-
       <!-- Details -->
       <% if error_data[:details].present? %>
         <details class="mt-2 text-xs text-red-700">
