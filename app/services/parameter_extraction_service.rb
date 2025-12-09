@@ -36,17 +36,18 @@ class ParameterExtractionService < ApplicationService
       - "missing": array of required parameter names that are missing
 
       Resource requirements:
-      - User: required = [name, email], optional = [role, department] (password is set via invitation)
+      - User: required = [first_name, last_name, email], optional = [role, department] (password is set via invitation)
       - Organization: required = [name], optional = [description, size]
       - Team: required = [name], optional = [description, lead] (organization defaults to current: #{@context.organization.name})
       - List: required = [title], optional = [description, status] (organization defaults to current: #{@context.organization.name})
 
       Rules:
       1. Extract all parameters mentioned, not just required ones
-      2. Be generous with inference - if you can reasonably infer a parameter, include it
-      3. Only list as "missing" if it's required and truly not provided or inferrable
-      4. Normalize names to lowercase with underscores (e.g., "first name" -> "first_name")
-      5. Parse emails and validate format
+      2. For users: split name into first_name and last_name. If only one name provided, that's the first_name and last_name is missing
+      3. Be generous with inference for other parameters, but don't infer names
+      4. Only list as "missing" if it's required and truly not provided or inferrable
+      5. Normalize names to lowercase with underscores (e.g., "first name" -> "first_name")
+      6. Parse emails and validate format
 
       User message: "#{@user_message.content}"
     PROMPT
