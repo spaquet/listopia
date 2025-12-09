@@ -68,8 +68,7 @@ class ChatMentionParser
     # 3. Username (if we had one)
 
     user = User.find_by(email: "#{mention_text}@example.com") ||
-            User.where(organization_id: organization.id)
-              .joins(:organization_memberships)
+            User.joins(:organization_memberships)
               .where(organization_memberships: { organization_id: organization.id })
               .where("LOWER(users.name) ILIKE ?", "%#{mention_text}%")
               .first
