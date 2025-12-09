@@ -27,6 +27,12 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check if we're in a list refinement stage and user is answering questions
+      if pending_list_refinement?
+        refinement_result = handle_list_refinement_response
+        return refinement_result if refinement_result
+      end
+
       # Check if we're continuing a pending resource creation FIRST
       # This takes precedence over new intent detection
       if pending_resource_creation?
@@ -49,7 +55,7 @@ class ChatCompletionService < ApplicationService
 
       # Check for missing parameters in resource creation/management requests
       intent = intent_result.success? ? intent_result.data[:intent] : nil
-      if intent.in?(["create_resource", "manage_resource"])
+      if intent.in?([ "create_list", "create_resource", "manage_resource" ])
         parameter_check = check_parameters_for_intent(intent)
         return parameter_check if parameter_check
       end
@@ -102,6 +108,15 @@ class ChatCompletionService < ApplicationService
 
   # Check for missing parameters in resource creation/management
   def check_parameters_for_intent(intent)
+    # SAFETY CHECK: Detect if this was misclassified as user creation
+    # When intent is "create_resource", do additional validation
+    if intent == "create_resource"
+      if looks_like_planning_request(@user_message.content)
+        # Reclassify as create_list
+        intent = "create_list"
+      end
+    end
+
     param_result = ParameterExtractionService.new(
       user_message: @user_message,
       intent: intent,
@@ -113,10 +128,16 @@ class ChatCompletionService < ApplicationService
     data = param_result.data
     missing_params = data[:missing] || []
     resource_type = data[:resource_type]
+    needs_clarification = data[:needs_clarification]
 
     # Filter out organization_id from missing params for teams/lists since it defaults to current org
-    if resource_type.in?(["team", "list"])
+    if resource_type.in?([ "team", "list" ])
       missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
+    end
+
+    # For list creation, ask to clarify category if needed
+    if intent == "create_list" && needs_clarification
+      return handle_list_category_clarification(data)
     end
 
     # If there are missing parameters, ask the user for them
@@ -126,6 +147,65 @@ class ChatCompletionService < ApplicationService
 
     # Parameters are complete, return nil to continue normal flow
     nil
+  end
+
+  # Detect if a message that was classified as user creation is actually planning
+  def looks_like_planning_request(message)
+    message_lower = message.downcase
+
+    # Planning indicators
+    planning_keywords = [
+      "plan", "improve", "learn", "read", "book", "course",
+      "guide", "list", "collection", "routine", "schedule",
+      "strategy", "roadmap", "roadshow", "itinerary",
+      "skill", "develop", "become better", "growth", "program",
+      "framework", "methodology", "curriculum", "checklist",
+      "guide", "tips", "advice", "suggest", "recommend"
+    ]
+
+    # Check if message contains planning keywords
+    has_planning_keyword = planning_keywords.any? { |kw| message_lower.include?(kw) }
+
+    # User creation indicators
+    user_creation_keywords = [
+      "create user", "add user", "invite", "register",
+      "new member", "add member", "create account", "user@"
+    ]
+
+    # User-specific patterns (looking for email or explicit user mentions)
+    has_explicit_user_creation = user_creation_keywords.any? { |kw| message_lower.include?(kw) }
+
+    # If it has planning keywords but no explicit user creation request, it's likely planning
+    has_planning_keyword && !has_explicit_user_creation
+  end
+
+  # Ask user to clarify if list is professional or personal
+  def handle_list_category_clarification(param_data)
+    @chat.metadata ||= {}
+    @chat.metadata["pending_resource_creation"] = {
+      resource_type: "list",
+      extracted_params: param_data[:parameters] || {},
+      missing_params: [ "category" ],
+      intent: "create_list",
+      needs_clarification: true
+    }
+    @chat.save
+
+    parameters = param_data[:parameters] || {}
+    title = parameters["title"] || "your list"
+
+    message_content = "I'd like to help you create a list called \"#{title}\". " \
+                      "Is this for work/professional purposes or for personal use? " \
+                      "Please let me know so I can organize it appropriately."
+
+    assistant_message = Message.create_assistant(
+      chat: @chat,
+      content: message_content
+    )
+
+    @chat.update(last_message_at: Time.current)
+
+    success(data: assistant_message)
   end
 
   # Create a message asking for missing parameters
@@ -156,6 +236,62 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Check if we're in a list refinement state
+  def pending_list_refinement?
+    @chat.metadata&.dig("pending_list_refinement").present?
+  end
+
+  # Handle user's response to refinement questions
+  def handle_list_refinement_response
+    refinement_data = @chat.metadata["pending_list_refinement"]
+    return nil unless refinement_data
+
+    list_id = refinement_data["list_id"]
+    list = List.find_by(id: list_id)
+    return nil unless list
+
+    # Process the refinement answers
+    processor = ListRefinementProcessorService.new(
+      list: list,
+      user_answers: @user_message.content,
+      refinement_context: refinement_data["context"],
+      context: @context
+    )
+
+    result = processor.call
+
+    if result.success?
+      # Clear refinement state
+      @chat.metadata.delete("pending_list_refinement")
+      @chat.save
+
+      # Create success message with refinement summary
+      message_content = result.data[:message]
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      success(data: assistant_message)
+    else
+      # If processing fails, ask user to try again
+      message_content = "I had trouble understanding those details. Could you provide a bit more information? " \
+                       "For example: #{refinement_data[:example_format]}"
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      success(data: assistant_message)
+    end
+  end
+
   # Check if we're in a pending resource creation state
   def pending_resource_creation?
     @chat.metadata&.dig("pending_resource_creation").present?
@@ -165,6 +301,15 @@ class ChatCompletionService < ApplicationService
   def handle_resource_creation_continuation
     pending = @chat.metadata["pending_resource_creation"]
     return nil unless pending
+
+    # SAFETY CHECK: If we're in a resource creation continuation but the user's new message
+    # looks like a planning request, cancel the continuation and re-detect intent
+    if pending["resource_type"] == "user" && looks_like_planning_request(@user_message.content)
+      # Clear the pending state and let normal intent detection take over
+      @chat.metadata.delete("pending_resource_creation")
+      @chat.save
+      return nil  # This will allow the flow to continue to normal intent detection
+    end
 
     # Extract parameters from the new user message
     param_result = ParameterExtractionService.new(
@@ -214,7 +359,11 @@ class ChatCompletionService < ApplicationService
     @chat.save
 
     # Create the resource with all collected parameters
-    return handle_resource_creation(resource_type, merged_params)
+    if resource_type == "list"
+      handle_list_creation(resource_type, merged_params)
+    else
+      handle_resource_creation(resource_type, merged_params)
+    end
   end
 
   # Handle the actual resource creation
@@ -256,15 +405,160 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Handle list creation with items
+  def handle_list_creation(resource_type, parameters)
+    # Create list using ChatResourceCreatorService
+    creator = ChatResourceCreatorService.new(
+      resource_type: resource_type,
+      parameters: parameters,
+      created_by_user: @context.user,
+      created_in_organization: @context.organization
+    )
+
+    result = creator.call
+
+    if result.failure?
+      # If creation fails, report the error
+      message_content = "I encountered an issue creating the list:\n"
+      result.errors.each do |error|
+        message_content += "- #{error}\n"
+      end
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+    else
+      # Success - report what was created
+      creation_data = result.data
+      list = creation_data[:resource]
+      items_count = creation_data[:items_created] || 0
+      sublists_count = creation_data[:sublists_created] || 0
+
+      message_content = creation_data[:message]
+
+      # Show main list items
+      if items_count > 0
+        message_content += "\n\nMain list items:\n"
+        if creation_data[:items].present?
+          creation_data[:items].each do |item|
+            message_content += "- #{item}\n"
+          end
+        end
+      end
+
+      # Show nested sub-lists structure
+      if sublists_count > 0
+        message_content += "\n\nCreated sub-lists:\n"
+        if creation_data[:sublists].present?
+          creation_data[:sublists].each do |sublist|
+            message_content += "📋 #{sublist.title}\n"
+            if sublist.list_items.present?
+              sublist.list_items.each do |item|
+                message_content += "  • #{item.title}\n"
+              end
+            end
+          end
+        end
+      end
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+
+      # Trigger refinement to ask clarifying questions
+      refinement_result = trigger_list_refinement(
+        list: list,
+        list_title: parameters["title"],
+        category: parameters["category"] || "personal",
+        items: creation_data[:items] || [],
+        nested_sublists: creation_data[:sublists] || [],
+        message: assistant_message
+      )
+
+      # If refinement is needed, return the refinement questions instead
+      if refinement_result.success? && refinement_result.data[:needs_refinement]
+        return refinement_result
+      end
+    end
+
+    @chat.update(last_message_at: Time.current)
+
+    success(data: assistant_message)
+  end
+
+  # Trigger list refinement and ask clarifying questions
+  def trigger_list_refinement(list:, list_title:, category:, items:, message:, nested_sublists: [])
+    refinement = ListRefinementService.new(
+      list_title: list_title,
+      category: category,
+      items: items,
+      nested_sublists: nested_sublists,
+      context: @context
+    )
+
+    result = refinement.call
+
+    if result.success? && result.data[:needs_refinement]
+      questions = result.data[:questions] || []
+
+      if questions.present?
+        # Store refinement state in chat metadata
+        @chat.metadata ||= {}
+        @chat.metadata["pending_list_refinement"] = {
+          list_id: list.id,
+          context: result.data[:refinement_context],
+          questions_asked: questions.map { |q| q["question"] },
+          example_format: "duration, budget, preferences, etc."
+        }
+        @chat.save
+
+        # Build refinement message
+        refinement_message = message.content + "\n\n"
+        refinement_message += "I have a few quick questions to make this list even more useful:\n\n"
+        questions.each_with_index do |q, idx|
+          refinement_message += "#{idx + 1}. #{q["question"]}\n"
+        end
+
+        # Create refinement message
+        refinement_assistant_message = Message.create_assistant(
+          chat: @chat,
+          content: refinement_message
+        )
+
+        @chat.update(last_message_at: Time.current)
+
+        return success(data: {
+          needs_refinement: true,
+          message: refinement_assistant_message,
+          questions: questions
+        })
+      end
+    end
+
+    success(data: {
+      needs_refinement: false,
+      message: message
+    })
+  rescue => e
+    Rails.logger.error("List refinement trigger failed: #{e.message}")
+    # Graceful fallback - continue without refinement
+    success(data: {
+      needs_refinement: false,
+      message: message
+    })
+  end
+
   # Build a user-friendly message asking for missing parameters
   def build_missing_parameter_message(resource_type, missing_params, extracted_params)
     # Only show parameters that have non-empty values
-    present_params = extracted_params.select { |_k, v| v.present? }
+    present_params = extracted_params.select { |_k, v| v.present? && !v.is_a?(Array) }
     existing = if present_params.present?
                  " I found: #{present_params.map { |k, v| "#{k}: #{v}" }.join(', ')}."
-               else
+    else
                  ""
-               end
+    end
 
     missing_list = missing_params.map { |param| "- #{param}" }.join("\n")
 
@@ -419,7 +713,7 @@ class ChatCompletionService < ApplicationService
     recent_messages = @chat.messages.ordered.last(20)
 
     # Only include messages with content and that are user/assistant roles
-    messages = recent_messages.select { |msg| msg.content.present? && ['user', 'assistant'].include?(msg.role) }.map do |msg|
+    messages = recent_messages.select { |msg| msg.content.present? && [ "user", "assistant" ].include?(msg.role) }.map do |msg|
       {
         role: msg.role.to_s,
         content: msg.content
@@ -545,9 +839,9 @@ class ChatCompletionService < ApplicationService
     # Handle both Hash responses and RubyLLM::Message objects
     tool_calls = if response.is_a?(Hash)
                    response[:tool_calls]
-                 elsif response.respond_to?(:tool_calls)
+    elsif response.respond_to?(:tool_calls)
                    response.tool_calls
-                 end
+    end
 
     if tool_calls.present?
       # Return first tool call for execution
