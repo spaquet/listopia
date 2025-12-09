@@ -23,11 +23,11 @@ export default class extends Controller {
     // Auto-focus input on connect
     setTimeout(() => this.messageInputTarget.focus(), 100)
 
-    // Set up input listeners
+    // Set up input listeners for Enter key
     this.messageInputTarget.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault()
-        this.submitMessage(e)
+        this.submitForm()
       }
     })
 
@@ -40,29 +40,30 @@ export default class extends Controller {
     this.setupAutoScroll()
   }
 
-  disconnect() {
-    // Clean up listeners if needed
-  }
-
   /**
-   * Handle message submission
+   * Submit the chat form
    */
-  async submitMessage(event) {
-    event.preventDefault()
+  submitForm(event) {
+    if (event) {
+      event.preventDefault()
+    }
 
     const content = this.messageInputTarget.value.trim()
     if (!content) return
+
+    // Add user message to chat immediately (optimistic update)
+    this.addUserMessage(content)
 
     // Clear input immediately
     this.messageInputTarget.value = ""
     this.messageInputTarget.focus()
 
-    // All messages (including commands) go to server
-    try {
-      await this.submitMessageToServer(content)
-    } catch (error) {
-      console.error("Error submitting message:", error)
-    }
+    // Submit the form through Turbo - server will add assistant response
+    this.messageFormTarget.requestSubmit()
+  }
+
+  disconnect() {
+    // Clean up listeners if needed
   }
 
   /**
@@ -156,42 +157,6 @@ export default class extends Controller {
     }
   }
 
-  /**
-   * Submit message to server using form submission
-   */
-  async submitMessageToServer(content) {
-    // Create a form submission using the message form
-    const formData = new FormData(this.messageFormTarget)
-
-    // Override the content field
-    formData.set("message[content]", content)
-
-    const response = await fetch(this.messageFormTarget.action, {
-      method: "POST",
-      headers: {
-        "X-CSRF-Token": this.getCsrfToken(),
-        "Accept": "text/vnd.turbo-stream.html"
-      },
-      body: formData
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to submit message: ${response.statusText}`)
-    }
-
-    // Get the response text and process it as a Turbo Stream
-    const responseText = await response.text()
-
-    // Parse the response and manually process turbo-stream elements
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(responseText, 'text/html')
-    const streams = doc.querySelectorAll('turbo-stream')
-
-    // Append each stream element to the document for Turbo to process
-    streams.forEach((stream) => {
-      document.body.appendChild(stream)
-    })
-  }
 
   /**
    * Add user message to display
