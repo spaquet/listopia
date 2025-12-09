@@ -89,8 +89,15 @@ class AiIntentRouterService < ApplicationService
     when Hash
       response["content"] || response[:content] || response.to_s
     else
+      # Handle RubyLLM::Message with RubyLLM::Content
       if response.respond_to?(:content)
-        response.content
+        content = response.content
+        # If content is a RubyLLM::Content object with text attribute
+        if content.respond_to?(:text)
+          content.text
+        else
+          content
+        end
       elsif response.respond_to?(:message)
         response.message
       elsif response.respond_to?(:text)

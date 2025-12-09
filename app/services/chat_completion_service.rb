@@ -288,9 +288,15 @@ class ChatCompletionService < ApplicationService
     when Hash
       response["content"] || response[:content] || response.to_s
     else
-      # Try to get content/message method if available
+      # Handle RubyLLM::Message with RubyLLM::Content
       if response.respond_to?(:content)
-        response.content
+        content = response.content
+        # If content is a RubyLLM::Content object with text attribute
+        if content.respond_to?(:text)
+          content.text
+        else
+          content
+        end
       elsif response.respond_to?(:message)
         response.message
       elsif response.respond_to?(:text)
@@ -340,13 +346,20 @@ class ChatCompletionService < ApplicationService
     response = llm_chat.complete
 
     # Check if response includes tool calls
-    if response.is_a?(Hash) && response[:tool_calls].present?
+    # Handle both Hash responses and RubyLLM::Message objects
+    tool_calls = if response.is_a?(Hash)
+                   response[:tool_calls]
+                 elsif response.respond_to?(:tool_calls)
+                   response.tool_calls
+                 end
+
+    if tool_calls.present?
       # Return first tool call for execution
-      tool_call = response[:tool_calls].first
+      tool_call = tool_calls.first
       {
         type: :tool_call,
-        tool_name: tool_call[:name] || tool_call["name"],
-        tool_input: tool_call[:arguments] || tool_call["arguments"] || {}
+        tool_name: tool_call[:name] || tool_call["name"] || tool_call.name,
+        tool_input: tool_call[:arguments] || tool_call["arguments"] || tool_call.arguments || {}
       }
     else
       # Return text response
