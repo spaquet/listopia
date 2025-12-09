@@ -40,6 +40,13 @@ class ChatCompletionService < ApplicationService
         return handle_navigation_intent(intent_result.data)
       end
 
+      # Check for missing parameters in resource creation/management requests
+      intent = intent_result.success? ? intent_result.data[:intent] : nil
+      if intent.in?(["create_resource", "manage_resource"])
+        parameter_check = check_parameters_for_intent(intent)
+        return parameter_check if parameter_check
+      end
+
       # Get or determine the model to use
       model = @chat.metadata["model"] || default_model
 
@@ -85,6 +92,66 @@ class ChatCompletionService < ApplicationService
   end
 
   private
+
+  # Check for missing parameters in resource creation/management
+  def check_parameters_for_intent(intent)
+    param_result = ParameterExtractionService.new(
+      user_message: @user_message,
+      intent: intent,
+      context: @context
+    ).call
+
+    return nil unless param_result.success?
+
+    data = param_result.data
+    missing_params = data[:missing] || []
+
+    # If there are missing parameters, ask the user for them
+    if missing_params.present?
+      return handle_missing_parameters(data, missing_params)
+    end
+
+    # Parameters are complete, return nil to continue normal flow
+    nil
+  end
+
+  # Create a message asking for missing parameters
+  def handle_missing_parameters(param_data, missing_params)
+    resource_type = param_data[:resource_type] || "resource"
+
+    # Build a friendly message asking for missing parameters
+    message_content = build_missing_parameter_message(resource_type, missing_params, param_data[:parameters] || {})
+
+    # Create assistant message with the request
+    assistant_message = Message.create_assistant(
+      chat: @chat,
+      content: message_content
+    )
+
+    @chat.update(last_message_at: Time.current)
+
+    success(data: assistant_message)
+  end
+
+  # Build a user-friendly message asking for missing parameters
+  def build_missing_parameter_message(resource_type, missing_params, extracted_params)
+    existing = extracted_params.present? ? " I found: #{extracted_params.map { |k, v| "#{k}: #{v}" }.join(', ')}." : ""
+
+    missing_list = missing_params.map { |param| "- #{param}" }.join("\n")
+
+    case resource_type.downcase
+    when "user"
+      "I'd like to help you create a user.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    when "organization", "org"
+      "I'd like to help you create an organization.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    when "team"
+      "I'd like to help you create a team.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    when "list"
+      "I'd like to help you create a list.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    else
+      "I'd like to help you create a #{resource_type}.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    end
+  end
 
   # Handle navigation intent detected by AI
   def handle_navigation_intent(intent_data)
