@@ -39,11 +39,31 @@ class AiIntentRouterService < ApplicationService
       {"intent": "intent_type", "action": "action_type", "description": "brief description"}
 
       Available intents and actions:
+
       - Intent: "navigate_to_page", Action: "navigate", Description: Page to navigate to
         Examples: "show users", "list teams", "show me active users", "who's in this org", etc.
 
-      - Intent: "create_resource", Action: "chat", Description: User wants to create something
-        Examples: "create user", "add team", "new list", "invite someone", "add anna", etc.
+      - Intent: "create_list", Action: "chat", Description: User wants to plan/create a list with items
+        Examples:
+          "plan my business trip"
+          "create a grocery list"
+          "organize my tasks"
+          "plan for next week"
+          "give me 5 books to read"
+          "i want to become a better manager, create a plan for 6 weeks"
+          "provide me with a list of tasks to complete"
+          "i want to improve my marketing skills, give me a learning plan"
+        This is for planning/organizing, creating learning plans, curating collections, task organization, etc.
+        NOT creating user/team/org resources.
+
+      - Intent: "create_resource", Action: "chat", Description: User wants to create user/team/organization
+        Examples:
+          "create user john@example.com"
+          "add team called Engineering"
+          "invite someone to our organization"
+          "add anna to the team"
+          "create new organization for our startup"
+        Do NOT use this for creating lists, plans, or collections - use "create_list" instead.
 
       - Intent: "search_data", Action: "chat", Description: User wants to search/find something
         Examples: "find lists about budget", "search for users", etc.
@@ -54,8 +74,29 @@ class AiIntentRouterService < ApplicationService
       - Intent: "general_question", Action: "chat", Description: General question/conversation
         Examples: "how do I?", "what is?", "tell me about", casual questions, etc.
 
-      IMPORTANT: "invite", "add", or "bring" with a name usually means CREATE (inviting a new user), not manage.
-      Only classify as manage_resource if the request is clearly about modifying an existing resource.
+      CRITICAL DISTINCTION - CREATE_LIST vs CREATE_RESOURCE:
+
+      CREATE_LIST (Planning, Learning, Collections, Personal Goals):
+      ✓ "I want to become a better marketing manager"
+      ✓ "Provide me with 5 books to read and a plan to improve in 6 weeks"
+      ✓ "Give me a learning plan for Python"
+      ✓ "Create a workout routine for 8 weeks"
+      ✓ "Plan a trip to Europe"
+      ✓ "Build a reading list on leadership"
+      ✓ "What courses should I take to learn AI?"
+      ✓ "Help me organize my business trip itinerary"
+      ✓ "Plan our roadshow across 5 US cities"
+
+      CREATE_RESOURCE (Adding Users, Teams, Organizations to the App):
+      ✓ "Add user john@company.com"
+      ✓ "Create a team called 'Design Team'"
+      ✓ "Invite sarah to our organization"
+      ✓ "Add a new team member"
+      ✓ "Create organization for XYZ company"
+      ✓ "Register 5 new users for the system"
+
+      KEY RULE: If the user is asking for content, plans, lists, collections, learning paths, or self-improvement guidance → CREATE_LIST
+      KEY RULE: If the user is asking to add people/teams/orgs to THIS application → CREATE_RESOURCE
 
       Classify based on the user's clear intent, regardless of language or phrasing.
 

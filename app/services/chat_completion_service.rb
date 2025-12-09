@@ -145,7 +145,15 @@ class ChatCompletionService < ApplicationService
       return handle_missing_parameters(data, missing_params)
     end
 
-    # Parameters are complete, return nil to continue normal flow
+    # Parameters are complete!
+    # For list and resource creation, proceed with creation
+    if intent == "create_list"
+      return handle_list_creation("list", data[:parameters] || {})
+    elsif intent == "create_resource"
+      return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
+    end
+
+    # For other intents with complete parameters, return nil to continue normal flow
     nil
   end
 

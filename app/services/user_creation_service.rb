@@ -13,7 +13,7 @@ class UserCreationService < ApplicationService
   def call
     # Validate parameters
     validation_error = validate_parameters
-    return failure(errors: [validation_error]) if validation_error
+    return failure(errors: [ validation_error ]) if validation_error
 
     # Create and save the user
     user = create_user_record
@@ -34,7 +34,7 @@ class UserCreationService < ApplicationService
     })
   rescue StandardError => e
     Rails.logger.error("User creation failed: #{e.class} - #{e.message}")
-    failure(errors: ["An unexpected error occurred while creating the user"])
+    failure(errors: [ "An unexpected error occurred while creating the user" ])
   end
 
   private

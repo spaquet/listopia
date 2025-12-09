@@ -9,6 +9,8 @@ class ParameterExtractionService < ApplicationService
 
   def call
     case @intent
+    when "create_list"
+      extract_list_planning_parameters
     when "create_resource"
       extract_create_parameters
     when "manage_resource"
@@ -22,6 +24,97 @@ class ParameterExtractionService < ApplicationService
   end
 
   private
+
+  def extract_list_planning_parameters
+    # Use LLM to extract list planning parameters
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+
+    system_prompt = <<~PROMPT
+      Extract parameters from the user's request to create and plan a list.
+
+      Respond with a JSON object containing:
+      - "resource_type": always "list"
+      - "title": the main title/name for the list (inferred from context if not explicit)
+      - "category": one of [personal, professional] - infer from context if possible
+      - "description": optional description of what this list is for
+      - "items": array of items to add to the list (each item should have "title" and optional "description")
+      - "needs_category_clarification": boolean - true if you cannot determine professional vs personal
+      - "missing": array of required information (only ["category"] if that's unclear, otherwise empty)
+
+      Examples:
+      1. "plan my business trip to New York next week"
+         -> title: "New York Business Trip", category: "professional", items: inferred from context
+
+      2. "organize my grocery shopping"
+         -> title: "Grocery Shopping", category: "personal", items: common items for grocery shopping
+
+      3. "create a project plan for my startup"
+         -> title: "Startup Project Plan", category: "professional", items: inferred phases/tasks
+
+      Rules:
+      1. INFER the list title from the user's request if not explicitly stated
+      2. INFER list items from the request context (e.g., "trip to New York" could include hotel, flights, itinerary, etc.)
+      3. For category: ALWAYS try to infer from context (business = professional, personal = personal, shopping = personal, etc.)
+      4. Category values must be: "personal" or "professional"
+      5. Only set needs_category_clarification to true if you truly cannot determine if it's professional or personal
+      6. If category cannot be inferred, set it to null and add "category" to missing array
+      7. Be generous in inferring items - think about what tasks/steps would be involved
+      8. DETECT NESTED STRUCTURES: Look for multi-level lists or hierarchical patterns
+         - Location-based: "cities: New York, Chicago, Boston" with shared tasks per location
+         - Phase-based: "Before roadshow", "During roadshow", "After roadshow" with tasks per phase
+         - Set-based: Groups of items that should be sub-lists (e.g., per-location tasks, per-team tasks)
+      9. For nested lists, structure as:
+         {
+           "title": "Main title",
+           "items": [...],
+           "nested_lists": [
+             {
+               "title": "Sub-list title (e.g., New York)",
+               "items": ["task for this location", ...]
+             },
+             ...
+           ]
+         }
+
+      User message: "#{@user_message.content}"
+    PROMPT
+
+    llm_chat.add_message(role: "system", content: system_prompt)
+    llm_chat.add_message(role: "user", content: "Extract list planning parameters from the request above.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    # Parse the JSON response
+    json_match = response_text.match(/\{[\s\S]*\}/m)
+    return success(data: { resource_type: "list", parameters: {}, missing: [], needs_clarification: false }) unless json_match
+
+    begin
+      data = JSON.parse(json_match[0])
+
+      # Build parameters object
+      parameters = {
+        title: data["title"],
+        description: data["description"],
+        category: data["category"],
+        items: data["items"] || [],
+        nested_lists: data["nested_lists"] || []
+      }
+
+      # Remove nil values
+      parameters.compact!
+
+      success(data: {
+        resource_type: "list",
+        parameters: parameters,
+        missing: data["missing"] || [],
+        needs_clarification: data["needs_category_clarification"] == true,
+        has_nested_structure: (data["nested_lists"] || []).present?
+      })
+    rescue JSON::ParserError
+      success(data: { resource_type: "list", parameters: {}, missing: [], needs_clarification: false })
+    end
+  end
 
   def extract_create_parameters
     # Use LLM to extract parameters from the message
