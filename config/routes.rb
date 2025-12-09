@@ -77,10 +77,14 @@ Rails.application.routes.draw do
     member do
       patch :archive
       patch :restore
-    end
 
-    # Create message endpoint
-    post :create_message, action: :create_message, on: :member
+      # Create message endpoint
+      post :create_message, action: :create_message
+
+      # Chat mentions and references search
+      get "mentions/search_users", to: "chat_mentions#search_users", as: :search_users
+      get "mentions/search_references", to: "chat_mentions#search_references", as: :search_references
+    end
   end
 
   # Message feedback routes

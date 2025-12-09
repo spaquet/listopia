@@ -43,16 +43,19 @@ class AiIntentRouterService < ApplicationService
         Examples: "show users", "list teams", "show me active users", "who's in this org", etc.
 
       - Intent: "create_resource", Action: "chat", Description: User wants to create something
-        Examples: "create user", "add team", "new list", etc.
+        Examples: "create user", "add team", "new list", "invite someone", "add anna", etc.
 
       - Intent: "search_data", Action: "chat", Description: User wants to search/find something
         Examples: "find lists about budget", "search for users", etc.
 
-      - Intent: "manage_resource", Action: "chat", Description: User wants to update/delete
-        Examples: "update user role", "suspend user", "change team name", etc.
+      - Intent: "manage_resource", Action: "chat", Description: User wants to update/delete EXISTING resources
+        Examples: "update user role", "suspend user", "change team name", "promote anna to admin", etc.
 
       - Intent: "general_question", Action: "chat", Description: General question/conversation
         Examples: "how do I?", "what is?", "tell me about", casual questions, etc.
+
+      IMPORTANT: "invite", "add", or "bring" with a name usually means CREATE (inviting a new user), not manage.
+      Only classify as manage_resource if the request is clearly about modifying an existing resource.
 
       Classify based on the user's clear intent, regardless of language or phrasing.
 

@@ -27,6 +27,13 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check if we're continuing a pending resource creation FIRST
+      # This takes precedence over new intent detection
+      if pending_resource_creation?
+        continuation_result = handle_resource_creation_continuation
+        return continuation_result if continuation_result
+      end
+
       # Use AI to detect user intent
       intent_result = AiIntentRouterService.new(
         user_message: @user_message,
@@ -125,6 +132,16 @@ class ChatCompletionService < ApplicationService
   def handle_missing_parameters(param_data, missing_params)
     resource_type = param_data[:resource_type] || "resource"
 
+    # Store the pending resource creation in chat metadata for continuation
+    @chat.metadata ||= {}
+    @chat.metadata["pending_resource_creation"] = {
+      resource_type: resource_type,
+      extracted_params: param_data[:parameters] || {},
+      missing_params: missing_params,
+      intent: "create_resource"
+    }
+    @chat.save
+
     # Build a friendly message asking for missing parameters
     message_content = build_missing_parameter_message(resource_type, missing_params, param_data[:parameters] || {})
 
@@ -133,6 +150,106 @@ class ChatCompletionService < ApplicationService
       chat: @chat,
       content: message_content
     )
+
+    @chat.update(last_message_at: Time.current)
+
+    success(data: assistant_message)
+  end
+
+  # Check if we're in a pending resource creation state
+  def pending_resource_creation?
+    @chat.metadata&.dig("pending_resource_creation").present?
+  end
+
+  # Handle continuation of resource creation when user provides more parameters
+  def handle_resource_creation_continuation
+    pending = @chat.metadata["pending_resource_creation"]
+    return nil unless pending
+
+    # Extract parameters from the new user message
+    param_result = ParameterExtractionService.new(
+      user_message: @user_message,
+      intent: pending["intent"],
+      context: @context
+    ).call
+
+    return nil unless param_result.success?
+
+    new_params = param_result.data[:parameters] || {}
+    resource_type = pending["resource_type"]
+
+    # Merge new parameters with previously extracted ones
+    merged_params = pending["extracted_params"].merge(new_params)
+
+    # Update missing params - remove any that are now provided
+    # Convert all keys to strings for consistent comparison
+    merged_keys = merged_params.keys.map(&:to_s)
+    remaining_missing = (pending["missing_params"] || []).reject do |param|
+      param_str = param.to_s.downcase
+      # Check if any merged key matches this missing parameter (case-insensitive)
+      merged_keys.any? { |key| key.downcase == param_str && merged_params[key].present? }
+    end
+
+    # If still missing parameters, ask for them
+    if remaining_missing.present?
+      @chat.metadata["pending_resource_creation"] = {
+        resource_type: resource_type,
+        extracted_params: merged_params,
+        missing_params: remaining_missing,
+        intent: "create_resource"
+      }
+      @chat.save
+
+      message_content = build_missing_parameter_message(resource_type, remaining_missing, merged_params)
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+      @chat.update(last_message_at: Time.current)
+      return success(data: assistant_message)
+    end
+
+    # All parameters collected! Clear pending state and proceed with creation
+    @chat.metadata.delete("pending_resource_creation")
+    @chat.save
+
+    # Create the resource with all collected parameters
+    return handle_resource_creation(resource_type, merged_params)
+  end
+
+  # Handle the actual resource creation
+  def handle_resource_creation(resource_type, parameters)
+    # Use ChatResourceCreatorService to actually create the resource
+    creator = ChatResourceCreatorService.new(
+      resource_type: resource_type,
+      parameters: parameters,
+      created_by_user: @context.user,
+      created_in_organization: @context.organization
+    )
+
+    result = creator.call
+
+    if result.failure?
+      # If creation fails, report the error
+      message_content = "I encountered an issue creating the #{resource_type}:\n"
+      result.errors.each do |error|
+        message_content += "- #{error}\n"
+      end
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+    else
+      # Success - report what was created
+      creation_data = result.data
+      message_content = creation_data[:message]
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+    end
 
     @chat.update(last_message_at: Time.current)
 

@@ -7,10 +7,11 @@
 <%= turbo_stream_from "chat_#{chat.id}" %>
 
 <div id="unified-chat"
-     data-controller="unified-chat chat-navigation"
+     data-controller="unified-chat chat-navigation chat-mentions"
      data-unified-chat-location-value="<%= context.location %>"
      data-unified-chat-chat-id-value="<%= chat.id %>"
      data-chat-navigation-chat-id-value="<%= chat.id %>"
+     data-chat-mentions-chat-id-value="<%= chat.id %>"
      class="<%= context.ui_config[:position] %> <% if context.in_location?(:floating) %>shadow-2xl rounded-lg border border-gray-200<% end %>">
 
   <!-- Chat Container -->
@@ -102,7 +103,11 @@
                          id: "message-input-#{chat.id}",
                          placeholder: "Type / for commands...",
                          class: "flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent",
-                         data: { unified_chat_target: "messageInput" },
+                         data: {
+                           unified_chat_target: "messageInput",
+                           chat_mentions_target: "input",
+                           action: "input->chat-mentions#handleInput keydown->chat-mentions#handleKeyDown"
+                         },
                          autocomplete: "off" %>
 
         <!-- Submit Button -->

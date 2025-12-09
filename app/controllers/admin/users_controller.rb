@@ -91,15 +91,8 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def create
+    # Create a temporary user for authorization check
     @user = User.new(user_params)
-
-    # Generate random password ONLY in admin controller
-    # uses the generate_temp_password method from User model
-    @user.generate_temp_password
-
-    # Set status to pending_verification until user accepts invitation
-    @user.status = "pending_verification"
-
     authorize @user, :create?
 
     # Get organization_id from params or current context
@@ -111,46 +104,23 @@ class Admin::UsersController < Admin::BaseController
       render :new, status: :unprocessable_entity and return
     end
 
-    if @user.save
-      @user.add_role(:admin) if params[:user][:make_admin] == "1"
-      @user.send_admin_invitation!
+    # Use UserCreationService to handle all user creation logic
+    organization = organization_id.present? ? Organization.find(organization_id) : nil
+    result = UserCreationService.new(
+      user_params: user_params,
+      created_by_user: current_user,
+      organization: organization,
+      make_admin: params[:user][:make_admin] == "1"
+    ).call
 
-      # Create pending invitation for the specified organization
-      if organization_id.present?
-        org = Organization.find(organization_id)
-
-        # Add user to organization with pending status
-        membership = OrganizationMembership.find_or_create_by!(
-          organization: org,
-          user: @user
-        ) do |m|
-          m.status = :pending
-          m.role = :member
-        end
-
-        # Create a pending invitation
-        invitation = Invitation.create!(
-          user: @user,
-          organization: org,
-          invitable: org,
-          invitable_type: "Organization",
-          email: @user.email,
-          invited_by: current_user,
-          status: "pending",
-          permission: "read"
-        )
-        # Set as current organization for admin-invited users
-        @user.update!(current_organization_id: org.id)
-      elsif @user.organizations.any?
-        # If no org specified but user has orgs, set the first one
-        @user.update!(current_organization_id: @user.organizations.first.id)
-      end
-
+    if result.success?
+      @user = result.data[:user]
       respond_to do |format|
         format.html { redirect_to admin_user_path(@user), notice: "User created successfully." }
         format.turbo_stream { redirect_to admin_users_path(organization_id: organization_id), status: :see_other }
       end
     else
+      @user.errors.add(:base, result.errors.first) if result.errors.present?
       render :new, status: :unprocessable_entity
     end
   end
