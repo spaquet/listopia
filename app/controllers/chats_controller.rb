@@ -347,9 +347,14 @@ class ChatsController < ApplicationController
     else
       # Fallback response if LLM fails
       Rails.logger.warn("Chat completion failed: #{result.errors.join(', ')}")
-      Message.create_assistant(
+      Message.create_templated(
         chat: @chat,
-        content: "I encountered an issue processing your message. Please try again."
+        template_type: "error",
+        template_data: {
+          message: "I encountered an issue processing your message. Please try again.",
+          error_code: "CHAT_ERROR",
+          details: result.errors.join(", ")
+        }
       )
     end
   end
