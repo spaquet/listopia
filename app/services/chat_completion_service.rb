@@ -105,6 +105,12 @@ class ChatCompletionService < ApplicationService
 
     data = param_result.data
     missing_params = data[:missing] || []
+    resource_type = data[:resource_type]
+
+    # Filter out organization_id from missing params for teams/lists since it defaults to current org
+    if resource_type.in?(["team", "list"])
+      missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
+    end
 
     # If there are missing parameters, ask the user for them
     if missing_params.present?
@@ -135,7 +141,13 @@ class ChatCompletionService < ApplicationService
 
   # Build a user-friendly message asking for missing parameters
   def build_missing_parameter_message(resource_type, missing_params, extracted_params)
-    existing = extracted_params.present? ? " I found: #{extracted_params.map { |k, v| "#{k}: #{v}" }.join(', ')}." : ""
+    # Only show parameters that have non-empty values
+    present_params = extracted_params.select { |_k, v| v.present? }
+    existing = if present_params.present?
+                 " I found: #{present_params.map { |k, v| "#{k}: #{v}" }.join(', ')}."
+               else
+                 ""
+               end
 
     missing_list = missing_params.map { |param| "- #{param}" }.join("\n")
 

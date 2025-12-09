@@ -36,10 +36,10 @@ class ParameterExtractionService < ApplicationService
       - "missing": array of required parameter names that are missing
 
       Resource requirements:
-      - User: required = [name, email, password], optional = [role, department]
+      - User: required = [name, email], optional = [role, department] (password is set via invitation)
       - Organization: required = [name], optional = [description, size]
-      - Team: required = [name, organization_id], optional = [description, lead]
-      - List: required = [title], optional = [description, status]
+      - Team: required = [name], optional = [description, lead] (organization defaults to current: #{@context.organization.name})
+      - List: required = [title], optional = [description, status] (organization defaults to current: #{@context.organization.name})
 
       Rules:
       1. Extract all parameters mentioned, not just required ones
