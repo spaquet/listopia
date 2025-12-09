@@ -27,42 +27,142 @@ class ParameterExtractionService < ApplicationService
 
   def extract_list_planning_parameters
     # Use LLM to extract list planning parameters
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    # Retry up to 2 times if title is not extracted
+    max_retries = 2
+    attempt = 0
 
-    system_prompt = <<~PROMPT
+    loop do
+      attempt += 1
+      llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+
+      system_prompt = build_list_extraction_prompt(attempt)
+      llm_chat.add_message(role: "system", content: system_prompt)
+      llm_chat.add_message(role: "user", content: build_list_extraction_user_message(attempt))
+
+      response = llm_chat.complete
+      response_text = extract_response_content(response)
+
+      # Parse the JSON response
+      json_match = response_text.match(/\{[\s\S]*\}/m)
+
+      unless json_match
+        if attempt < max_retries
+          Rails.logger.warn("Failed to extract JSON from LLM response (attempt #{attempt}), retrying...")
+          next
+        end
+        # If JSON parsing fails completely after retries, return with missing title
+        Rails.logger.warn("Failed to extract JSON from LLM response for list planning parameters after #{max_retries} attempts")
+        return success(data: {
+          resource_type: "list",
+          parameters: { items: [] },
+          missing: ["list title", "category"],
+          needs_clarification: true,
+          has_nested_structure: false
+        })
+      end
+
+      begin
+        data = JSON.parse(json_match[0])
+
+        # Check if title is present
+        if data["title"].present?
+          # Title was successfully extracted, build and return result
+          parameters = {
+            title: data["title"],
+            description: data["description"],
+            category: data["category"],
+            items: data["items"] || [],
+            nested_lists: data["nested_lists"] || []
+          }
+
+          missing_params = data["missing"] || []
+
+          # Remove nil values from parameters (but keep empty arrays for items)
+          parameters.compact!
+
+          return success(data: {
+            resource_type: "list",
+            parameters: parameters,
+            missing: missing_params,
+            needs_clarification: data["needs_category_clarification"] == true,
+            has_nested_structure: (data["nested_lists"] || []).present?
+          })
+        elsif attempt < max_retries
+          # Title is blank, retry with stronger emphasis
+          Rails.logger.warn("LLM returned null title (attempt #{attempt}), retrying with stronger prompt...")
+          next
+        else
+          # Title is still blank after retries, mark as missing
+          Rails.logger.error("LLM failed to extract title after #{max_retries} attempts")
+          return success(data: {
+            resource_type: "list",
+            parameters: { items: [] },
+            missing: ["list title", "category"],
+            needs_clarification: true,
+            has_nested_structure: false
+          })
+        end
+      rescue JSON::ParserError
+        if attempt < max_retries
+          Rails.logger.warn("JSON parse error (attempt #{attempt}), retrying...")
+          next
+        else
+          # JSON parse error after retries
+          success(data: {
+            resource_type: "list",
+            parameters: { items: [] },
+            missing: ["list title", "category"],
+            needs_clarification: true,
+            has_nested_structure: false
+          })
+        end
+      end
+    end
+  end
+
+  # Build the system prompt for list extraction, with stronger emphasis on retries
+  def build_list_extraction_prompt(attempt)
+    base_prompt = <<~PROMPT
       Extract parameters from the user's request to create and plan a list.
 
-      Respond with a JSON object containing:
+      You MUST respond with a valid JSON object (and ONLY JSON, no other text) containing:
       - "resource_type": always "list"
-      - "title": the main title/name for the list (inferred from context if not explicit)
-      - "category": one of [personal, professional] - infer from context if possible
+      - "title": the main title/name for the list (inferred from context if not explicit) - REQUIRED, MUST NEVER BE NULL OR EMPTY
+      - "category": one of [personal, professional] - infer from context if possible, or null if truly uncertain
       - "description": optional description of what this list is for
-      - "items": array of items to add to the list (each item should have "title" and optional "description")
-      - "needs_category_clarification": boolean - true if you cannot determine professional vs personal
+      - "items": array of items to add to the list (each item can be a string or object with "title" and optional "description")
+      - "needs_category_clarification": boolean - true only if you cannot determine professional vs personal
       - "missing": array of required information (only ["category"] if that's unclear, otherwise empty)
 
-      Examples:
-      1. "plan my business trip to New York next week"
-         -> title: "New York Business Trip", category: "professional", items: inferred from context
+      CRITICAL TITLE EXTRACTION RULES:
+      1. The title MUST be extracted from the user's request - NEVER return null or empty string for title
+      2. The title should reflect the main purpose/goal of what the user is asking for
+      3. The title should be 3-10 words, clear and descriptive
+      4. If the user's intent is implicit (e.g., "I want to become a better X"), create a title like "X Development Plan" or "X Improvement Plan"
+      5. Extract relevant keywords from the request and combine them into a coherent title
 
-      2. "organize my grocery shopping"
-         -> title: "Grocery Shopping", category: "personal", items: common items for grocery shopping
+      Examples of proper title extraction:
+      - User: "plan my business trip to New York next week" → Title: "New York Business Trip"
+      - User: "organize my grocery shopping" → Title: "Grocery Shopping"
+      - User: "i want to become a better marketing manager. provide me with 5 books to read and a plan to improve in 6 weeks." → Title: "Marketing Manager Development Plan"
+      - User: "create a project plan for my startup" → Title: "Startup Project Plan"
+      - User: "help me learn Python" → Title: "Python Learning Plan"
+      - User: "give me a workout routine for 8 weeks" → Title: "8-Week Workout Routine"
+      - User: "plan our company roadshow across 5 US cities" → Title: "US Company Roadshow"
 
-      3. "create a project plan for my startup"
-         -> title: "Startup Project Plan", category: "professional", items: inferred phases/tasks
-
-      Rules:
-      1. INFER the list title from the user's request if not explicitly stated
+      General Rules:
+      1. ALWAYS infer a meaningful title - the user's intent should inform the title
       2. INFER list items from the request context (e.g., "trip to New York" could include hotel, flights, itinerary, etc.)
-      3. For category: ALWAYS try to infer from context (business = professional, personal = personal, shopping = personal, etc.)
-      4. Category values must be: "personal" or "professional"
-      5. Only set needs_category_clarification to true if you truly cannot determine if it's professional or personal
+      3. For category: ALWAYS try to infer from context (business = professional, personal = personal, learning = personal, etc.)
+      4. Category values must be: "personal", "professional", or null (if truly uncertain)
+      5. Only set needs_category_clarification to true if you truly cannot determine professional vs personal
       6. If category cannot be inferred, set it to null and add "category" to missing array
-      7. Be generous in inferring items - think about what tasks/steps would be involved
+      7. Be generous in inferring items - think about what tasks/steps would be involved in achieving this goal
       8. DETECT NESTED STRUCTURES: Look for multi-level lists or hierarchical patterns
          - Location-based: "cities: New York, Chicago, Boston" with shared tasks per location
          - Phase-based: "Before roadshow", "During roadshow", "After roadshow" with tasks per phase
-         - Set-based: Groups of items that should be sub-lists (e.g., per-location tasks, per-team tasks)
+         - Week-based: "Week 1", "Week 2", etc. with tasks per week
+         - Set-based: Groups of items that should be sub-lists
       9. For nested lists, structure as:
          {
            "title": "Main title",
@@ -79,40 +179,54 @@ class ParameterExtractionService < ApplicationService
       User message: "#{@user_message.content}"
     PROMPT
 
-    llm_chat.add_message(role: "system", content: system_prompt)
-    llm_chat.add_message(role: "user", content: "Extract list planning parameters from the request above.")
+    if attempt > 1
+      base_prompt + <<~PROMPT
 
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
+        **RETRY ATTEMPT #{attempt}**: The previous extraction had a missing or null title.
 
-    # Parse the JSON response
-    json_match = response_text.match(/\{[\s\S]*\}/m)
-    return success(data: { resource_type: "list", parameters: {}, missing: [], needs_clarification: false }) unless json_match
+        You MUST ensure the title field is never null. If you previously returned null for title,
+        analyze the user's request more carefully and extract a meaningful title that describes
+        what the user is trying to accomplish.
 
-    begin
-      data = JSON.parse(json_match[0])
+        The user is asking for: #{extract_core_intent(@user_message.content)}
 
-      # Build parameters object
-      parameters = {
-        title: data["title"],
-        description: data["description"],
-        category: data["category"],
-        items: data["items"] || [],
-        nested_lists: data["nested_lists"] || []
-      }
+        Use this core intent to create a descriptive title if you haven't already.
+      PROMPT
+    else
+      base_prompt
+    end
+  end
 
-      # Remove nil values
-      parameters.compact!
+  # Build the user message for list extraction, with stronger emphasis on retries
+  def build_list_extraction_user_message(attempt)
+    if attempt > 1
+      "Extract list planning parameters from the request above. CRITICAL: You MUST provide a non-null title. If you returned null before, extract the title now from the user's intent."
+    else
+      "Extract list planning parameters from the request above. IMPORTANT: Always include a title, never return null for title."
+    end
+  end
 
-      success(data: {
-        resource_type: "list",
-        parameters: parameters,
-        missing: data["missing"] || [],
-        needs_clarification: data["needs_category_clarification"] == true,
-        has_nested_structure: (data["nested_lists"] || []).present?
-      })
-    rescue JSON::ParserError
-      success(data: { resource_type: "list", parameters: {}, missing: [], needs_clarification: false })
+  # Extract the core intent from a user message for retry prompting
+  def extract_core_intent(message)
+    message_lower = message.downcase
+
+    case message_lower
+    when /become.*better/
+      "becoming better at something"
+    when /learn/
+      "learning something new"
+    when /improve/
+      "improving a skill or area"
+    when /plan/
+      "planning something"
+    when /organize/
+      "organizing something"
+    when /create.*list|create.*collection/
+      "creating a list or collection"
+    when /read.*book|book.*read/
+      "reading books"
+    else
+      "planning/organizing"
     end
   end
 
