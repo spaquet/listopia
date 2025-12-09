@@ -26,6 +26,11 @@ class MessageTemplate
     "file_uploaded" => "FileUploadedTemplate",
     "files_processed" => "FilesProcessedTemplate",
 
+    # Chat system & LLM tools
+    "navigation" => "NavigationTemplate",
+    "list" => "ListTemplate",
+    "resource" => "ResourceTemplate",
+
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
     "error" => "ErrorTemplate",
@@ -331,6 +336,54 @@ class HelpTemplate < BaseTemplate
     {
       commands: dig_data("commands"),
       features: dig_data("features")
+    }
+  end
+end
+
+# Chat system templates
+
+# Template for navigation messages (directing user to pages)
+class NavigationTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["navigation"].is_a?(Hash) && data["navigation"]["path"].present?
+  end
+
+  def render_data
+    {
+      navigation: dig_data("navigation"),
+      path: dig_data("navigation", "path"),
+      filters: dig_data("navigation", "filters") || {}
+    }
+  end
+end
+
+# Template for list results from tools
+class ListTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["items"].is_a?(Array)
+  end
+
+  def render_data
+    {
+      resource_type: dig_data("resource_type"),
+      total_count: dig_data("total_count") || 0,
+      page: dig_data("page") || 1,
+      items: dig_data("items")
+    }
+  end
+end
+
+# Template for resource creation/update results
+class ResourceTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["resource_type"].present? && data["action"].present?
+  end
+
+  def render_data
+    {
+      resource_type: dig_data("resource_type"),
+      action: dig_data("action"),
+      item: dig_data("item")
     }
   end
 end

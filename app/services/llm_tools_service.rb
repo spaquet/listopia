@@ -7,7 +7,7 @@
 # This service builds the tools specification that gets sent to the LLM
 # (compatible with OpenAI's function calling API and similar).
 
-class LLMToolsService < ApplicationService
+class LlmToolsService < ApplicationService
   def initialize(user:, organization:, chat_context:)
     @user = user
     @organization = organization

@@ -5,7 +5,7 @@
 # this service executes the corresponding database query or operation
 # and returns the result in a format the LLM can understand.
 
-class LLMToolExecutorService < ApplicationService
+class LlmToolExecutorService < ApplicationService
   def initialize(tool_name:, tool_input:, user:, organization:, chat_context:)
     @tool_name = tool_name
     @tool_input = tool_input || {}
@@ -224,17 +224,51 @@ class LLMToolExecutorService < ApplicationService
 
     email = input["email"].to_s.strip
     name = input["name"].to_s.strip
+    # Default to "member" role - user must explicitly request admin/lead role
     role = (input["role"] || "member").to_s.downcase
 
     return failure(errors: [ "Email is required" ]) if email.blank?
     return failure(errors: [ "Name is required" ]) if name.blank?
+    return failure(errors: [ "Role must be 'member' or 'admin'" ]) unless %w[member admin].include?(role)
 
+    # Check if user already exists
+    existing_user = User.find_by(email: email)
+    if existing_user
+      # If user exists, just add them to organization if not already a member
+      membership = existing_user.organization_memberships.find_by(organization: @organization)
+      if membership
+        return success(data: {
+          type: "resource",
+          resource_type: "User",
+          action: "added",
+          item: format_user(existing_user)
+        })
+      end
+
+      # Add existing user to organization
+      OrganizationMembership.create!(
+        user: existing_user,
+        organization: @organization,
+        role: role,
+        status: :active
+      )
+
+      return success(data: {
+        type: "resource",
+        resource_type: "User",
+        action: "added",
+        item: format_user(existing_user)
+      })
+    end
+
+    # Create new user with temporary password
     user = User.create!(
       email: email,
       name: name,
       password: SecureRandom.alphanumeric(16)
     )
 
+    # Add to organization with specified role
     OrganizationMembership.create!(
       user: user,
       organization: @organization,
@@ -242,7 +276,7 @@ class LLMToolExecutorService < ApplicationService
       status: :pending
     )
 
-    # Send invitation email
+    # Send invitation email to set up account
     OrganizationInvitationMailer.invite_email(user, @organization).deliver_later
 
     success(data: {

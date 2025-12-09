@@ -27,18 +27,17 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
-      # Check if message should navigate to a page instead
-      routing_service = ChatRoutingService.new(
+      # Use AI to detect user intent
+      intent_result = AiIntentRouterService.new(
         user_message: @user_message,
         chat: @chat,
         user: @context.user,
         organization: @context.organization
-      )
-      routing_result = routing_service.call
+      ).call
 
-      if routing_result.success? && routing_result.data[:action] == :navigate
-        # Create a navigation message instead of calling LLM
-        return handle_navigation(routing_result.data)
+      # If intent is to navigate to a page, do that instead of LLM response
+      if intent_result.success? && intent_result.data[:intent] == "navigate_to_page"
+        return handle_navigation_intent(intent_result.data)
       end
 
       # Get or determine the model to use
@@ -51,7 +50,7 @@ class ChatCompletionService < ApplicationService
       system_prompt = enhanced_system_prompt
 
       # Get available tools for the LLM
-      tools_service = LLMToolsService.new(
+      tools_service = LlmToolsService.new(
         user: @context.user,
         organization: @context.organization,
         chat_context: @context
@@ -87,21 +86,25 @@ class ChatCompletionService < ApplicationService
 
   private
 
-  # Handle navigation routing - create a system message that tells frontend to navigate
-  def handle_navigation(routing_data)
-    path = routing_data[:path]
-    filters = routing_data[:filters]
+  # Handle navigation intent detected by AI
+  def handle_navigation_intent(intent_data)
+    description = intent_data[:description]
 
-    # Create a special navigation message
-    nav_message = Message.new(
+    # Map common navigation intents to app pages
+    path = map_intent_to_path(description)
+
+    return failure(errors: [ "Could not determine page to navigate to" ]) unless path
+
+    # Create and save a special navigation message
+    nav_message = Message.create!(
       chat: @chat,
       role: :assistant,
-      content: "Navigating to #{routing_data[:description]}...",
+      content: "I'll help you with that. Opening the relevant page...",
       template_type: "navigation",
       metadata: {
         navigation: {
           path: path,
-          filters: filters
+          filters: {}
         }
       }
     )
@@ -112,13 +115,31 @@ class ChatCompletionService < ApplicationService
     success(data: nav_message)
   end
 
+  # Map intent descriptions to app page paths
+  def map_intent_to_path(description)
+    description_lower = description.downcase
+
+    # Users management
+    return "/admin/users" if description_lower.include?("user")
+    return "/admin/organizations" if description_lower.include?("organization") || description_lower.include?("org")
+    return "/organizations/#{@context.organization.id}/teams" if description_lower.include?("team")
+
+    # Lists management
+    return "/lists" if description_lower.include?("list")
+
+    # Admin dashboard
+    return "/admin" if description_lower.include?("dashboard") || description_lower.include?("admin")
+
+    nil
+  end
+
   # Handle tool calls from the LLM
   def handle_tool_call(tool_call_data)
     tool_name = tool_call_data[:tool_name]
     tool_input = tool_call_data[:tool_input]
 
     # Execute the tool
-    executor = LLMToolExecutorService.new(
+    executor = LlmToolExecutorService.new(
       tool_name: tool_name,
       tool_input: tool_input,
       user: @context.user,
@@ -129,17 +150,21 @@ class ChatCompletionService < ApplicationService
     result = executor.call
 
     if result.failure?
-      error_message = Message.create_assistant(
+      error_message = Message.create_templated(
         chat: @chat,
-        content: "I encountered an error: #{result.errors.first}"
+        template_type: "error",
+        template_data: {
+          message: "I encountered an issue",
+          details: result.errors.first
+        }
       )
       return success(data: error_message)
     end
 
     tool_result = result.data
 
-    # Create a message with the tool result
-    tool_message = Message.new(
+    # Create and save a message with the tool result
+    tool_message = Message.create!(
       chat: @chat,
       role: :assistant,
       content: format_tool_result(tool_result),
