@@ -26,23 +26,13 @@
   <% end %>
 <% end %>
 
-<!-- Clear the input field by updating it with blank value -->
-<%= turbo_stream.update("message-input-#{@chat.id}") do %>
-  <input type="text"
-         name="message[content]"
-         placeholder="Type / for commands..."
-         class="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-         data-unified-chat-target="messageInput"
-         autocomplete="off"
-         id="message-input-<%= @chat.id %>" />
-<% end %>
-
-<!-- Auto-scroll to bottom and refocus -->
+<!-- Clear the input field and auto-scroll -->
 <script>
   setTimeout(() => {
-    // Refocus the input
+    // Clear the input field after form submission
     const input = document.querySelector('[data-unified-chat-target="messageInput"]');
     if (input) {
+      input.value = '';
       input.focus();
     }
 

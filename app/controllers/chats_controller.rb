@@ -134,6 +134,8 @@ class ChatsController < ApplicationController
 
     # Check if message is a command (instant processing)
     is_command = @user_message.content.start_with?("/")
+    auto_submit_commands = ['/help', '/clear', '/new']
+    @should_clear_input = is_command && auto_submit_commands.include?(@user_message.content.split(" ").first)
 
     if is_command
       # Commands are processed synchronously and return immediately with full response
