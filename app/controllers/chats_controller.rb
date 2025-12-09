@@ -130,14 +130,31 @@ class ChatsController < ApplicationController
       return render_security_error("This message violates content policies and cannot be sent", 422)
     end
 
-    # Process message normally (handle commands, generate response, etc.)
-    @assistant_message = process_message(@user_message)
-
     @chat_context = @chat.build_context(location: :dashboard)
 
-    respond_to do |format|
-      format.turbo_stream { render action: :create_message }
-      format.json { render json: { success: true, message_id: @user_message.id } }
+    # Check if message is a command (instant processing)
+    is_command = @user_message.content.start_with?("/")
+
+    if is_command
+      # Commands are processed synchronously and return immediately with full response
+      @assistant_message = process_message(@user_message)
+
+      respond_to do |format|
+        format.turbo_stream { render action: :create_message }
+        format.json { render json: { success: true, message_id: @user_message.id } }
+      end
+    else
+      # For LLM messages, show loading indicator immediately and process in background
+      respond_to do |format|
+        format.turbo_stream do
+          # First, render the user message and loading indicator
+          render action: :create_message_with_loading
+        end
+        format.json { render json: { success: true, message_id: @user_message.id } }
+      end
+
+      # Process LLM response in the background
+      ProcessChatMessageJob.perform_later(@user_message.id, @chat.id, current_user.id)
     end
   end
 
@@ -466,7 +483,12 @@ class ChatsController < ApplicationController
       content: text,
       role: :tool,
       template_type: "error",
-      metadata: { error_message: text }
+      metadata: {
+        template_data: {
+          message: text,
+          error_code: "CHAT_ERROR"
+        }
+      }
     )
   end
 

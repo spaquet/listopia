@@ -1,6 +1,6 @@
-<!-- app/views/chats/create_message.turbo_stream.erb
-     Turbo Stream response for submitting a message to chat
-     Appends user message and assistant response to message container
+<!-- app/views/chats/create_message_with_loading.turbo_stream.erb
+     Turbo Stream response for LLM message submission
+     Shows user message immediately with loading indicator
 -->
 
 <% if @user_message.present? %>
@@ -9,11 +9,20 @@
     <%= render "shared/chat_message", message: @user_message, chat_context: @chat_context %>
   <% end %>
 
-  <!-- Append assistant response (for commands) -->
-  <% if @assistant_message.present? %>
-    <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
-      <%= render "shared/chat_message", message: @assistant_message, chat_context: @chat_context %>
-    <% end %>
+  <!-- Show loading animation while LLM processes in background -->
+  <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
+    <div class="flex justify-start" id="chat-loading-<%= @chat.id %>">
+      <div class="max-w-xs lg:max-w-md bg-gray-100 text-gray-900 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1">
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+          </div>
+          <span class="text-xs text-gray-500">AI is thinking...</span>
+        </div>
+      </div>
+    </div>
   <% end %>
 <% end %>
 
@@ -44,4 +53,3 @@
     }
   }, 0);
 </script>
-

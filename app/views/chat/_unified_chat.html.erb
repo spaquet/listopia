@@ -3,6 +3,9 @@
      Handles both initial render and Turbo Stream updates
 -->
 
+<!-- Subscribe to chat updates via Turbo Streams -->
+<%= turbo_stream_from "chat_#{chat.id}" %>
+
 <div id="unified-chat"
      data-controller="unified-chat chat-navigation"
      data-unified-chat-location-value="<%= context.location %>"
@@ -88,7 +91,7 @@
     <div class="border-t border-gray-200 p-3 bg-white relative">
       <%= form_with url: create_message_chat_path(chat),
                      method: :post,
-                     local: true,
+                     local: false,
                      class: "flex gap-2 relative",
                      data: {
                        unified_chat_target: "messageForm",
@@ -96,16 +99,16 @@
                      } do |f| %>
         <!-- Message Input -->
         <%= f.text_field "message[content]",
+                         id: "message-input-#{chat.id}",
                          placeholder: "Type / for commands...",
                          class: "flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent",
                          data: { unified_chat_target: "messageInput" },
                          autocomplete: "off" %>
 
         <!-- Submit Button -->
-        <button type="button"
+        <button type="submit"
                 class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 data-unified-chat-target="submitButton"
-                data-action="unified-chat#submitForm"
                 title="Send message">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
