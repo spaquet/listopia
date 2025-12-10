@@ -42,6 +42,8 @@ class ParameterExtractionService < ApplicationService
       response = llm_chat.complete
       response_text = extract_response_content(response)
 
+      Rails.logger.debug("List extraction attempt #{attempt} response: #{response_text.truncate(500)}")
+
       # Parse the JSON response
       json_match = response_text.match(/\{[\s\S]*\}/m)
 
@@ -50,12 +52,13 @@ class ParameterExtractionService < ApplicationService
           Rails.logger.warn("Failed to extract JSON from LLM response (attempt #{attempt}), retrying...")
           next
         end
-        # If JSON parsing fails completely after retries, return with missing title
-        Rails.logger.warn("Failed to extract JSON from LLM response for list planning parameters after #{max_retries} attempts")
+        # If JSON parsing fails completely after retries, use fallback title extraction
+        Rails.logger.warn("Failed to extract JSON from LLM response for list planning parameters after #{max_retries} attempts, using fallback")
+        fallback_title = generate_fallback_title(@user_message.content)
         return success(data: {
           resource_type: "list",
-          parameters: { items: [] },
-          missing: ["list title", "category"],
+          parameters: { title: fallback_title, items: [] },
+          missing: ["category"],
           needs_clarification: true,
           has_nested_structure: false
         })
@@ -92,32 +95,74 @@ class ParameterExtractionService < ApplicationService
           Rails.logger.warn("LLM returned null title (attempt #{attempt}), retrying with stronger prompt...")
           next
         else
-          # Title is still blank after retries, mark as missing
-          Rails.logger.error("LLM failed to extract title after #{max_retries} attempts")
+          # Title is still blank after retries, use fallback title
+          Rails.logger.error("LLM failed to extract title after #{max_retries} attempts, using fallback")
+          fallback_title = generate_fallback_title(@user_message.content)
           return success(data: {
             resource_type: "list",
-            parameters: { items: [] },
-            missing: ["list title", "category"],
+            parameters: { title: fallback_title, items: [] },
+            missing: ["category"],
             needs_clarification: true,
             has_nested_structure: false
           })
         end
-      rescue JSON::ParserError
+      rescue JSON::ParserError => e
         if attempt < max_retries
-          Rails.logger.warn("JSON parse error (attempt #{attempt}), retrying...")
+          Rails.logger.warn("JSON parse error (attempt #{attempt}): #{e.message}, retrying...")
           next
         else
-          # JSON parse error after retries
+          # JSON parse error after retries, use fallback
+          Rails.logger.error("JSON parse error after #{max_retries} attempts: #{e.message}, using fallback")
+          fallback_title = generate_fallback_title(@user_message.content)
           success(data: {
             resource_type: "list",
-            parameters: { items: [] },
-            missing: ["list title", "category"],
+            parameters: { title: fallback_title, items: [] },
+            missing: ["category"],
             needs_clarification: true,
             has_nested_structure: false
           })
         end
       end
     end
+  end
+
+  # Generate a fallback title if LLM extraction fails
+  def generate_fallback_title(message)
+    # Extract key words from the message to create a meaningful title
+    message_lower = message.downcase
+
+    # Common patterns and their title templates
+    if message_lower.include?("become") || message_lower.include?("better")
+      # Extract role/position mentioned
+      if message =~ /(?:better\s+)?(\w+\s+\w+)/i
+        role = $1.titleize
+        return "#{role} Development Plan"
+      end
+    end
+
+    if message_lower.include?("learn")
+      if message =~ /learn\s+(\w+)/i
+        topic = $1.titleize
+        return "#{topic} Learning Plan"
+      end
+    end
+
+    if message_lower.include?("improve")
+      if message =~ /improve\s+(?:my\s+)?(\w+)/i
+        skill = $1.titleize
+        return "#{skill} Improvement Plan"
+      end
+    end
+
+    if message_lower.include?("plan")
+      if message =~ /plan\s+(?:my\s+)?(\w+)/i
+        topic = $1.titleize
+        return "#{topic} Plan"
+      end
+    end
+
+    # Default fallback
+    "Development Plan"
   end
 
   # Build the system prompt for list extraction, with stronger emphasis on retries
