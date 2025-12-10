@@ -17,13 +17,14 @@
   <% end %>
 <% end %>
 
-<!-- Clear the input field for auto-submit commands and auto-scroll -->
+<!-- Clear the input field for certain commands and auto-scroll -->
 <script>
   setTimeout(() => {
     const input = document.querySelector('[data-unified-chat-target="messageInput"]');
 
     <% if @should_clear_input %>
-      // Clear the input field for auto-submit commands
+      // Clear input for auto-submit commands: /help, /clear, /new
+      // Don't clear for commands that accept parameters: /search, /browse
       if (input) {
         input.value = '';
         input.focus();

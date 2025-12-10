@@ -76,8 +76,12 @@ class AiIntentRouterService < ApplicationService
 
       CRITICAL DISTINCTION - CREATE_LIST vs CREATE_RESOURCE:
 
-      CREATE_LIST (Planning, Learning, Collections, Personal Goals):
+      CREATE_LIST (Planning, Learning, Collections, Personal Goals, Development):
       ✓ "I want to become a better marketing manager"
+      ✓ "I'm forward to becoming a better Marketing Manager"
+      ✓ "Help me improve my public speaking skills"
+      ✓ "I want to develop my leadership abilities"
+      ✓ "Create a professional development plan for me"
       ✓ "Provide me with 5 books to read and a plan to improve in 6 weeks"
       ✓ "Give me a learning plan for Python"
       ✓ "Create a workout routine for 8 weeks"
@@ -86,19 +90,27 @@ class AiIntentRouterService < ApplicationService
       ✓ "What courses should I take to learn AI?"
       ✓ "Help me organize my business trip itinerary"
       ✓ "Plan our roadshow across 5 US cities"
+      ✓ "I want to grow my network - give me a strategy"
+      ✓ "Help me become more effective as a manager"
+      ✓ "Create a onboarding checklist for new team members"
 
       CREATE_RESOURCE (Adding Users, Teams, Organizations to the App):
       ✓ "Add user john@company.com"
+      ✓ "Create user Josh with email josh@company.com"
       ✓ "Create a team called 'Design Team'"
       ✓ "Invite sarah to our organization"
       ✓ "Add a new team member"
       ✓ "Create organization for XYZ company"
       ✓ "Register 5 new users for the system"
 
-      KEY RULE: If the user is asking for content, plans, lists, collections, learning paths, or self-improvement guidance → CREATE_LIST
-      KEY RULE: If the user is asking to add people/teams/orgs to THIS application → CREATE_RESOURCE
+      KEY RULE: If the user mentions self-improvement, skill development, learning, or personal/professional growth → CREATE_LIST
+      KEY RULE: If the user is asking to add people/teams/orgs TO THIS APPLICATION with specific names/emails → CREATE_RESOURCE
+      KEY RULE: Look at the CONTENT of the request:
+        - Does it ask for a plan, guide, structure, items, or content? → CREATE_LIST
+        - Does it ask to add someone to the app or create an account? → CREATE_RESOURCE
 
       Classify based on the user's clear intent, regardless of language or phrasing.
+      When in doubt, lean towards CREATE_LIST for personal/professional development requests.
 
       User message: "#{@user_message.content}"
     PROMPT

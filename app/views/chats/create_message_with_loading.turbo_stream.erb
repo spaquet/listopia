@@ -28,8 +28,8 @@
 
 <!-- Clear the input field and auto-scroll -->
 <script>
-  setTimeout(() => {
-    // Clear the input field after form submission
+  // Clear the input field after form submission and auto-scroll
+  const clearInputAndScroll = () => {
     const input = document.querySelector('[data-unified-chat-target="messageInput"]');
     if (input) {
       input.value = '';
@@ -41,5 +41,11 @@
     if (container) {
       container.scrollTop = container.scrollHeight;
     }
-  }, 0);
+  };
+
+  // Execute immediately
+  clearInputAndScroll();
+
+  // Also schedule for next tick to ensure DOM is updated
+  setTimeout(clearInputAndScroll, 50);
 </script>

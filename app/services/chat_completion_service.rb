@@ -161,27 +161,33 @@ class ChatCompletionService < ApplicationService
   def looks_like_planning_request(message)
     message_lower = message.downcase
 
-    # Planning indicators
+    # Planning/development indicators - broader set of keywords
     planning_keywords = [
       "plan", "improve", "learn", "read", "book", "course",
       "guide", "list", "collection", "routine", "schedule",
       "strategy", "roadmap", "roadshow", "itinerary",
       "skill", "develop", "become better", "growth", "program",
       "framework", "methodology", "curriculum", "checklist",
-      "guide", "tips", "advice", "suggest", "recommend"
+      "guide", "tips", "advice", "suggest", "recommend",
+      "become", "better", "help me", "give me",
+      "create a plan", "professional development", "self-improvement",
+      "learning", "coaching", "mentoring", "improving",
+      "effective", "manager", "leader", "marketing",
+      "business", "personal", "career", "goals"
     ]
 
     # Check if message contains planning keywords
     has_planning_keyword = planning_keywords.any? { |kw| message_lower.include?(kw) }
 
-    # User creation indicators
+    # User creation indicators - very specific and explicit
     user_creation_keywords = [
       "create user", "add user", "invite", "register",
-      "new member", "add member", "create account", "user@"
+      "new member", "add member", "create account"
     ]
 
     # User-specific patterns (looking for email or explicit user mentions)
-    has_explicit_user_creation = user_creation_keywords.any? { |kw| message_lower.include?(kw) }
+    has_explicit_user_creation = user_creation_keywords.any? { |kw| message_lower.include?(kw) } ||
+                                  message_lower.match?(/\b[\w\.-]+@[\w\.-]+\.\w+\b/)  # Email pattern
 
     # If it has planning keywords but no explicit user creation request, it's likely planning
     has_planning_keyword && !has_explicit_user_creation
