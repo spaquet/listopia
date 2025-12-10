@@ -32,6 +32,10 @@ class ChatPolicy < ApplicationPolicy
     owns_chat?
   end
 
+  def save_and_create_new_chat?
+    owns_chat?
+  end
+
   class Scope < ApplicationPolicy::Scope
     def resolve
       scope.by_user(user).by_organization(user.current_organization)

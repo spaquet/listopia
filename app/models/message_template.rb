@@ -36,7 +36,8 @@ class MessageTemplate
     "error" => "ErrorTemplate",
     "success" => "SuccessTemplate",
     "info" => "InfoTemplate",
-    "help" => "HelpTemplate"
+    "help" => "HelpTemplate",
+    "new_chat_confirmation" => "NewChatConfirmationTemplate"
   }.freeze
 
   # Get template class by type
@@ -384,6 +385,22 @@ class ResourceTemplate < BaseTemplate
       resource_type: dig_data("resource_type"),
       action: dig_data("action"),
       item: dig_data("item")
+    }
+  end
+end
+
+# Template for new chat confirmation dialog
+class NewChatConfirmationTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["current_chat_id"].present?
+  end
+
+  def render_data
+    {
+      current_chat_id: dig_data("current_chat_id"),
+      message_count: dig_data("message_count") || 0,
+      confirm_url: dig_data("confirm_url"),
+      dismiss_url: dig_data("dismiss_url")
     }
   end
 end

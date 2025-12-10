@@ -77,6 +77,7 @@ Rails.application.routes.draw do
     member do
       patch :archive
       patch :restore
+      post :save_and_create_new_chat
 
       # Create message endpoint
       post :create_message, action: :create_message

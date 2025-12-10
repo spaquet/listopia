@@ -190,6 +190,26 @@ class ChatsController < ApplicationController
     end
   end
 
+  # Save current chat and create a new one
+  def save_and_create_new_chat
+    # The current chat is already saved, just create a new one
+    focused_resource = @chat.focused_resource
+
+    @new_chat = current_user.chats.create!(
+      organization: current_organization,
+      focused_resource: focused_resource
+    )
+
+    @chat_context = @new_chat.build_context(location: params[:location] || :dashboard)
+    @messages = []
+    @chat = @new_chat  # Set @chat to the new one for the response
+
+    respond_to do |format|
+      format.turbo_stream { render action: :create }
+      format.html { redirect_to chat_path(@new_chat) }
+    end
+  end
+
   private
 
   def set_chat
@@ -243,8 +263,7 @@ class ChatsController < ApplicationController
     when "/clear"
       handle_clear_command
     when "/new"
-      # This would trigger creating a new chat in the UI
-      Message.create_system(chat: @chat, content: "Creating new conversation...")
+      handle_new_command
     else
       Message.create_system(
         chat: @chat,
@@ -354,6 +373,22 @@ class ChatsController < ApplicationController
   def handle_clear_command
     @chat.messages.destroy_all
     Message.create_system(chat: @chat, content: "Chat history cleared.")
+  end
+
+  def handle_new_command
+    # Create a templated confirmation dialog asking to save the current chat
+    template_data = {
+      current_chat_id: @chat.id,
+      message_count: @chat.messages.count,
+      confirm_url: save_and_create_new_chat_chat_path(@chat),
+      dismiss_url: chats_path(new: true)
+    }
+
+    Message.create_templated(
+      chat: @chat,
+      template_type: "new_chat_confirmation",
+      template_data: template_data
+    )
   end
 
   def add_placeholder_response(user_message)

@@ -1,0 +1,50 @@
+<!-- app/views/message_templates/_new_chat_confirmation.html.erb
+     Confirmation dialog for starting a new chat
+     Offers to save the current chat history or discard it
+-->
+
+<div class="space-y-3">
+  <!-- Message -->
+  <div class="text-sm text-gray-700">
+    <% if data[:message_count] && data[:message_count] > 0 %>
+      <p>You have <strong><%= data[:message_count] %></strong> message<%= data[:message_count] == 1 ? '' : 's' %> in this conversation. Would you like to save it before starting a new chat?</p>
+    <% else %>
+      <p>Start a new conversation?</p>
+    <% end %>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex gap-2 flex-wrap">
+    <!-- Save and Create New Button (form submission) -->
+    <form method="POST"
+          action="<%= data[:confirm_url] %>"
+          class="inline"
+          data-turbo-action="advance">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      <button type="submit"
+              class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+        Save & Create New
+      </button>
+    </form>
+
+    <!-- Discard and Create New Button (form submission without saving) -->
+    <form method="POST"
+          action="<%= chats_path %>"
+          class="inline"
+          data-turbo-action="advance">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      <input type="hidden" name="skip_save" value="true">
+      <button type="submit"
+              class="px-3 py-1.5 text-sm font-medium bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors">
+        Discard & Create New
+      </button>
+    </form>
+
+    <!-- Cancel Button (client-side removal) -->
+    <button type="button"
+            onclick="this.closest('.chat-message').remove()"
+            class="px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+      Cancel
+    </button>
+  </div>
+</div>
