@@ -36,6 +36,15 @@ export default class extends Controller {
       this.handleCommandInput(e)
     })
 
+    // Clear input field when form is submitted
+    this.messageFormTarget.addEventListener("submit", (e) => {
+      // Clear input immediately on form submission
+      setTimeout(() => {
+        this.messageInputTarget.value = ''
+        this.messageInputTarget.focus()
+      }, 0)
+    })
+
     // Auto-scroll to bottom when new messages arrive
     this.setupAutoScroll()
   }
