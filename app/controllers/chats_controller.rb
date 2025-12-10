@@ -10,7 +10,7 @@ class ChatsController < ApplicationController
 
   # List all chats for current user
   def index
-    @chats = current_user.chats.by_organization(current_organization).recent.page(params[:page]).per(20)
+    @chats = current_user.chats.by_organization(current_organization).recent
   end
 
   # View single chat

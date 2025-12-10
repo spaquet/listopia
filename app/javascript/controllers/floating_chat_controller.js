@@ -10,9 +10,13 @@ export default class extends Controller {
 
   connect() {
     console.log("Floating chat controller connected")
+    console.log("Toggle button element:", this.toggleButtonTarget)
+    console.log("Chat container element:", this.chatContainerTarget)
 
     // Restore state from localStorage (remember if user had chat open)
     const wasOpen = localStorage.getItem("floating-chat-open") === "true"
+    console.log("Was chat open before?", wasOpen)
+
     if (wasOpen) {
       this.expand()
     } else {
@@ -74,21 +78,26 @@ export default class extends Controller {
   }
 
   // Close on escape key
-  keydown(event) {
+  handleEscape(event) {
     if (event.key === "Escape" && this.isOpenValue) {
+      event.preventDefault()
       this.collapse()
       this.toggleButtonTarget.focus()
     }
   }
 
-  // Setup scroll lock for mobile
+  // Setup event listeners
   setupScrollLock() {
-    this.element.addEventListener("keydown", this.keydown.bind(this))
+    // Bind the handler to maintain proper 'this' context
+    this.boundEscapeHandler = this.handleEscape.bind(this)
+    document.addEventListener("keydown", this.boundEscapeHandler)
   }
 
-  // Remove scroll lock listener
+  // Remove event listeners
   removeScrollLock() {
-    this.element.removeEventListener("keydown", this.keydown.bind(this))
+    if (this.boundEscapeHandler) {
+      document.removeEventListener("keydown", this.boundEscapeHandler)
+    }
   }
 
   // Handle auto-scroll to latest message

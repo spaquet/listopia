@@ -97,7 +97,7 @@ class ChatContext
         show_sidebar: false,
         sidebar_width: nil,
         chat_height: "h-96",
-        position: "fixed bottom-6 right-6 z-50",
+        position: "static",
         show_new_chat_button: false,
         show_history: false,
         responsive: "w-96 max-w-[90vw]"
