@@ -20,6 +20,8 @@ class ListCreationService < ApplicationService
     )
 
     if @list.save
+      # Broadcast AFTER save to ensure data is persisted
+      # This triggers Turbo Stream updates to dashboard and lists index
       broadcast_all_updates(@list, action: :create)
       ApplicationService::Result.success(data: @list)  # ← FIXED: Return Result object
     else
@@ -82,7 +84,9 @@ class ListCreationService < ApplicationService
           items_result = items_service.bulk_create_items(items, skip_broadcasts: true)
 
           unless items_result.success?
-            Rails.logger.warn "Failed to create items for list #{@list.id}: #{items_result.errors}"
+            Rails.logger.error "Failed to create items for list #{@list.id}: #{items_result.errors.inspect}"
+          else
+            Rails.logger.info "Successfully created #{items_result.data.count} items for list #{@list.id}"
           end
         end
 
@@ -96,15 +100,16 @@ class ListCreationService < ApplicationService
             end
           end
         end
-
-        # Reload to get updated counts
-        @list.reload
-
-        # Broadcast creation to all affected users
-        broadcast_all_updates(@list, action: :create)
-
-        ApplicationService::Result.success(data: @list)
       end
+
+      # Reload AFTER transaction commits to get updated counts
+      @list.reload
+
+      # Broadcast AFTER transaction commits to ensure data is persisted
+      # This triggers Turbo Stream updates to dashboard and lists index
+      broadcast_all_updates(@list, action: :create)
+
+      ApplicationService::Result.success(data: @list)
     rescue => e
       Rails.logger.error "Error creating list with structure: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
