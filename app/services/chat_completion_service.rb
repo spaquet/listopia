@@ -929,24 +929,34 @@ class ChatCompletionService < ApplicationService
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
 
-      CREATING STRUCTURED PLANS - CRITICAL INSTRUCTION:
-      =================================================
+      CREATING STRUCTURED PLANS - INTELLIGENT INSTRUCTION:
+      ====================================================
       WHEN USER ASKS FOR A PLAN, LEARNING PATH, ITINERARY, ROADMAP, OR STRUCTURED APPROACH:
       YOU MUST call create_list with nested_lists parameter (NOT just items).
 
-      DO NOT create flat lists. Create appropriate number of SUB-LISTS based on user context.
-      Duration/Scope Guidelines:
-      - 1-3 months: 3-5 phases
-      - 3-6 months: 4-7 phases
-      - 6-12 months: 6-12 months (monthly breakdown)
-      - 1+ year: More granular breakdown (quarterly, monthly, or weekly as appropriate)
-      - Travel/Destinations: One sub-list per destination/region
-      - Projects: One sub-list per phase (planning, design, dev, testing, launch, etc.)
-      - Topics: One sub-list per topic/skill area being learned
+      YOU ARE INTELLIGENT. Do NOT follow arbitrary rules or numbers.
+      Instead, think deeply about what structure makes sense for THIS user's SPECIFIC request.
 
-      Each sub-list should have 3-7 items (vary based on complexity and phase importance).
+      Ask yourself:
+      - What is the natural structure? (time-based, topic-based, location-based, phase-based?)
+      - How many meaningful divisions exist? (Not "3-5" but what actually makes sense)
+      - How many actionable items per section? (Varies by complexity and importance)
+      - What level of detail does this context require?
+      - What are the user's constraints? (time, budget, experience, preferences)
 
-      EXACT JSON STRUCTURE to use in create_list tool call:
+      EXAMPLES (NOT rules, just to show the variety of intelligent structures):
+      - "Learn piano in 6 months" → Could be 6 monthly phases OR 3 skill-level phases depending on pace
+      - "Europe trip with 5 countries" → 5 sub-lists (one per country), not a fixed number
+      - "Build a startup" → 5-8 phases (MVP, Launch, Growth, Scale) based on complexity
+      - "2-year MBA plan" → 8 quarters or 4 semesters or however makes pedagogical sense
+      - "Wedding planning" → Phases based on timeline (3 months out = fewer sub-lists, 1 year = more detail)
+
+      The number of items per section depends entirely on that section's complexity:
+      - A simple onboarding phase might have 2-3 items
+      - A complex feature development phase might have 8-10 items
+      - Never force padding or arbitrarily limit items
+
+      EXACT JSON FORMAT (example for 4-month plan - but your structure should be context-appropriate):
       {
         "title": "Social Marketing Development Plan",
         "items": [],
@@ -962,70 +972,30 @@ class ChatCompletionService < ApplicationService
               {
                 "title": "Study audience psychology and targeting",
                 "description": "Learn how to identify and effectively reach your target audience"
-              },
-              {
-                "title": "Read 'Book 1: Social Media Marketing Basics'",
-                "description": "Complete foundational book on social media fundamentals"
-              },
-              {
-                "title": "Set up analytics dashboard",
-                "description": "Create comprehensive tracking system for social media metrics"
-              },
-              {
-                "title": "Create personal brand statement",
-                "description": "Define your unique value proposition and brand positioning"
-              }
-            ]
-          },
-          {
-            "title": "Month 2: Strategy & Analytics",
-            "description": "Master analytics tools and develop data-driven marketing strategies",
-            "items": [
-              {
-                "title": "Learn analytics tools and metrics",
-                "description": "Master Google Analytics and platform-specific analytics dashboards"
-              },
-              {
-                "title": "Study competitor analysis techniques",
-                "description": "Learn how to analyze competitor strategies and performance"
-              },
-              {
-                "title": "Read 'Book 2: Data-Driven Social Marketing'",
-                "description": "Deep dive into analytics and data-driven decision making"
-              },
-              {
-                "title": "Create content calendar template",
-                "description": "Design your posting schedule and content planning system"
-              },
-              {
-                "title": "Analyze 3 competitor accounts",
-                "description": "Conduct detailed analysis of successful accounts in your niche"
               }
             ]
           }
         ]
       }
 
-      CRITICAL RULES FOR PLAN GENERATION:
-      1. Always use nested_lists parameter for creating plans (not just items)
-      2. Create appropriate number of sub-lists based on duration/scope:
-         - Yearly plans: 12 sub-lists (monthly) or 4 (quarterly) based on detail level
-         - Multi-year plans: Break into quarters, semi-annual, or annual phases as appropriate
-         - Short plans (1-3 months): 3-5 sub-lists
-         - Travel: One sub-list per destination
-         - Projects: One sub-list per major phase
-      3. Each sub-list MUST have a title and description (explain what this section covers)
-      4. Each sub-list should have 3-7 items (adapt based on complexity):
-         - Complex phases: 6-7 items
-         - Simple phases: 3-4 items
-         - Balance depth with readability
-      5. Each item MUST have a title and description (1-3 sentences):
-         - Titles: Specific, actionable, measurable
-         - Descriptions: Clarify the task, provide context, explain why it matters
-      6. Structure should naturally flow (chronological, topical, or logical progression)
-      7. Include diverse elements appropriate to the context
-      8. Make items concrete and measurable where possible
-      9. Tailor structure to user's context (duration, budget, preferences, background, experience level)
+      CRITICAL PRINCIPLES (NOT rules):
+      1. Always use nested_lists for plans - DO NOT create flat lists
+      2. Choose the NATURAL structure for this specific context (not a template)
+      3. Each sub-list MUST have:
+         - A clear, descriptive title (explains what this section is about)
+         - A description (what the user will accomplish in this section)
+         - Items appropriate to that section's scope (no artificial minimums or maximums)
+      4. Each item MUST have:
+         - A clear, actionable title
+         - A description that adds context, not just reiterates the title
+      5. Structure flows logically (chronological, skill progression, logical dependencies, etc.)
+      6. Include diverse elements (learning, practice, reflection, output, feedback)
+      7. All items are concrete and measurable (not vague)
+      8. The ENTIRE structure is tailored to:
+         - User's experience level
+         - Available time and budget
+         - Stated preferences and constraints
+         - The specific goal and context they provided
     PROMPT
 
     "#{base_prompt}\n\n#{tool_instructions}"

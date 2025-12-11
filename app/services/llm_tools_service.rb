@@ -305,20 +305,19 @@ class LlmToolsService < ApplicationService
   # Items and nested_lists are optional and can be populated based on user requests.
   #
   # CRITICAL: When user asks for a plan, learning path, itinerary, roadmap, or structured approach,
-  # you MUST populate nested_lists (not items). Use nested_lists to create hierarchical structures.
-  # Scale the number of sub-lists to match the scope: yearly plans get 12 monthly lists,
-  # short plans get 3-5, travel gets one per destination, projects get one per phase.
+  # you MUST populate nested_lists (not items). Use nested_lists to create hierarchical structures
+  # with INTELLIGENT granularity - the number of sub-lists and items should match what makes sense
+  # for that specific context, not arbitrary constraints.
   def create_list_tool
     {
       type: "function",
       function: {
         name: "create_list",
         description: "Create a new list with optional items and nested sub-lists. " +
-          "IMPORTANT: For plans, learning paths, itineraries, or roadmaps, use nested_lists to create sub-lists " +
-          "scaled to match scope (yearly=12 monthly, 4-month=4-5 phases, travel=per destination, projects=per phase). " +
-          "Each sub-list should have 3-7 items with titles and descriptions. " +
-          "Example: For '12-month learning plan', create nested_lists with 12 sub-lists (one per month). " +
-          "Example: For 'Europe trip', create nested_lists with one sub-list per country/region.",
+          "For plans, learning paths, itineraries, or roadmaps, use nested_lists to create an intelligently structured hierarchy. " +
+          "Structure should match the natural breakdown: 12-month plan → 12 monthly sub-lists, 5-country trip → 5 destination sub-lists, " +
+          "startup → phases as needed (MVP, Launch, Growth, Scale, etc.), complex phase → 8-10 items, simple phase → 2-3 items. " +
+          "Never force arbitrary structure. Think about what serves the user's specific goal and context.",
         parameters: {
           type: "object",
           properties: {
