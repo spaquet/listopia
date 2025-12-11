@@ -150,7 +150,7 @@ class ChatResourceCreatorService < ApplicationService
   end
 
   def create_list
-    # Support both symbol and string keys since parameters can be created either way
+    # Extract parameters - support both symbol and string keys
     title = @parameters["title"] || @parameters[:title]
     description = @parameters["description"] || @parameters[:description]
     status = @parameters["status"] || @parameters[:status] || "draft"
@@ -159,84 +159,56 @@ class ChatResourceCreatorService < ApplicationService
     items = @parameters["items"] || @parameters[:items]
     nested_lists = @parameters["nested_lists"] || @parameters[:nested_lists]
 
-    # Log the parameters for debugging
-    Rails.logger.info("ChatResourceCreatorService#create_list - Parameters: #{@parameters.inspect}")
-    Rails.logger.info("ChatResourceCreatorService#create_list - Title: #{title.inspect}")
+    return failure(errors: ["List title is required"]) unless title.present?
+    return failure(errors: ["Organization is required to create a list"]) unless @created_in_organization
 
-    return failure(errors: [ "List title is required" ]) unless title.present?
-    return failure(errors: [ "Organization is required to create a list" ]) unless @created_in_organization
+    # USE ListCreationService for all list creation logic
+    # Benefits of delegating to the service:
+    # - Consistent validation and error handling across chat and UI
+    # - Proper Turbo Stream broadcasting to keep UI dashboards in sync with new lists
+    # - Centralized position management for items (prevents unique constraint violations)
+    # - Support for nested list hierarchies
+    # - Atomic transactions ensure data integrity
+    # - Maintainability: list creation logic in one place (not duplicated across services)
+    # - Easier to add features (audit logging, webhooks, etc.) in one location
+    #
+    # This refactoring moved list/item creation out of ChatResourceCreatorService,
+    # which now focuses on chat-specific orchestration and messaging.
 
-    org = @created_in_organization
+    service = ListCreationService.new(@created_by_user)
 
-    list = List.new(
-      organization: org,
-      owner: @created_by_user,
+    result = service.create_list_with_structure(
       title: title,
       description: description,
       status: status,
+      list_type: category,
       team_id: team_id,
-      list_type: category
+      organization: @created_in_organization,
+      items: items || [],
+      nested_lists: nested_lists || []
     )
 
-    unless list.save
-      return failure(errors: list.errors.full_messages)
+    if result.success?
+      list = result.data
+      items_count = list.list_items.count
+      sublists_count = list.sub_lists.count
+
+      # Build success message
+      message = "List \"#{title}\" created successfully."
+      message += " (#{sublists_count} sub-lists created)" if sublists_count > 0
+      message += " (#{items_count} items added)" if items_count > 0
+
+      success(data: {
+        type: "list",
+        message: message,
+        resource: list,
+        resource_id: list.id,
+        items_created: items_count,
+        sublists_created: sublists_count
+      })
+    else
+      failure(errors: result.errors)
     end
-
-    # Create list items if provided
-    items_created = 0
-    items_list = []
-    if items.is_a?(Array) && items.present?
-      items.each_with_index do |item_data, index|
-        item_title = item_data.is_a?(Hash) ? (item_data["title"] || item_data[:title]) : item_data.to_s
-        next unless item_title.present?
-
-        list_item = ListItem.new(
-          list: list,
-          title: item_title,
-          description: item_data.is_a?(Hash) ? (item_data["description"] || item_data[:description]) : nil,
-          status: "pending",
-          position: index,
-          assigned_user_id: nil
-        )
-
-        if list_item.save
-          items_created += 1
-          items_list << item_title
-        end
-      end
-    end
-
-    # Create nested sub-lists if provided
-    sublists_created = 0
-    sublists_list = []
-    if nested_lists.is_a?(Array) && nested_lists.present?
-      hierarchy_result = ListHierarchyService.new(
-        parent_list: list,
-        nested_structures: nested_lists,
-        created_by_user: @created_by_user,
-        created_in_organization: @created_in_organization
-      ).call
-
-      if hierarchy_result.success?
-        sublists_created = hierarchy_result.data[:sublists_count] || 0
-        sublists_list = hierarchy_result.data[:sublists] || []
-      end
-    end
-
-    # Build success message
-    message = "List \"#{title}\" created successfully."
-    message += " (#{sublists_created} sub-lists created)" if sublists_created > 0
-
-    success(data: {
-      type: "list",
-      message: message,
-      resource: list,
-      resource_id: list.id,
-      items_created: items_created,
-      items: items_list,
-      sublists_created: sublists_created,
-      sublists: sublists_list
-    })
   end
 
   # Combine first_name and last_name into a single name

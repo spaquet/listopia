@@ -1,5 +1,20 @@
 # app/services/list_hierarchy_service.rb
 #
+# DEPRECATED: This service is deprecated in favor of ListCreationService#create_list_with_structure
+#
+# ListCreationService now handles all list creation including nested hierarchies.
+# This service will be removed in a future release.
+#
+# Use ListCreationService instead:
+#   service = ListCreationService.new(user)
+#   result = service.create_list_with_structure(
+#     title: "US Roadshow",
+#     nested_lists: [
+#       {title: "New York", items: [...]},
+#       {title: "Chicago", items: [...]}
+#     ]
+#   )
+#
 # Service for creating hierarchical nested lists
 # Handles parent-child relationships between lists
 # Organizes items into logical groupings (locations, phases, categories, etc.)
