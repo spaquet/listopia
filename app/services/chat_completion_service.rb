@@ -130,6 +130,8 @@ class ChatCompletionService < ApplicationService
     resource_type = data[:resource_type]
     needs_clarification = data[:needs_clarification]
 
+    Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Intent: #{intent}, Data: #{data.inspect}")
+
     # Filter out organization_id from missing params for teams/lists since it defaults to current org
     if resource_type.in?([ "team", "list" ])
       missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
@@ -137,19 +139,23 @@ class ChatCompletionService < ApplicationService
 
     # For list creation, ask to clarify category if needed
     if intent == "create_list" && needs_clarification
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Returning category clarification")
       return handle_list_category_clarification(data)
     end
 
     # If there are missing parameters, ask the user for them
     if missing_params.present?
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
       return handle_missing_parameters(data, missing_params)
     end
 
     # Parameters are complete!
     # For list and resource creation, proceed with creation
     if intent == "create_list"
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{(data[:parameters] || {}).inspect}")
       return handle_list_creation("list", data[:parameters] || {})
     elsif intent == "create_resource"
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with resource creation")
       return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
     end
 
@@ -325,6 +331,35 @@ class ChatCompletionService < ApplicationService
       return nil  # This will allow the flow to continue to normal intent detection
     end
 
+    # For list creation, when we're asking for category clarification,
+    # don't re-extract parameters - just use the category from the user response
+    if pending["resource_type"] == "list" && pending["missing_params"]&.include?("category")
+      # Check if user response contains a category indicator
+      response_lower = @user_message.content.downcase
+      inferred_category = if response_lower.include?("professional") || response_lower.include?("work") || response_lower.include?("business")
+                            "professional"
+                          elsif response_lower.include?("personal")
+                            "personal"
+                          else
+                            nil
+                          end
+
+      if inferred_category
+        # Keep all previously extracted params and just add the category
+        merged_params = pending["extracted_params"].merge({ "category" => inferred_category })
+        new_params = { "category" => inferred_category }
+        resource_type = pending["resource_type"]
+        remaining_missing = (pending["missing_params"] || []).reject { |param| param == "category" }
+
+        if remaining_missing.blank?
+          # All parameters are now complete!
+          @chat.metadata.delete("pending_resource_creation")
+          @chat.save
+          return handle_list_creation(resource_type, merged_params)
+        end
+      end
+    end
+
     # Extract parameters from the new user message
     param_result = ParameterExtractionService.new(
       user_message: @user_message,
@@ -421,6 +456,9 @@ class ChatCompletionService < ApplicationService
 
   # Handle list creation with items
   def handle_list_creation(resource_type, parameters)
+    # Log parameters for debugging
+    Rails.logger.info("ChatCompletionService#handle_list_creation - Resource type: #{resource_type}, Parameters: #{parameters.inspect}")
+
     # Create list using ChatResourceCreatorService
     creator = ChatResourceCreatorService.new(
       resource_type: resource_type,

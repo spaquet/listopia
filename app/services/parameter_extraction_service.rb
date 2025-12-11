@@ -200,10 +200,17 @@ class ParameterExtractionService < ApplicationService
       2. INFER list items from the request context (e.g., "trip to New York" could include hotel, flights, itinerary, etc.)
       3. For category: ALWAYS try to infer from context (business = professional, personal = personal, learning = personal, etc.)
       4. Category values must be: "personal", "professional", or null (if truly uncertain)
-      5. Only set needs_category_clarification to true if you truly cannot determine professional vs personal
-      6. If category cannot be inferred, set it to null and add "category" to missing array
-      7. Be generous in inferring items - think about what tasks/steps would be involved in achieving this goal
-      8. DETECT NESTED STRUCTURES: Look for multi-level lists or hierarchical patterns
+      5. Only set needs_category_clarification to true if you TRULY CANNOT determine professional vs personal
+         - Examples where you CAN infer:
+           * "I want to become a better marketing manager" → professional (career development)
+           * "Plan my vacation" → personal
+           * "Create a workout routine" → personal
+           * "Marketing director development plan" → professional (career goal)
+           * "Learn Python" → personal (self-improvement)
+      6. If you infer the category successfully, set needs_category_clarification to false
+      7. If category cannot be inferred, set it to null and add "category" to missing array, AND set needs_category_clarification to true
+      8. Be generous in inferring items - think about what tasks/steps would be involved in achieving this goal
+      9. DETECT NESTED STRUCTURES: Look for multi-level lists or hierarchical patterns
          - Location-based: "cities: New York, Chicago, Boston" with shared tasks per location
          - Phase-based: "Before roadshow", "During roadshow", "After roadshow" with tasks per phase
          - Week-based: "Week 1", "Week 2", etc. with tasks per week

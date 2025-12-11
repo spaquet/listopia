@@ -186,7 +186,7 @@ class ChatResourceCreatorService < ApplicationService
     items_created = 0
     items_list = []
     if items.is_a?(Array) && items.present?
-      items.each do |item_data|
+      items.each_with_index do |item_data, index|
         item_title = item_data.is_a?(Hash) ? (item_data["title"] || item_data[:title]) : item_data.to_s
         next unless item_title.present?
 
@@ -195,6 +195,7 @@ class ChatResourceCreatorService < ApplicationService
           title: item_title,
           description: item_data.is_a?(Hash) ? (item_data["description"] || item_data[:description]) : nil,
           status: "pending",
+          position: index,
           assigned_user_id: nil
         )
 
