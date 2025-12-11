@@ -917,7 +917,7 @@ class ChatCompletionService < ApplicationService
   def enhanced_system_prompt
     base_prompt = @context.system_prompt
 
-    # Add tool instructions
+    # Add tool instructions and plan generation guidelines
     tool_instructions = <<~PROMPT
       You can help users by:
       1. Answering questions about their data
@@ -928,6 +928,64 @@ class ChatCompletionService < ApplicationService
 
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
+
+      CREATING STRUCTURED PLANS - IMPORTANT:
+      =====================================
+      When a user asks for a plan, learning path, itinerary, roadmap, or structured approach to ANY goal,
+      you MUST generate a detailed, hierarchical structure with:
+
+      1. PARENT LIST: The main goal/topic (e.g., "Social Marketing Development Plan")
+      2. NESTED SUB-LISTS (3-5 of them): Logical phases, months, categories, or topics
+         Examples:
+         - For learning plans: Month 1, Month 2, Month 3, etc.
+         - For travel: Destination 1, Destination 2, etc.
+         - For projects: Planning, Design, Development, Testing, Launch
+         - For personal growth: Foundation, Building, Mastery, Application
+      3. ITEMS within each sub-list (4-7 per sub-list): Specific tasks, resources, activities
+
+      Example for "4-month social marketing plan with 6 book recommendations":
+      Social Marketing Development Plan
+      ├── Month 1: Foundations
+      │   ├── Learn social media platform basics
+      │   ├── Study audience psychology and targeting
+      │   ├── Read "Book 1: Social Media Marketing Basics"
+      │   ├── Set up analytics dashboard
+      │   └── Create personal brand statement
+      ├── Month 2: Strategy & Analytics
+      │   ├── Learn analytics tools and metrics
+      │   ├── Study competitor analysis techniques
+      │   ├── Read "Book 2: Data-Driven Social Marketing"
+      │   ├── Create content calendar template
+      │   └── Analyze 3 competitor accounts
+      ├── Month 3: Content Creation
+      │   ├── Master visual design principles
+      │   ├── Learn copywriting for social media
+      │   ├── Read "Book 3: Viral Content Creation"
+      │   ├── Create 20 content pieces
+      │   └── Test different content formats
+      ├── Month 4: Campaign Management
+      │   ├── Learn campaign planning methodology
+      │   ├── Study ROI measurement techniques
+      │   ├── Read "Book 4: Campaign Optimization"
+      │   ├── Launch first paid campaign
+      │   └── Analyze results and iterate
+      └── Recommended Books
+          ├── Book 1: [Full Title]
+          ├── Book 2: [Full Title]
+          ├── Book 3: [Full Title]
+          ├── Book 4: [Full Title]
+          ├── Book 5: [Full Title]
+          └── Book 6: [Full Title]
+
+      When creating the list, use the create_list tool with:
+      - title: The main goal/topic
+      - items: Empty array [] (main list usually has no direct items)
+      - nested_lists: Array of 3-5 objects, each with:
+        - title: Phase/Month/Category name
+        - description: What this phase covers
+        - items: Array of 4-7 task/resource objects with title and description
+
+      This creates a rich, actionable structure that users can immediately start using.
     PROMPT
 
     "#{base_prompt}\n\n#{tool_instructions}"
