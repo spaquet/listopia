@@ -303,12 +303,18 @@ class LlmToolsService < ApplicationService
   # Tool: Create list
   # Supports creating lists with items and nested sub-lists in a single operation.
   # Items and nested_lists are optional and can be populated based on user requests.
+  #
+  # CRITICAL: When user asks for a plan, learning path, itinerary, roadmap, or structured approach,
+  # you MUST populate nested_lists (not items). Use nested_lists to create hierarchical structures.
   def create_list_tool
     {
       type: "function",
       function: {
         name: "create_list",
-        description: "Create a new list with optional items and sub-lists in the current organization or a specific team.",
+        description: "Create a new list with optional items and nested sub-lists. " +
+          "IMPORTANT: For plans, learning paths, itineraries, or roadmaps, use nested_lists to create 3-5 sub-lists (phases/months/topics) " +
+          "with 4-7 items each. " +
+          "Example: For '4-month marketing plan', create nested_lists=[{title:'Month 1: Foundations', items:[{title:'Learn basics'}, {title:'Study competitors'}]}, ...]",
         parameters: {
           type: "object",
           properties: {

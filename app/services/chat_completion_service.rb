@@ -929,63 +929,83 @@ class ChatCompletionService < ApplicationService
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
 
-      CREATING STRUCTURED PLANS - IMPORTANT:
-      =====================================
-      When a user asks for a plan, learning path, itinerary, roadmap, or structured approach to ANY goal,
-      you MUST generate a detailed, hierarchical structure with:
+      CREATING STRUCTURED PLANS - CRITICAL INSTRUCTION:
+      =================================================
+      WHEN USER ASKS FOR A PLAN, LEARNING PATH, ITINERARY, ROADMAP, OR STRUCTURED APPROACH:
+      YOU MUST call create_list with nested_lists parameter (NOT just items).
 
-      1. PARENT LIST: The main goal/topic (e.g., "Social Marketing Development Plan")
-      2. NESTED SUB-LISTS (3-5 of them): Logical phases, months, categories, or topics
-         Examples:
-         - For learning plans: Month 1, Month 2, Month 3, etc.
-         - For travel: Destination 1, Destination 2, etc.
-         - For projects: Planning, Design, Development, Testing, Launch
-         - For personal growth: Foundation, Building, Mastery, Application
-      3. ITEMS within each sub-list (4-7 per sub-list): Specific tasks, resources, activities
+      DO NOT create flat lists. Create 3-5 SUB-LISTS with 4-7 ITEMS EACH.
 
-      Example for "4-month social marketing plan with 6 book recommendations":
-      Social Marketing Development Plan
-      ├── Month 1: Foundations
-      │   ├── Learn social media platform basics
-      │   ├── Study audience psychology and targeting
-      │   ├── Read "Book 1: Social Media Marketing Basics"
-      │   ├── Set up analytics dashboard
-      │   └── Create personal brand statement
-      ├── Month 2: Strategy & Analytics
-      │   ├── Learn analytics tools and metrics
-      │   ├── Study competitor analysis techniques
-      │   ├── Read "Book 2: Data-Driven Social Marketing"
-      │   ├── Create content calendar template
-      │   └── Analyze 3 competitor accounts
-      ├── Month 3: Content Creation
-      │   ├── Master visual design principles
-      │   ├── Learn copywriting for social media
-      │   ├── Read "Book 3: Viral Content Creation"
-      │   ├── Create 20 content pieces
-      │   └── Test different content formats
-      ├── Month 4: Campaign Management
-      │   ├── Learn campaign planning methodology
-      │   ├── Study ROI measurement techniques
-      │   ├── Read "Book 4: Campaign Optimization"
-      │   ├── Launch first paid campaign
-      │   └── Analyze results and iterate
-      └── Recommended Books
-          ├── Book 1: [Full Title]
-          ├── Book 2: [Full Title]
-          ├── Book 3: [Full Title]
-          ├── Book 4: [Full Title]
-          ├── Book 5: [Full Title]
-          └── Book 6: [Full Title]
+      EXACT JSON STRUCTURE to use in create_list tool call:
+      {
+        "title": "Social Marketing Development Plan",
+        "items": [],
+        "nested_lists": [
+          {
+            "title": "Month 1: Foundations",
+            "description": "Build fundamental social media knowledge and establish foundational skills",
+            "items": [
+              {
+                "title": "Learn social media platform basics",
+                "description": "Understand core features of Twitter, LinkedIn, Instagram, and TikTok"
+              },
+              {
+                "title": "Study audience psychology and targeting",
+                "description": "Learn how to identify and effectively reach your target audience"
+              },
+              {
+                "title": "Read 'Book 1: Social Media Marketing Basics'",
+                "description": "Complete foundational book on social media fundamentals"
+              },
+              {
+                "title": "Set up analytics dashboard",
+                "description": "Create comprehensive tracking system for social media metrics"
+              },
+              {
+                "title": "Create personal brand statement",
+                "description": "Define your unique value proposition and brand positioning"
+              }
+            ]
+          },
+          {
+            "title": "Month 2: Strategy & Analytics",
+            "description": "Master analytics tools and develop data-driven marketing strategies",
+            "items": [
+              {
+                "title": "Learn analytics tools and metrics",
+                "description": "Master Google Analytics and platform-specific analytics dashboards"
+              },
+              {
+                "title": "Study competitor analysis techniques",
+                "description": "Learn how to analyze competitor strategies and performance"
+              },
+              {
+                "title": "Read 'Book 2: Data-Driven Social Marketing'",
+                "description": "Deep dive into analytics and data-driven decision making"
+              },
+              {
+                "title": "Create content calendar template",
+                "description": "Design your posting schedule and content planning system"
+              },
+              {
+                "title": "Analyze 3 competitor accounts",
+                "description": "Conduct detailed analysis of successful accounts in your niche"
+              }
+            ]
+          }
+        ]
+      }
 
-      When creating the list, use the create_list tool with:
-      - title: The main goal/topic
-      - items: Empty array [] (main list usually has no direct items)
-      - nested_lists: Array of 3-5 objects, each with:
-        - title: Phase/Month/Category name
-        - description: What this phase covers
-        - items: Array of 4-7 task/resource objects with title and description
-
-      This creates a rich, actionable structure that users can immediately start using.
+      CRITICAL RULES FOR PLAN GENERATION:
+      1. Always use nested_lists parameter for creating plans (not just items)
+      2. Create 3-5 sub-lists representing phases, months, categories, or topics
+      3. Each sub-list MUST have a title and description
+      4. Each sub-list MUST have 4-7 items
+      5. Each item MUST have a title and description (2-3 sentences)
+      6. Structure should naturally flow (chronological, topical, or logical progression)
+      7. Include diverse elements (learning, reading, practice, projects, reflection)
+      8. Make items concrete and measurable
+      9. Tailor structure to user's context (duration, budget, preferences, background)
     PROMPT
 
     "#{base_prompt}\n\n#{tool_instructions}"
