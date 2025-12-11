@@ -150,6 +150,9 @@ class ChatResourceCreatorService < ApplicationService
   end
 
   def create_list
+    Rails.logger.info("ChatResourceCreatorService#create_list - Starting list creation")
+    Rails.logger.info("ChatResourceCreatorService#create_list - Parameters: #{@parameters.inspect}")
+
     # Extract parameters - support both symbol and string keys
     title = @parameters["title"] || @parameters[:title]
     description = @parameters["description"] || @parameters[:description]
@@ -158,6 +161,8 @@ class ChatResourceCreatorService < ApplicationService
     team_id = @parameters["team_id"] || @parameters[:team_id]
     items = @parameters["items"] || @parameters[:items]
     nested_lists = @parameters["nested_lists"] || @parameters[:nested_lists]
+
+    Rails.logger.info("ChatResourceCreatorService#create_list - Extracted: title=#{title}, items=#{items.inspect}, nested_lists=#{nested_lists.inspect}")
 
     return failure(errors: ["List title is required"]) unless title.present?
     return failure(errors: ["Organization is required to create a list"]) unless @created_in_organization

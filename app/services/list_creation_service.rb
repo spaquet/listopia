@@ -62,6 +62,10 @@ class ListCreationService < ApplicationService
     organization: nil,
     **options
   )
+    Rails.logger.info("ListCreationService#create_list_with_structure - Starting list creation: title=#{title}")
+    Rails.logger.info("ListCreationService#create_list_with_structure - Items count: #{items.length}, Nested lists count: #{nested_lists.length}")
+    Rails.logger.info("ListCreationService#create_list_with_structure - Items: #{items.inspect}")
+
     return ApplicationService::Result.failure(errors: ["List title is required"]) unless title.present?
 
     begin
@@ -75,28 +79,33 @@ class ListCreationService < ApplicationService
         )
 
         unless @list.save
+          Rails.logger.error("ListCreationService#create_list_with_structure - Failed to save list: #{@list.errors.full_messages}")
           return ApplicationService::Result.failure(errors: @list.errors.full_messages)
         end
 
+        Rails.logger.info("ListCreationService#create_list_with_structure - List created with ID: #{@list.id}")
+
         # Create items for the parent list if provided
         if items.present?
+          Rails.logger.info("ListCreationService#create_list_with_structure - Creating #{items.length} items for list #{@list.id}")
           items_service = ListItemService.new(@list, @user)
           items_result = items_service.bulk_create_items(items, skip_broadcasts: true)
 
           unless items_result.success?
-            Rails.logger.error "Failed to create items for list #{@list.id}: #{items_result.errors.inspect}"
+            Rails.logger.error "ListCreationService#create_list_with_structure - Failed to create items for list #{@list.id}: #{items_result.errors.inspect}"
           else
-            Rails.logger.info "Successfully created #{items_result.data.count} items for list #{@list.id}"
+            Rails.logger.info "ListCreationService#create_list_with_structure - Successfully created #{items_result.data.count} items for list #{@list.id}"
           end
         end
 
         # Create nested sub-lists if provided
         if nested_lists.present?
+          Rails.logger.info("ListCreationService#create_list_with_structure - Creating #{nested_lists.length} nested lists")
           nested_lists.each do |nested_structure|
             sublist_result = create_sublist(@list, nested_structure)
 
             unless sublist_result.success?
-              Rails.logger.warn "Failed to create sub-list: #{sublist_result.errors}"
+              Rails.logger.warn "ListCreationService#create_list_with_structure - Failed to create sub-list: #{sublist_result.errors}"
             end
           end
         end
@@ -104,6 +113,7 @@ class ListCreationService < ApplicationService
 
       # Reload AFTER transaction commits to get updated counts
       @list.reload
+      Rails.logger.info("ListCreationService#create_list_with_structure - List reloaded. Total items: #{@list.list_items.count}, Total sub-lists: #{@list.sub_lists.count}")
 
       # Broadcast AFTER transaction commits to ensure data is persisted
       # This triggers Turbo Stream updates to dashboard and lists index
@@ -111,7 +121,7 @@ class ListCreationService < ApplicationService
 
       ApplicationService::Result.success(data: @list)
     rescue => e
-      Rails.logger.error "Error creating list with structure: #{e.message}"
+      Rails.logger.error "ListCreationService#create_list_with_structure - Error creating list with structure: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       ApplicationService::Result.failure(errors: [e.message])
     end

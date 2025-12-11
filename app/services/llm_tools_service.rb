@@ -301,18 +301,20 @@ class LlmToolsService < ApplicationService
   end
 
   # Tool: Create list
+  # Supports creating lists with items and nested sub-lists in a single operation.
+  # Items and nested_lists are optional and can be populated based on user requests.
   def create_list_tool
     {
       type: "function",
       function: {
         name: "create_list",
-        description: "Create a new list in the current organization or a specific team.",
+        description: "Create a new list with optional items and sub-lists in the current organization or a specific team.",
         parameters: {
           type: "object",
           properties: {
             title: {
               type: "string",
-              description: "List title"
+              description: "List title (required)"
             },
             description: {
               type: "string",
@@ -321,6 +323,73 @@ class LlmToolsService < ApplicationService
             team_id: {
               type: "string",
               description: "Optional team ID to create list in a team"
+            },
+            items: {
+              type: "array",
+              description: "Array of items to add to the list. Each item can be a string (title) or object with title and description.",
+              items: {
+                oneOf: [
+                  {
+                    type: "string",
+                    description: "Item title"
+                  },
+                  {
+                    type: "object",
+                    properties: {
+                      title: {
+                        type: "string",
+                        description: "Item title"
+                      },
+                      description: {
+                        type: "string",
+                        description: "Item description"
+                      }
+                    },
+                    required: [ "title" ]
+                  }
+                ]
+              }
+            },
+            nested_lists: {
+              type: "array",
+              description: "Array of sub-lists to create as nested hierarchies. Each sub-list can have its own items.",
+              items: {
+                type: "object",
+                properties: {
+                  title: {
+                    type: "string",
+                    description: "Sub-list title"
+                  },
+                  description: {
+                    type: "string",
+                    description: "Sub-list description"
+                  },
+                  items: {
+                    type: "array",
+                    description: "Items for this sub-list",
+                    items: {
+                      oneOf: [
+                        {
+                          type: "string"
+                        },
+                        {
+                          type: "object",
+                          properties: {
+                            title: {
+                              type: "string"
+                            },
+                            description: {
+                              type: "string"
+                            }
+                          },
+                          required: [ "title" ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                required: [ "title" ]
+              }
             }
           },
           required: [ "title" ]

@@ -96,7 +96,11 @@ class ListItemService
   #     "Item 3"  # String format also supported
   #   ])
   def bulk_create_items(items_data, skip_broadcasts: false)
+    Rails.logger.info("ListItemService#bulk_create_items - Starting bulk item creation for list #{@list.id}")
+    Rails.logger.info("ListItemService#bulk_create_items - Items data: #{items_data.inspect}")
+
     unless can_edit_list?
+      Rails.logger.warn("ListItemService#bulk_create_items - Permission denied for user #{@user.id} on list #{@list.id}")
       return ApplicationService::Result.failure(errors: ["You don't have permission to add items to this list"])
     end
 
@@ -106,11 +110,14 @@ class ListItemService
       ActiveRecord::Base.transaction do
         @list.with_lock do
           max_position = @list.list_items.maximum(:position) || -1
+          Rails.logger.info("ListItemService#bulk_create_items - Max position: #{max_position}")
 
           items_data.each_with_index do |item_data, index|
             # Extract item attributes - supports both Hash and String formats
             item_title = item_data.is_a?(Hash) ? (item_data["title"] || item_data[:title]) : item_data.to_s
             item_description = item_data.is_a?(Hash) ? (item_data["description"] || item_data[:description]) : nil
+
+            Rails.logger.debug("ListItemService#bulk_create_items - Processing item #{index}: title=#{item_title}, description=#{item_description}")
 
             next unless item_title.present?
 
@@ -134,24 +141,28 @@ class ListItemService
 
             if item.save
               created_items << item
+              Rails.logger.info("ListItemService#bulk_create_items - Created item: #{item.id} (#{item_title})")
             else
-              Rails.logger.warn "Failed to create item in list #{@list.id}: #{item.errors.full_messages}"
+              Rails.logger.warn("ListItemService#bulk_create_items - Failed to create item in list #{@list.id}: #{item.errors.full_messages}")
             end
           end
         end
       end
 
       @list.reload
+      Rails.logger.info("ListItemService#bulk_create_items - List reloaded. Total items created: #{created_items.count}")
 
       # Only broadcast if not explicitly skipped
       unless skip_broadcasts
+        Rails.logger.info("ListItemService#bulk_create_items - Broadcasting updates")
         broadcast_all_updates(@list)
       end
 
       ApplicationService::Result.success(data: created_items)
     rescue => e
       @errors = [e.message]
-      Rails.logger.error "Error bulk creating items: #{e.message}"
+      Rails.logger.error "ListItemService#bulk_create_items - Error bulk creating items: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
       ApplicationService::Result.failure(errors: @errors)
     end
   end
