@@ -934,7 +934,17 @@ class ChatCompletionService < ApplicationService
       WHEN USER ASKS FOR A PLAN, LEARNING PATH, ITINERARY, ROADMAP, OR STRUCTURED APPROACH:
       YOU MUST call create_list with nested_lists parameter (NOT just items).
 
-      DO NOT create flat lists. Create 3-5 SUB-LISTS with 4-7 ITEMS EACH.
+      DO NOT create flat lists. Create appropriate number of SUB-LISTS based on user context.
+      Duration/Scope Guidelines:
+      - 1-3 months: 3-5 phases
+      - 3-6 months: 4-7 phases
+      - 6-12 months: 6-12 months (monthly breakdown)
+      - 1+ year: More granular breakdown (quarterly, monthly, or weekly as appropriate)
+      - Travel/Destinations: One sub-list per destination/region
+      - Projects: One sub-list per phase (planning, design, dev, testing, launch, etc.)
+      - Topics: One sub-list per topic/skill area being learned
+
+      Each sub-list should have 3-7 items (vary based on complexity and phase importance).
 
       EXACT JSON STRUCTURE to use in create_list tool call:
       {
@@ -998,14 +1008,24 @@ class ChatCompletionService < ApplicationService
 
       CRITICAL RULES FOR PLAN GENERATION:
       1. Always use nested_lists parameter for creating plans (not just items)
-      2. Create 3-5 sub-lists representing phases, months, categories, or topics
-      3. Each sub-list MUST have a title and description
-      4. Each sub-list MUST have 4-7 items
-      5. Each item MUST have a title and description (2-3 sentences)
+      2. Create appropriate number of sub-lists based on duration/scope:
+         - Yearly plans: 12 sub-lists (monthly) or 4 (quarterly) based on detail level
+         - Multi-year plans: Break into quarters, semi-annual, or annual phases as appropriate
+         - Short plans (1-3 months): 3-5 sub-lists
+         - Travel: One sub-list per destination
+         - Projects: One sub-list per major phase
+      3. Each sub-list MUST have a title and description (explain what this section covers)
+      4. Each sub-list should have 3-7 items (adapt based on complexity):
+         - Complex phases: 6-7 items
+         - Simple phases: 3-4 items
+         - Balance depth with readability
+      5. Each item MUST have a title and description (1-3 sentences):
+         - Titles: Specific, actionable, measurable
+         - Descriptions: Clarify the task, provide context, explain why it matters
       6. Structure should naturally flow (chronological, topical, or logical progression)
-      7. Include diverse elements (learning, reading, practice, projects, reflection)
-      8. Make items concrete and measurable
-      9. Tailor structure to user's context (duration, budget, preferences, background)
+      7. Include diverse elements appropriate to the context
+      8. Make items concrete and measurable where possible
+      9. Tailor structure to user's context (duration, budget, preferences, background, experience level)
     PROMPT
 
     "#{base_prompt}\n\n#{tool_instructions}"

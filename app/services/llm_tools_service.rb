@@ -306,15 +306,19 @@ class LlmToolsService < ApplicationService
   #
   # CRITICAL: When user asks for a plan, learning path, itinerary, roadmap, or structured approach,
   # you MUST populate nested_lists (not items). Use nested_lists to create hierarchical structures.
+  # Scale the number of sub-lists to match the scope: yearly plans get 12 monthly lists,
+  # short plans get 3-5, travel gets one per destination, projects get one per phase.
   def create_list_tool
     {
       type: "function",
       function: {
         name: "create_list",
         description: "Create a new list with optional items and nested sub-lists. " +
-          "IMPORTANT: For plans, learning paths, itineraries, or roadmaps, use nested_lists to create 3-5 sub-lists (phases/months/topics) " +
-          "with 4-7 items each. " +
-          "Example: For '4-month marketing plan', create nested_lists=[{title:'Month 1: Foundations', items:[{title:'Learn basics'}, {title:'Study competitors'}]}, ...]",
+          "IMPORTANT: For plans, learning paths, itineraries, or roadmaps, use nested_lists to create sub-lists " +
+          "scaled to match scope (yearly=12 monthly, 4-month=4-5 phases, travel=per destination, projects=per phase). " +
+          "Each sub-list should have 3-7 items with titles and descriptions. " +
+          "Example: For '12-month learning plan', create nested_lists with 12 sub-lists (one per month). " +
+          "Example: For 'Europe trip', create nested_lists with one sub-list per country/region.",
         parameters: {
           type: "object",
           properties: {
