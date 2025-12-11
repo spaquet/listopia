@@ -529,9 +529,9 @@ class ChatCompletionService < ApplicationService
         message: assistant_message
       )
 
-      # If refinement is needed, return the refinement questions instead
+      # If refinement is needed, return the refinement message
       if refinement_result.success? && refinement_result.data[:needs_refinement]
-        return refinement_result
+        return success(data: refinement_result.data[:message])
       end
     end
 
