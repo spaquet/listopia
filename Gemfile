@@ -117,7 +117,7 @@ group :test do
   gem "cuprite"
 
   # Used to test rubyllm integrations
-  gem "vcr", "~> 6.2"
+  gem "vcr", "~> 6.4"
   gem "webmock", "~> 3.18"
 
   # Additional RSpec gems
