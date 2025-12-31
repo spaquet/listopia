@@ -6,11 +6,12 @@ puts "🧹 Cleaning existing data..."
 # Disable triggers to handle self-referential foreign keys
 ActiveRecord::Base.connection.execute("ALTER TABLE users DISABLE TRIGGER ALL;") if Rails.env.development?
 
-# Delete all data safely
+# Delete all data safely (order matters due to foreign keys)
 ListItem.destroy_all
 List.destroy_all
-Chat.destroy_all
 Message.destroy_all
+ModerationLog.destroy_all
+Chat.destroy_all
 User.destroy_all
 
 # Re-enable foreign key checks
