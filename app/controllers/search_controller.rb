@@ -29,6 +29,10 @@ class SearchController < ApplicationController
     end
   end
 
+  def spotlight_modal
+    render partial: "search/spotlight_modal", layout: false
+  end
+
   private
 
   def format_json_response

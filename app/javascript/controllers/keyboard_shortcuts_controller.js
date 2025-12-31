@@ -16,13 +16,10 @@ export default class extends Controller {
       return
     }
 
-    // Cmd/Ctrl + K: Focus search
+    // Cmd/Ctrl + K: Open spotlight search modal
     if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
       event.preventDefault()
-      const searchInput = document.querySelector('input[name="search"]')
-      if (searchInput) {
-        searchInput.focus()
-      }
+      document.dispatchEvent(new CustomEvent('spotlight:open'))
     }
 
     // Cmd/Ctrl + N: New list

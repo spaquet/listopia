@@ -94,6 +94,12 @@ application.register("realtime", RealtimeController)
 import SortableController from "./sortable_controller"
 application.register("sortable", SortableController)
 
+import SpotlightSearchController from "./spotlight_search_controller"
+application.register("spotlight-search", SpotlightSearchController)
+
+import SpotlightTriggerController from "./spotlight_trigger_controller"
+application.register("spotlight-trigger", SpotlightTriggerController)
+
 import ToggleController from "./toggle_controller"
 application.register("toggle", ToggleController)
 

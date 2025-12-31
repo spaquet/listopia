@@ -71,6 +71,7 @@ Rails.application.routes.draw do
 
   # Search routes
   get "search", to: "search#index", as: :search
+  get "search/spotlight_modal", to: "search#spotlight_modal", as: :spotlight_modal
 
   # Chat routes - unified chat system
   resources :chats do
