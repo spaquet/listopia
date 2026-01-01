@@ -33,6 +33,15 @@ class SearchController < ApplicationController
     render partial: "search/spotlight_modal", layout: false
   end
 
+  def extract_avatar_url(record)
+    case record
+    when User
+      record.avatar_url
+    else
+      nil
+    end
+  end
+
   private
 
   def format_json_response
@@ -50,6 +59,7 @@ class SearchController < ApplicationController
       title: extract_title(record),
       description: extract_description(record),
       url: result_url(record),
+      avatar_url: extract_avatar_url(record),
       created_at: record.created_at,
       updated_at: record.updated_at
     }
@@ -61,6 +71,8 @@ class SearchController < ApplicationController
       record.title
     when ListItem
       record.title
+    when User
+      record.name
     when Comment
       "Comment by #{record.user.name}"
     when ActsAsTaggableOn::Tag
@@ -76,6 +88,8 @@ class SearchController < ApplicationController
       record.description
     when ListItem
       record.description
+    when User
+      record.email
     when Comment
       record.content
     when ActsAsTaggableOn::Tag
@@ -90,13 +104,15 @@ class SearchController < ApplicationController
     when List
       list_path(record)
     when ListItem
-      list_item_path(record.list, record)
+      list_list_item_path(record.list, record)
+    when User
+      profile_path(record)
     when Comment
       case record.commentable
       when List
         list_path(record.commentable)
       when ListItem
-        list_item_path(record.commentable.list, record.commentable)
+        list_list_item_path(record.commentable.list, record.commentable)
       else
         root_path
       end

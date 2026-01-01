@@ -58,7 +58,7 @@ class ParameterExtractionService < ApplicationService
         return success(data: {
           resource_type: "list",
           parameters: { title: fallback_title, items: [] },
-          missing: ["category"],
+          missing: [ "category" ],
           needs_clarification: true,
           has_nested_structure: false
         })
@@ -101,7 +101,7 @@ class ParameterExtractionService < ApplicationService
           return success(data: {
             resource_type: "list",
             parameters: { title: fallback_title, items: [] },
-            missing: ["category"],
+            missing: [ "category" ],
             needs_clarification: true,
             has_nested_structure: false
           })
@@ -117,7 +117,7 @@ class ParameterExtractionService < ApplicationService
           success(data: {
             resource_type: "list",
             parameters: { title: fallback_title, items: [] },
-            missing: ["category"],
+            missing: [ "category" ],
             needs_clarification: true,
             has_nested_structure: false
           })

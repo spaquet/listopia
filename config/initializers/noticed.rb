@@ -6,8 +6,17 @@ Rails.application.config.to_prepare do
   Noticed::Notification.class_eval do
     # Delegate methods to event for easier access in views
     delegate :title, :message, :icon, :url, :notification_type,
-             :actor, :target_list, :previous_status, :new_status, :action_type,
+             :actor, :target_list, :action_type,
              to: :event, allow_nil: true
+
+    # Safe accessors for optional status fields
+    def previous_status
+      event&.params&.dig(:previous_status)
+    end
+
+    def new_status
+      event&.params&.dig(:new_status)
+    end
 
     # Add convenience methods that might not be in v2.6
     def read?

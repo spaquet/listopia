@@ -66,7 +66,7 @@ class ListCreationService < ApplicationService
     Rails.logger.info("ListCreationService#create_list_with_structure - Items count: #{items.length}, Nested lists count: #{nested_lists.length}")
     Rails.logger.info("ListCreationService#create_list_with_structure - Items: #{items.inspect}")
 
-    return ApplicationService::Result.failure(errors: ["List title is required"]) unless title.present?
+    return ApplicationService::Result.failure(errors: [ "List title is required" ]) unless title.present?
 
     begin
       ActiveRecord::Base.transaction do
@@ -123,7 +123,7 @@ class ListCreationService < ApplicationService
     rescue => e
       Rails.logger.error "ListCreationService#create_list_with_structure - Error creating list with structure: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
-      ApplicationService::Result.failure(errors: [e.message])
+      ApplicationService::Result.failure(errors: [ e.message ])
     end
   end
 
@@ -190,7 +190,7 @@ class ListCreationService < ApplicationService
     description = structure.is_a?(Hash) ? (structure["description"] || structure[:description]) : nil
     items = structure.is_a?(Hash) ? (structure["items"] || structure[:items] || []) : []
 
-    return ApplicationService::Result.failure(errors: ["Sub-list title is required"]) unless title.present?
+    return ApplicationService::Result.failure(errors: [ "Sub-list title is required" ]) unless title.present?
 
     begin
       # Create the sub-list
@@ -225,7 +225,7 @@ class ListCreationService < ApplicationService
       })
     rescue => e
       Rails.logger.error "Error creating sub-list: #{e.message}"
-      ApplicationService::Result.failure(errors: [e.message])
+      ApplicationService::Result.failure(errors: [ e.message ])
     end
   end
 

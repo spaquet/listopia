@@ -6,7 +6,7 @@ class SearchService < ApplicationService
   def initialize(query:, user:, models: nil, limit: 20, use_vector: true)
     @query = query
     @user = user
-    @models = Array(models || [ List, ListItem, Comment, ActsAsTaggableOn::Tag ]).compact
+    @models = Array(models || [ List, ListItem, Comment, User, ActsAsTaggableOn::Tag ]).compact
     @limit = limit
     @use_vector = use_vector && embedding_api_available?
   end
@@ -119,10 +119,29 @@ class SearchService < ApplicationService
         return true if list.readable_by?(@user) && @user.in_organization?(list.organization)
       end
       false
+    when User
+      # Users are searchable if they're in the same organization
+      # Exclude the current user
+      return false if record.id == @user.id
+      # Check if both users are in at least one common organization
+      common_org = @user.organizations.exists?(id: record.organizations.select(:id))
+      common_org
     when ActsAsTaggableOn::Tag
-      # Tags are searchable if they're used on accessible items
-      # For now, allow search but filter in results
-      true
+      # Tags are searchable only if they're used on items the user can access
+      # Check if tag is used on any accessible list or list item
+      tag_on_accessible_list = record.taggings.exists? do |tagging|
+        next false unless tagging.taggable_type == "List"
+        list = List.find(tagging.taggable_id)
+        accessible?(list)
+      end
+
+      tag_on_accessible_item = record.taggings.exists? do |tagging|
+        next false unless tagging.taggable_type == "ListItem"
+        item = ListItem.find(tagging.taggable_id)
+        accessible?(item)
+      end
+
+      tag_on_accessible_list || tag_on_accessible_item
     else
       false
     end

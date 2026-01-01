@@ -101,7 +101,7 @@ class ListItemService
 
     unless can_edit_list?
       Rails.logger.warn("ListItemService#bulk_create_items - Permission denied for user #{@user.id} on list #{@list.id}")
-      return ApplicationService::Result.failure(errors: ["You don't have permission to add items to this list"])
+      return ApplicationService::Result.failure(errors: [ "You don't have permission to add items to this list" ])
     end
 
     created_items = []
@@ -160,7 +160,7 @@ class ListItemService
 
       ApplicationService::Result.success(data: created_items)
     rescue => e
-      @errors = [e.message]
+      @errors = [ e.message ]
       Rails.logger.error "ListItemService#bulk_create_items - Error bulk creating items: #{e.message}"
       Rails.logger.error e.backtrace.join("\n")
       ApplicationService::Result.failure(errors: @errors)

@@ -27,7 +27,7 @@ RSpec.describe ChatCompletionService, type: :service do
             "email" => nil,
             "role" => "marketing manager"
           },
-          "missing_params" => ["email for identification"],
+          "missing_params" => [ "email for identification" ],
           "intent" => "create_resource"
         }
       }
@@ -79,8 +79,8 @@ RSpec.describe ChatCompletionService, type: :service do
       message = "i want to become a better marketing manager. provide me with 5 books to read and a plan to improve in 6 weeks."
 
       # These keywords should be detected
-      planning_keywords = ["improve", "books", "read", "plan"]
-      user_creation_keywords = ["create user", "add user", "invite"]
+      planning_keywords = [ "improve", "books", "read", "plan" ]
+      user_creation_keywords = [ "create user", "add user", "invite" ]
 
       message_lower = message.downcase
       has_planning = planning_keywords.any? { |kw| message_lower.include?(kw) }
@@ -112,7 +112,7 @@ RSpec.describe ChatCompletionService, type: :service do
         "pending_resource_creation" => {
           "resource_type" => "user",
           "extracted_params" => { "first_name" => "plan" },
-          "missing_params" => ["email"],
+          "missing_params" => [ "email" ],
           "intent" => "create_resource"
         }
       }
@@ -124,7 +124,7 @@ RSpec.describe ChatCompletionService, type: :service do
       # Safety check: if it looks like planning, cancel the pending state
       if pending["resource_type"] == "user"
         message_lower = user_message.content.downcase
-        planning_keywords = ["plan", "improve", "learn", "read", "book", "course"]
+        planning_keywords = [ "plan", "improve", "learn", "read", "book", "course" ]
         has_planning = planning_keywords.any? { |kw| message_lower.include?(kw) }
 
         if has_planning

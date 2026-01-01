@@ -75,7 +75,7 @@ class ListHierarchyService < ApplicationService
       end
     rescue => e
       Rails.logger.error("List hierarchy creation failed: #{e.message}")
-      failure(errors: [e.message])
+      failure(errors: [ e.message ])
     end
   end
 
@@ -87,7 +87,7 @@ class ListHierarchyService < ApplicationService
     items_data = structure.is_a?(Hash) ? (structure["items"] || structure[:items] || []) : []
     description = structure.is_a?(Hash) ? (structure["description"] || structure[:description]) : nil
 
-    return failure(errors: ["Sub-list title is required"]) unless title.present?
+    return failure(errors: [ "Sub-list title is required" ]) unless title.present?
 
     # Create the sub-list
     sublist = List.new(
@@ -135,6 +135,6 @@ class ListHierarchyService < ApplicationService
     })
   rescue => e
     Rails.logger.error("Sub-list creation failed: #{e.message}")
-    failure(errors: [e.message])
+    failure(errors: [ e.message ])
   end
 end

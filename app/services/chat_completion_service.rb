@@ -338,11 +338,11 @@ class ChatCompletionService < ApplicationService
       response_lower = @user_message.content.downcase
       inferred_category = if response_lower.include?("professional") || response_lower.include?("work") || response_lower.include?("business")
                             "professional"
-                          elsif response_lower.include?("personal")
+      elsif response_lower.include?("personal")
                             "personal"
-                          else
+      else
                             nil
-                          end
+      end
 
       if inferred_category
         # Keep all previously extracted params and just add the category

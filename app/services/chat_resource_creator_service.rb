@@ -164,8 +164,8 @@ class ChatResourceCreatorService < ApplicationService
 
     Rails.logger.info("ChatResourceCreatorService#create_list - Extracted: title=#{title}, items=#{items.inspect}, nested_lists=#{nested_lists.inspect}")
 
-    return failure(errors: ["List title is required"]) unless title.present?
-    return failure(errors: ["Organization is required to create a list"]) unless @created_in_organization
+    return failure(errors: [ "List title is required" ]) unless title.present?
+    return failure(errors: [ "Organization is required to create a list" ]) unless @created_in_organization
 
     # USE ListCreationService for all list creation logic
     # Benefits of delegating to the service:

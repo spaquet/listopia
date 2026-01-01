@@ -62,6 +62,14 @@ class User < ApplicationRecord
   # Soft delete using Discard gem
   include Discard::Model
 
+  # Search
+  include PgSearch::Model
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { name: "A", email: "B" },
+    using: { tsearch: { prefix: true } }
+
   # Rails 8 token generation for magic links and email verification
   generates_token_for :magic_link, expires_in: 15.minutes
   generates_token_for :email_verification, expires_in: 24.hours

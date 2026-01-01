@@ -21,7 +21,11 @@ class NotificationsController < ApplicationController
     @notification_service.mark_as_read(@notification.id)
 
     # Redirect to the notification's target URL
-    redirect_to @notification.url
+    if @notification.url.present?
+      redirect_to @notification.url
+    else
+      redirect_to notifications_path, alert: "This notification doesn't have a target URL"
+    end
   end
 
   def mark_as_read

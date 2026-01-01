@@ -1,4 +1,4 @@
-import { Controller } from "@hotwire/stimulus"
+import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["input", "results", "footer", "viewAllLink", "container"]
@@ -13,8 +13,10 @@ export default class extends Controller {
     this.currentResults = []
     this.totalCount = 0
 
-    // Auto-focus search input
-    this.inputTarget.focus()
+    // Auto-focus search input using requestAnimationFrame to avoid conflicts
+    requestAnimationFrame(() => {
+      this.inputTarget.focus()
+    })
 
     // Show empty state initially
     this.showEmptyState()
@@ -30,7 +32,7 @@ export default class extends Controller {
   // SEARCH & API
   // ============================================================================
 
-  search(event) {
+  search() {
     const query = this.inputTarget.value.trim()
 
     // Clear previous debounce timeout
@@ -99,26 +101,33 @@ export default class extends Controller {
     const typeLabel = this.getTypeLabel(result.type)
     const typeBadgeClasses = this.getTypeBadgeClasses(result.type)
     const timeAgo = this.formatTimeAgo(result.updated_at)
-    const description = result.description ? `<p class="text-sm text-gray-600 line-clamp-1 mt-1">${this.escapeHtml(result.description)}</p>` : ""
+    const description = result.description ? `<p class="text-xs text-gray-500 line-clamp-1 mt-1.5">${this.escapeHtml(result.description)}</p>` : ""
+
+    // For users, show avatar instead of timestamp
+    const isUser = result.type === "User"
+    const avatarHtml = isUser && result.avatar_url
+      ? `<img src="${this.escapeHtml(result.avatar_url)}" alt="${this.escapeHtml(result.title)}" class="w-8 h-8 rounded-full object-cover">`
+      : ""
 
     return `
-      <a href="${this.escapeHtml(result.url)}"
-         data-result-index="${index}"
-         class="block px-6 py-4 hover:bg-gray-50 border-b border-gray-100 transition-colors cursor-pointer"
-         data-action="click->spotlight-search#selectResult">
+      <div data-result-index="${index}"
+           class="block px-5 py-3.5 hover:bg-gray-50/60 border-b border-gray-100/50 transition-colors cursor-pointer group"
+           data-action="click->spotlight-search#selectResult">
         <div class="flex items-start gap-3">
+          ${avatarHtml ? `<div class="shrink-0">${avatarHtml}</div>` : ""}
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${typeBadgeClasses}">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${typeBadgeClasses}">
                 ${typeLabel}
               </span>
-              <h4 class="text-sm font-semibold text-gray-900 truncate">${this.escapeHtml(result.title)}</h4>
+              <h4 class="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">${this.escapeHtml(result.title)}</h4>
             </div>
             ${description}
-            <p class="text-xs text-gray-500 mt-1">Updated ${timeAgo}</p>
+            <p class="text-xs text-gray-400 mt-1.5">${isUser ? "Team member" : `Updated ${timeAgo}`}</p>
           </div>
         </div>
-      </a>
+        <a href="${this.escapeHtml(result.url)}" style="display: none;"></a>
+      </div>
     `
   }
 
@@ -210,8 +219,11 @@ export default class extends Controller {
   }
 
   selectResult(event) {
-    // Close modal on result selection
-    this.close()
+    // Navigate to the result's URL
+    const link = event.currentTarget.querySelector("a")
+    if (link && link.href) {
+      window.location.href = link.href
+    }
   }
 
   // ============================================================================
@@ -281,6 +293,7 @@ export default class extends Controller {
     const labels = {
       "List": "List",
       "ListItem": "Item",
+      "User": "Person",
       "Comment": "Comment",
       "ActsAsTaggableOn::Tag": "Tag"
     }
@@ -291,6 +304,7 @@ export default class extends Controller {
     const classes = {
       "List": "bg-blue-100 text-blue-800",
       "ListItem": "bg-green-100 text-green-800",
+      "User": "bg-indigo-100 text-indigo-800",
       "Comment": "bg-purple-100 text-purple-800",
       "ActsAsTaggableOn::Tag": "bg-orange-100 text-orange-800"
     }

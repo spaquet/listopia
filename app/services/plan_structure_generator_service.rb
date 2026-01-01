@@ -45,7 +45,7 @@ class PlanStructureGeneratorService < ApplicationService
 
       unless structure.present?
         Rails.logger.error("PlanStructureGeneratorService#call - LLM returned empty structure")
-        return failure(errors: ["Failed to generate plan structure"])
+        return failure(errors: [ "Failed to generate plan structure" ])
       end
 
       Rails.logger.info("PlanStructureGeneratorService#call - Generated structure: #{structure.inspect}")
@@ -56,7 +56,7 @@ class PlanStructureGeneratorService < ApplicationService
       })
     rescue => e
       Rails.logger.error("PlanStructureGeneratorService#call - Error generating plan: #{e.message}")
-      failure(errors: [e.message])
+      failure(errors: [ e.message ])
     end
   end
 

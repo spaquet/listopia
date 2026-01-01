@@ -1,21 +1,24 @@
 <!-- Spotlight Search Modal -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-     data-controller="spotlight-search modal"
+<div data-controller="spotlight-search modal"
      data-action="click->modal#clickOutside keydown@window->spotlight-search#handleGlobalKeydown"
      role="dialog"
      aria-modal="true"
      aria-labelledby="spotlight-search-title">
 
+  <!-- Backdrop for click-outside -->
+  <div data-modal-target="backdrop" class="fixed inset-0 z-50 backdrop-blur-sm bg-black/20 p-4 flex items-center justify-center"></div>
+
   <!-- Modal Content -->
-  <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] md:max-h-[70vh] flex flex-col overflow-hidden"
-       data-spotlight-search-target="container"
-       data-modal-target="modal">
+  <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
+    <div class="bg-white/95 backdrop-blur-md rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] md:max-h-[70vh] flex flex-col overflow-hidden border border-white/20 pointer-events-auto"
+         data-spotlight-search-target="container"
+         data-modal-target="modal">
 
     <!-- Search Input Section -->
-    <div class="border-b border-gray-200 p-4 md:p-6 flex-shrink-0">
-      <div class="relative">
+    <div class="border-b border-gray-100 p-5 md:p-6 flex-shrink-0">
+      <div class="relative mb-4">
         <!-- Search Icon -->
-        <div class="absolute left-3 top-3.5 text-gray-400">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
@@ -28,22 +31,21 @@
                id="spotlight-search-title"
                placeholder="Search lists, items, comments, tags..."
                autocomplete="off"
-               class="w-full pl-10 pr-4 py-3 md:py-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-               autofocus>
+               class="w-full pl-11 pr-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white outline-none transition-all">
       </div>
 
       <!-- Keyboard Hints -->
-      <div class="text-xs text-gray-500 mt-3 flex items-center gap-4 flex-wrap">
+      <div class="text-xs text-gray-500 flex items-center gap-3 flex-wrap">
         <span class="flex items-center gap-1">
-          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700 font-mono text-xs">↑↓</kbd>
+          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">↑↓</kbd>
           <span>Navigate</span>
         </span>
         <span class="flex items-center gap-1">
-          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700 font-mono text-xs">Enter</kbd>
+          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Enter</kbd>
           <span>Select</span>
         </span>
         <span class="flex items-center gap-1">
-          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-700 font-mono text-xs">Esc</kbd>
+          <kbd class="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono text-xs">Esc</kbd>
           <span>Close</span>
         </span>
       </div>
@@ -55,17 +57,15 @@
       <!-- Results injected here by Stimulus -->
     </div>
 
-    <!-- View All Results Footer -->
-    <div data-spotlight-search-target="footer"
-         class="hidden border-t border-gray-200 p-4 md:p-6 flex-shrink-0 bg-gray-50">
-      <a data-spotlight-search-target="viewAllLink"
-         href="#"
-         class="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
-        View All Results →
-      </a>
+      <!-- View All Results Footer -->
+      <div data-spotlight-search-target="footer"
+           class="hidden border-t border-gray-100 p-4 md:p-5 flex-shrink-0 bg-gray-50/50">
+        <a data-spotlight-search-target="viewAllLink"
+           href="#"
+           class="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+          View All Results →
+        </a>
+      </div>
     </div>
   </div>
-
-  <!-- Backdrop for click-outside -->
-  <div data-modal-target="backdrop" class="hidden"></div>
 </div>
