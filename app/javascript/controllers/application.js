@@ -5,6 +5,8 @@ import ScrollTo from "@stimulus-components/scroll-to"
 import RevealController from "@stimulus-components/reveal"
 import Notification from "@stimulus-components/notification"
 
+import "highlight.js/styles/github.css" // Moved from application.tailwind.css to ensure styles are applied
+
 const application = Application.start()
 
 // Register the stimulus components
