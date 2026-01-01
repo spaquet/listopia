@@ -91,7 +91,7 @@ GEM
       activesupport (>= 6.0.0)
     ast (2.4.3)
     base64 (0.3.0)
-    bcrypt (3.1.20)
+    bcrypt (3.1.21)
     bcrypt_pbkdf (1.1.2)
     bigdecimal (4.0.1)
     bindex (0.8.1)
@@ -276,7 +276,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.19.0-x86_64-linux-musl)
       racc (~> 1.4)
-    noticed (2.9.3)
+    noticed (3.0.0)
       rails (>= 6.1.0)
     ostruct (0.6.3)
     pagy (43.2.2)
@@ -370,7 +370,7 @@ GEM
       io-console (~> 0.5)
     rexml (3.4.4)
     rolify (6.0.1)
-    rouge (4.6.1)
+    rouge (4.7.0)
     rspec-core (3.13.6)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.5)
@@ -523,7 +523,7 @@ PLATFORMS
 DEPENDENCIES
   acts-as-taggable-on!
   annotaterb
-  bcrypt (~> 3.1.7)
+  bcrypt (~> 3.1.21)
   bootsnap
   brakeman
   bullet
