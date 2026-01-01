@@ -1,0 +1,32 @@
+<!-- app/views/message_templates/_help.html.erb
+     Displays available chat commands and features
+     Organized with clear hierarchy and minimal design
+-->
+
+<div class="space-y-3">
+  <!-- Commands Section -->
+  <div>
+    <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Commands</h4>
+    <div class="space-y-1">
+      <% data[:commands].each do |cmd| %>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="font-mono text-blue-600 min-w-fit"><%= cmd[:name] %></span>
+          <span class="text-gray-600"><%= cmd[:description] %></span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <div>
+    <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Features</h4>
+    <div class="space-y-1">
+      <% data[:features].each do |feature| %>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="font-mono text-blue-600 min-w-fit"><%= feature[:symbol] %></span>
+          <span class="text-gray-600"><%= feature[:description] %></span>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

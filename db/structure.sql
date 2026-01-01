@@ -39,6 +39,20 @@ COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
 
 
 --
+-- Name: vector; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
+
+
+--
 -- Name: logidze_capture_exception(jsonb); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -866,6 +880,11 @@ CREATE TABLE public.board_columns (
 
 CREATE TABLE public.chats (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    model_id bigint,
+    conversation_state character varying DEFAULT 'stable'::character varying,
+    last_cleanup_at timestamp(6) without time zone,
     user_id uuid NOT NULL,
     title character varying(255),
     context json DEFAULT '{}'::json,
@@ -874,11 +893,11 @@ CREATE TABLE public.chats (
     metadata json DEFAULT '{}'::json,
     model_id_string character varying,
     last_stable_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    conversation_state character varying DEFAULT 'stable'::character varying,
-    last_cleanup_at timestamp(6) without time zone,
-    model_id bigint
+    organization_id uuid,
+    team_id uuid,
+    visibility character varying DEFAULT 'private'::character varying,
+    focused_resource_type character varying,
+    focused_resource_id uuid
 );
 
 
@@ -912,7 +931,11 @@ CREATE TABLE public.comments (
     content text NOT NULL,
     metadata json DEFAULT '{}'::json,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1001,7 +1024,11 @@ CREATE TABLE public.list_items (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     board_column_id uuid,
-    completed_at timestamp(6) without time zone
+    completed_at timestamp(6) without time zone,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1027,7 +1054,11 @@ CREATE TABLE public.lists (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     list_items_count integer DEFAULT 0 NOT NULL,
-    list_collaborations_count integer DEFAULT 0 NOT NULL
+    list_collaborations_count integer DEFAULT 0 NOT NULL,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1063,35 +1094,53 @@ ALTER SEQUENCE public.logidze_data_id_seq OWNED BY public.logidze_data.id;
 
 
 --
+-- Name: message_feedbacks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.message_feedbacks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    message_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    chat_id uuid NOT NULL,
+    rating integer NOT NULL,
+    feedback_type integer,
+    comment text,
+    helpfulness_score integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: messages; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.messages (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    chat_id uuid NOT NULL,
-    user_id uuid,
-    model_id bigint,
     role character varying NOT NULL,
     content text,
-    tool_calls json DEFAULT '[]'::json,
-    tool_call_results json DEFAULT '[]'::json,
-    context_snapshot json DEFAULT '{}'::json,
+    content_raw json,
+    input_tokens integer,
+    output_tokens integer,
+    cached_tokens integer,
+    cache_creation_tokens integer,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    chat_id uuid NOT NULL,
+    model_id bigint,
+    tool_call_id uuid,
+    user_id uuid,
     message_type character varying DEFAULT 'text'::character varying,
     metadata json DEFAULT '{}'::json,
+    context_snapshot json DEFAULT '{}'::json,
     llm_provider character varying,
     llm_model character varying,
     model_id_string character varying,
-    tool_call_id character varying,
     token_count integer,
-    input_tokens integer,
-    output_tokens integer,
     processing_time numeric(8,3),
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    cached_tokens integer,
-    cache_creation_tokens integer,
-    content_raw json,
-    CONSTRAINT tool_messages_must_have_tool_call_id CHECK ((((role)::text <> 'tool'::text) OR (tool_call_id IS NOT NULL)))
+    organization_id uuid,
+    template_type character varying,
+    blocked boolean DEFAULT false
 );
 
 
@@ -1135,6 +1184,27 @@ CREATE SEQUENCE public.models_id_seq
 --
 
 ALTER SEQUENCE public.models_id_seq OWNED BY public.models.id;
+
+
+--
+-- Name: moderation_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.moderation_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    chat_id uuid,
+    message_id uuid,
+    user_id uuid,
+    organization_id uuid,
+    violation_type integer DEFAULT 0,
+    action_taken integer DEFAULT 0,
+    detected_patterns jsonb DEFAULT '[]'::jsonb,
+    moderation_scores jsonb DEFAULT '{}'::jsonb,
+    prompt_injection_risk character varying DEFAULT 'low'::character varying,
+    details text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
 
 
 --
@@ -1325,7 +1395,11 @@ CREATE TABLE public.tags (
     name character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    taggings_count integer DEFAULT 0
+    taggings_count integer DEFAULT 0,
+    search_document tsvector,
+    embedding public.vector,
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false
 );
 
 
@@ -1386,12 +1460,12 @@ CREATE TABLE public.time_entries (
 
 CREATE TABLE public.tool_calls (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    message_id uuid NOT NULL,
     tool_call_id character varying NOT NULL,
     name character varying NOT NULL,
     arguments jsonb DEFAULT '{}'::jsonb,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    message_id uuid NOT NULL
 );
 
 
@@ -1567,6 +1641,14 @@ ALTER TABLE ONLY public.logidze_data
 
 
 --
+-- Name: message_feedbacks message_feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT message_feedbacks_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: messages messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1580,6 +1662,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.models
     ADD CONSTRAINT models_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: moderation_logs moderation_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT moderation_logs_pkey PRIMARY KEY (id);
 
 
 --
@@ -1761,6 +1851,13 @@ CREATE INDEX index_chats_on_conversation_state ON public.chats USING btree (conv
 
 
 --
+-- Name: index_chats_on_focused_resource_type_and_focused_resource_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_focused_resource_type_and_focused_resource_id ON public.chats USING btree (focused_resource_type, focused_resource_id);
+
+
+--
 -- Name: index_chats_on_last_message_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1782,10 +1879,45 @@ CREATE INDEX index_chats_on_model_id ON public.chats USING btree (model_id);
 
 
 --
--- Name: index_chats_on_model_id_string; Type: INDEX; Schema: public; Owner: -
+-- Name: index_chats_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_chats_on_model_id_string ON public.chats USING btree (model_id_string);
+CREATE INDEX index_chats_on_organization_id ON public.chats USING btree (organization_id);
+
+
+--
+-- Name: index_chats_on_organization_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_organization_id_and_created_at ON public.chats USING btree (organization_id, created_at);
+
+
+--
+-- Name: index_chats_on_organization_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_organization_id_and_user_id ON public.chats USING btree (organization_id, user_id);
+
+
+--
+-- Name: index_chats_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_status ON public.chats USING btree (status);
+
+
+--
+-- Name: index_chats_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_team_id ON public.chats USING btree (team_id);
+
+
+--
+-- Name: index_chats_on_team_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_team_id_and_user_id ON public.chats USING btree (team_id, user_id);
 
 
 --
@@ -1807,6 +1939,13 @@ CREATE INDEX index_chats_on_user_id_and_created_at ON public.chats USING btree (
 --
 
 CREATE INDEX index_chats_on_user_id_and_status ON public.chats USING btree (user_id, status);
+
+
+--
+-- Name: index_chats_on_visibility; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_visibility ON public.chats USING btree (visibility);
 
 
 --
@@ -1842,6 +1981,13 @@ CREATE INDEX index_collaborators_on_user_id ON public.collaborators USING btree 
 --
 
 CREATE INDEX index_comments_on_commentable ON public.comments USING btree (commentable_type, commentable_id);
+
+
+--
+-- Name: index_comments_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_search_document ON public.comments USING gin (search_document);
 
 
 --
@@ -2013,6 +2159,13 @@ CREATE INDEX index_list_items_on_priority ON public.list_items USING btree (prio
 
 
 --
+-- Name: index_list_items_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_list_items_on_search_document ON public.list_items USING gin (search_document);
+
+
+--
 -- Name: index_list_items_on_skip_notifications; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2097,6 +2250,13 @@ CREATE UNIQUE INDEX index_lists_on_public_slug ON public.lists USING btree (publ
 
 
 --
+-- Name: index_lists_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_lists_on_search_document ON public.lists USING gin (search_document);
+
+
+--
 -- Name: index_lists_on_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2174,6 +2334,41 @@ CREATE UNIQUE INDEX index_logidze_loggable ON public.logidze_data USING btree (l
 
 
 --
+-- Name: index_message_feedbacks_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_chat_id ON public.message_feedbacks USING btree (chat_id);
+
+
+--
+-- Name: index_message_feedbacks_on_message_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_message_feedbacks_on_message_id_and_user_id ON public.message_feedbacks USING btree (message_id, user_id);
+
+
+--
+-- Name: index_message_feedbacks_on_rating; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_rating ON public.message_feedbacks USING btree (rating);
+
+
+--
+-- Name: index_message_feedbacks_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_message_feedbacks_on_user_id_and_created_at ON public.message_feedbacks USING btree (user_id, created_at);
+
+
+--
+-- Name: index_messages_on_blocked; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_blocked ON public.messages USING btree (blocked);
+
+
+--
 -- Name: index_messages_on_chat_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2195,24 +2390,10 @@ CREATE INDEX index_messages_on_chat_id_and_created_at ON public.messages USING b
 
 
 --
--- Name: index_messages_on_chat_id_and_role; Type: INDEX; Schema: public; Owner: -
+-- Name: index_messages_on_llm_provider; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_messages_on_chat_id_and_role ON public.messages USING btree (chat_id, role);
-
-
---
--- Name: index_messages_on_chat_id_and_role_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_chat_id_and_role_and_created_at ON public.messages USING btree (chat_id, role, created_at);
-
-
---
--- Name: index_messages_on_chat_id_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_messages_on_chat_id_and_tool_call_id ON public.messages USING btree (chat_id, tool_call_id) WHERE (tool_call_id IS NOT NULL);
+CREATE INDEX index_messages_on_llm_provider ON public.messages USING btree (llm_provider);
 
 
 --
@@ -2244,6 +2425,20 @@ CREATE INDEX index_messages_on_model_id_string ON public.messages USING btree (m
 
 
 --
+-- Name: index_messages_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_organization_id ON public.messages USING btree (organization_id);
+
+
+--
+-- Name: index_messages_on_organization_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_messages_on_organization_id_and_user_id ON public.messages USING btree (organization_id, user_id);
+
+
+--
 -- Name: index_messages_on_role; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2251,10 +2446,10 @@ CREATE INDEX index_messages_on_role ON public.messages USING btree (role);
 
 
 --
--- Name: index_messages_on_role_and_tool_call_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_messages_on_template_type; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_messages_on_role_and_tool_call_id ON public.messages USING btree (role, tool_call_id) WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL));
+CREATE INDEX index_messages_on_template_type ON public.messages USING btree (template_type);
 
 
 --
@@ -2276,13 +2471,6 @@ CREATE INDEX index_messages_on_user_id ON public.messages USING btree (user_id);
 --
 
 CREATE INDEX index_messages_on_user_id_and_created_at ON public.messages USING btree (user_id, created_at);
-
-
---
--- Name: index_messages_unique_tool_call_id_per_chat; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_messages_unique_tool_call_id_per_chat ON public.messages USING btree (chat_id, tool_call_id) WHERE (((role)::text = 'tool'::text) AND (tool_call_id IS NOT NULL));
 
 
 --
@@ -2318,6 +2506,62 @@ CREATE INDEX index_models_on_provider ON public.models USING btree (provider);
 --
 
 CREATE UNIQUE INDEX index_models_on_provider_and_model_id ON public.models USING btree (provider, model_id);
+
+
+--
+-- Name: index_moderation_logs_on_action_taken; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_action_taken ON public.moderation_logs USING btree (action_taken);
+
+
+--
+-- Name: index_moderation_logs_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_chat_id ON public.moderation_logs USING btree (chat_id);
+
+
+--
+-- Name: index_moderation_logs_on_message_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_message_id ON public.moderation_logs USING btree (message_id);
+
+
+--
+-- Name: index_moderation_logs_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_organization_id ON public.moderation_logs USING btree (organization_id);
+
+
+--
+-- Name: index_moderation_logs_on_organization_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_organization_id_and_created_at ON public.moderation_logs USING btree (organization_id, created_at);
+
+
+--
+-- Name: index_moderation_logs_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_user_id ON public.moderation_logs USING btree (user_id);
+
+
+--
+-- Name: index_moderation_logs_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_user_id_and_created_at ON public.moderation_logs USING btree (user_id, created_at);
+
+
+--
+-- Name: index_moderation_logs_on_violation_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_moderation_logs_on_violation_type ON public.moderation_logs USING btree (violation_type);
 
 
 --
@@ -2601,6 +2845,13 @@ CREATE UNIQUE INDEX index_tags_on_name ON public.tags USING btree (name);
 
 
 --
+-- Name: index_tags_on_search_document; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tags_on_search_document ON public.tags USING gin (search_document);
+
+
+--
 -- Name: index_team_memberships_on_joined_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2675,13 +2926,6 @@ CREATE UNIQUE INDEX index_teams_on_organization_id_and_slug ON public.teams USIN
 --
 
 CREATE INDEX index_tool_calls_on_message_id ON public.tool_calls USING btree (message_id);
-
-
---
--- Name: index_tool_calls_on_message_id_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_tool_calls_on_message_id_and_created_at ON public.tool_calls USING btree (message_id, created_at);
 
 
 --
@@ -2856,6 +3100,14 @@ ALTER TABLE ONLY public.notification_settings
 
 
 --
+-- Name: moderation_logs fk_rails_0f166e8887; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_0f166e8887 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: messages fk_rails_0f670de7ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2896,11 +3148,43 @@ ALTER TABLE ONLY public.collaborators
 
 
 --
+-- Name: messages fk_rails_41c70a97c6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT fk_rails_41c70a97c6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_51e01bf1ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.recovery_contexts
     ADD CONSTRAINT fk_rails_51e01bf1ba FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: moderation_logs fk_rails_5212b548a1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_5212b548a1 FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
+-- Name: message_feedbacks fk_rails_54dd88c416; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_54dd88c416 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: messages fk_rails_552873cb52; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.messages
+    ADD CONSTRAINT fk_rails_552873cb52 FOREIGN KEY (tool_call_id) REFERENCES public.tool_calls(id);
 
 
 --
@@ -2912,11 +3196,27 @@ ALTER TABLE ONLY public.organization_memberships
 
 
 --
+-- Name: message_feedbacks fk_rails_588822f63b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_588822f63b FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
 -- Name: team_memberships fk_rails_5aba9331a7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.team_memberships
     ADD CONSTRAINT fk_rails_5aba9331a7 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: moderation_logs fk_rails_61576f3f6e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_61576f3f6e FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -2973,6 +3273,22 @@ ALTER TABLE ONLY public.invitations
 
 ALTER TABLE ONLY public.list_items
     ADD CONSTRAINT fk_rails_7f2175ff1c FOREIGN KEY (assigned_user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: chats fk_rails_81b9fd7c23; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_81b9fd7c23 FOREIGN KEY (team_id) REFERENCES public.teams(id);
+
+
+--
+-- Name: message_feedbacks fk_rails_84df82fe83; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.message_feedbacks
+    ADD CONSTRAINT fk_rails_84df82fe83 FOREIGN KEY (message_id) REFERENCES public.messages(id);
 
 
 --
@@ -3080,11 +3396,27 @@ ALTER TABLE ONLY public.teams
 
 
 --
+-- Name: moderation_logs fk_rails_f309c5a816; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.moderation_logs
+    ADD CONSTRAINT fk_rails_f309c5a816 FOREIGN KEY (message_id) REFERENCES public.messages(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_f37be66aa7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.recovery_contexts
     ADD CONSTRAINT fk_rails_f37be66aa7 FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
+-- Name: chats fk_rails_f5e99d4d5f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_f5e99d4d5f FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3094,18 +3426,30 @@ ALTER TABLE ONLY public.recovery_contexts
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20251208185450'),
+('20251208185230'),
+('20251208182655'),
+('20251208120001'),
+('20251208120000'),
+('20251208050101'),
+('20251208050100'),
+('20251208050000'),
+('20251208043416'),
+('20251208043414'),
+('20251208043412'),
+('20251208043410'),
+('20251208043409'),
+('20251208043408'),
+('20251208043407'),
+('20251208043406'),
 ('20251206170353'),
 ('20251115200022'),
 ('20251115200021'),
 ('20251115200020'),
 ('20251115200019'),
-('20251103202838'),
 ('20251011000104'),
 ('20251010235748'),
 ('20251010235747'),
-('20250910233319'),
-('20250730204201'),
-('20250723185557'),
 ('20250707182418'),
 ('20250707014433'),
 ('20250706232534'),
@@ -3124,10 +3468,6 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20250706224541'),
 ('20250703034216'),
 ('20250630212045'),
-('20250628043943'),
-('20250628004955'),
-('20250628004938'),
-('20250628004925'),
 ('20250624223654'),
 ('20250624223653'),
 ('20250623211535'),

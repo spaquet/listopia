@@ -86,8 +86,9 @@
             <% end %>
           <% end %>
           <!-- View button -->
-          <%= link_to notification_path(notification), 
-                      class: "text-gray-600 hover:text-gray-800 text-xs font-medium" do %>
+          <%= link_to notification.url,
+                      class: "text-gray-600 hover:text-gray-800 text-xs font-medium",
+                      data: { turbo: false } do %>
             View
           <% end %>
         </div>

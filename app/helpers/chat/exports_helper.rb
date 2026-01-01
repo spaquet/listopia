@@ -1,2 +1,0 @@
-module Chat::ExportsHelper
-end

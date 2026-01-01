@@ -25,6 +25,24 @@ Listopia aims to provide a powerful yet intuitive platform for organizing tasks,
 - **Secure Sharing**: Granular permissions and public sharing options with unique URLs.
 - **AI-Powered Chat**: Control Listopia with natural language commands. See [AI_DISCLAIMER.md](AI_DISCLAIMER.md) for important information on limitations and risks.
 
+## Documentation
+
+Listopia has comprehensive documentation organized by task and audience. Get started with the right guide for your needs:
+
+- **Architecture Overview** → [CLAUDE.md](CLAUDE.md) - Master development reference with stack overview, architecture patterns, and standards
+- **Building Chat Features** → [CHAT_FEATURES.md](CHAT_FEATURES.md) - Implementation guide for adding commands, tools, and message templates
+- **Search & RAG** → [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md) - Complete guide to embeddings, vector search, and RAG integration
+- **Finding Documentation** → [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) - Quick navigation guide for all other documentation
+
+**For Developers:**
+- New team members? → Start with [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md)
+- Implementing chat features? → Follow [CHAT_FEATURES.md](CHAT_FEATURES.md)
+- Working with search/RAG? → Reference [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md)
+- Need architecture details? → See [CLAUDE.md](CLAUDE.md)
+
+**For AI Agents & Claude Code:**
+[DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) provides the complete documentation structure and optimal entry points for any task.
+
 ## Getting Started
 
 To set up and run Listopia locally, follow the instructions in [INSTALL.md](INSTALL.md).

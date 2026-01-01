@@ -69,16 +69,28 @@ Rails.application.routes.draw do
   get "dashboard/focus_list", to: "dashboard#focus_list", as: :dashboard_focus_list
   post "dashboard/execute_action", to: "dashboard#execute_action", as: :dashboard_execute_action
 
+  # Search routes
+  get "search", to: "search#index", as: :search
+  get "search/spotlight_modal", to: "search#spotlight_modal", as: :spotlight_modal
 
-  # Chat functionality
-  namespace :chat do
-    post "messages", to: "chat#create_message"
-    get :ai_context
-    get "export", to:  "exports#show"
-    get "history", to: "chat#load_history"
-    get "dashboard_history", to: "chat#load_dashboard_history"
+  # Chat routes - unified chat system
+  resources :chats do
+    member do
+      patch :archive
+      patch :restore
+      post :save_and_create_new_chat
+
+      # Create message endpoint
+      post :create_message, action: :create_message
+
+      # Chat mentions and references search
+      get "mentions/search_users", to: "chat_mentions#search_users", as: :search_users
+      get "mentions/search_references", to: "chat_mentions#search_references", as: :search_references
+    end
   end
-  # post "/chat/messages", to: "chat/chat#create_message", as: :chat_messages
+
+  # Message feedback routes
+  resources :message_feedbacks, only: [ :create ], path: "chats/:chat_id/messages/:message_id/feedbacks"
 
   # Lists
   resources :lists do

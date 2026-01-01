@@ -17,6 +17,11 @@ class DashboardController < ApplicationController
     # Get adaptive dashboard data
     @adaptive_dashboard = DashboardAdaptiveService.new(current_user, dashboard_context).call
 
+    # Initialize or fetch current chat for dashboard
+    @chat = initialize_dashboard_chat
+    @chat_context = @chat.build_context(location: :dashboard) if @chat.present?
+    @messages = @chat.present? ? @chat.recent_messages(50) : []
+
     # For backward compatibility with turbo streams
     @recent_items = generate_recent_items
   end
@@ -153,6 +158,27 @@ class DashboardController < ApplicationController
   end
 
   private
+
+  # Initialize or fetch the active chat for dashboard
+  def initialize_dashboard_chat
+    # Get the most recent active chat for the user in this organization
+    # This is the same chat used for floating chat (unified across app)
+    chat = current_user.chats
+                      .by_organization(current_organization)
+                      .active
+                      .recent
+                      .first
+
+    # If no active chat exists, create one
+    unless chat.present?
+      chat = current_user.chats.create!(
+        organization: current_organization,
+        title: "Main Chat"
+      )
+    end
+
+    chat
+  end
 
   # Generate recent items for backward compatibility
   def generate_recent_items

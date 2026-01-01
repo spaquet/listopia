@@ -1,0 +1,51 @@
+<!-- app/views/chats/create_message_with_loading.turbo_stream.erb
+     Turbo Stream response for LLM message submission
+     Shows user message immediately with loading indicator
+-->
+
+<% if @user_message.present? %>
+  <!-- Append user message -->
+  <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
+    <%= render "shared/chat_message", message: @user_message, chat_context: @chat_context %>
+  <% end %>
+
+  <!-- Show loading animation while LLM processes in background -->
+  <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
+    <div class="flex justify-start" id="chat-loading-<%= @chat.id %>">
+      <div class="max-w-xs lg:max-w-md bg-gray-100 text-gray-900 rounded-lg px-4 py-2">
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1">
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+          </div>
+          <span class="text-xs text-gray-500">AI is thinking...</span>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- Clear the input field and auto-scroll -->
+<script>
+  // Clear the input field after form submission and auto-scroll
+  const clearInputAndScroll = () => {
+    const input = document.querySelector('[data-unified-chat-target="messageInput"]');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+
+    // Auto-scroll to bottom
+    const container = document.querySelector('[data-unified-chat-target="messagesContainer"]');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  // Execute immediately
+  clearInputAndScroll();
+
+  // Also schedule for next tick to ensure DOM is updated
+  setTimeout(clearInputAndScroll, 50);
+</script>

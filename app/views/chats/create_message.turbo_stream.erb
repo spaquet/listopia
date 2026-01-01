@@ -1,0 +1,41 @@
+<!-- app/views/chats/create_message.turbo_stream.erb
+     Turbo Stream response for submitting a message to chat
+     Appends user message and assistant response to message container
+-->
+
+<% if @user_message.present? %>
+  <!-- Append user message -->
+  <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
+    <%= render "shared/chat_message", message: @user_message, chat_context: @chat_context %>
+  <% end %>
+
+  <!-- Append assistant response (for commands) -->
+  <% if @assistant_message.present? %>
+    <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
+      <%= render "shared/chat_message", message: @assistant_message, chat_context: @chat_context %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<!-- Clear the input field for certain commands and auto-scroll -->
+<script>
+  setTimeout(() => {
+    const input = document.querySelector('[data-unified-chat-target="messageInput"]');
+
+    <% if @should_clear_input %>
+      // Clear input for auto-submit commands: /help, /clear, /new
+      // Don't clear for commands that accept parameters: /search, /browse
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    <% end %>
+
+    // Auto-scroll to bottom
+    const container = document.querySelector('[data-unified-chat-target="messagesContainer"]');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, 0);
+</script>
+

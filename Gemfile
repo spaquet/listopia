@@ -20,7 +20,7 @@ gem "cssbundling-rails"
 gem "jbuilder"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1.21"
 
 gem "pundit" # Authorization library for Rails applications
 gem "rolify" # Role management library for Rails applications
@@ -58,9 +58,14 @@ gem "positioning"
 
 # AI/LLM Integration
 gem "ruby_llm"
+gem "neighbor"
 
 # JSON processing for MCP responses
 gem "multi_json"
+
+# Markdown rendering with syntax highlighting
+gem "redcarpet"
+gem "rouge"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

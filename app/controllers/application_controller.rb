@@ -18,6 +18,7 @@ class ApplicationController < ActionController::Base
   before_action :set_current_user
   before_action :set_current_organization
   before_action :store_location
+  before_action :initialize_floating_chat
 
   # AUTHENTICATION METHODS
 
@@ -285,5 +286,40 @@ class ApplicationController < ActionController::Base
         ), status: :forbidden
       end
     end
+  end
+
+  # Initialize floating chat for all pages (only for signed-in users)
+  # Exclude dashboard page since it has integrated chat sidebar
+  # Uses the same chat instance as the dashboard for unified experience
+  def initialize_floating_chat
+    return unless user_signed_in? && current_organization.present?
+    return if on_dashboard_page?
+
+    # Get the most recent active chat for the user (same as dashboard)
+    @floating_chat = current_user.chats
+      .active
+      .by_organization(current_organization)
+      .recent
+      .first
+
+    # If no active chat exists, create one
+    unless @floating_chat.present?
+      @floating_chat = current_user.chats.create!(
+        organization: current_organization,
+        title: "Main Chat"
+      )
+    end
+
+    # Build context for floating location
+    @floating_chat_context = @floating_chat.build_context(location: :floating)
+  rescue StandardError => e
+    Rails.logger.warn("Failed to initialize floating chat: #{e.message}")
+    @floating_chat = nil
+    @floating_chat_context = nil
+  end
+
+  # Check if current page is the dashboard
+  def on_dashboard_page?
+    controller_name == "dashboard" && action_name == "index"
   end
 end

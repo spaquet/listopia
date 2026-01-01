@@ -1,0 +1,22 @@
+<!-- app/views/message_templates/_navigation.html.erb
+     Navigation message template for chat-driven page transitions
+     Shows a message and navigation data for the frontend to handle
+-->
+
+<div class="navigation-message p-4 bg-blue-50 rounded-lg border border-blue-200">
+  <div class="flex items-center gap-3">
+    <div class="flex-shrink-0">
+      <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      </svg>
+    </div>
+    <div class="flex-1">
+      <p class="text-sm font-medium text-blue-900">
+        <%= message.content %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Hidden navigation data for JavaScript controller -->
+  <div data-chat-navigation="<%= message.metadata['navigation'].to_json %>"></div>
+</div>

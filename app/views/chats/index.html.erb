@@ -1,0 +1,46 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Chat History</h1>
+  </div>
+  <% if @chats.any? %>
+    <div class="space-y-2">
+      <% @chats.each do |chat| %>
+        <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+          <div class="flex-1">
+            <h3 class="font-medium text-gray-900">
+              <%= link_to chat.title.presence || "Untitled Conversation", chat_path(chat), class: "text-blue-600 hover:text-blue-800" %>
+            </h3>
+            <p class="text-sm text-gray-500 mt-1">
+              <span><%= chat.message_count %> message<%= chat.message_count == 1 ? '' : 's' %></span>
+              <span class="mx-2">•</span>
+              <span><%= time_ago_in_words(chat.last_message_at || chat.created_at) %> ago</span>
+              <% if chat.archived? %>
+                <span class="mx-2">•</span>
+                <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded font-medium">Archived</span>
+              <% end %>
+            </p>
+          </div>
+          <div class="flex items-center gap-2 ml-4">
+            <% if chat.archived? %>
+              <%= button_to "Restore", restore_chat_path(chat), method: :patch, class: "px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors" %>
+            <% else %>
+              <%= button_to "Archive", archive_chat_path(chat), method: :patch, class: "px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors" %>
+            <% end %>
+            <%= button_to "Delete", chat_path(chat), method: :delete, data: { confirm: "Are you sure?" }, class: "px-3 py-1 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50 transition-colors" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="flex flex-col items-center justify-center py-12 text-center">
+      <div class="text-gray-400 mb-4">
+        <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+      </div>
+      <h3 class="text-xl font-medium text-gray-600 mb-2">No chats yet</h3>
+      <p class="text-gray-500 mb-4">Start a new conversation to begin chatting</p>
+      <%= link_to "Create New Chat", chats_path, method: :post, class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" %>
+    </div>
+  <% end %>
+</div>

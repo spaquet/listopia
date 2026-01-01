@@ -130,7 +130,19 @@ module ServiceBroadcasting
 
   # Calculate statistics efficiently without N+1 queries
   def calculate_dashboard_stats_for_user(user, accessible_list_ids = nil)
-    # Use the service object for consistency
-    DashboardStatsService.new(user).call
+    # If accessible_list_ids not provided, fetch them from user.accessible_lists
+    accessible_list_ids ||= user.accessible_lists.pluck(:id)
+
+    # Calculate stats directly based on accessible lists
+    {
+      total_lists: user.accessible_lists.count,
+      active_lists: user.accessible_lists.status_active.count,
+      completed_lists: user.accessible_lists.status_completed.count,
+      total_items: ListItem.where(list_id: accessible_list_ids).count,
+      completed_items: ListItem.where(list_id: accessible_list_ids).completed.count,
+      overdue_items: ListItem.where(list_id: accessible_list_ids)
+                             .where("list_items.due_date < ? AND list_items.status != ?", Time.current, 2)
+                             .count
+    }
   end
 end

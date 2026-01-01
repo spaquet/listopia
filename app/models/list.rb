@@ -6,6 +6,8 @@
 #  id                        :uuid             not null, primary key
 #  color_theme               :string           default("blue")
 #  description               :text
+#  embedding                 :vector
+#  embedding_generated_at    :datetime
 #  is_public                 :boolean          default(FALSE), not null
 #  list_collaborations_count :integer          default(0), not null
 #  list_items_count          :integer          default(0), not null
@@ -13,6 +15,8 @@
 #  metadata                  :json
 #  public_permission         :integer          default("public_read"), not null
 #  public_slug               :string
+#  requires_embedding_update :boolean          default(FALSE)
+#  search_document           :tsvector
 #  status                    :integer          default("draft"), not null
 #  title                     :string           not null
 #  created_at                :datetime         not null
@@ -34,6 +38,7 @@
 #  index_lists_on_parent_list_id_and_created_at  (parent_list_id,created_at)
 #  index_lists_on_public_permission              (public_permission)
 #  index_lists_on_public_slug                    (public_slug) UNIQUE
+#  index_lists_on_search_document                (search_document) USING gin
 #  index_lists_on_status                         (status)
 #  index_lists_on_team_id                        (team_id)
 #  index_lists_on_user_id                        (user_id)
@@ -54,8 +59,17 @@ class List < ApplicationRecord
   # Track status changes for notifications
   attribute :previous_status_value
 
+  # Embedding & Search
+  include SearchableEmbeddable
+  include PgSearch::Model
+
   # Logidzy for auditing changes
   has_logidze
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { title: "A", description: "B" },
+    using: { tsearch: { prefix: true } }
 
   # Callbacks
   before_update :track_status_change
@@ -238,6 +252,14 @@ class List < ApplicationRecord
     return unless team_id.present?
 
     update_column(:organization_id, team.organization_id) if organization_id != team.organization_id
+  end
+
+  def content_changed?
+    title_changed? || description_changed?
+  end
+
+  def content_for_embedding
+    "#{title}\n\n#{description}"
   end
 
   private

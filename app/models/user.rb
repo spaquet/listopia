@@ -62,6 +62,14 @@ class User < ApplicationRecord
   # Soft delete using Discard gem
   include Discard::Model
 
+  # Search
+  include PgSearch::Model
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { name: "A", email: "B" },
+    using: { tsearch: { prefix: true } }
+
   # Rails 8 token generation for magic links and email verification
   generates_token_for :magic_link, expires_in: 15.minutes
   generates_token_for :email_verification, expires_in: 24.hours
@@ -69,8 +77,6 @@ class User < ApplicationRecord
   # Core associations
   has_many :lists, dependent: :destroy
   has_many :sessions, dependent: :destroy
-  has_many :chats, dependent: :destroy
-  has_many :messages, dependent: :destroy
 
   # Organization & Team associations
   has_many :organization_memberships, dependent: :destroy
@@ -95,6 +101,11 @@ class User < ApplicationRecord
   # Notification associations
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
   has_one :notification_settings, class_name: "NotificationSetting", dependent: :destroy
+
+  # Chat associations
+  has_many :chats, dependent: :destroy
+  has_many :messages, dependent: :destroy
+  has_many :message_feedbacks, dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

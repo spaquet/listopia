@@ -3,31 +3,35 @@
 #
 # Table name: list_items
 #
-#  id                  :uuid             not null, primary key
-#  completed_at        :datetime
-#  description         :text
-#  due_date            :datetime
-#  duration_days       :integer
-#  estimated_duration  :decimal(10, 2)   default(0.0), not null
-#  item_type           :integer          default("task"), not null
-#  metadata            :json
-#  position            :integer          default(0)
-#  priority            :integer          default("medium"), not null
-#  recurrence_end_date :datetime
-#  recurrence_rule     :string           default("none"), not null
-#  reminder_at         :datetime
-#  skip_notifications  :boolean          default(FALSE), not null
-#  start_date          :datetime
-#  status              :integer          default("pending"), not null
-#  status_changed_at   :datetime
-#  title               :string           not null
-#  total_tracked_time  :decimal(10, 2)   default(0.0), not null
-#  url                 :string
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  assigned_user_id    :uuid
-#  board_column_id     :uuid
-#  list_id             :uuid             not null
+#  id                        :uuid             not null, primary key
+#  completed_at              :datetime
+#  description               :text
+#  due_date                  :datetime
+#  duration_days             :integer
+#  embedding                 :vector
+#  embedding_generated_at    :datetime
+#  estimated_duration        :decimal(10, 2)   default(0.0), not null
+#  item_type                 :integer          default("task"), not null
+#  metadata                  :json
+#  position                  :integer          default(0)
+#  priority                  :integer          default("medium"), not null
+#  recurrence_end_date       :datetime
+#  recurrence_rule           :string           default("none"), not null
+#  reminder_at               :datetime
+#  requires_embedding_update :boolean          default(FALSE)
+#  search_document           :tsvector
+#  skip_notifications        :boolean          default(FALSE), not null
+#  start_date                :datetime
+#  status                    :integer          default("pending"), not null
+#  status_changed_at         :datetime
+#  title                     :string           not null
+#  total_tracked_time        :decimal(10, 2)   default(0.0), not null
+#  url                       :string
+#  created_at                :datetime         not null
+#  updated_at                :datetime         not null
+#  assigned_user_id          :uuid
+#  board_column_id           :uuid
+#  list_id                   :uuid             not null
 #
 # Indexes
 #
@@ -45,6 +49,7 @@
 #  index_list_items_on_list_id_and_status           (list_id,status)
 #  index_list_items_on_position                     (position)
 #  index_list_items_on_priority                     (priority)
+#  index_list_items_on_search_document              (search_document) USING gin
 #  index_list_items_on_skip_notifications           (skip_notifications)
 #  index_list_items_on_status                       (status)
 #
@@ -57,11 +62,18 @@
 # app/models/list_item.rb
 class ListItem < ApplicationRecord
   include Turbo::Broadcastable
+  include SearchableEmbeddable
+  include PgSearch::Model
 
   attr_accessor :skip_notifications, :previous_title_value, :is_kanban_update
 
   # Logidzy for auditing changes
   has_logidze
+
+  # Full-text search scope
+  pg_search_scope :search_by_keyword,
+    against: { title: "A", description: "B" },
+    using: { tsearch: { prefix: true } }
 
   # Track changes for notifications
   attribute :previous_assigned_user_id
@@ -166,6 +178,14 @@ class ListItem < ApplicationRecord
     return false unless user
 
     list.collaboratable_by?(user) || assigned_user == user
+  end
+
+  def content_changed?
+    title_changed? || description_changed?
+  end
+
+  def content_for_embedding
+    "#{title}\n\n#{description}"
   end
 
   private

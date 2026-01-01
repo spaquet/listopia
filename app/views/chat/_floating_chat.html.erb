@@ -1,0 +1,116 @@
+<!-- app/views/chat/_floating_chat.html.erb
+     Floating chat widget that appears on all pages (bottom-right corner)
+     Renders unified chat in a floating container that toggles between collapsed and expanded
+     Uses the same chat instance as the dashboard for unified message history
+-->
+
+<div id="floating-chat-widget"
+     data-controller="floating-chat"
+     class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+
+  <!-- Chat bubble indicator (collapsed state) -->
+  <button id="floating-chat-toggle"
+          data-action="floating-chat#toggle"
+          data-floating-chat-target="toggleButton"
+          type="button"
+          class="floating-chat-toggle rounded-full bg-blue-600 text-white p-4 shadow-lg hover:bg-blue-700 transition-all duration-200"
+          title="Open chat"
+          aria-label="Open chat">
+    <!-- Chat icon -->
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+    </svg>
+  </button>
+
+  <!-- Chat container (expanded state) -->
+  <div id="floating-chat-container"
+       data-floating-chat-target="chatContainer"
+       class="floating-chat-container hidden w-96 max-w-[90vw] rounded-lg shadow-2xl border border-gray-200 overflow-hidden bg-white flex flex-col relative"
+       style="height: 500px;"
+       aria-hidden="true">
+
+    <!-- Unified chat component wrapped for floating context -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <%= render "chat/unified_chat",
+                 chat: @floating_chat,
+                 context: @floating_chat_context,
+                 message_history: @floating_chat.present? ? @floating_chat.recent_messages(50) : [] %>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Ensure floating chat widget is visible */
+  #floating-chat-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  /* Floating chat container positioning and animations */
+  #floating-chat-container {
+    position: relative;
+    display: flex !important;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  #floating-chat-container.hidden {
+    animation: slideOut 0.3s ease-out;
+    display: none !important;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+  }
+
+  /* Toggle button visible by default */
+  #floating-chat-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hide toggle button when chat is open */
+  #floating-chat-toggle.hidden {
+    display: none !important;
+  }
+
+  /* Adjust unified chat for floating context */
+  #floating-chat-container #unified-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  #floating-chat-container #unified-chat > div:first-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+</style>

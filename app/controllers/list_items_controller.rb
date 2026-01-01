@@ -6,26 +6,47 @@ class ListItemsController < ApplicationController
   before_action :authorize_list_access!
 
   def create
-    @list_item = @list.list_items.build(list_item_params)
-    # Remove any explicit position setting - let the model callback handle it
+    # USE ListItemService for all item creation logic
+    # Benefits of delegating to the service:
+    # - Consistent validation and permission checking across chat and UI
+    # - Proper Turbo Stream broadcasting to all connected users (dashboard, other viewers)
+    # - Automatic position management (handles unique constraint conflicts with database locking)
+    # - Centralized item type detection and description generation
+    # - Maintainability: item creation logic in one place (not duplicated across controllers)
+    # - Easier to add features (webhooks, notifications, etc.) in one location
+    #
+    # This refactoring moved item creation out of the controller, which now focuses on
+    # HTTP handling and format negotiation, while the service handles the business logic.
 
-    if @list_item.save
+    service = ListItemService.new(@list, current_user)
+    result = service.create_item(**list_item_params.to_h.symbolize_keys)
+
+    if result.success?
+      @list_item = result.data
+
       respond_to do |format|
         format.html { redirect_to @list, notice: "Item was successfully added." }
         format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace("list-items", partial: "list_items/items_list", locals: { list_items: @list.list_items.order(:position, :created_at), list: @list }),
-            turbo_stream.replace("new_list_item", partial: "list_items/quick_add_form", locals: { list: @list, list_item: @list.list_items.build }),
-            turbo_stream.replace("list-stats", partial: "shared/list_stats", locals: { list: @list })
-          ]
+          # Service already broadcasted to connected users
+          # Render the turbo stream response for the form submitter
+          render :create
         end
         format.json { render json: @list_item, status: :created }
       end
     else
+      @list_item = @list.list_items.build(list_item_params)
+
       respond_to do |format|
-        format.html { redirect_to @list, alert: "Unable to add item." }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("new_list_item", partial: "list_items/quick_add_form", locals: { list: @list, list_item: @list_item }), status: :unprocessable_entity }
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.html { redirect_to @list, alert: result.errors.join(", ") }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "new_list_item",
+            partial: "list_items/quick_add_form",
+            locals: { list: @list, list_item: @list_item }
+          ),
+          status: :unprocessable_entity
+        }
+        format.json { render json: { errors: result.errors }, status: :unprocessable_entity }
       end
     end
   end
