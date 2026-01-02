@@ -134,4 +134,193 @@ RSpec.describe ChatCompletionService, type: :service do
       end
     end
   end
+
+  describe "Pre-Creation Planning for Complex Lists" do
+    let(:user) { create(:user) }
+    let(:org) { create(:organization, creator: user) }
+    let(:chat) { create(:chat, user: user, organization: org) }
+
+    describe "#needs_pre_creation_planning?" do
+      subject(:service_instance) do
+        # Create a minimal service instance just for testing the private method
+        service_instance = ChatCompletionService.allocate
+        service_instance
+      end
+
+      it "detects multi-location patterns (roadshow)" do
+        params = { "title" => "Company Roadshow 2025" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects multi-location patterns (tour)" do
+        params = { "title" => "European Tour Planning" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects multi-location patterns (cities)" do
+        params = { "title" => "Visit major US cities" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects time-bound programs" do
+        params = { "title" => "8-week Python Learning Plan" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects hierarchical keywords (phases)" do
+        params = { "title" => "Project phases for Q2 launch" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects hierarchical keywords (stages)" do
+        params = { "title" => "Startup development stages" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects large item counts (>8)" do
+        params = {
+          "title" => "Simple list",
+          "items" => Array.new(10) { "Item" }
+        }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "detects nested list structures (>2)" do
+        params = {
+          "title" => "Project plan",
+          "nested_lists" => [
+            { "title" => "Phase 1" },
+            { "title" => "Phase 2" },
+            { "title" => "Phase 3" }
+          ]
+        }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be true
+      end
+
+      it "returns false for simple lists (grocery shopping)" do
+        params = { "title" => "Grocery shopping" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be false
+      end
+
+      it "returns false for simple lists (todo)" do
+        params = { "title" => "Daily To-Do List" }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be false
+      end
+
+      it "returns false for simple lists (small item count)" do
+        params = {
+          "title" => "Things to do",
+          "items" => ["Item 1", "Item 2"]
+        }
+        expect(service_instance.send(:needs_pre_creation_planning?, params)).to be false
+      end
+    end
+
+    describe "#enrich_list_structure_with_planning" do
+      subject(:service_instance) do
+        ChatCompletionService.allocate
+      end
+
+      it "creates nested lists for each location" do
+        base_params = {
+          "title" => "US Roadshow",
+          "items" => ["Book venue", "Marketing"],
+          "category" => "professional"
+        }
+
+        planning_params = {
+          "locations" => ["San Francisco", "Chicago", "Boston"],
+          "duration" => "2 days per city"
+        }
+
+        enriched = service_instance.send(:enrich_list_structure_with_planning,
+          base_params: base_params,
+          planning_params: planning_params
+        )
+
+        # Should have nested lists for each location
+        expect(enriched["nested_lists"]).to be_present
+        expect(enriched["nested_lists"].length).to eq(3)
+        expect(enriched["nested_lists"].map { |nl| nl["title"] }).to include("San Francisco", "Chicago", "Boston")
+
+        # Parent items should be cleared
+        expect(enriched["items"]).to be_empty
+
+        # Description should include planning context
+        expect(enriched["description"]).to include("Duration: 2 days per city")
+      end
+
+      it "creates nested lists for each phase" do
+        base_params = {
+          "title" => "8-Week Learning Plan",
+          "items" => [],
+          "category" => "personal"
+        }
+
+        planning_params = {
+          "phases" => ["Week 1-2: Basics", "Week 3-4: Advanced", "Week 5-8: Practice"]
+        }
+
+        enriched = service_instance.send(:enrich_list_structure_with_planning,
+          base_params: base_params,
+          planning_params: planning_params
+        )
+
+        # Should have nested lists for each phase
+        expect(enriched["nested_lists"]).to be_present
+        expect(enriched["nested_lists"].length).to eq(3)
+        expect(enriched["nested_lists"].first["title"]).to include("Week 1-2")
+      end
+
+      it "adds budget and timeline to description" do
+        base_params = {
+          "title" => "Vacation Planning",
+          "items" => [],
+          "description" => "Summer vacation"
+        }
+
+        planning_params = {
+          "budget" => "$5000",
+          "start_date" => "June 2025",
+          "duration" => "2 weeks"
+        }
+
+        enriched = service_instance.send(:enrich_list_structure_with_planning,
+          base_params: base_params,
+          planning_params: planning_params
+        )
+
+        # Description should include all planning context
+        expect(enriched["description"]).to include("Summer vacation")
+        expect(enriched["description"]).to include("Budget: $5000")
+        expect(enriched["description"]).to include("Start: June 2025")
+        expect(enriched["description"]).to include("Duration: 2 weeks")
+      end
+    end
+
+    describe "Pre-creation planning skip refinement logic" do
+      it "skips post-creation refinement when skip flag is set" do
+        list = create(:list, owner: user, organization: org)
+        user_message = create(:message, chat: chat, user: user, role: :user, content: "Test")
+        chat.metadata = { "skip_post_creation_refinement" => true }
+        chat.save!
+
+        service = ChatCompletionService.new(chat, user_message)
+        message = double(:message, content: "List created")
+
+        result = service.send(:trigger_list_refinement,
+          list: list,
+          list_title: "Test List",
+          category: "professional",
+          items: [],
+          message: message,
+          nested_sublists: []
+        )
+
+        # Should skip refinement
+        expect(result.success?).to be true
+        expect(result.data[:needs_refinement]).to be false
+      end
+    end
+  end
 end

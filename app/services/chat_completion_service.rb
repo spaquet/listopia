@@ -27,6 +27,13 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check if we're in pre-creation planning state FIRST
+      # This takes precedence over other pending flows
+      if pending_pre_creation_planning?
+        planning_result = handle_pre_creation_planning_response
+        return planning_result if planning_result
+      end
+
       # Check if we're in a list refinement stage and user is answering questions
       if pending_list_refinement?
         refinement_result = handle_list_refinement_response
@@ -106,6 +113,39 @@ class ChatCompletionService < ApplicationService
 
   private
 
+  # Detect if a list creation request requires pre-creation planning
+  # Returns true for complex, multi-step requests that benefit from upfront context
+  def needs_pre_creation_planning?(parameters)
+    title = parameters["title"] || parameters[:title] || ""
+    items = parameters["items"] || parameters[:items] || []
+    nested_lists = parameters["nested_lists"] || parameters[:nested_lists] || []
+
+    # HEURISTIC 1: Nested structure already detected by parameter extraction
+    return true if nested_lists.present? && nested_lists.length > 2
+
+    # HEURISTIC 2: Multi-location patterns
+    # Keywords: roadshow, tour, trip, visit, cities, countries
+    multi_location_keywords = ["roadshow", "tour", "trip", "visit", "cities", "countries", "locations"]
+    has_location_pattern = multi_location_keywords.any? { |kw| title.downcase.include?(kw) }
+
+    # HEURISTIC 3: Time-bound programs
+    # Keywords: week, month, day, plan, program, schedule, phase
+    # Pattern: "X weeks", "X months", "8-week", etc.
+    time_bound_keywords = ["week", "month", "day", "program", "schedule", "phase"]
+    has_time_pattern = time_bound_keywords.any? { |kw| title.downcase.include?(kw) } ||
+                       title.match?(/\d+[\s-]+(week|month|day|phase)/i)
+
+    # HEURISTIC 4: Hierarchical/staged keywords
+    hierarchy_keywords = ["stages", "phases", "modules", "milestones", "steps"]
+    has_hierarchy = hierarchy_keywords.any? { |kw| title.downcase.include?(kw) }
+
+    # HEURISTIC 5: Large item count (suggests complexity)
+    has_many_items = items.length > 8
+
+    # Return true if ANY complexity indicator is found
+    has_location_pattern || has_time_pattern || has_hierarchy || has_many_items
+  end
+
   # Check for missing parameters in resource creation/management
   def check_parameters_for_intent(intent)
     # SAFETY CHECK: Detect if this was misclassified as user creation
@@ -150,10 +190,18 @@ class ChatCompletionService < ApplicationService
     end
 
     # Parameters are complete!
-    # For list and resource creation, proceed with creation
+    # For list creation, check if we need pre-creation planning
     if intent == "create_list"
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{(data[:parameters] || {}).inspect}")
-      return handle_list_creation("list", data[:parameters] || {})
+      parameters = data[:parameters] || {}
+
+      # Check if this is a complex request requiring pre-creation planning
+      if needs_pre_creation_planning?(parameters)
+        Rails.logger.info("ChatCompletionService - Detected complex list request, routing to pre-creation planning")
+        return handle_pre_creation_planning(parameters)
+      else
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{parameters.inspect}")
+        return handle_list_creation("list", parameters)
+      end
     elsif intent == "create_resource"
       Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with resource creation")
       return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
@@ -228,6 +276,65 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Handle pre-creation planning for complex list requests
+  # Ask clarifying questions BEFORE creating the list
+  def handle_pre_creation_planning(parameters)
+    title = parameters["title"] || "your list"
+    category = parameters["category"] || "personal"
+    items = parameters["items"] || []
+    nested_lists = parameters["nested_lists"] || []
+
+    # REUSE ListRefinementService to generate questions
+    refinement = ListRefinementService.new(
+      list_title: title,
+      category: category,
+      items: items,
+      nested_sublists: nested_lists,
+      context: @context
+    )
+
+    result = refinement.call
+
+    if result.success? && result.data[:needs_refinement]
+      questions = result.data[:questions] || []
+
+      if questions.present?
+        # Store pre-creation planning state in chat metadata
+        @chat.metadata ||= {}
+        @chat.metadata["pending_pre_creation_planning"] = {
+          extracted_params: parameters,
+          questions_asked: questions.map { |q| q["question"] },
+          refinement_context: result.data[:refinement_context],
+          intent: "create_list"
+        }
+        @chat.save
+
+        # Build planning message
+        planning_message = "Before I create \"#{title}\", I have a few questions to help me structure it better:\n\n"
+        questions.each_with_index do |q, idx|
+          planning_message += "#{idx + 1}. #{q["question"]}\n"
+        end
+
+        assistant_message = Message.create_assistant(
+          chat: @chat,
+          content: planning_message
+        )
+
+        @chat.update(last_message_at: Time.current)
+
+        return success(data: assistant_message)
+      end
+    end
+
+    # Fallback: if refinement fails or no questions, proceed with creation
+    Rails.logger.warn("Pre-creation planning failed to generate questions, falling back to immediate creation")
+    handle_list_creation("list", parameters)
+  rescue => e
+    Rails.logger.error("Pre-creation planning failed: #{e.message}")
+    # Graceful degradation: proceed with immediate creation
+    handle_list_creation("list", parameters)
+  end
+
   # Create a message asking for missing parameters
   def handle_missing_parameters(param_data, missing_params)
     resource_type = param_data[:resource_type] || "resource"
@@ -256,9 +363,60 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Check if we're in a pre-creation planning state
+  def pending_pre_creation_planning?
+    @chat.metadata&.dig("pending_pre_creation_planning").present?
+  end
+
   # Check if we're in a list refinement state
   def pending_list_refinement?
     @chat.metadata&.dig("pending_list_refinement").present?
+  end
+
+  # Handle user's response to pre-creation planning questions
+  def handle_pre_creation_planning_response
+    planning_data = @chat.metadata["pending_pre_creation_planning"]
+    return nil unless planning_data
+
+    extracted_params = planning_data["extracted_params"] || {}
+
+    # Extract planning parameters from user's answers
+    planning_params = extract_planning_parameters_from_answers(
+      user_answers: @user_message.content,
+      list_title: extracted_params["title"],
+      category: extracted_params["category"],
+      initial_items: extracted_params["items"] || []
+    )
+
+    # Enrich the list structure with planning context
+    enriched_params = enrich_list_structure_with_planning(
+      base_params: extracted_params,
+      planning_params: planning_params
+    )
+
+    # Clear pre-creation planning state
+    @chat.metadata.delete("pending_pre_creation_planning")
+
+    # Mark that we should skip post-creation refinement
+    @chat.metadata["skip_post_creation_refinement"] = true
+    @chat.save
+
+    # Create the list with enriched structure
+    creation_result = handle_list_creation("list", enriched_params)
+
+    # Clear the skip flag after creation
+    @chat.metadata.delete("skip_post_creation_refinement")
+    @chat.save
+
+    creation_result
+  rescue => e
+    Rails.logger.error("Pre-creation planning response handling failed: #{e.message}")
+
+    # Fallback: create list with original params
+    @chat.metadata.delete("pending_pre_creation_planning")
+    @chat.save
+
+    handle_list_creation("list", extracted_params)
   end
 
   # Handle user's response to refinement questions
@@ -542,6 +700,12 @@ class ChatCompletionService < ApplicationService
 
   # Trigger list refinement and ask clarifying questions
   def trigger_list_refinement(list:, list_title:, category:, items:, message:, nested_sublists: [])
+    # Skip post-creation refinement if we already did pre-creation planning
+    if @chat.metadata&.dig("skip_post_creation_refinement")
+      Rails.logger.info("Skipping post-creation refinement (pre-creation planning was completed)")
+      return success(data: { needs_refinement: false, message: message })
+    end
+
     refinement = ListRefinementService.new(
       list_title: list_title,
       category: category,
@@ -626,6 +790,115 @@ class ChatCompletionService < ApplicationService
     else
       "I'd like to help you create a #{resource_type}.#{existing} To proceed, I need the following information:\n#{missing_list}"
     end
+  end
+
+  # Extract planning parameters from user's answers to planning questions
+  def extract_planning_parameters_from_answers(user_answers:, list_title:, category:, initial_items:)
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+
+    system_prompt = <<~PROMPT
+      Extract planning parameters from the user's answers.
+
+      List Context:
+      - Title: "#{list_title}"
+      - Category: #{category}
+      - Initial items: #{initial_items.join(", ")}
+
+      Respond with ONLY a JSON object (no other text):
+      {
+        "duration": "extracted time/duration if mentioned",
+        "budget": "extracted budget if mentioned",
+        "locations": ["extracted locations if multi-location event"],
+        "start_date": "extracted start date if mentioned",
+        "timeline": "extracted timeline/deadline if mentioned",
+        "team_size": "extracted team/people count if mentioned",
+        "phases": ["extracted phases/stages if mentioned"],
+        "preferences": "extracted preferences/constraints",
+        "other_details": "any other relevant context"
+      }
+
+      Rules:
+      1. Extract only information actually mentioned
+      2. Be specific and preserve units (e.g., "3 days", "$2000")
+      3. If locations mentioned, extract as array ["New York", "Chicago"]
+      4. If phases/stages mentioned, extract as array ["Phase 1", "Phase 2"]
+      5. Return empty string or empty array for fields not mentioned
+
+      User's answers: "#{user_answers}"
+    PROMPT
+
+    llm_chat.add_message(role: "system", content: system_prompt)
+    llm_chat.add_message(role: "user", content: "Extract planning parameters from these answers.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    json_match = response_text.match(/\{[\s\S]*\}/m)
+    return {} unless json_match
+
+    begin
+      JSON.parse(json_match[0])
+    rescue JSON::ParserError
+      {}
+    end
+  rescue => e
+    Rails.logger.error("Planning parameter extraction failed: #{e.message}")
+    {}
+  end
+
+  # Enrich list structure based on planning parameters
+  def enrich_list_structure_with_planning(base_params:, planning_params:)
+    enriched = base_params.dup
+
+    # Update description with planning context
+    description_parts = [enriched["description"]].compact
+
+    if planning_params["duration"].present?
+      description_parts << "Duration: #{planning_params["duration"]}"
+    end
+
+    if planning_params["budget"].present?
+      description_parts << "Budget: #{planning_params["budget"]}"
+    end
+
+    if planning_params["start_date"].present?
+      description_parts << "Start: #{planning_params["start_date"]}"
+    end
+
+    enriched["description"] = description_parts.join(" | ") if description_parts.present?
+
+    # If locations were mentioned, create nested lists for each location
+    if planning_params["locations"].present? && planning_params["locations"].is_a?(Array)
+      enriched["nested_lists"] = planning_params["locations"].map do |location|
+        {
+          "title" => location,
+          "description" => "Tasks and activities for #{location}",
+          "items" => (enriched["items"] || []).map do |item|
+            if item.is_a?(Hash)
+              item.merge("description" => "#{item["title"]} in #{location}")
+            else
+              { "title" => item, "description" => "In #{location}" }
+            end
+          end
+        }
+      end
+
+      # Clear parent items since they're now in nested lists
+      enriched["items"] = []
+    end
+
+    # If phases were mentioned, create nested lists for each phase
+    if planning_params["phases"].present? && planning_params["phases"].is_a?(Array)
+      enriched["nested_lists"] = planning_params["phases"].map.with_index do |phase, idx|
+        {
+          "title" => phase,
+          "description" => "Phase #{idx + 1} of #{planning_params["phases"].length}",
+          "items" => []
+        }
+      end
+    end
+
+    enriched
   end
 
   # Handle navigation intent detected by AI
