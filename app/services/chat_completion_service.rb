@@ -766,7 +766,7 @@ class ChatCompletionService < ApplicationService
 
   # Extract planning parameters from user's answers to planning questions
   def extract_planning_parameters_from_answers(user_answers:, list_title:, category:, initial_items:)
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
 
     system_prompt = <<~PROMPT
       Extract planning parameters from the user's answers.

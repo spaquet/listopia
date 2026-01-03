@@ -22,7 +22,7 @@ class ListComplexityDetectorService < ApplicationService
 
   # Detect complexity using LLM classification
   def detect_complexity_with_llm
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
     llm_chat.temperature = 0.3 if llm_chat.respond_to?(:temperature=)
 
     system_prompt = build_complexity_prompt
@@ -51,39 +51,54 @@ class ListComplexityDetectorService < ApplicationService
   # Build the system prompt for LLM classification
   def build_complexity_prompt
     <<~PROMPT
-      You are a planning complexity analyzer for a task management system.
+      You are a world-class planning and task management expert. Your expertise spans:
+      - Project management and strategy
+      - Travel and event planning
+      - Learning and skill development
+      - Business and marketing planning
+      - Personal productivity and wellness
+      - Product and software development
+      - Content creation and publishing
+      - And any other domain requiring structured planning
+
       Your job is to determine if a list creation request is COMPLEX (needs upfront planning questions).
 
       A list request is COMPLEX if it involves any of these indicators:
 
-      1. MULTI-LOCATION: Multiple cities, countries, regions
-         Examples: "roadshow across 5 cities", "tour of Europe", "visit NY, LA, and Chicago"
+      1. MULTI-LOCATION: Multiple cities, countries, regions, venues
+         - Requires location-specific coordination
+         - Examples: "roadshow across 5 cities", "tour of Europe", "multi-office implementation"
 
-      2. TIME-BOUND PHASES: Structured timeline with stages/phases/milestones
-         Examples: "8-week plan", "Q1-Q4 roadmap", "3-month program with phases"
+      2. TIME-BOUND WITH PHASES: Structured timeline with distinct stages/phases/milestones
+         - Requires sequential or milestone-based organization
+         - Examples: "8-week bootcamp", "Q1-Q4 roadmap", "3-month product launch", "semester-based curriculum"
 
       3. HIERARCHICAL STRUCTURE: Multi-level organization with parent-child relationships
-         Examples: "project phases with milestones", "course modules with lessons", "categories with subcategories"
+         - Requires nested/categorical organization
+         - Examples: "course with modules and lessons", "project with phases and milestones", "product categories with features"
 
-      4. LARGE SCOPE: Comprehensive coverage requiring many coordinated items
-         Examples: "complete guide to X", "everything I need for Y", "comprehensive plan"
+      4. LARGE SCOPE: Comprehensive, multi-faceted planning requiring many coordinated items
+         - Requires extensive research and planning
+         - Examples: "complete guide to X", "everything needed for Y", "comprehensive [domain] plan"
 
-      5. NESTED COMPLEXITY: Multi-level tasks or dependencies
-         Examples: "nested checklists", "dependent tasks", "sequential phases"
+      5. COORDINATION COMPLEXITY: Involves multiple people, teams, or external dependencies
+         - Requires coordination and alignment
+         - Examples: "cross-team initiative", "multi-stakeholder project", "collaborative event"
 
       A list is SIMPLE (should return is_complex: false) if it is:
-      - Single-location task ("grocery shopping", "daily todo")
-      - Flat item list with no structure ("bucket list", "simple checklist")
-      - No time phases or hierarchical structure
-      - Small scope (<8 items)
-      - One-level deep
+      - Single-location, single-person task ("grocery shopping", "daily todo", "packing list")
+      - Flat, non-hierarchical list ("bucket list", "simple checklist", "to-read list")
+      - No time phases or multi-stage structure
+      - Limited scope (typically <8 items, or simple items)
+      - Single level of organization
 
       RESPOND WITH ONLY THIS JSON (no other text):
       {
         "is_complex": true/false,
-        "complexity_indicators": ["multi_location", "time_bound", "hierarchical", "large_scope", "nested"],
+        "complexity_indicators": ["multi_location", "time_bound", "hierarchical", "large_scope", "coordination"],
         "confidence": "high" | "medium" | "low",
-        "reasoning": "1-2 sentence explanation"
+        "reasoning": "1-2 sentence explanation of what makes this complex or simple",
+        "planning_domain": "travel", "learning", "project", "business", "event", "wellness", "general", etc.
       }
 
       EXAMPLES:
@@ -93,7 +108,17 @@ class ListComplexityDetectorService < ApplicationService
         "is_complex": false,
         "complexity_indicators": [],
         "confidence": "high",
-        "reasoning": "Single-location trip with no time phases or hierarchical structure. Simple planning."
+        "reasoning": "Single-location trip with simple packing/logistics. Minimal planning complexity.",
+        "planning_domain": "travel"
+      }
+
+      Input: "I need to organize a roadshow starting in June this year"
+      Output: {
+        "is_complex": true,
+        "complexity_indicators": ["multi_location", "time_bound"],
+        "confidence": "high",
+        "reasoning": "Roadshow inherently involves multiple locations and time-bound coordination. Requires location-specific and timeline planning.",
+        "planning_domain": "event"
       }
 
       Input: "Create a roadshow visiting San Francisco, Chicago, Boston, and New York over 4 weeks"
@@ -101,7 +126,8 @@ class ListComplexityDetectorService < ApplicationService
         "is_complex": true,
         "complexity_indicators": ["multi_location", "time_bound"],
         "confidence": "high",
-        "reasoning": "Multi-city event with time-bound structure requires location-specific planning."
+        "reasoning": "Multi-city event with explicit timeline requires location-specific planning and schedule coordination.",
+        "planning_domain": "event"
       }
 
       Input: "8-week Python learning plan with beginner, intermediate, and advanced modules"
@@ -109,7 +135,8 @@ class ListComplexityDetectorService < ApplicationService
         "is_complex": true,
         "complexity_indicators": ["time_bound", "hierarchical"],
         "confidence": "high",
-        "reasoning": "Time-structured program with hierarchical modules requires phase-based organization."
+        "reasoning": "Time-structured program with hierarchical modules requires phase-based organization and progression tracking.",
+        "planning_domain": "learning"
       }
 
       Input: "Grocery shopping list"
@@ -117,7 +144,8 @@ class ListComplexityDetectorService < ApplicationService
         "is_complex": false,
         "complexity_indicators": [],
         "confidence": "high",
-        "reasoning": "Simple flat list with single-level items. No structure or phases needed."
+        "reasoning": "Simple flat list of items with no structure, timeline, or coordination needs.",
+        "planning_domain": "general"
       }
 
       Input: "I want to become a better marketing manager. Provide me with 5 books to read and a plan to improve in 6 weeks"
@@ -125,7 +153,26 @@ class ListComplexityDetectorService < ApplicationService
         "is_complex": true,
         "complexity_indicators": ["time_bound", "large_scope"],
         "confidence": "high",
-        "reasoning": "Professional development with time constraint (6 weeks) and multiple resources benefits from planning."
+        "reasoning": "Professional development with time constraint (6 weeks) and multiple resources (books, plan) requires structured learning organization.",
+        "planning_domain": "learning"
+      }
+
+      Input: "Plan a European vacation visiting Paris, Rome, and Barcelona for 3 weeks in July"
+      Output: {
+        "is_complex": true,
+        "complexity_indicators": ["multi_location", "time_bound"],
+        "confidence": "high",
+        "reasoning": "Multi-country travel with specific timeline requires itinerary coordination, accommodation, and location-specific activities.",
+        "planning_domain": "travel"
+      }
+
+      Input: "Build a mobile app MVP with design, backend, and frontend phases"
+      Output: {
+        "is_complex": true,
+        "complexity_indicators": ["time_bound", "hierarchical"],
+        "confidence": "high",
+        "reasoning": "Software project with distinct phases (design, backend, frontend) requires milestone tracking and sequential execution.",
+        "planning_domain": "project"
       }
 
       USER MESSAGE: "#{@user_message.content}"
@@ -138,12 +185,14 @@ class ListComplexityDetectorService < ApplicationService
     indicators = Array(data["complexity_indicators"] || [])
     confidence = data["confidence"] || "medium"
     reasoning = data["reasoning"] || ""
+    planning_domain = data["planning_domain"] || "general"
 
     success(data: {
       is_complex: is_complex,
       complexity_indicators: indicators,
       confidence: confidence,
-      reasoning: reasoning
+      reasoning: reasoning,
+      planning_domain: planning_domain
     })
   end
 
@@ -153,7 +202,8 @@ class ListComplexityDetectorService < ApplicationService
       is_complex: false,
       complexity_indicators: [],
       confidence: "low",
-      reasoning: "Unable to determine complexity - defaulting to simple list"
+      reasoning: "Unable to determine complexity - defaulting to simple list",
+      planning_domain: "general"
     })
   end
 

@@ -49,7 +49,7 @@ class ListRefinementService < ApplicationService
 
   # Generate clarifying questions based on list type and items
   def generate_refinement_questions
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
 
     system_prompt = build_refinement_prompt
 
@@ -84,52 +84,67 @@ class ListRefinementService < ApplicationService
     context_specific_guidance = build_context_specific_guidance(planning_type)
 
     base_prompt = <<~PROMPT
-      You are an intelligent, thoughtful assistant helping someone organize and plan their activities.
-      Your role is to ask 2-3 smart, specific clarifying questions that directly help them execute this plan better.
-      Think like a professional organizer or project manager who understands their specific goal.
+      You are a world-class planning strategist and expert consultant with deep knowledge across multiple domains:
+      - Event planning & logistics
+      - Travel & hospitality
+      - Learning & curriculum design
+      - Project management & software development
+      - Business strategy & operations
+      - Personal productivity & wellness
+      - Content creation & publishing
+      - Sales & marketing strategy
 
-      ⚠️ CRITICAL INSTRUCTION: You MUST follow the specific guidance below for this planning type.
-      Do NOT ask generic project management questions. Do NOT ask about "goals", "budget", "timeline" generically.
-      Instead, ask SPECIFIC questions tailored to the planning type detected.
+      Your expertise allows you to ask the RIGHT questions that matter, not generic ones.
+
+      Your task: Ask 2-3 BRILLIANT, SPECIFIC clarifying questions that help someone execute their plan effectively.
+
+      ⚠️ CRITICAL INSTRUCTION:
+      - NEVER ask generic questions like "Do you have a budget?" or "What's your timeline?" (too obvious)
+      - NEVER ask about team/collaboration in pre-planning (that's a post-creation conversation)
+      - ONLY ask questions that are DIRECTLY RELEVANT to their specific planning type
+      - EVERY question must be actionable and immediately useful for structuring their plan
+      - Questions should be as specific as possible to their domain and context
+      - Maximum 2-3 questions (keep it focused, not a survey)
 
       Respond with ONLY a JSON object (no other text) in this exact format:
       {
         "questions": [
           {
-            "question": "specific, thoughtful question",
+            "question": "specific, thoughtful question phrased naturally",
             "context": "why this matters for their specific goal",
             "field": "parameter type"
           }
         ]
       }
 
-      List Details:
+      CONTEXT ABOUT THEIR PLAN:
       - Title: "#{@list_title}"
       - Category: #{@category}
-      - Planning Type Detected: #{planning_type}
-      - Main Items: #{@items.join(", ")}
+      - Planning Type: #{planning_type}
+      - Items they mentioned: #{@items.join(", ")}
       #{@nested_sublists.present? ? "- Sub-lists: #{@nested_sublists.map { |s| s.is_a?(Hash) ? s['title'] : s.to_s }.join(', ')}" : ""}
 
-      Core Principles:
-      1. BE SPECIFIC: Ask questions that show you understand their EXACT type of planning
-      2. BE THOUGHTFUL: Think about what they ACTUALLY need to know to execute this well
-      3. AVOID GENERIC: Don't ask obvious questions like "Do you have a budget?" - everyone does
-      4. FOCUS ON EXECUTION: Ask what will make them actually DO this successfully
-      5. MAX 2-3 QUESTIONS: Keep it focused, not a survey
-      6. DIRECT AND ACTIONABLE: Questions should lead to specific, useful information
-      7. NATURAL LANGUAGE: Sound like a helpful colleague, not a form
-      8. **FOLLOW THE EXAMPLES BELOW**: Use the example questions as templates. Your questions should be similar in specificity and focus.
+      CORE PRINCIPLES:
+      1. ✅ DOMAIN EXPERTISE: Use your knowledge of their planning domain to ask smart questions
+      2. ✅ RELEVANCE: Every question directly impacts how they'll structure their plan
+      3. ✅ SPECIFICITY: Show you understand THEIR situation, not generic planning
+      4. ✅ ACTIONABILITY: Questions should yield information they'll immediately use
+      5. ✅ NATURAL TONE: Sound like a knowledgeable colleague, not a form
+      6. ✅ AVOID OBVIOUS: Don't ask questions everyone would think of
+      7. ✅ AVOID PREMATURE: Don't ask about collaboration/team at this stage
 
       ============================================================
-      PLANNING TYPE-SPECIFIC GUIDANCE (FOLLOW THIS EXACTLY)
+      PLANNING TYPE-SPECIFIC GUIDANCE - FOLLOW EXACTLY
       ============================================================
       #{context_specific_guidance}
 
       ============================================================
-      GENERATION INSTRUCTION:
-      Use the example questions above as your template. Generate 2-3 new questions
-      that follow the same pattern and specificity as the examples.
-      Do not deviate from the planning type guidance provided above.
+      GENERATION:
+      Based on the guidance above, generate 2-3 questions that:
+      - Match the examples in style and specificity
+      - Are directly relevant to their stated planning type
+      - Will help them structure their plan better
+      - Are actionable and immediately useful
       ============================================================
     PROMPT
 
@@ -170,99 +185,130 @@ class ListRefinementService < ApplicationService
     when :event_touring
       <<~PROMPT
         SPECIAL GUIDANCE - ROADSHOW/TOURING EVENT:
-        This is a multi-location event. Focus on questions that will help them organize across locations:
-        - Which locations/cities are they visiting? (How many? In what regions?)
-        - How many days/weeks? What's the timeline?
-        - How many people attending at each location? Expected audience size?
-        - Is there a team traveling with them or local partnerships?
-        - What's the main purpose at each location? (Same format everywhere or customized?)
+        This is a complex, multi-location event requiring strategic coordination.
+        Focus on questions that unlock KEY STRUCTURAL DECISIONS they need to make:
 
-        EXAMPLE QUESTIONS FOR ROADSHOW:
-        - "Which cities or regions will this roadshow visit?"
-        - "How many stops do you plan, and what's the timeline between each location?"
-        - "Are you expecting the same audience size at each location, and do you need to customize for each city?"
+        Critical factors for roadshow planning:
+        - Geographic scope: Which cities/regions? (This defines your entire structure)
+        - Timeline: Duration total? Schedule between stops? (Affects logistics and staffing)
+        - Format consistency: Same content/setup at each location or customized? (Impacts planning)
+        - Venue/logistics: Pre-booked or scouting needed? (Affects timeline)
+        - Operational model: Who travels? Local teams? (Impacts coordination)
+        - Target audience: Same demographic at each stop? (Affects messaging/planning)
+
+        EXAMPLE QUESTIONS - Focus on structural decisions:
+        - "Which cities or regions will this roadshow visit, and what's your target reach?"
+        - "Will the roadshow have the same format and content at each location, or will you customize for each city?"
+        - "How much time will you spend at each location, and do you know your stops yet or are you still planning the route?"
+
+        DO NOT ask generic questions about budget, timeline, or team at this stage.
+        INSTEAD, ask questions that help them make structural decisions about HOW to organize the roadshow.
       PROMPT
     when :travel
       <<~PROMPT
         SPECIAL GUIDANCE - TRAVEL/VACATION:
-        Focus on practical constraints that affect the itinerary:
-        - Duration and timeline
-        - Travel dates and seasonal considerations
-        - Budget constraints
-        - Traveling solo, with family, with group?
-        - Accommodation preferences
+        Focus on KEY STRUCTURAL DECISIONS that shape their itinerary:
 
-        EXAMPLE QUESTIONS FOR TRIPS:
-        - "How many days total, and which cities/regions are you visiting?"
-        - "Are you traveling solo or with others? Will that affect your itinerary?"
-        - "What's your approximate budget range? Does it include flights and accommodation?"
+        Critical factors:
+        - Geographic routing: Which destinations and in what order? (Affects logistics)
+        - Duration split: How many days at each location? (Affects depth vs breadth)
+        - Pace preference: Fast-paced multi-city or slow exploratory? (Affects planning approach)
+        - Travel style: Guided/planned or flexible/spontaneous? (Affects structure)
+        - Accommodation pattern: Changing daily or hub-based? (Affects logistics)
+        - Activities focus: Specific interests/themes? (Affects structure)
+
+        EXAMPLE QUESTIONS - Focus on itinerary structure:
+        - "Are you planning to visit multiple countries/cities or focus on one region?"
+        - "Do you prefer to stay a few nights in each place and really explore, or visit more places quickly?"
+        - "Are there specific activities or experiences you want to prioritize in your trip?"
+
+        DO NOT ask generic questions about budget or group size (not structural).
+        INSTEAD, ask what will drive their itinerary planning.
       PROMPT
     when :learning
       <<~PROMPT
         SPECIAL GUIDANCE - LEARNING/SKILL DEVELOPMENT:
-        Focus on learning style, timeframe, and existing knowledge:
-        - How much time can they dedicate per week?
-        - What's their current skill level?
-        - Do they prefer hands-on practice, reading, video, interactive?
-        - What's the goal timeline?
-        - Are there specific real-world applications they want?
+        Focus on STRUCTURAL DECISIONS that define their learning path:
 
-        EXAMPLE QUESTIONS FOR LEARNING PLANS:
-        - "How many hours per week can you realistically dedicate to this?"
-        - "Do you prefer learning through practice projects, videos, books, or a mix?"
-        - "What's the timeline - are you learning for a specific deadline or just self-improvement?"
+        Critical factors:
+        - Learning progression: Linear fundamentals-first or modular/flexible? (Affects organization)
+        - Content mix: Books, projects, videos, mentoring, certifications? (Affects structure)
+        - Real-world application: Building something specific or general mastery? (Affects path)
+        - Existing foundation: Beginner, intermediate, or advanced? (Affects path and depth)
+        - Cohesion: Standalone courses/books or integrated curriculum? (Affects structure)
+
+        EXAMPLE QUESTIONS - Focus on learning structure:
+        - "Are you starting from scratch or building on existing knowledge? This affects how we structure the foundation."
+        - "Do you want to learn through hands-on projects, reading and study, video courses, or a mix? This shapes your learning path."
+        - "Is there a specific goal you're learning towards (job, side project, mastery)? This helps us tailor the progression."
+
+        DO NOT ask vague questions about time or motivation.
+        INSTEAD, ask what learning approach and structure will work for them.
       PROMPT
     when :project
       <<~PROMPT
         SPECIAL GUIDANCE - PROJECT/BUILD:
-        Focus on scope, team, timeline, and dependencies:
-        - What's the end goal/deliverable?
-        - Timeline and deadline?
-        - Team size and roles?
-        - Budget constraints?
-        - Dependencies or blockers?
+        Focus on STRUCTURAL DECISIONS that define project execution:
 
-        EXAMPLE QUESTIONS FOR PROJECTS:
-        - "What's your target completion date, and do you have any hard deadlines for milestones?"
-        - "Will this require collaboration with others, or are you working solo?"
-        - "Are there any external dependencies or resources you need to coordinate?"
+        Critical factors:
+        - Project phases: Sequential phases or parallel workstreams? (Affects structure)
+        - Deliverables: Single output or incremental releases? (Affects milestone structure)
+        - Constraints: Hard deadline vs flexible? Key dependencies or blockers? (Affects critical path)
+        - Scope boundaries: MVP vs full vision? Phased rollout? (Affects planning)
+        - Quality gates: Testing, review, approval processes? (Affects structure)
+
+        EXAMPLE QUESTIONS - Focus on project structure:
+        - "What's your overall vision, and are we building towards an MVP first or the full solution?"
+        - "Do the major components need to be built sequentially, or can some work happen in parallel?"
+        - "Are there hard deadlines or dependencies that constrain the timeline?"
+
+        DO NOT ask about team or collaboration at this stage.
+        INSTEAD, ask what will shape the project's execution structure.
       PROMPT
     when :fitness
       <<~PROMPT
         SPECIAL GUIDANCE - FITNESS/WORKOUT:
-        Focus on current fitness level, goals, and constraints:
-        - Current fitness level and any limitations?
-        - Specific fitness goals (strength, endurance, flexibility)?
-        - Time available and frequency?
-        - Access to equipment or facilities?
+        Focus on STRUCTURAL DECISIONS for their fitness program:
 
-        EXAMPLE QUESTIONS FOR FITNESS:
-        - "What's your current fitness level, and do you have any injuries or limitations?"
-        - "How many days per week can you realistically commit?"
-        - "Do you have access to a gym, or will this be home/outdoor workouts?"
+        Critical factors:
+        - Training approach: Strength, endurance, flexibility, mixed? (Affects structure)
+        - Progression model: Progressive overload, periodization, phases? (Affects organization)
+        - Recovery/variety: Same routine or rotating workouts? (Affects structure)
+        - Environment: Gym, home, outdoor, mixed? (Affects exercise selection)
+        - Constraints: Injuries, equipment limitations, time? (Affects planning)
+
+        EXAMPLE QUESTIONS:
+        - "What's your primary fitness goal - strength, endurance, flexibility, or overall fitness?"
+        - "Do you prefer doing the same routine consistently, or rotating different workouts for variety?"
+        - "What equipment or environment do you have access to?"
       PROMPT
     when :routine
       <<~PROMPT
         SPECIAL GUIDANCE - ROUTINE/HABIT:
-        Focus on frequency, triggers, and maintenance:
-        - How often (daily, weekly, monthly)?
-        - What triggers this routine (time of day, event, season)?
-        - How long to maintain?
-        - Any variations for different seasons or situations?
+        Focus on STRUCTURAL DECISIONS for recurring activities:
 
-        EXAMPLE QUESTIONS FOR ROUTINES:
-        - "How often will you follow this routine (daily, weekly, seasonally)?"
-        - "What time of day works best, or does it vary?"
-        - "Are there variations for different seasons or situations?"
+        Critical factors:
+        - Frequency & timing: Daily/weekly rhythm and specific times? (Affects structure)
+        - Triggers & context: What initiates the routine? (Affects organization)
+        - Variations: Seasonal changes, exceptions, flexibility? (Affects structure)
+        - Purpose: Habit-building, maintenance, optimization? (Affects approach)
+        - Environment: Home, office, mixed, travel-friendly? (Affects structure)
+
+        EXAMPLE QUESTIONS:
+        - "Is this something you'll do daily, weekly, or on a specific schedule?"
+        - "Do you want the same routine every time, or should it vary based on season or circumstances?"
+        - "What triggers will help you remember to do this routine?"
       PROMPT
     else
       <<~PROMPT
         SPECIAL GUIDANCE - GENERAL LIST:
-        Ask context-aware questions that help them be successful:
-        - What's the main constraint (time, budget, resources)?
-        - When do they need this done?
-        - Are others involved?
-        - What success looks like for them?
+        Ask context-aware questions about their specific planning needs:
+        - What's the primary purpose or outcome they're after?
+        - What are the key constraints or dependencies?
+        - Is there a specific structure or organization they prefer?
+        - What would make this list most useful for them?
+
+        Focus on understanding their situation deeply, not generic planning questions.
       PROMPT
     end
   end
