@@ -113,39 +113,6 @@ class ChatCompletionService < ApplicationService
 
   private
 
-  # Detect if a list creation request requires pre-creation planning
-  # Returns true for complex, multi-step requests that benefit from upfront context
-  def needs_pre_creation_planning?(parameters)
-    title = parameters["title"] || parameters[:title] || ""
-    items = parameters["items"] || parameters[:items] || []
-    nested_lists = parameters["nested_lists"] || parameters[:nested_lists] || []
-
-    # HEURISTIC 1: Nested structure already detected by parameter extraction
-    return true if nested_lists.present? && nested_lists.length > 2
-
-    # HEURISTIC 2: Multi-location patterns
-    # Keywords: roadshow, tour, trip, visit, cities, countries
-    multi_location_keywords = ["roadshow", "tour", "trip", "visit", "cities", "countries", "locations"]
-    has_location_pattern = multi_location_keywords.any? { |kw| title.downcase.include?(kw) }
-
-    # HEURISTIC 3: Time-bound programs
-    # Keywords: week, month, day, plan, program, schedule, phase
-    # Pattern: "X weeks", "X months", "8-week", etc.
-    time_bound_keywords = ["week", "month", "day", "program", "schedule", "phase"]
-    has_time_pattern = time_bound_keywords.any? { |kw| title.downcase.include?(kw) } ||
-                       title.match?(/\d+[\s-]+(week|month|day|phase)/i)
-
-    # HEURISTIC 4: Hierarchical/staged keywords
-    hierarchy_keywords = ["stages", "phases", "modules", "milestones", "steps"]
-    has_hierarchy = hierarchy_keywords.any? { |kw| title.downcase.include?(kw) }
-
-    # HEURISTIC 5: Large item count (suggests complexity)
-    has_many_items = items.length > 8
-
-    # Return true if ANY complexity indicator is found
-    has_location_pattern || has_time_pattern || has_hierarchy || has_many_items
-  end
-
   # Check for missing parameters in resource creation/management
   def check_parameters_for_intent(intent)
     # SAFETY CHECK: Detect if this was misclassified as user creation
@@ -195,8 +162,13 @@ class ChatCompletionService < ApplicationService
       parameters = data[:parameters] || {}
 
       # Check if this is a complex request requiring pre-creation planning
-      if needs_pre_creation_planning?(parameters)
-        Rails.logger.info("ChatCompletionService - Detected complex list request, routing to pre-creation planning")
+      complexity_result = ListComplexityDetectorService.new(
+        user_message: @user_message,
+        context: @context
+      ).call
+
+      if complexity_result.success? && complexity_result.data[:is_complex]
+        Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
         return handle_pre_creation_planning(parameters)
       else
         Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{parameters.inspect}")

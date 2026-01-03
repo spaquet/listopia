@@ -58,17 +58,26 @@ class ProcessChatMessageJob < ApplicationJob
   def broadcast_assistant_response(chat, assistant_message)
     context = chat.build_context(location: :dashboard)
 
-    # Broadcast via Turbo Streams to replace the loading indicator
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "chat_#{chat.id}",
-      target: "chat-loading-#{chat.id}",
-      html: ApplicationController.render(
-        partial: "chats/assistant_message_replacement",
-        locals: {
-          message: assistant_message,
-          chat_context: context
-        }
+    Rails.logger.info("ProcessChatMessageJob: Broadcasting response for chat #{chat.id}")
+    Rails.logger.info("ProcessChatMessageJob: Assistant message ID: #{assistant_message.id}, class: #{assistant_message.class}")
+
+    begin
+      # Broadcast via Turbo Streams to replace the loading indicator
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "chat_#{chat.id}",
+        target: "chat-loading-#{chat.id}",
+        html: ApplicationController.render(
+          partial: "chats/assistant_message_replacement",
+          locals: {
+            message: assistant_message,
+            chat_context: context
+          }
+        )
       )
-    )
+      Rails.logger.info("ProcessChatMessageJob: Broadcast sent successfully")
+    rescue => e
+      Rails.logger.error("ProcessChatMessageJob: Broadcast failed - #{e.class}: #{e.message}")
+      Rails.logger.error(e.backtrace.first(10).join("\n"))
+    end
   end
 end
