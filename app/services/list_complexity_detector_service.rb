@@ -22,7 +22,8 @@ class ListComplexityDetectorService < ApplicationService
 
   # Detect complexity using LLM classification
   def detect_complexity_with_llm
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    # Use gpt-5-nano for simple classification task
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
     llm_chat.temperature = 0.3 if llm_chat.respond_to?(:temperature=)
 
     system_prompt = build_complexity_prompt

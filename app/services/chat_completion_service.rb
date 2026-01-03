@@ -161,6 +161,9 @@ class ChatCompletionService < ApplicationService
     if intent == "create_list"
       parameters = data[:parameters] || {}
 
+      # DEBUG: Log what we're about to use
+      Rails.logger.warn("ChatCompletionService#check_parameters_for_intent - BEFORE COMPLEXITY CHECK - data[:parameters]: #{data[:parameters].inspect}")
+
       # Check if this is a complex request requiring pre-creation planning
       complexity_result = ListComplexityDetectorService.new(
         user_message: @user_message,
@@ -169,7 +172,9 @@ class ChatCompletionService < ApplicationService
 
       if complexity_result.success? && complexity_result.data[:is_complex]
         Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
-        return handle_pre_creation_planning(parameters)
+        Rails.logger.warn("ChatCompletionService - CALLING handle_pre_creation_planning with parameters: #{parameters.inspect}")
+        planning_domain = complexity_result.data[:planning_domain] || "general"
+        return handle_pre_creation_planning(parameters, planning_domain)
       else
         Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{parameters.inspect}")
         return handle_list_creation("list", parameters)
@@ -250,11 +255,14 @@ class ChatCompletionService < ApplicationService
 
   # Handle pre-creation planning for complex list requests
   # Ask clarifying questions BEFORE creating the list
-  def handle_pre_creation_planning(parameters)
-    title = parameters["title"] || "your list"
-    category = parameters["category"] || "personal"
-    items = parameters["items"] || []
-    nested_lists = parameters["nested_lists"] || []
+  def handle_pre_creation_planning(parameters, planning_domain = "general")
+    title = parameters[:title] || parameters["title"] || "your list"
+    category = parameters[:category] || parameters["category"] || "personal"
+    items = parameters[:items] || parameters["items"] || []
+    nested_lists = parameters[:nested_lists] || parameters["nested_lists"] || []
+
+    # DEBUG: Log parameters being extracted for refinement
+    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}, items: #{items.inspect}")
 
     # REUSE ListRefinementService to generate questions
     refinement = ListRefinementService.new(
@@ -262,6 +270,7 @@ class ChatCompletionService < ApplicationService
       category: category,
       items: items,
       nested_sublists: nested_lists,
+      planning_domain: planning_domain,
       context: @context
     )
 
@@ -766,7 +775,8 @@ class ChatCompletionService < ApplicationService
 
   # Extract planning parameters from user's answers to planning questions
   def extract_planning_parameters_from_answers(user_answers:, list_title:, category:, initial_items:)
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    # Use gpt-5-nano for structured extraction task
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
     system_prompt = <<~PROMPT
       Extract planning parameters from the user's answers.
