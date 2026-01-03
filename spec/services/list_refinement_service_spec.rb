@@ -219,7 +219,7 @@ RSpec.describe ListRefinementService, type: :service do
         service = create_service_with_response(
           "Test List",
           "professional",
-          ["item1", "item2"],
+          [ "item1", "item2" ],
           "event",
           {
             "questions" => [
@@ -233,7 +233,7 @@ RSpec.describe ListRefinementService, type: :service do
         context = result.data[:refinement_context]
         expect(context[:list_title]).to eq("Test List")
         expect(context[:category]).to eq("professional")
-        expect(context[:initial_items]).to eq(["item1", "item2"])
+        expect(context[:initial_items]).to eq([ "item1", "item2" ])
         expect(context[:refinement_stage]).to eq("awaiting_answers")
       end
 
@@ -543,7 +543,7 @@ RSpec.describe ListRefinementService, type: :service do
       service = create_service_with_response(
         "Complex List",
         "professional",
-        ["item1"],
+        [ "item1" ],
         "event",
         {
           "questions" => [
@@ -556,8 +556,8 @@ RSpec.describe ListRefinementService, type: :service do
       service = described_class.new(
         list_title: "Complex List",
         category: "professional",
-        items: ["item1"],
-        nested_sublists: [{ title: "Sublist", items: [] }],
+        items: [ "item1" ],
+        nested_sublists: [ { title: "Sublist", items: [] } ],
         context: context,
         planning_domain: "event"
       )
@@ -571,7 +571,7 @@ RSpec.describe ListRefinementService, type: :service do
       result = service.call
 
       expect(result.success?).to be true
-      expect(result.data[:refinement_context][:initial_items]).to eq(["item1"])
+      expect(result.data[:refinement_context][:initial_items]).to eq([ "item1" ])
     end
   end
 end
