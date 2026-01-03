@@ -823,7 +823,7 @@ class ChatCompletionService < ApplicationService
     enriched = base_params.dup
 
     # Update description with planning context
-    description_parts = [enriched["description"]].compact
+    description_parts = [ enriched["description"] ].compact
 
     if planning_params["duration"].present?
       description_parts << "Duration: #{planning_params["duration"]}"

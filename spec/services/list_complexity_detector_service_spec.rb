@@ -34,7 +34,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects roadshow as complex" do
         service = create_service_with_response(
           "I need to organize a roadshow visiting SF, NYC, and Boston",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-location event" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-location event" }
         )
         result = service.call
 
@@ -46,7 +46,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects multi-city tour as complex" do
         service = create_service_with_response(
           "Plan a tour across Paris, London, Berlin, and Amsterdam",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-city tour" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-city tour" }
         )
         result = service.call
 
@@ -70,7 +70,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects 8-week plan as complex" do
         service = create_service_with_response(
           "Create an 8-week Python learning plan",
-          { "is_complex" => true, "complexity_indicators" => ["time_bound"], "confidence" => "high", "reasoning" => "Time-bound program" }
+          { "is_complex" => true, "complexity_indicators" => [ "time_bound" ], "confidence" => "high", "reasoning" => "Time-bound program" }
         )
         result = service.call
 
@@ -82,7 +82,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects quarterly roadmap as complex" do
         service = create_service_with_response(
           "Build Q1-Q4 product roadmap",
-          { "is_complex" => true, "complexity_indicators" => ["time_bound"], "confidence" => "high", "reasoning" => "Quarterly structure" }
+          { "is_complex" => true, "complexity_indicators" => [ "time_bound" ], "confidence" => "high", "reasoning" => "Quarterly structure" }
         )
         result = service.call
 
@@ -93,7 +93,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects 3-month program as complex" do
         service = create_service_with_response(
           "Design a 3-month onboarding program",
-          { "is_complex" => true, "complexity_indicators" => ["time_bound"], "confidence" => "high", "reasoning" => "3-month program" }
+          { "is_complex" => true, "complexity_indicators" => [ "time_bound" ], "confidence" => "high", "reasoning" => "3-month program" }
         )
         result = service.call
 
@@ -106,7 +106,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects nested modules as complex" do
         service = create_service_with_response(
           "Create a course with modules: Basics, Intermediate, Advanced, each with lessons",
-          { "is_complex" => true, "complexity_indicators" => ["hierarchical"], "confidence" => "high", "reasoning" => "Nested modules" }
+          { "is_complex" => true, "complexity_indicators" => [ "hierarchical" ], "confidence" => "high", "reasoning" => "Nested modules" }
         )
         result = service.call
 
@@ -118,7 +118,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects phases with milestones as complex" do
         service = create_service_with_response(
           "Plan project with phases: Planning, Design, Development, Testing, Launch",
-          { "is_complex" => true, "complexity_indicators" => ["hierarchical"], "confidence" => "high", "reasoning" => "Multi-phase project" }
+          { "is_complex" => true, "complexity_indicators" => [ "hierarchical" ], "confidence" => "high", "reasoning" => "Multi-phase project" }
         )
         result = service.call
 
@@ -131,7 +131,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects comprehensive plan as complex" do
         service = create_service_with_response(
           "Create a complete guide to becoming a product manager with books, courses, and projects",
-          { "is_complex" => true, "complexity_indicators" => ["large_scope"], "confidence" => "high", "reasoning" => "Comprehensive plan" }
+          { "is_complex" => true, "complexity_indicators" => [ "large_scope" ], "confidence" => "high", "reasoning" => "Comprehensive plan" }
         )
         result = service.call
 
@@ -192,7 +192,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "returns high confidence for clear complex case" do
         service = create_service_with_response(
           "Roadshow across 5 US cities over 8 weeks",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location", "time_bound"], "confidence" => "high", "reasoning" => "Clear complexity" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location", "time_bound" ], "confidence" => "high", "reasoning" => "Clear complexity" }
         )
         result = service.call
 
@@ -216,7 +216,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "includes reasoning in response" do
         service = create_service_with_response(
           "Organize a multi-city conference",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-city event requires coordination" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-city event requires coordination" }
         )
         result = service.call
 
@@ -267,7 +267,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects complexity in Spanish" do
         service = create_service_with_response(
           "Necesito organizar una gira por Madrid, Barcelona y Valencia",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-location event in Spanish" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-location event in Spanish" }
         )
         result = service.call
 
@@ -278,7 +278,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects complexity in French" do
         service = create_service_with_response(
           "Plan un tour de 4 semaines à travers Paris, Lyon et Marseille",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location", "time_bound"], "confidence" => "high", "reasoning" => "Multi-location time-bound event in French" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location", "time_bound" ], "confidence" => "high", "reasoning" => "Multi-location time-bound event in French" }
         )
         result = service.call
 
@@ -291,7 +291,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "detects multiple complexity indicators" do
         service = create_service_with_response(
           "Create an 8-week bootcamp with phases (weeks 1-2: Basics, weeks 3-5: Intermediate, weeks 6-8: Advanced) across 3 locations",
-          { "is_complex" => true, "complexity_indicators" => ["time_bound", "hierarchical", "multi_location"], "confidence" => "high", "reasoning" => "Multiple indicators detected" }
+          { "is_complex" => true, "complexity_indicators" => [ "time_bound", "hierarchical", "multi_location" ], "confidence" => "high", "reasoning" => "Multiple indicators detected" }
         )
         result = service.call
 
@@ -305,7 +305,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
         long_content = "This is a very detailed description " * 100
         service = create_service_with_response(
           long_content,
-          { "is_complex" => true, "complexity_indicators" => ["large_scope"], "confidence" => "high", "reasoning" => "Long detailed description" }
+          { "is_complex" => true, "complexity_indicators" => [ "large_scope" ], "confidence" => "high", "reasoning" => "Long detailed description" }
         )
         result = service.call
 
@@ -315,7 +315,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       it "handles special characters" do
         service = create_service_with_response(
           "Plan a roadshow: SF, NYC, LA ($$$) & Boston!",
-          { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-location with special characters" }
+          { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-location with special characters" }
         )
         result = service.call
 
@@ -338,7 +338,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
     it "includes all required fields" do
       service = create_service_with_response(
         "Roadshow across cities",
-        { "is_complex" => true, "complexity_indicators" => ["multi_location"], "confidence" => "high", "reasoning" => "Multi-city" }
+        { "is_complex" => true, "complexity_indicators" => [ "multi_location" ], "confidence" => "high", "reasoning" => "Multi-city" }
       )
       result = service.call
 
@@ -355,7 +355,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       )
       result = service.call
 
-      expect(result.data[:is_complex]).to be_in([true, false])
+      expect(result.data[:is_complex]).to be_in([ true, false ])
     end
 
     it "returns array for complexity_indicators" do
@@ -375,7 +375,7 @@ RSpec.describe ListComplexityDetectorService, type: :service do
       )
       result = service.call
 
-      expect(result.data[:confidence]).to be_in(["high", "medium", "low"])
+      expect(result.data[:confidence]).to be_in([ "high", "medium", "low" ])
     end
   end
 end

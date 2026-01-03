@@ -148,12 +148,12 @@ RSpec.describe ChatCompletionService, type: :service do
       it "creates nested lists for each location" do
         base_params = {
           "title" => "US Roadshow",
-          "items" => ["Book venue", "Marketing"],
+          "items" => [ "Book venue", "Marketing" ],
           "category" => "professional"
         }
 
         planning_params = {
-          "locations" => ["San Francisco", "Chicago", "Boston"],
+          "locations" => [ "San Francisco", "Chicago", "Boston" ],
           "duration" => "2 days per city"
         }
 
@@ -182,7 +182,7 @@ RSpec.describe ChatCompletionService, type: :service do
         }
 
         planning_params = {
-          "phases" => ["Week 1-2: Basics", "Week 3-4: Advanced", "Week 5-8: Practice"]
+          "phases" => [ "Week 1-2: Basics", "Week 3-4: Advanced", "Week 5-8: Practice" ]
         }
 
         enriched = service_instance.send(:enrich_list_structure_with_planning,
