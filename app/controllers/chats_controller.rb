@@ -16,7 +16,7 @@ class ChatsController < ApplicationController
   # View single chat
   def show
     @messages = @chat.recent_messages(50)
-    @chat_context = @chat.build_context(location: :chat_view)
+    @chat_context = @chat.build_context(location: :dashboard)
 
     respond_to do |format|
       format.html

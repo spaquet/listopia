@@ -1,0 +1,44 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-4">
+      <%= link_to "← Back to Chats", chats_path, class: "text-blue-600 hover:text-blue-800" %>
+      <h1 class="text-3xl font-bold text-gray-900"><%= @chat.title.presence || "Untitled Conversation" %></h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <% if @chat.archived? %>
+        <%= button_to "Restore", restore_chat_path(@chat), method: :patch, class: "px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-50 transition-colors" %>
+      <% else %>
+        <%= button_to "Archive", archive_chat_path(@chat), method: :patch, class: "px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors" %>
+      <% end %>
+      <%= button_to "Delete", chat_path(@chat), method: :delete, data: { confirm: "Are you sure?" }, class: "px-4 py-2 text-sm text-red-600 border border-red-600 rounded hover:bg-red-50 transition-colors" %>
+    </div>
+  </div>
+
+  <!-- Unified Chat Component -->
+  <div class="mb-6">
+    <%= render "chat/unified_chat",
+               chat: @chat,
+               message_history: @messages,
+               context: @chat_context %>
+  </div>
+
+  <!-- Chat Metadata -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+    <div class="p-4 bg-white rounded-lg border border-gray-200">
+      <div class="text-2xl font-bold text-gray-900"><%= @chat.message_count %></div>
+      <div class="text-sm text-gray-600">Messages</div>
+    </div>
+    <div class="p-4 bg-white rounded-lg border border-gray-200">
+      <div class="text-2xl font-bold text-gray-900"><%= @chat.turn_count %></div>
+      <div class="text-sm text-gray-600">Turns</div>
+    </div>
+    <div class="p-4 bg-white rounded-lg border border-gray-200">
+      <div class="text-2xl font-bold text-gray-900"><%= @chat.user_message_count %></div>
+      <div class="text-sm text-gray-600">Your Messages</div>
+    </div>
+    <div class="p-4 bg-white rounded-lg border border-gray-200">
+      <div class="text-2xl font-bold text-gray-900"><%= time_ago_in_words(@chat.created_at) %></div>
+      <div class="text-sm text-gray-600">Created</div>
+    </div>
+  </div>
+</div>
