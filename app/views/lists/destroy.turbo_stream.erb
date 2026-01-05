@@ -4,9 +4,9 @@
 <!-- Also remove the inner list card if it exists (fallback for old structure) -->
 <%= turbo_stream.remove "list_#{@list.id}" %>
 <!-- Remove all sublists that were deleted due to dependent: :destroy -->
-<% @list.sub_lists.each do |sublist| %>
-  <%= turbo_stream.remove "list_card_#{sublist.id}" %>
-  <%= turbo_stream.remove "list_#{sublist.id}" %>
+<% @sublist_ids.each do |sublist_id| %>
+  <%= turbo_stream.remove "list_card_#{sublist_id}" %>
+  <%= turbo_stream.remove "list_#{sublist_id}" %>
 <% end %>
 <!-- Check if we need to show empty state after removal -->
 <!-- Use -1 to account for the list being deleted -->

@@ -210,6 +210,9 @@ class ListsController < ApplicationController
       return
     end
 
+    # Capture sublist IDs before destroying (they'll be cascade deleted)
+    @sublist_ids = @list.sub_lists.pluck(:id)
+
     @list.destroy
     respond_to do |format|
       format.html { redirect_to lists_path, notice: "List was successfully deleted." }
