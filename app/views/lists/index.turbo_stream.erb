@@ -1,9 +1,9 @@
 <!-- app/views/lists/index.turbo_stream.erb -->
 <%= turbo_stream.replace("lists-grid") do %>
   <% if @lists.any? %>
-    <div id="lists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div id="lists-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
       <% @lists.each do |list| %>
-        <%= turbo_frame_tag "list_card_#{list.id}" do %>
+        <%= turbo_frame_tag "list_card_#{list.id}", class: "h-full" do %>
           <%= render "lists/list_card", list: list, current_user: current_user %>
         <% end %>
       <% end %>
@@ -15,7 +15,7 @@
   <% end %>
 <% end %>
 <%= turbo_stream.replace("active-filters") do %>
-  <% if params[:search].present? || params[:status].present? || params[:visibility].present? || params[:collaboration].present? %>
+  <% if params[:search].present? || params[:status].present? || params[:visibility].present? || params[:collaboration].present? || params[:show_sublists].present? %>
     <div id="active-filters" class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
       <div class="flex items-center space-x-2 text-sm text-gray-600">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,6 +35,9 @@
           <span class="bg-white px-2 py-1 rounded text-xs border">
             Access: <%= params[:collaboration].humanize.titleize %>
           </span>
+        <% end %>
+        <% if params[:show_sublists].present? %>
+          <span class="bg-white px-2 py-1 rounded text-xs border">View: All Lists</span>
         <% end %>
       </div>
       <%= link_to lists_path,
