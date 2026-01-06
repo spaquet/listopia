@@ -37,7 +37,7 @@ class ListRefinementProcessorService < ApplicationService
 
   # Extract parameters from user's refinement answers
   def extract_refinement_parameters
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
     system_prompt = <<~PROMPT
       Extract parameters from the user's answers to refinement questions.
@@ -124,7 +124,7 @@ class ListRefinementProcessorService < ApplicationService
 
   # Generate enhancement details for a specific item
   def generate_item_enhancement(item, extracted_params)
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
     system_prompt = <<~PROMPT
       You are an assistant helping enhance list items with specific details.

@@ -956,7 +956,7 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{location}", "specific task 2 for #{location}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate location-specific tasks for #{location}.")
 
@@ -1013,7 +1013,7 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{phase}", "specific task 2 for #{phase}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate phase-specific tasks for #{phase}.")
 
@@ -1064,7 +1064,7 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{sublist_title}", "specific task 2 for #{sublist_title}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate section-specific tasks for #{sublist_title}.")
 
@@ -1210,7 +1210,7 @@ class ChatCompletionService < ApplicationService
 
   # Determine the default LLM model and provider
   def default_model
-    "gpt-4o-mini"  # OpenAI default - can be configured per organization/user
+    "gpt-5-mini"  # OpenAI default - can be configured per organization/user
   end
 
   # Parse model string to extract provider and model name

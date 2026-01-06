@@ -60,35 +60,79 @@ class ContentModerationService
 
   private
 
-  # Call OpenAI moderation API via RubyLLM
+  # Call OpenAI moderation API via RubyLLM (v1.8.0+)
   def call_openai_moderation
     unless ENV["LISTOPIA_USE_MODERATION"] == "true"
       return { flagged: false, categories: {}, scores: {}, error: nil }
     end
 
-    unless ENV["OPENAI_API_KEY"].present? || ENV["RUBY_LLM_OPENAI_API_KEY"].present?
+    unless ENV["OPENAI_API_KEY"].present?
       Rails.logger.warn("OpenAI API key not configured for moderation")
       return { flagged: false, categories: {}, scores: {}, error: nil }
     end
 
-    # Call RubyLLM moderation using the client
-    # Note: RubyLLM may not have a dedicated moderation endpoint yet
-    # For now, return as not flagged since the method is unavailable
-    Rails.logger.warn("Moderation API not available in RubyLLM version - skipping content moderation")
+    begin
+      # Call RubyLLM moderation (available in v1.8.0+)
+      moderation_result = RubyLLM.moderate(
+        @content,
+        provider: :openai,
+        model: "omni-moderation-latest"
+      )
+
+      # Parse the moderation result
+      if moderation_result.respond_to?(:flagged?)
+        # RubyLLM::Moderation object
+        parse_ruby_llm_moderation(moderation_result)
+      else
+        # Hash response
+        parse_moderation_response(moderation_result)
+      end
+    rescue StandardError => e
+      Rails.logger.error("OpenAI moderation API call failed: #{e.message}")
+      {
+        flagged: false,
+        categories: {},
+        scores: {},
+        error: "API call failed: #{e.message}"
+      }
+    end
+  end
+
+  # Parse RubyLLM::Moderation object response
+  def parse_ruby_llm_moderation(moderation)
+    flagged = moderation.flagged?
+    categories = build_categories_from_ruby_llm(moderation)
+    scores = build_scores_from_ruby_llm(moderation)
+
     {
-      flagged: false,
-      categories: {},
-      scores: {},
+      flagged: flagged,
+      categories: categories,
+      scores: scores,
       error: nil
     }
-  rescue StandardError => e
-    Rails.logger.error("OpenAI moderation API call failed: #{e.message}")
-    {
-      flagged: false,
-      categories: {},
-      scores: {},
-      error: "API call failed: #{e.message}"
-    }
+  end
+
+  # Build category hash from RubyLLM::Moderation object
+  def build_categories_from_ruby_llm(moderation)
+    categories_data = moderation.categories || {}
+
+    CATEGORIES.keys.each_with_object({}) do |key, hash|
+      # RubyLLM uses snake_case or hyphenated keys
+      api_key = key.to_s.gsub("_", "-")
+      hash[key] = categories_data[api_key] || categories_data[key.to_s] || false
+    end
+  end
+
+  # Build score hash from RubyLLM::Moderation object
+  def build_scores_from_ruby_llm(moderation)
+    scores_data = moderation.category_scores || {}
+
+    CATEGORIES.keys.each_with_object({}) do |key, hash|
+      # RubyLLM uses snake_case or hyphenated keys
+      api_key = key.to_s.gsub("_", "-")
+      score = scores_data[api_key] || scores_data[key.to_s] || 0.0
+      hash[key] = score.to_f
+    end
   end
 
   # Parse RubyLLM moderation response

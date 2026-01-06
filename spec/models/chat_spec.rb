@@ -307,7 +307,7 @@ RSpec.describe Chat, type: :model do
       end
 
       it "copies metadata" do
-        chat.update(metadata: { model: "gpt-4" })
+        chat.update(metadata: { model: "gpt-5" })
         cloned = chat.clone_with_context
         expect(cloned.metadata).to eq(chat.metadata)
       end
@@ -353,8 +353,8 @@ RSpec.describe Chat, type: :model do
     end
 
     it "stores and retrieves model" do
-      chat = create(:chat, user: user, organization: org, model: "gpt-4")
-      expect(chat.reload.model).to eq("gpt-4")
+      chat = create(:chat, user: user, organization: org, model: "gpt-5")
+      expect(chat.reload.model).to eq("gpt-5")
     end
 
     it "stores and retrieves system_prompt" do

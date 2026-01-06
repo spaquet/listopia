@@ -58,9 +58,9 @@ class ListRefinementService < ApplicationService
 
   # Generate clarifying questions based on list type and items
   def generate_refinement_questions
-    # Use gpt-4-turbo for intelligent question generation
+    # Use gpt-5 for intelligent question generation
     # This requires deeper reasoning about domain-specific planning decisions
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4-turbo")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
 
     system_prompt = build_refinement_prompt
 

@@ -33,7 +33,7 @@ class ParameterExtractionService < ApplicationService
 
     loop do
       attempt += 1
-      llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+      llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
       system_prompt = build_list_extraction_prompt(attempt)
       llm_chat.add_message(role: "system", content: system_prompt)
@@ -284,7 +284,7 @@ class ParameterExtractionService < ApplicationService
 
   def extract_create_parameters
     # Use LLM to extract parameters from the message
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
     system_prompt = <<~PROMPT
       Extract parameters from the user's request to create a resource.
@@ -335,7 +335,7 @@ class ParameterExtractionService < ApplicationService
 
   def extract_update_parameters
     # Use LLM to extract parameters for updates/management
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
 
     system_prompt = <<~PROMPT
       Extract parameters from the user's request to update or manage a resource.

@@ -123,7 +123,7 @@ class AiIntentRouterService < ApplicationService
   def call_llm_for_classification(system_prompt)
     llm_chat = RubyLLM::Chat.new(
       provider: :openai,
-      model: "gpt-4o-mini"
+      model: "gpt-5-nano"
     )
 
     llm_chat.temperature = 0.3 if llm_chat.respond_to?(:temperature=)
