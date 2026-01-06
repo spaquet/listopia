@@ -4,38 +4,24 @@
 # Supports extensible template system for rich message rendering
 
 class MessageTemplate
-  # Registry of all available templates
+  # Registry of all available templates (only actively used templates)
   REGISTRY = {
-    # User/Team/Org info
-    "user_profile" => "UserProfileTemplate",
-    "team_summary" => "TeamSummaryTemplate",
-    "org_stats" => "OrgStatsTemplate",
-
-    # List/Item operations
-    "list_created" => "ListCreatedTemplate",
-    "lists_created" => "ListsCreatedTemplate",
-    "items_created" => "ItemsCreatedTemplate",
-    "item_assigned" => "ItemAssignedTemplate",
-
     # Search & discovery
     "search_results" => "SearchResultsTemplate",
     "browse_results" => "BrowseResultsTemplate",
-    "command_result" => "CommandResultTemplate",
 
-    # File uploads
-    "file_uploaded" => "FileUploadedTemplate",
-    "files_processed" => "FilesProcessedTemplate",
-
-    # Chat system & LLM tools
+    # Navigation & routing
     "navigation" => "NavigationTemplate",
-    "list" => "ListTemplate",
+
+    # Resource operations (user/team/list creation/update)
     "resource" => "ResourceTemplate",
+
+    # List planning
+    "pre_creation_planning" => "PreCreationPlanningTemplate",
 
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
     "error" => "ErrorTemplate",
-    "success" => "SuccessTemplate",
-    "info" => "InfoTemplate",
     "help" => "HelpTemplate",
     "new_chat_confirmation" => "NewChatConfirmationTemplate"
   }.freeze
@@ -92,121 +78,6 @@ class BaseTemplate
   end
 end
 
-# Template for user profile cards
-class UserProfileTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["user_id"].present?
-  end
-
-  def render_data
-    {
-      user_id: dig_data("user_id"),
-      name: dig_data("name"),
-      email: dig_data("email"),
-      avatar_url: dig_data("avatar_url"),
-      lists_count: dig_data("lists_count") || 0,
-      teams_count: dig_data("teams_count") || 0
-    }
-  end
-end
-
-# Template for team summaries
-class TeamSummaryTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["team_id"].present?
-  end
-
-  def render_data
-    {
-      team_id: dig_data("team_id"),
-      name: dig_data("name"),
-      member_count: dig_data("member_count") || 0,
-      list_count: dig_data("list_count") || 0,
-      description: dig_data("description")
-    }
-  end
-end
-
-# Template for organization stats
-class OrgStatsTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["org_id"].present?
-  end
-
-  def render_data
-    {
-      org_id: dig_data("org_id"),
-      name: dig_data("name"),
-      member_count: dig_data("member_count") || 0,
-      team_count: dig_data("team_count") || 0,
-      list_count: dig_data("list_count") || 0
-    }
-  end
-end
-
-# Template for list creation confirmation
-class ListCreatedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["list_id"].present? && data["title"].present?
-  end
-
-  def render_data
-    {
-      list_id: dig_data("list_id"),
-      title: dig_data("title"),
-      url: dig_data("url"),
-      item_count: dig_data("item_count") || 0
-    }
-  end
-end
-
-# Template for multiple lists creation
-class ListsCreatedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["lists"].is_a?(Array) && data["lists"].length > 0
-  end
-
-  def render_data
-    {
-      lists: dig_data("lists"),
-      total_count: dig_data("lists").length
-    }
-  end
-end
-
-# Template for items created
-class ItemsCreatedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["items"].is_a?(Array) && data["items"].length > 0
-  end
-
-  def render_data
-    {
-      items: dig_data("items"),
-      total_count: dig_data("items").length,
-      list_id: dig_data("list_id"),
-      list_title: dig_data("list_title")
-    }
-  end
-end
-
-# Template for item assignment
-class ItemAssignedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["item_id"].present? && data["assigned_to"].present?
-  end
-
-  def render_data
-    {
-      item_id: dig_data("item_id"),
-      item_title: dig_data("item_title"),
-      assigned_to_name: dig_data("assigned_to_name"),
-      assigned_to_id: dig_data("assigned_to_id"),
-      due_date: dig_data("due_date")
-    }
-  end
-end
-
 # Template for search results
 class SearchResultsTemplate < BaseTemplate
   def self.validate_data(data)
@@ -219,52 +90,6 @@ class SearchResultsTemplate < BaseTemplate
       results: dig_data("results"),
       total_count: dig_data("total_count") || dig_data("results").length,
       search_type: dig_data("search_type") || "all"
-    }
-  end
-end
-
-# Template for command results
-class CommandResultTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["command"].present?
-  end
-
-  def render_data
-    {
-      command: dig_data("command"),
-      result: dig_data("result"),
-      status: dig_data("status") || "success"
-    }
-  end
-end
-
-# Template for file uploads
-class FileUploadedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["file_name"].present?
-  end
-
-  def render_data
-    {
-      file_name: dig_data("file_name"),
-      file_size: dig_data("file_size"),
-      file_type: dig_data("file_type"),
-      url: dig_data("url")
-    }
-  end
-end
-
-# Template for processed files
-class FilesProcessedTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["files"].is_a?(Array)
-  end
-
-  def render_data
-    {
-      files: dig_data("files"),
-      total_count: dig_data("files").length,
-      status: dig_data("status") || "processed"
     }
   end
 end
@@ -292,37 +117,6 @@ class ErrorTemplate < BaseTemplate
       message: dig_data("message"),
       error_code: dig_data("error_code"),
       details: dig_data("details")
-    }
-  end
-end
-
-# Template for success messages
-class SuccessTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["message"].present?
-  end
-
-  def render_data
-    {
-      message: dig_data("message"),
-      details: dig_data("details"),
-      action_url: dig_data("action_url"),
-      action_text: dig_data("action_text")
-    }
-  end
-end
-
-# Template for info messages
-class InfoTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["message"].present?
-  end
-
-  def render_data
-    {
-      message: dig_data("message"),
-      details: dig_data("details"),
-      icon: dig_data("icon") || "ℹ️"
     }
   end
 end
@@ -358,22 +152,6 @@ class NavigationTemplate < BaseTemplate
   end
 end
 
-# Template for list results from tools
-class ListTemplate < BaseTemplate
-  def self.validate_data(data)
-    data.is_a?(Hash) && data["items"].is_a?(Array)
-  end
-
-  def render_data
-    {
-      resource_type: dig_data("resource_type"),
-      total_count: dig_data("total_count") || 0,
-      page: dig_data("page") || 1,
-      items: dig_data("items")
-    }
-  end
-end
-
 # Template for resource creation/update results
 class ResourceTemplate < BaseTemplate
   def self.validate_data(data)
@@ -401,6 +179,21 @@ class NewChatConfirmationTemplate < BaseTemplate
       message_count: dig_data("message_count") || 0,
       confirm_url: dig_data("confirm_url"),
       dismiss_url: dig_data("dismiss_url")
+    }
+  end
+end
+
+# Template for pre-creation planning questions form
+class PreCreationPlanningTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["questions"].is_a?(Array) && data["chat_id"].present?
+  end
+
+  def render_data
+    {
+      questions: dig_data("questions"),
+      chat_id: dig_data("chat_id"),
+      list_title: dig_data("list_title")
     }
   end
 end

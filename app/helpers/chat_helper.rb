@@ -90,15 +90,15 @@ module ChatHelper
 
   # Get CSS classes for message bubble based on role and location
   def message_bubble_classes(message)
-    base = "max-w-xs lg:max-w-md px-3 rounded-lg"
+    base = "max-w-[90%] px-3 rounded-lg"
     padding = message.system_message? ? "py-1" : "py-1.5"
 
     if message.user_message?
-      "#{base} #{padding} bg-gray-200 text-gray-900 text-sm"
+      "#{base} #{padding} bg-blue-600 text-white"
     elsif message.assistant_message?
       "#{base} #{padding} bg-gray-100 text-gray-900"
     elsif message.system_message?
-      "#{base} #{padding} bg-gray-200 text-gray-800 italic text-sm"
+      "#{base} #{padding} bg-gray-200 text-gray-800 italic"
     else
       "#{base} #{padding} bg-gray-100 text-gray-900"
     end
