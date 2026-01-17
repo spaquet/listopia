@@ -167,95 +167,42 @@ class ParameterExtractionService < ApplicationService
 
   # Build the system prompt for list extraction, with stronger emphasis on retries
   def build_list_extraction_prompt(attempt)
-    base_prompt = <<~PROMPT
-      Extract parameters from the user's request to create and plan a list.
+    <<~PROMPT
+      Extract parameters from user request. Return ONLY valid JSON.
 
-      You MUST respond with a valid JSON object (and ONLY JSON, no other text) containing:
-      - "resource_type": always "list"
-      - "title": the main title/name for the list (inferred from context if not explicit) - REQUIRED, MUST NEVER BE NULL OR EMPTY
-      - "category": one of [personal, professional] - infer from context if possible, or null if truly uncertain
-      - "description": optional description of what this list is for
-      - "items": array of items to add to the list (each item can be a string or object with "title" and optional "description")
-      - "needs_category_clarification": boolean - true only if you cannot determine professional vs personal
-      - "missing": array of required information (only ["category"] if that's unclear, otherwise empty)
+      {
+        "title": "clear title inferred from request (REQUIRED - never null, never empty string)",
+        "category": "professional" | "personal" | null,
+        "description": "optional summary of what they want",
+        "structure": null | "location-based" | "phase-based" | "section-based"
+      }
 
-      CRITICAL TITLE EXTRACTION RULES:
-      1. The title MUST be extracted from the user's request - NEVER return null or empty string for title
-      2. The title should reflect the main purpose/goal of what the user is asking for
-      3. The title should be 3-10 words, clear and descriptive
-      4. If the user's intent is implicit (e.g., "I want to become a better X"), create a title like "X Development Plan" or "X Improvement Plan"
-      5. Extract relevant keywords from the request and combine them into a coherent title
+      CRITICAL RULES:
+      1. Title is REQUIRED - always provide a meaningful title
+      2. If no explicit title, INFER ONE from the context
+      3. Never leave title as null or empty string
+      4. If user asks to "organize my expenses", title = "Expense Organization"
+      5. If user asks to "learn JavaScript", title = "JavaScript Learning Plan"
 
-      Examples of proper title extraction:
-      - User: "plan my business trip to New York next week" → Title: "New York Business Trip"
-      - User: "organize my grocery shopping" → Title: "Grocery Shopping"
-      - User: "i want to become a better marketing manager. provide me with 5 books to read and a plan to improve in 6 weeks." → Title: "Marketing Manager Development Plan"
-      - User: "create a project plan for my startup" → Title: "Startup Project Plan"
-      - User: "help me learn Python" → Title: "Python Learning Plan"
-      - User: "give me a workout routine for 8 weeks" → Title: "8-Week Workout Routine"
-      - User: "plan our company roadshow across 5 US cities" → Title: "US Company Roadshow"
+      EXAMPLES:
+      Input: "Plan a trip to Japan for 2 weeks"
+      Output: {"title": "Japan Trip - 2 Weeks", "category": "personal", ...}
 
-      General Rules:
-      1. ALWAYS infer a meaningful title - the user's intent should inform the title
-      2. INFER list items from the request context (e.g., "trip to New York" could include hotel, flights, itinerary, etc.)
-      3. For category: ALWAYS try to infer from context (business = professional, personal = personal, learning = personal, etc.)
-      4. Category values must be: "personal", "professional", or null (if truly uncertain)
-      5. Only set needs_category_clarification to true if you TRULY CANNOT determine professional vs personal
-         - Examples where you CAN infer:
-           * "I want to become a better marketing manager" → professional (career development)
-           * "Plan my vacation" → personal
-           * "Create a workout routine" → personal
-           * "Marketing director development plan" → professional (career goal)
-           * "Learn Python" → personal (self-improvement)
-      6. If you infer the category successfully, set needs_category_clarification to false
-      7. If category cannot be inferred, set it to null and add "category" to missing array, AND set needs_category_clarification to true
-      8. Be generous in inferring items - think about what tasks/steps would be involved in achieving this goal
-      9. DETECT NESTED STRUCTURES: Look for multi-level lists or hierarchical patterns
-         - Location-based: "cities: New York, Chicago, Boston" with shared tasks per location
-         - Phase-based: "Before roadshow", "During roadshow", "After roadshow" with tasks per phase
-         - Week-based: "Week 1", "Week 2", etc. with tasks per week
-         - Set-based: Groups of items that should be sub-lists
-      9. For nested lists, structure as:
-         {
-           "title": "Main title",
-           "items": [...],
-           "nested_lists": [
-             {
-               "title": "Sub-list title (e.g., New York)",
-               "items": ["task for this location", ...]
-             },
-             ...
-           ]
-         }
+      Input: "Create a roadshow plan across 5 US cities"
+      Output: {"title": "US Roadshow - 5 Cities", "category": "professional", ...}
 
-      User message: "#{@user_message.content}"
+      Input: "Give me a workout routine"
+      Output: {"title": "Workout Routine", "category": "personal", ...}
+
+      User request: "#{@user_message.content}"
+
+      Always respond with valid JSON. ALWAYS include a title field.
     PROMPT
-
-    if attempt > 1
-      base_prompt + <<~PROMPT
-
-        **RETRY ATTEMPT #{attempt}**: The previous extraction had a missing or null title.
-
-        You MUST ensure the title field is never null. If you previously returned null for title,
-        analyze the user's request more carefully and extract a meaningful title that describes
-        what the user is trying to accomplish.
-
-        The user is asking for: #{extract_core_intent(@user_message.content)}
-
-        Use this core intent to create a descriptive title if you haven't already.
-      PROMPT
-    else
-      base_prompt
-    end
   end
 
   # Build the user message for list extraction, with stronger emphasis on retries
   def build_list_extraction_user_message(attempt)
-    if attempt > 1
-      "Extract list planning parameters from the request above. CRITICAL: You MUST provide a non-null title. If you returned null before, extract the title now from the user's intent."
-    else
-      "Extract list planning parameters from the request above. IMPORTANT: Always include a title, never return null for title."
-    end
+    "Extract parameters from the request above. Return ONLY valid JSON."
   end
 
   # Extract the core intent from a user message for retry prompting

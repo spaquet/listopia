@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
-    "@hotwired/turbo-rails": "^8.0.20",
+    "@hotwired/turbo-rails": "^8.0.21",
     "@stimulus-components/character-counter": "^5.1.0",
     "@stimulus-components/notification": "^3.0.0",
     "@stimulus-components/reveal": "^5.0.0",
@@ -23,7 +23,7 @@
     "prosemirror-schema-list": "^1.5.1",
     "prosemirror-state": "^1.4.4",
     "prosemirror-transform": "^1.10.5",
-    "prosemirror-view": "^1.41.4",
+    "prosemirror-view": "^1.41.5",
     "sortablejs": "^1.15.6",
     "stimulus-textarea-autogrow": "^4.1.0",
     "tailwindcss": "^4.1.18"
