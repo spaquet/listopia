@@ -10,6 +10,7 @@
           <%= list_status_badge(list) %>
           <%= list_type_badge(list) %>
           <%= list_sharing_status(list) %>
+          <%= list_owner_badge(list, current_user) %>
         </div>
       </div>
       <!-- Description -->
@@ -144,9 +145,8 @@
         <% if can_delete_list?(list, current_user) %>
           <%= button_to list_path(list),
                         method: :delete,
-                        data: { 
-                          turbo_confirm: "Are you sure? This will permanently delete the list and all its items.",
-                          turbo_stream: true
+                        data: {
+                          turbo_confirm: "Are you sure? This will permanently delete the list and all its items."
                         },
                         class: "w-full inline-flex items-center justify-center px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 transition-colors duration-200" do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

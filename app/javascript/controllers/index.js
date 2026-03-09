@@ -82,6 +82,9 @@ application.register("notifications", NotificationsController)
 import OrganizationFilterController from "./organization_filter_controller"
 application.register("organization-filter", OrganizationFilterController)
 
+import PreCreationPlanningController from "./pre_creation_planning_controller"
+application.register("pre-creation-planning", PreCreationPlanningController)
+
 import ProgressAnimationController from "./progress_animation_controller"
 application.register("progress-animation", ProgressAnimationController)
 

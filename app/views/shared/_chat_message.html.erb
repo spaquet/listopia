@@ -18,7 +18,7 @@
                    message: message %>
       <% else %>
         <!-- Fall back to markdown rendering -->
-        <div class="message-content <%= message.system_message? ? 'text-sm' : 'prose prose-sm max-w-none' %>">
+        <div class="message-content <%= message.system_message? ? 'text-xs' : 'prose prose-sm max-w-none text-xs' %>">
           <% if message.user_message? %>
             <!-- User message with command formatting -->
             <% if message.content.start_with?("/") %>

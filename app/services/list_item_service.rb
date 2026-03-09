@@ -311,22 +311,42 @@ class ListItemService
     title_lower = title.downcase
 
     case title_lower
-    when /goal|objective|target/
-      "goal"
     when /milestone|deadline|due/
       "milestone"
+    when /feature|build|develop|implement/
+      "feature"
+    when /bug|fix|broken|issue|error/
+      "bug"
+    when /decision|choose|decide/
+      "decision"
+    when /meeting|discuss|call|sync/
+      "meeting"
     when /remind|remember|don't forget/
       "reminder"
-    when /waiting|pending|blocked/
-      "waiting_for"
-    when /research|investigate|find out/
-      "research"
-    when /book|reserve|schedule/
-      "booking"
-    when /buy|purchase|order/
-      "purchase"
+    when /note|document|write|record/
+      "note"
+    when /link|reference|resource|url/
+      "reference"
+    when /habit|routine|practice|daily/
+      "habit"
+    when /health|fitness|exercise|medical|wellness/
+      "health"
+    when /learn|study|course|book|education/
+      "learning"
+    when /travel|trip|vacation|flight|hotel|book|reserve/
+      "travel"
+    when /shop|buy|purchase|order/
+      "shopping"
+    when /home|house|cleaning|repair|maintenance/
+      "home"
+    when /budget|finance|bill|payment|money/
+      "finance"
+    when /event|social|gather|party|celebration/
+      "social"
+    when /watch|movie|show|game|entertainment|hobby/
+      "entertainment"
     else
-      "task" # Default to task
+      "task" # Default to task for general items
     end
   end
 

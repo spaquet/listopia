@@ -70,9 +70,16 @@ class ListsController < ApplicationController
       )
     end
 
+    # Apply parent lists filter (default: only parent lists)
+    # Only show parent lists by default, user can toggle to show sublists
+    if params[:show_sublists].blank?
+      @lists = @lists.parent_lists
+    end
+
     # Apply includes and ordering at the end
+    # Use created_at for consistent ordering across sessions
     @lists = @lists.includes(:owner, :collaborators)
-                  .order(updated_at: :desc)
+                  .order(created_at: :desc)
 
     # Store current filters for the view
     @current_filters = {
@@ -209,6 +216,9 @@ class ListsController < ApplicationController
       end
       return
     end
+
+    # Capture sublist IDs before destroying (they'll be cascade deleted)
+    @sublist_ids = @list.sub_lists.pluck(:id)
 
     @list.destroy
     respond_to do |format|

@@ -10,7 +10,7 @@
     available_actions = [:read]
   end
 %>
-<div id="list_card_<%= list.id %>" class="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 overflow-hidden">
+<div id="list_card_<%= list.id %>" class="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col h-full">
   <!-- Top badges row -->
   <div class="absolute top-3 left-3 z-10 flex items-center space-x-2">
     <!-- List type badges -->
@@ -78,11 +78,11 @@
     <% end %>
   </div>
   <!-- Clickable card content -->
-  <%= link_to list_path(list), 
-              class: "block px-6 pt-12 pb-6 #{list.is_public? || list.parent_list.present?}",
+  <%= link_to list_path(list),
+              class: "flex flex-col flex-1 px-6 pt-12 pb-6 #{list.is_public? || list.parent_list.present?}",
               data: { turbo_frame: "_top" } do %>
     <!-- Title and status -->
-    <div class="flex items-start justify-between mb-3">
+    <div class="flex items-start justify-between mb-3 shrink-0">
       <div class="flex-1 min-w-0">
         <h3 class="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors duration-200">
           <%= list.title %>
@@ -91,10 +91,13 @@
           <p class="mt-1 text-sm text-gray-600 line-clamp-2">
             <%= list.description %>
           </p>
+        <% else %>
+          <!-- Placeholder for consistent height when no description -->
+          <p class="mt-1 text-sm text-gray-600 h-10"></p>
         <% end %>
       </div>
       <!-- Status badge -->
-      <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 <%= 
+      <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium shrink-0 <%=
         case list.status
         when 'draft'
           'bg-gray-100 text-gray-800'
@@ -109,7 +112,7 @@
       </span>
     </div>
     <!-- Stats row -->
-    <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+    <div class="flex items-center justify-between text-sm text-gray-500 mb-4 shrink-0">
       <div class="flex items-center space-x-4">
         <!-- Items count -->
         <div class="flex items-center">
@@ -133,9 +136,10 @@
         <%= time_ago_in_words(list.updated_at) %> ago
       </span>
     </div>
-    <!-- Progress bar -->
+    <!-- Progress bar - grows to fill remaining space -->
+    <div class="grow"></div>
     <% if list.list_items_count > 0 %>
-      <div class="mb-4">
+      <div class="mb-0 shrink-0">
         <div class="flex items-center justify-between text-sm mb-1">
           <span class="text-gray-600">Progress</span>
           <span class="text-gray-900 font-medium">
@@ -143,7 +147,7 @@
           </span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2">
-          <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+          <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
                style="width: <%= ((list.list_items.status_completed.count.to_f / list.list_items_count) * 100).round %>%"></div>
         </div>
       </div>

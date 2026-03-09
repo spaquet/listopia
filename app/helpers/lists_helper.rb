@@ -66,6 +66,18 @@ module ListsHelper
     end
   end
 
+  # Display list owner information
+  def list_owner_badge(list, current_user)
+    if list.owner == current_user
+      owner_name = "you"
+    else
+      owner_name = list.owner.name.presence || list.owner.email
+    end
+
+    content_tag :span, "Owned by #{owner_name}",
+      class: "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+  end
+
   # Get user's permission level for a list
   def list_permission_for_user(list, user)
     return :none unless user

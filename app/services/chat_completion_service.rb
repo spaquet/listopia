@@ -27,6 +27,13 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check if we're in pre-creation planning state FIRST
+      # This takes precedence over other pending flows
+      if pending_pre_creation_planning?
+        planning_result = handle_pre_creation_planning_response
+        return planning_result if planning_result
+      end
+
       # Check if we're in a list refinement stage and user is answering questions
       if pending_list_refinement?
         refinement_result = handle_list_refinement_response
@@ -137,24 +144,50 @@ class ChatCompletionService < ApplicationService
       missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
     end
 
-    # For list creation, ask to clarify category if needed
-    if intent == "create_list" && needs_clarification
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Returning category clarification")
-      return handle_list_category_clarification(data)
-    end
-
-    # If there are missing parameters, ask the user for them
-    if missing_params.present?
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
-      return handle_missing_parameters(data, missing_params)
-    end
-
-    # Parameters are complete!
-    # For list and resource creation, proceed with creation
+    # For list creation, check complexity FIRST (before asking for category clarification)
+    # This ensures complex requests go straight to pre-creation planning form
     if intent == "create_list"
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with list creation, parameters: #{(data[:parameters] || {}).inspect}")
-      return handle_list_creation("list", data[:parameters] || {})
+      parameters = data[:parameters] || {}
+
+      # DEBUG: Log what we're about to use
+      Rails.logger.warn("ChatCompletionService#check_parameters_for_intent - BEFORE COMPLEXITY CHECK - data[:parameters]: #{data[:parameters].inspect}")
+
+      # Check if this is a complex request requiring pre-creation planning
+      complexity_result = ListComplexityDetectorService.new(
+        user_message: @user_message,
+        context: @context
+      ).call
+
+      if complexity_result.success? && complexity_result.data[:is_complex]
+        Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
+        Rails.logger.warn("ChatCompletionService - CALLING handle_pre_creation_planning with parameters: #{parameters.inspect}")
+        planning_domain = complexity_result.data[:planning_domain] || "general"
+        # For complex requests, pre-creation planning will handle category internally
+        return handle_pre_creation_planning(parameters, planning_domain)
+      end
+
+      # Not complex - now check if we need category clarification
+      if needs_clarification
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Returning category clarification")
+        return handle_list_category_clarification(data)
+      end
+
+      # Check if there are other missing parameters
+      if missing_params.present?
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
+        return handle_missing_parameters(data, missing_params)
+      end
+
+      # All parameters ready for simple list creation
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with simple list creation, parameters: #{parameters.inspect}")
+      return handle_list_creation("list", parameters)
     elsif intent == "create_resource"
+      # If there are missing parameters for resource creation, ask the user for them
+      if missing_params.present?
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
+        return handle_missing_parameters(data, missing_params)
+      end
+
       Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with resource creation")
       return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
     end
@@ -228,6 +261,71 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Handle pre-creation planning for complex list requests
+  # Ask clarifying questions BEFORE creating the list
+  def handle_pre_creation_planning(parameters, planning_domain = "general")
+    title = parameters[:title] || parameters["title"] || "your list"
+    category = parameters[:category] || parameters["category"] || "personal"
+    items = parameters[:items] || parameters["items"] || []
+    nested_lists = parameters[:nested_lists] || parameters["nested_lists"] || []
+
+    # DEBUG: Log parameters being extracted for refinement
+    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}, items: #{items.inspect}")
+
+    # REUSE ListRefinementService to generate questions
+    refinement = ListRefinementService.new(
+      list_title: title,
+      category: category,
+      items: items,
+      nested_sublists: nested_lists,
+      planning_domain: planning_domain,
+      context: @context
+    )
+
+    result = refinement.call
+
+    if result.success? && result.data[:needs_refinement]
+      questions = result.data[:questions] || []
+
+      if questions.present?
+        # Store pre-creation planning state in chat metadata
+        @chat.metadata ||= {}
+        @chat.metadata["pending_pre_creation_planning"] = {
+          extracted_params: parameters,
+          questions_asked: questions.map { |q| q["question"] },
+          refinement_context: result.data[:refinement_context],
+          intent: "create_list"
+        }
+        @chat.save
+
+        # Create templated message with form for answering questions
+        template_data = {
+          questions: questions,
+          chat_id: @chat.id,
+          list_title: title
+        }
+
+        assistant_message = Message.create_templated(
+          chat: @chat,
+          template_type: "pre_creation_planning",
+          template_data: template_data
+        )
+
+        @chat.update(last_message_at: Time.current)
+
+        return success(data: assistant_message)
+      end
+    end
+
+    # Fallback: if refinement fails or no questions, proceed with creation
+    Rails.logger.warn("Pre-creation planning failed to generate questions, falling back to immediate creation")
+    handle_list_creation("list", parameters)
+  rescue => e
+    Rails.logger.error("Pre-creation planning failed: #{e.message}")
+    # Graceful degradation: proceed with immediate creation
+    handle_list_creation("list", parameters)
+  end
+
   # Create a message asking for missing parameters
   def handle_missing_parameters(param_data, missing_params)
     resource_type = param_data[:resource_type] || "resource"
@@ -256,9 +354,60 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
+  # Check if we're in a pre-creation planning state
+  def pending_pre_creation_planning?
+    @chat.metadata&.dig("pending_pre_creation_planning").present?
+  end
+
   # Check if we're in a list refinement state
   def pending_list_refinement?
     @chat.metadata&.dig("pending_list_refinement").present?
+  end
+
+  # Handle user's response to pre-creation planning questions
+  def handle_pre_creation_planning_response
+    planning_data = @chat.metadata["pending_pre_creation_planning"]
+    return nil unless planning_data
+
+    extracted_params = planning_data["extracted_params"] || {}
+
+    # Extract planning parameters from user's answers
+    planning_params = extract_planning_parameters_from_answers(
+      user_answers: @user_message.content,
+      list_title: extracted_params["title"],
+      category: extracted_params["category"],
+      initial_items: extracted_params["items"] || []
+    )
+
+    # Enrich the list structure with planning context
+    enriched_params = enrich_list_structure_with_planning(
+      base_params: extracted_params,
+      planning_params: planning_params
+    )
+
+    # Clear pre-creation planning state
+    @chat.metadata.delete("pending_pre_creation_planning")
+
+    # Mark that we should skip post-creation refinement
+    @chat.metadata["skip_post_creation_refinement"] = true
+    @chat.save
+
+    # Create the list with enriched structure
+    creation_result = handle_list_creation("list", enriched_params)
+
+    # Clear the skip flag after creation
+    @chat.metadata.delete("skip_post_creation_refinement")
+    @chat.save
+
+    creation_result
+  rescue => e
+    Rails.logger.error("Pre-creation planning response handling failed: #{e.message}")
+
+    # Fallback: create list with original params
+    @chat.metadata.delete("pending_pre_creation_planning")
+    @chat.save
+
+    handle_list_creation("list", extracted_params)
   end
 
   # Handle user's response to refinement questions
@@ -542,6 +691,12 @@ class ChatCompletionService < ApplicationService
 
   # Trigger list refinement and ask clarifying questions
   def trigger_list_refinement(list:, list_title:, category:, items:, message:, nested_sublists: [])
+    # Skip post-creation refinement if we already did pre-creation planning
+    if @chat.metadata&.dig("skip_post_creation_refinement")
+      Rails.logger.info("Skipping post-creation refinement (pre-creation planning was completed)")
+      return success(data: { needs_refinement: false, message: message })
+    end
+
     refinement = ListRefinementService.new(
       list_title: list_title,
       category: category,
@@ -625,6 +780,321 @@ class ChatCompletionService < ApplicationService
       "I'd like to help you create a list.#{existing} To proceed, I need the following information:\n#{missing_list}"
     else
       "I'd like to help you create a #{resource_type}.#{existing} To proceed, I need the following information:\n#{missing_list}"
+    end
+  end
+
+  # Extract planning parameters from user's answers to planning questions
+  def extract_planning_parameters_from_answers(user_answers:, list_title:, category:, initial_items:)
+    # Use gpt-5-nano for structured extraction task
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
+
+    system_prompt = <<~PROMPT
+      Extract planning parameters from the user's answers.
+
+      List Context:
+      - Title: "#{list_title}"
+      - Category: #{category}
+      - Initial items: #{initial_items.join(", ")}
+
+      Respond with ONLY a JSON object (no other text):
+      {
+        "duration": "extracted time/duration if mentioned",
+        "budget": "extracted budget if mentioned",
+        "locations": ["extracted locations if multi-location event"],
+        "start_date": "extracted start date if mentioned",
+        "timeline": "extracted timeline/deadline if mentioned",
+        "team_size": "extracted team/people count if mentioned",
+        "phases": ["extracted phases/stages/weeks/chapters/modules if mentioned"],
+        "preferences": "extracted preferences/constraints",
+        "other_details": "any other relevant context"
+      }
+
+      Rules:
+      1. Extract only information actually mentioned
+      2. Be specific and preserve units (e.g., "3 days", "$2000", "6 weeks")
+      3. If locations mentioned, extract as array ["New York", "Chicago"]
+      4. If phases/stages/weeks/time periods mentioned, extract as array ["Week 1", "Week 2"] or ["Planning", "Execution", "Wrap-up"]
+      5. Different subdivision types: locations for multi-site events, phases/weeks for time-based plans, chapters/modules for learning
+      6. Return empty string or empty array for fields not mentioned
+
+      User's answers: "#{user_answers}"
+    PROMPT
+
+    llm_chat.add_message(role: "system", content: system_prompt)
+    llm_chat.add_message(role: "user", content: "Extract planning parameters from these answers.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    json_match = response_text.match(/\{[\s\S]*\}/m)
+    return {} unless json_match
+
+    begin
+      JSON.parse(json_match[0])
+    rescue JSON::ParserError
+      {}
+    end
+  rescue => e
+    Rails.logger.error("Planning parameter extraction failed: #{e.message}")
+    {}
+  end
+
+  # Enrich list structure based on planning parameters
+  def enrich_list_structure_with_planning(base_params:, planning_params:)
+    enriched = base_params.dup
+
+    # Update description with planning context
+    description_parts = [ enriched["description"] ].compact
+
+    if planning_params["duration"].present?
+      description_parts << "Duration: #{planning_params["duration"]}"
+    end
+
+    if planning_params["budget"].present?
+      description_parts << "Budget: #{planning_params["budget"]}"
+    end
+
+    if planning_params["start_date"].present?
+      description_parts << "Start: #{planning_params["start_date"]}"
+    end
+
+    enriched["description"] = description_parts.join(" | ") if description_parts.present?
+
+    # Determine subdivision type (locations take precedence, then phases, then other)
+    subdivision_type = determine_subdivision_type(planning_params)
+
+    # Generate nested lists based on subdivision type
+    case subdivision_type
+    when :locations
+      enriched["nested_lists"] = planning_params["locations"].map do |location|
+        location_items = generate_location_specific_items(
+          base_title: enriched["title"],
+          location: location,
+          base_items: enriched["items"],
+          planning_params: planning_params
+        )
+
+        {
+          "title" => location,
+          "description" => "Tasks and activities for #{location}",
+          "items" => location_items
+        }
+      end
+
+    when :phases
+      enriched["nested_lists"] = planning_params["phases"].map.with_index do |phase, idx|
+        phase_items = generate_phase_specific_items(
+          base_title: enriched["title"],
+          phase: phase,
+          phase_number: idx + 1,
+          total_phases: planning_params["phases"].length,
+          base_items: enriched["items"],
+          planning_params: planning_params
+        )
+
+        {
+          "title" => phase,
+          "description" => "Phase #{idx + 1} of #{planning_params["phases"].length}",
+          "items" => phase_items
+        }
+      end
+
+    when :other
+      # For other subdivision types (if any), use generic generation
+      other_items = planning_params["other_items"] || []
+      enriched["nested_lists"] = other_items.map.with_index do |item, idx|
+        sub_items = generate_context_aware_items(
+          base_title: enriched["title"],
+          sublist_title: item,
+          sublist_index: idx,
+          total_sublists: other_items.length,
+          base_items: enriched["items"],
+          planning_params: planning_params
+        )
+
+        {
+          "title" => item,
+          "description" => "Tasks and activities for #{item}",
+          "items" => sub_items
+        }
+      end
+    end
+
+    # Keep parent items - they're general tasks applicable to all subdivisions
+    enriched
+  end
+
+  # Generate location-specific items for a sublist
+  def generate_location_specific_items(base_title:, location:, base_items:, planning_params:)
+    prompt = <<~PROMPT
+      You are a smart planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" as it applies to #{location}.
+
+      Context:
+      - Base plan: #{base_title}
+      - Location: #{location}
+      - Base/general items: #{base_items.join(", ")}
+      - Budget: #{planning_params["budget"].presence || "Not specified"}
+      - Duration: #{planning_params["duration"].presence || "Not specified"}
+      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
+
+      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for this location, not generic copies.
+      Each location has unique needs, vendors, regulations, logistics, and constraints.
+
+      For each location, consider:
+      - Local venue and logistics requirements
+      - Regional regulations and permits
+      - Local market conditions and audience
+      - Transportation and accommodation needs
+      - Time zone and scheduling impacts
+      - Local partnerships and resources
+      - Regional customizations needed
+
+      Generate tasks that reflect what actually needs to be done differently in #{location}.
+      Avoid duplicating base items - focus on location-specific considerations.
+
+      Respond with ONLY a JSON array (no other text):
+      ["specific task 1 for #{location}", "specific task 2 for #{location}", ...]
+    PROMPT
+
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    llm_chat.add_message(role: "system", content: prompt)
+    llm_chat.add_message(role: "user", content: "Generate location-specific tasks for #{location}.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    json_match = response_text.match(/\[[\s\S]*\]/m)
+    return [] unless json_match
+
+    begin
+      JSON.parse(json_match[0])
+    rescue JSON::ParserError
+      []
+    end
+  rescue => e
+    Rails.logger.error("Location-specific item generation failed for #{location}: #{e.message}")
+    []
+  end
+
+  # Generate phase-specific items for a sublist
+  def generate_phase_specific_items(base_title:, phase:, phase_number:, total_phases:, base_items:, planning_params:)
+    prompt = <<~PROMPT
+      You are a smart project planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" during Phase #{phase_number}: #{phase}.
+
+      Context:
+      - Base plan: #{base_title}
+      - Current phase: #{phase} (Phase #{phase_number} of #{total_phases})
+      - Base/general items: #{base_items.join(", ")}
+      - Duration: #{planning_params["duration"].presence || "Not specified"}
+      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
+
+      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for this phase, not generic copies.
+      Each phase has completely different focus, priorities, and activities.
+
+      Phase characteristics for "#{phase}":
+      - What is the PRIMARY GOAL of this phase?
+      - What are the KEY ACTIVITIES unique to this phase?
+      - What DEPENDENCIES exist on previous phases?
+      - What OUTPUTS or DELIVERABLES does this phase produce?
+      - What RISKS or CHALLENGES are specific to this phase?
+
+      For a learning/training context (6 weeks):
+      - Week 1 might focus on fundamentals, setup, prerequisites
+      - Week 2 might focus on core concepts, building blocks
+      - Week 3 might deepen knowledge, practice basics
+      - Week 4 might tackle intermediate topics, projects
+      - Week 5 might work on advanced topics, capstone
+      - Week 6 might involve review, consolidation, assessment
+
+      Generate tasks that are UNIQUE to #{phase}, not repeating earlier phases.
+      Each phase should have different activities, learning objectives, or milestones.
+
+      Respond with ONLY a JSON array (no other text):
+      ["specific task 1 for #{phase}", "specific task 2 for #{phase}", ...]
+    PROMPT
+
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    llm_chat.add_message(role: "system", content: prompt)
+    llm_chat.add_message(role: "user", content: "Generate phase-specific tasks for #{phase}.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    json_match = response_text.match(/\[[\s\S]*\]/m)
+    return [] unless json_match
+
+    begin
+      JSON.parse(json_match[0])
+    rescue JSON::ParserError
+      []
+    end
+  rescue => e
+    Rails.logger.error("Phase-specific item generation failed for #{phase}: #{e.message}")
+    []
+  end
+
+  # Generate context-aware items for any type of sublist
+  # This is a flexible method that adapts to the sublist type (weeks, chapters, modules, etc.)
+  def generate_context_aware_items(base_title:, sublist_title:, sublist_index:, total_sublists:, base_items:, planning_params:)
+    prompt = <<~PROMPT
+      You are a smart planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" in section "#{sublist_title}".
+
+      Context:
+      - Base plan: #{base_title}
+      - Current section: #{sublist_title} (Item #{sublist_index + 1} of #{total_sublists})
+      - Base/general items: #{base_items.join(", ")}
+      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
+      - Duration: #{planning_params["duration"].presence || "Not specified"}
+
+      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for "#{sublist_title}".
+      Each section has unique focus, objectives, and activities.
+
+      Consider what makes "#{sublist_title}" different from other sections:
+      - Progressive complexity or skill level
+      - Different scope or focus area
+      - Different stakeholders or teams
+      - Different resources or constraints
+      - Different objectives or milestones
+      - Different deliverables or outputs
+
+      Generate tasks that are UNIQUE to #{sublist_title}, showing progression through the plan.
+      Each section should have different activities, not duplicates.
+
+      Respond with ONLY a JSON array (no other text):
+      ["specific task 1 for #{sublist_title}", "specific task 2 for #{sublist_title}", ...]
+    PROMPT
+
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    llm_chat.add_message(role: "system", content: prompt)
+    llm_chat.add_message(role: "user", content: "Generate section-specific tasks for #{sublist_title}.")
+
+    response = llm_chat.complete
+    response_text = extract_response_content(response)
+
+    json_match = response_text.match(/\[[\s\S]*\]/m)
+    return [] unless json_match
+
+    begin
+      JSON.parse(json_match[0])
+    rescue JSON::ParserError
+      []
+    end
+  rescue => e
+    Rails.logger.error("Context-aware item generation failed for #{sublist_title}: #{e.message}")
+    []
+  end
+
+  # Determine what type of subdivision to use for nested lists
+  # Locations take precedence, then phases, then other subdivisions
+  def determine_subdivision_type(planning_params)
+    if planning_params["locations"].present? && planning_params["locations"].is_a?(Array) && planning_params["locations"].any?
+      :locations
+    elsif planning_params["phases"].present? && planning_params["phases"].is_a?(Array) && planning_params["phases"].any?
+      :phases
+    elsif planning_params["other_items"].present? && planning_params["other_items"].is_a?(Array) && planning_params["other_items"].any?
+      :other
+    else
+      :none
     end
   end
 
@@ -740,7 +1210,7 @@ class ChatCompletionService < ApplicationService
 
   # Determine the default LLM model and provider
   def default_model
-    "gpt-4o-mini"  # OpenAI default - can be configured per organization/user
+    "gpt-5-mini"  # OpenAI default - can be configured per organization/user
   end
 
   # Parse model string to extract provider and model name

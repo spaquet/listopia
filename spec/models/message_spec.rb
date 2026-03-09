@@ -479,10 +479,10 @@ RSpec.describe Message, type: :model do
     end
 
     it "stores LLM provider and model" do
-      message = create(:message, chat: chat, llm_provider: "openai", llm_model: "gpt-4")
+      message = create(:message, chat: chat, llm_provider: "openai", llm_model: "gpt-5")
       reloaded = message.reload
       expect(reloaded.llm_provider).to eq("openai")
-      expect(reloaded.llm_model).to eq("gpt-4")
+      expect(reloaded.llm_model).to eq("gpt-5")
     end
   end
 

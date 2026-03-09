@@ -115,13 +115,13 @@ module ServiceBroadcasting
   # Service-safe method to get dashboard data without view_context
   # Optimized to avoid N+1 queries
   def dashboard_data_for_user(user)
-    # Get accessible list IDs efficiently
-    accessible_list_ids = user.accessible_lists.pluck(:id)
+    # Get owned list IDs efficiently (user.lists returns lists owned by the user)
+    owned_list_ids = user.lists.pluck(:id)
 
     {
-      stats: calculate_dashboard_stats_for_user(user, accessible_list_ids),
+      stats: calculate_dashboard_stats_for_user(user, owned_list_ids),
       recent_items: ListItem.joins(:list)
-                           .where(list_id: accessible_list_ids)
+                           .where(list_id: owned_list_ids)
                            .includes(:list)
                            .order(created_at: :desc)
                            .limit(10)
@@ -129,18 +129,24 @@ module ServiceBroadcasting
   end
 
   # Calculate statistics efficiently without N+1 queries
-  def calculate_dashboard_stats_for_user(user, accessible_list_ids = nil)
-    # If accessible_list_ids not provided, fetch them from user.accessible_lists
-    accessible_list_ids ||= user.accessible_lists.pluck(:id)
+  def calculate_dashboard_stats_for_user(user, owned_list_ids = nil, collaborated_list_ids = nil)
+    # If owned_list_ids not provided, fetch them from user's owned lists
+    # Note: user.lists returns lists where user is the owner (via owner_id foreign key)
+    owned_list_ids ||= user.lists.pluck(:id)
 
-    # Calculate stats directly based on accessible lists
+    # Get collaborated lists (excluding public lists)
+    collaborated_list_ids ||= user.collaborated_lists.where(is_public: false).pluck(:id)
+
+    # Calculate stats based on owned lists only
     {
-      total_lists: user.accessible_lists.count,
-      active_lists: user.accessible_lists.status_active.count,
-      completed_lists: user.accessible_lists.status_completed.count,
-      total_items: ListItem.where(list_id: accessible_list_ids).count,
-      completed_items: ListItem.where(list_id: accessible_list_ids).completed.count,
-      overdue_items: ListItem.where(list_id: accessible_list_ids)
+      owned_lists: user.lists.count,
+      collaborated_lists: user.collaborated_lists.where(is_public: false).count,
+      total_lists: user.lists.count + user.collaborated_lists.where(is_public: false).count,
+      active_lists: user.lists.status_active.count,
+      completed_lists: user.lists.status_completed.count,
+      total_items: ListItem.where(list_id: owned_list_ids).count,
+      completed_items: ListItem.where(list_id: owned_list_ids).completed.count,
+      overdue_items: ListItem.where(list_id: owned_list_ids)
                              .where("list_items.due_date < ? AND list_items.status != ?", Time.current, 2)
                              .count
     }
