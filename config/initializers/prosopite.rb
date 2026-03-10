@@ -1,6 +1,6 @@
 # config/initializers/prosopite.rb
 
-if Rails.env.development? || Rails.env.test?
+if Rails.env.development?
   Prosopite.enabled = true                # usually default true anyway
 
   # Where to send N+1 warnings
