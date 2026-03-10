@@ -47,19 +47,21 @@ class ChatCompletionService < ApplicationService
         return continuation_result if continuation_result
       end
 
-      # PHASE 1 OPTIMIZATION: Combined intent detection + parameter extraction
-      # Single LLM call instead of two separate ones (saves 1-2 seconds)
-      intent_param_result = CombinedIntentParameterService.new(
+      # PHASE 2 OPTIMIZATION: Combined intent + complexity + parameter extraction
+      # Single LLM call instead of three separate ones (saves 2-3 seconds)
+      combined_result = CombinedIntentComplexityService.new(
         user_message: @user_message,
         chat: @chat,
         user: @context.user,
         organization: @context.organization
       ).call
 
-      return failure(errors: [ "Intent detection failed" ]) unless intent_param_result.success?
+      return failure(errors: [ "Intent detection failed" ]) unless combined_result.success?
 
-      combined_data = intent_param_result.data
+      combined_data = combined_result.data
       intent = combined_data[:intent]
+
+      Rails.logger.info("ChatCompletionService - Combined analysis: intent=#{intent}, is_complex=#{combined_data[:is_complex]}, confidence=#{combined_data[:complexity_confidence]}")
 
       # If intent is to navigate to a page, do that instead of LLM response
       if intent == "navigate_to_page"
@@ -228,15 +230,13 @@ class ChatCompletionService < ApplicationService
 
     # For list creation, check complexity FIRST (before asking for category clarification)
     if intent == "create_list"
-      # Check if this is a complex request requiring pre-creation planning
-      complexity_result = ListComplexityDetectorService.new(
-        user_message: @user_message,
-        context: @context
-      ).call
+      # Use complexity assessment from combined service (already done in single LLM call)
+      is_complex = combined_data[:is_complex] || false
+      complexity_confidence = combined_data[:complexity_confidence] || "low"
+      planning_domain = combined_data[:planning_domain] || "general"
 
-      if complexity_result.success? && complexity_result.data[:is_complex]
-        Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
-        planning_domain = complexity_result.data[:planning_domain] || "general"
+      if is_complex
+        Rails.logger.info("ChatCompletionService - Complex list detected: #{combined_data[:complexity_reasoning]} (confidence: #{complexity_confidence})")
         return handle_pre_creation_planning(parameters, planning_domain)
       end
 
