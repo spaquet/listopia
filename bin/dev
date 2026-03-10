@@ -5,6 +5,10 @@ if gem list --no-installed --exact --silent foreman; then
   gem install foreman
 fi
 
+# Truncate (empty) the development log file before starting
+> log/development.log   # ← this is the shortest & most idiomatic way
+
+
 # Default to port 3000 if not specified
 export PORT="${PORT:-3000}"
 
