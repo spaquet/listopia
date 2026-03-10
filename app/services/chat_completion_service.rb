@@ -49,19 +49,21 @@ class ChatCompletionService < ApplicationService
 
       # PHASE 2 OPTIMIZATION: Combined intent + complexity + parameter extraction
       # Single LLM call instead of three separate ones (saves 2-3 seconds)
+      start_time = Time.current
       combined_result = CombinedIntentComplexityService.new(
         user_message: @user_message,
         chat: @chat,
         user: @context.user,
         organization: @context.organization
       ).call
+      elapsed_ms = ((Time.current - start_time) * 1000).round(2)
 
       return failure(errors: [ "Intent detection failed" ]) unless combined_result.success?
 
       combined_data = combined_result.data
       intent = combined_data[:intent]
 
-      Rails.logger.info("ChatCompletionService - Combined analysis: intent=#{intent}, is_complex=#{combined_data[:is_complex]}, confidence=#{combined_data[:complexity_confidence]}")
+      Rails.logger.warn("ChatCompletionService - Combined analysis completed in #{elapsed_ms}ms: intent=#{intent}, is_complex=#{combined_data[:is_complex]}, confidence=#{combined_data[:complexity_confidence]}")
 
       # If intent is to navigate to a page, do that instead of LLM response
       if intent == "navigate_to_page"
@@ -358,6 +360,8 @@ class ChatCompletionService < ApplicationService
   # Ask clarifying questions BEFORE creating the list
   # OPTIMIZATION: Move question generation to background job for fast response
   def handle_pre_creation_planning(parameters, planning_domain = "general")
+    start_time = Time.current
+
     title = parameters[:title] || parameters["title"] || "your list"
     category = parameters[:category] || parameters["category"] || "personal"
     items = parameters[:items] || parameters["items"] || []
@@ -397,6 +401,9 @@ class ChatCompletionService < ApplicationService
       nested_lists,
       planning_domain
     )
+
+    elapsed_ms = ((Time.current - start_time) * 1000).round(2)
+    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Response prepared in #{elapsed_ms}ms (background job enqueued)")
 
     return success(data: assistant_message)
   rescue => e

@@ -36,16 +36,24 @@ class CombinedIntentComplexityService < ApplicationService
   private
 
   def detect_intent_complexity_and_parameters
+    # Use gpt-4o-mini for fast classification (no extended thinking needed)
+    # This is just intent + complexity detection, not reasoning
     llm_chat = RubyLLM::Chat.new(
       provider: :openai,
-      model: "gpt-5-nano"
+      model: "gpt-4o-mini"
     )
 
     system_prompt = build_combined_prompt
     llm_chat.add_message(role: "system", content: system_prompt)
     llm_chat.add_message(role: "user", content: "Analyze the user message above.")
 
+    # TIMING: Measure LLM call duration
+    start_time = Time.current
     response = llm_chat.complete
+    elapsed_ms = ((Time.current - start_time) * 1000).round(2)
+
+    Rails.logger.warn("CombinedIntentComplexityService - LLM call took #{elapsed_ms}ms")
+
     extract_response_content(response)
   rescue => e
     Rails.logger.error("LLM call failed in combined service: #{e.message}")
@@ -54,87 +62,40 @@ class CombinedIntentComplexityService < ApplicationService
 
   def build_combined_prompt
     <<~PROMPT
-      Analyze the user's message and respond with ONLY a JSON object.
-
-      Return intent classification, complexity assessment, and parameter extraction in a single response.
+      Analyze this message and return ONLY valid JSON (no markdown, no text before/after).
 
       {
         "intent": "create_list|create_resource|navigate_to_page|manage_resource|search_data|general_question",
-        "action": "action_type",
-        "description": "brief description",
-        "resource_type": "resource type if applicable or null",
-
-        "is_complex": boolean,
-        "complexity_indicators": ["multi_location", "time_bound", "hierarchical", "large_scope", "coordination", "ambiguous", "incomplete"],
+        "is_complex": true/false,
         "complexity_confidence": "high|medium|low",
-        "complexity_reasoning": "why this is complex or simple",
-        "planning_domain": "event|travel|learning|project|business|wellness|general",
-
-        "parameters": {
-          "title": "if applicable",
-          "category": "professional|personal|null",
-          "items": [...],
-          "name": "if applicable",
-          "email": "if applicable"
-        },
+        "complexity_reasoning": "brief explanation",
+        "planning_domain": "event|travel|learning|project|business|general",
+        "parameters": {"title": "...", "category": "professional|personal"},
         "missing": ["field1", "field2"],
-        "needs_clarification": false,
-        "confidence": 0.95
+        "confidence": 0.9
       }
 
-      INTENT CLASSIFICATION:
+      INTENT:
+      - create_list: plans, trips, learning, projects, lists
+      - create_resource: adding users/teams
+      - navigate_to_page: show/list pages
+      - search_data: find/search
+      - manage_resource: update/delete
+      - general_question: casual chat
 
-      1. "create_list" - Planning/organizing content (books, trips, projects, learning, workouts)
-         Examples: "plan my business trip", "reading list for better manager", "vacation to spain", "next sprint planning", "mac update tasks"
+      COMPLEXITY (for create_list only):
+      COMPLEX = request is MISSING CRITICAL INFO:
+      ✓ "roadshow across US in June" → missing: cities, dates, budget, activities, audience
+      ✓ "vacation to spain this summer" → missing: dates, budget, companions, interests
+      ✓ "sprint planning" → missing: team size, deliverables, timeline
 
-      2. "create_resource" - Adding users/teams/organizations
-         Examples: "create user john@example.com", "add team Engineering"
+      NOT COMPLEX = sufficient or context-dependent:
+      ✗ "grocery list" → user knows what to buy
+      ✗ "mac update tasks" → can infer from system
+      ✗ "reading list to be better manager" → sufficient scope
+      ✗ "daily todo" → clear scope
 
-      3. "navigate_to_page" - Go to existing page
-         Examples: "show users", "list teams"
-
-      4. "search_data" - Find/search information
-         Examples: "find lists about budget"
-
-      5. "manage_resource" - Update/delete resources
-         Examples: "change user role", "rename team"
-
-      6. "general_question" - Casual conversation
-         Examples: "how do I?", "what is?"
-
-      COMPLEXITY ASSESSMENT (ONLY for create_list intent):
-
-      A list is COMPLEX (needs clarifying questions) if:
-
-      ✓ INCOMPLETE - Missing critical info:
-        * "vacation to spain" → missing dates, budget, companions, interests
-        * "roadshow across US in June" → missing cities, duration, target audience, activities
-        * "next sprint planning" → missing team, deliverables, dependencies
-
-      ✓ AMBIGUOUS - Could be interpreted multiple ways:
-        * "reading list for better manager" → books/podcasts/courses/coaching?
-        * "fitness plan" → gym/home/outdoor/nutrition-focused?
-
-      ✓ DEPENDENT ON CONTEXT - Needs personal constraints:
-        * "learning plan for Python" → skill level, goal, timeline, format?
-        * "trip to Japan" → when, budget, travel style, companions?
-
-      ✗ SIMPLE - Sufficient information or context-dependent:
-        * "grocery list" → user knows what to buy
-        * "mac update tasks" → can infer from system context
-        * "daily todo" → clear scope
-        * "packing list" → straightforward collection
-
-      PARAMETER EXTRACTION:
-
-      For create_list:
-      - title: REQUIRED (infer if not explicit)
-      - category: professional or personal
-      - items: if mentioned
-
-      List missing parameters that need clarification.
-
-      User message: "#{@user_message.content}"
+      User: "#{@user_message.content}"
     PROMPT
   end
 

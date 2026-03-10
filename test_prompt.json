@@ -1,0 +1,21 @@
+{
+    "model": "gpt-4o-mini",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Analyze this message and return ONLY valid JSON.\n\n{\"intent\":
+  \"create_list|create_resource|navigate_to_page|manage_resource|search_data|general_question\",
+  \"is_complex\": true/false, \"complexity_confidence\": \"high|medium|low\",
+  \"complexity_reasoning\": \"brief\", \"planning_domain\":
+  \"event|travel|learning|project|business|general\", \"parameters\": {\"title\": \"...\",
+  \"category\": \"professional|personal\"}, \"missing\": [], \"confidence\": 0.9}\n\nCOMPLEX =
+  missing critical info (roadshow → missing cities/dates/budget)\nNOT COMPLEX = sufficient info
+  (grocery list, mac tasks, reading list)"
+      },
+      {
+        "role": "user",
+        "content": "I'm charged to plan our 2026 roadshows across the US starting in June to
+  promote our new product Markify a smart markdown editor for OS X"
+      }
+    ]
+  }
