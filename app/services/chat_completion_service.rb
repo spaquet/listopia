@@ -415,7 +415,7 @@ class ChatCompletionService < ApplicationService
     elapsed_ms = ((Time.current - start_time) * 1000).round(2)
     Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Pre-creation form returned in #{elapsed_ms}ms with #{questions.length} questions")
 
-    return success(data: assistant_message)
+    success(data: assistant_message)
   rescue => e
     Rails.logger.error("Pre-creation planning failed: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
     # Graceful degradation: proceed with immediate creation
