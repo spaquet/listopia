@@ -1,7 +1,7 @@
 # app/services/question_generation_service.rb
 #
 # Fast synchronous service for generating clarifying questions
-# Uses gpt-4o-mini for speed (~1-2 seconds)
+# Uses gpt-4.1-nano for speed (~1-2 seconds)
 # No background jobs, no async complications
 
 class QuestionGenerationService < ApplicationService
@@ -23,17 +23,17 @@ class QuestionGenerationService < ApplicationService
       success(data: { questions: questions })
     else
       Rails.logger.warn("QuestionGenerationService - Failed to generate questions")
-      failure(errors: ["Could not generate clarifying questions"])
+      failure(errors: [ "Could not generate clarifying questions" ])
     end
   rescue => e
     Rails.logger.error("QuestionGenerationService failed: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
-    failure(errors: [e.message])
+    failure(errors: [ e.message ])
   end
 
   private
 
   def generate_questions
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o-mini")
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4.1-nano")
 
     system_prompt = build_system_prompt
     user_message = "Generate clarifying questions for: #{@list_title}"

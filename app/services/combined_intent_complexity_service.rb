@@ -40,7 +40,7 @@ class CombinedIntentComplexityService < ApplicationService
     # This is just intent + complexity detection, not reasoning
     llm_chat = RubyLLM::Chat.new(
       provider: :openai,
-      model: "gpt-4o-mini"
+      model: "gpt-4.1-nano"
     )
 
     system_prompt = build_combined_prompt
