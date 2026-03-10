@@ -1,0 +1,14 @@
+<!-- app/views/chats/_pre_creation_planning_message.html.erb
+     Pre-creation planning form displayed as a chat message
+     Broadcasts questions that users answer to refine their list
+-->
+
+<div id="pre-creation-form-<%= chat.id %>" class="flex justify-start">
+  <div class="max-w-2xl">
+    <%= render "message_templates/pre_creation_planning", data: {
+      questions: questions,
+      chat_id: chat.id,
+      list_title: list_title
+    } %>
+  </div>
+</div>

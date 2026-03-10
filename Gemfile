@@ -113,6 +113,18 @@ group :development do
 
   # Track N+1 queries and unused eager loading [https://github.com/flyerhzm/bullet]
   gem "bullet"
+
+  # Rack mini profiler for performance insights [https://github.com/MiniProfiler/rack-mini-profiler]
+  gem "rack-mini-profiler"
+
+  # StackProf for sampling call stacks and identifying bottlenecks []
+  gem "stackprof"
+
+  # Prosopite for tracking object allocations and memory usage [https://github.com/charkost/prosopite]
+  gem "prosopite"
+
+  # Memory profiler for detailed memory usage reports [
+  gem "memory_profiler"
 end
 
 group :test do

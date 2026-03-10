@@ -52,46 +52,45 @@ class ListComplexityDetectorService < ApplicationService
   # Build the system prompt for LLM classification
   def build_complexity_prompt
     <<~PROMPT
-      You are a world-class planning and task management expert. Your expertise spans:
-      - Project management and strategy
-      - Travel and event planning
-      - Learning and skill development
-      - Business and marketing planning
-      - Personal productivity and wellness
-      - Product and software development
-      - Content creation and publishing
-      - And any other domain requiring structured planning
+      You are an expert at determining whether a list/planning request needs clarification questions.
 
-      Your job is to determine if a list creation request is COMPLEX (needs upfront planning questions).
+      COMPLEXITY = request is MISSING IMPORTANT INFORMATION that should be clarified before creating the list.
 
-      A list request is COMPLEX if it involves any of these indicators:
+      A request is COMPLEX (needs clarifying questions) if it is:
 
-      1. MULTI-LOCATION: Multiple cities, countries, regions, venues
-         - Requires location-specific coordination
-         - Examples: "roadshow across 5 cities", "tour of Europe", "multi-office implementation"
+      1. INCOMPLETE SPECIFICATION
+         - Missing critical parameters for the request type
+         - Examples:
+           * "vacation to Spain" → missing: dates, budget, companions, duration, interests
+           * "plan our next sprint" → missing: team size, duration, deliverables, dependencies
+           * "roadshow across US in June" → missing: cities, duration, budget, target audience, activities
+         - Counter-example: "grocery list" → sufficient (user knows what groceries they need)
 
-      2. TIME-BOUND WITH PHASES: Structured timeline with distinct stages/phases/milestones
-         - Requires sequential or milestone-based organization
-         - Examples: "8-week bootcamp", "Q1-Q4 roadmap", "3-month product launch", "semester-based curriculum"
+      2. AMBIGUOUS OR VAGUE
+         - Request could be interpreted multiple ways
+         - Examples:
+           * "reading list for better manager" → could be books, podcasts, courses, coaches
+           * "fitness plan" → could be gym, home workout, outdoor, nutrition-focused
+         - Counter-example: "todo list for today" → clear (daily tasks)
 
-      3. HIERARCHICAL STRUCTURE: Multi-level organization with parent-child relationships
-         - Requires nested/categorical organization
-         - Examples: "course with modules and lessons", "project with phases and milestones", "product categories with features"
+      3. DEPENDENT ON EXTERNAL CONTEXT
+         - Needs domain-specific knowledge or personal constraints
+         - Examples:
+           * "trip to Japan" → need budget/season/travel style/companions
+           * "learning plan for Python" → need experience level/goal/timeline/format
+         - Counter-example: "mac update checklist" → can infer from system context
 
-      4. LARGE SCOPE: Comprehensive, multi-faceted planning requiring many coordinated items
-         - Requires extensive research and planning
-         - Examples: "complete guide to X", "everything needed for Y", "comprehensive [domain] plan"
+      4. MULTI-FACETED OR COORDINATED
+         - Involves multiple dimensions or people
+         - Examples:
+           * "event planning" → dates, venue, guests, budget, theme, logistics
+           * "project plan" → team, timeline, dependencies, resources, deliverables
 
-      5. COORDINATION COMPLEXITY: Involves multiple people, teams, or external dependencies
-         - Requires coordination and alignment
-         - Examples: "cross-team initiative", "multi-stakeholder project", "collaborative event"
-
-      A list is SIMPLE (should return is_complex: false) if it is:
-      - Single-location, single-person task ("grocery shopping", "daily todo", "packing list")
-      - Flat, non-hierarchical list ("bucket list", "simple checklist", "to-read list")
-      - No time phases or multi-stage structure
-      - Limited scope (typically <8 items, or simple items)
-      - Single level of organization
+      A list is SIMPLE (is_complex: false) if:
+      - User has clearly stated what they need or what the list should contain
+      - It's a straightforward collection or checklist with obvious scope
+      - Domain context is sufficient to infer missing details
+      - Examples: "grocery list", "packing list", "daily todo", "mac setup tasks", "book recommendations"
 
       RESPOND WITH ONLY THIS JSON (no other text):
       {

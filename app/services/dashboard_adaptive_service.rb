@@ -77,7 +77,7 @@ class DashboardAdaptiveService
 
   # Generate ranked recommendations for exploration mode
   def generate_recommendations
-    lists = accessible_lists.includes(:list_items, :collaborators)
+    lists = accessible_lists.includes(:owner)
 
     recommendations = lists.map do |list|
       score_list_for_recommendation(list)
@@ -105,7 +105,7 @@ class DashboardAdaptiveService
     reason << "#{overdue_count} overdue" if overdue_count > 0
 
     # Completion progress (motivational)
-    total_items = list.list_items.count
+    total_items = list.list_items_count
     if total_items > 0
       completion_rate = list.list_items.status_completed.count.to_f / total_items
       # Close to completion = higher score
@@ -148,7 +148,7 @@ class DashboardAdaptiveService
       completion_rate: total_items > 0 ? (list.list_items.status_completed.count.to_f / total_items * 100).round : 0,
       next_item: next_pending_item(list),
       is_owned: list.user_id == user.id,
-      collaborator_count: list.collaborators.count
+      collaborator_count: list.list_collaborations_count
     }
   end
 

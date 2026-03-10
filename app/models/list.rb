@@ -95,7 +95,7 @@ class List < ApplicationRecord
   has_many :sub_lists, class_name: "List", foreign_key: "parent_list_id", dependent: :destroy
 
   has_many :board_columns, dependent: :destroy
-  has_many :collaborators, as: :collaboratable, dependent: :destroy
+  has_many :collaborators, as: :collaboratable, dependent: :destroy, counter_cache: :list_collaborations_count
   has_many :collaborator_users, through: :collaborators, source: :user
   has_many :invitations, as: :invitable, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy

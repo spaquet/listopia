@@ -28,6 +28,7 @@ class ListRefinementService < ApplicationService
 
     # Log the context being used for refinement
     Rails.logger.info("ListRefinementService call - title: #{@list_title}, category: #{@category}, domain: #{@planning_domain}, items: #{@items.inspect}")
+    Rails.logger.warn("ListRefinementService#call - questions returned: #{questions.inspect}, count: #{questions.length}")
 
     if questions.present?
       refinement_ctx = build_refinement_context
@@ -45,7 +46,7 @@ class ListRefinementService < ApplicationService
       })
     end
   rescue => e
-    Rails.logger.error("List refinement failed: #{e.message}")
+    Rails.logger.error("List refinement failed: #{e.message}\n#{e.backtrace.join("\n")}")
     # Graceful fallback - proceed without refinement
     success(data: {
       needs_refinement: false,
@@ -58,8 +59,11 @@ class ListRefinementService < ApplicationService
 
   # Generate clarifying questions based on list type and items
   def generate_refinement_questions
-    # Use gpt-5 for intelligent question generation
-    # This requires deeper reasoning about domain-specific planning decisions
+    # Use gpt-5 for reliable question generation
+    # This is a critical user-facing feature that needs to work correctly
+    # gpt-5-nano with extended thinking was causing parsing issues, so we use the reliable model
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - STARTING")
+
     llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
 
     system_prompt = build_refinement_prompt
@@ -67,34 +71,42 @@ class ListRefinementService < ApplicationService
     # DEBUG: Log the actual prompt being sent
     category_in_prompt = @category.upcase
     domain_in_prompt = @planning_domain || "general"
-    Rails.logger.warn("ListRefinementService#generate_refinement_questions - PROMPT VARS - category: #{category_in_prompt.inspect}, domain: #{domain_in_prompt.inspect}")
-    Rails.logger.debug("ListRefinementService#generate_refinement_questions - PROMPT SNIPPET - #{system_prompt[0..500]}")
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - CATEGORY: #{category_in_prompt.inspect}, DOMAIN: #{domain_in_prompt.inspect}")
 
     llm_chat.add_message(role: "system", content: system_prompt)
     llm_chat.add_message(role: "user", content: "Generate exactly 3 clarifying questions for this list. Match the category (professional vs personal) and domain. Use the provided examples as templates. Be specific and avoid generic questions.")
 
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - CALLING LLM")
     response = llm_chat.complete
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - LLM RETURNED, extracting content")
     response_text = extract_response_content(response)
 
     # DEBUG: Log the LLM response
-    Rails.logger.warn("ListRefinementService#generate_refinement_questions - LLM RESPONSE - #{response_text[0..800]}")
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - RESPONSE LENGTH: #{response_text.length}, PREVIEW: #{response_text[0..500]}")
 
     # Parse the JSON response
+    # Find the outermost JSON object (using greedy match to get the full structure)
+    # Extract from first { to last } to get the complete wrapper with "questions" array
     json_match = response_text.match(/\{[\s\S]*\}/m)
     return [] unless json_match
 
+    json_to_parse = json_match[0]
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - EXTRACTED JSON LENGTH: #{json_to_parse.length}, FIRST 300 CHARS: #{json_to_parse[0..300]}")
+
     begin
-      data = JSON.parse(json_match[0])
+      data = JSON.parse(json_to_parse)
       questions = data["questions"] || []
 
       # Filter to max 3 questions to keep conversation focused
-      Rails.logger.warn("ListRefinementService#generate_refinement_questions - PARSED QUESTIONS - #{questions.inspect}")
+      Rails.logger.warn("ListRefinementService#generate_refinement_questions - PARSED QUESTIONS COUNT: #{questions.length}, QUESTIONS: #{questions.inspect}")
       questions.take(3)
-    rescue JSON::ParserError
+    rescue JSON::ParserError => e
+      Rails.logger.error("ListRefinementService#generate_refinement_questions - JSON PARSE ERROR: #{e.message}")
+      Rails.logger.error("Attempted to parse: #{json_to_parse[0..500]}")
       []
     end
   rescue => e
-    Rails.logger.error("LLM refinement question generation failed: #{e.message}")
+    Rails.logger.error("LLM refinement question generation failed: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
     []
   end
 
@@ -121,91 +133,94 @@ class ListRefinementService < ApplicationService
       - Request: "#{@list_title}"
       #{@items.any? ? "- Initial items mentioned: #{@items.join(", ")}" : ""}
 
-      YOUR TASK: Generate exactly 3 ESSENTIAL clarifying questions that match the category ABOVE.
+      YOUR TASK: Generate EXACTLY 3 ESSENTIAL clarifying questions that match the category ABOVE.
 
-      ⚠️ DETERMINE THE TYPE FIRST ⚠️
-
-      Step 1: Check the CATEGORY field above.
-      - If it says "PROFESSIONAL" → Use PROFESSIONAL questions below
-      - If it says "PERSONAL" → Use PERSONAL questions below
-
-      Step 2: Check the DOMAIN field above.
-      - This further specifies the type (event, travel, learning, etc.)
-
-      Step 3: Generate 3 questions matching BOTH category AND domain
+      ⚠️ IMPORTANT: This request is classified as #{category_value.downcase} in the #{domain_value} domain. ⚠️
 
       ==========================================
-      📊 IF CATEGORY = "PROFESSIONAL":
+      📊 PROFESSIONAL CATEGORY QUESTIONS:
       ==========================================
+      Use ONLY if Category = "PROFESSIONAL"
       This is a BUSINESS / PROFESSIONAL planning request.
       Ask about business objectives, professional outcomes, metrics, and ROI.
 
-      IF DOMAIN = "event" (professional event, ROADSHOW, conference):
-      ✓ WHAT: "What is the main business objective of this ROADSHOW? (e.g., sales, lead generation, product launch, brand awareness, partnership building)"
-      ✓ WHERE/WHEN: "Which cities or regions will you visit, and how long should the ROADSHOW run in total?"
-      ✓ HOW: "What activities or formats will you use at each stop? (e.g., product demos, presentations, workshops, exhibitions, networking events)"
+      For ROADSHOW/EVENT domain:
+      Question 1: "What is the primary business objective? (e.g., sales, lead generation, product launch, brand awareness, partnership building)"
+      Question 2: "Which cities or regions will be included, and what's the total duration?"
+      Question 3: "What activities will occur at each stop? (e.g., demos, presentations, exhibitions, networking)"
 
-      IF DOMAIN = "project":
-      ✓ WHY/WHAT: "What is the primary business goal and success metric for this project?"
-      ✓ WHEN: "What is the timeline and key phases/milestones?"
-      ✓ WHO: "Who are the stakeholders and team members involved?"
+      For PROJECT domain:
+      Question 1: "What is the primary business goal and success metric?"
+      Question 2: "What is the timeline and key milestones?"
+      Question 3: "Who are the main stakeholders and team members?"
 
-      IF DOMAIN = "travel" (business trip, corporate retreat):
-      ✓ "What is the business purpose and expected outcomes?"
-      ✓ "Which locations and dates?"
-      ✓ "How many people and what resources are needed?"
+      For TRAVEL domain (business):
+      Question 1: "What is the business purpose and expected outcomes?"
+      Question 2: "Which locations and what are the travel dates?"
+      Question 3: "How many people and what budget/resources are needed?"
 
-      🚫 NEVER ask about personal preferences, guests, dietary restrictions, birthdays, or family for PROFESSIONAL category!
+      For GENERAL PROFESSIONAL domain:
+      Question 1: "What are the primary business goals and success metrics?"
+      Question 2: "What is the timeline and key phases?"
+      Question 3: "What resources, budget, or team members are involved?"
 
       ==========================================
-      🎉 IF CATEGORY = "PERSONAL":
+      🎉 PERSONAL CATEGORY QUESTIONS:
       ==========================================
+      Use ONLY if Category = "PERSONAL"
       This is a PERSONAL / SOCIAL planning request.
       Ask about celebration type, guests, personal preferences, and lifestyle.
 
-      IF DOMAIN = "event" (birthday, party, celebration, gathering):
-      ✓ "What type of celebration are you planning? (e.g., birthday, wedding, anniversary, family gathering, reunion)"
-      ✓ "How many guests are you expecting, and are there any special preferences or constraints (dietary, accessibility, theme)?"
-      ✓ "What is your budget and venue preference?"
+      For EVENT/PARTY domain:
+      Question 1: "What type of celebration? (birthday, wedding, anniversary, family gathering, reunion)"
+      Question 2: "How many guests? Any special needs (dietary, accessibility, theme preferences)?"
+      Question 3: "What's your budget and venue preference?"
 
-      IF DOMAIN = "travel" (vacation, holiday, personal trip):
-      ✓ "What is the purpose of this trip and what does success look like for you?"
-      ✓ "Which destinations are you visiting and for how long?"
-      ✓ "Any travel companions and constraints (budget, family needs, accessibility)?"
+      For TRAVEL/VACATION domain:
+      Question 1: "What's the purpose and what does success look like for you?"
+      Question 2: "Which destinations and for how long?"
+      Question 3: "Travel companions and constraints (budget, family needs, accessibility)?"
 
-      IF DOMAIN = "learning" (personal development, hobby):
-      ✓ "What is your specific learning goal? (career, hobby, skill development, curiosity)"
-      ✓ "What's your current experience level with this topic?"
-      ✓ "How much time weekly can you dedicate and when do you want to complete it?"
+      For LEARNING domain:
+      Question 1: "What's your specific learning goal?"
+      Question 2: "What's your current experience level?"
+      Question 3: "How much time weekly and when should you complete it?"
 
-      🚫 NEVER ask about business objectives, ROI, stakeholders, or professional metrics for PERSONAL category!
-
-      ==========================================
-      IF DOMAIN = "general" (unknown or mixed):
-      ==========================================
-      Ask broad clarifying questions based on the category:
-      - Professional: Goals, timeline, resources, success metrics
-      - Personal: Purpose, scope, preferences, constraints
+      For GENERAL PERSONAL domain:
+      Question 1: "What is the primary purpose or goal?"
+      Question 2: "What's your scope and timeline?"
+      Question 3: "What preferences, constraints, or resources are important?"
 
       ==========================================
-      FINAL REQUIREMENTS:
-      1. ✅ CHECK CATEGORY FIRST: Look at "Category:" field above
-      2. ✅ MATCH CATEGORY: Professional questions for professional, personal for personal
-      3. ✅ MATCH DOMAIN: Use domain-specific examples
-      4. ✅ EXACTLY 3 QUESTIONS: No more, no less
-      5. ✅ AVOID MISMATCHES: Never mix professional and personal question types
-      6. ✅ BE SPECIFIC: Each question should be clear and actionable
+      RESPONSE FORMAT (MANDATORY):
+      You MUST respond with ONLY valid JSON, no other text:
 
-      Respond with ONLY a JSON object (no other text):
       {
         "questions": [
           {
-            "question": "specific, clear question that gathers essential information",
+            "question": "First clarifying question specific to the category and domain above",
             "context": "why this matters for planning",
-            "field": "parameter type"
+            "field": "parameter_type"
+          },
+          {
+            "question": "Second clarifying question",
+            "context": "why this matters",
+            "field": "parameter_type"
+          },
+          {
+            "question": "Third clarifying question",
+            "context": "why this matters",
+            "field": "parameter_type"
           }
         ]
       }
+
+      REMEMBER:
+      - Generate EXACTLY 3 questions
+      - Match the category (PROFESSIONAL or PERSONAL) shown above
+      - Match the domain (#{domain_value})
+      - Respond with JSON ONLY - no explanations, no preamble
+      - Each question must be actionable and specific
     PROMPT
 
     base_prompt

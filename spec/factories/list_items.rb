@@ -74,7 +74,7 @@ FactoryBot.define do
     recurrence_rule { "none" }
     skip_notifications { false }
 
-    association :list, strategy: :build
+    association :list
 
     # Work & Project Item Types
     trait :task do
