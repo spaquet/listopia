@@ -19,6 +19,9 @@
 #  processing_time       :decimal(8, 3)
 #  role                  :string           not null
 #  template_type         :string
+#  thinking_signature    :text
+#  thinking_text         :text
+#  thinking_tokens       :integer
 #  token_count           :integer
 #  created_at            :datetime         not null
 #  updated_at            :datetime         not null

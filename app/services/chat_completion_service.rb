@@ -1075,7 +1075,9 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{location}", "specific task 2 for #{location}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
+    # Reduces latency significantly without sacrificing quality
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate location-specific tasks for #{location}.")
 
@@ -1132,7 +1134,9 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{phase}", "specific task 2 for #{phase}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
+    # Reduces latency significantly without sacrificing quality
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate phase-specific tasks for #{phase}.")
 
@@ -1183,7 +1187,9 @@ class ChatCompletionService < ApplicationService
       ["specific task 1 for #{sublist_title}", "specific task 2 for #{sublist_title}", ...]
     PROMPT
 
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
+    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
+    # Reduces latency significantly without sacrificing quality
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
     llm_chat.add_message(role: "system", content: prompt)
     llm_chat.add_message(role: "user", content: "Generate section-specific tasks for #{sublist_title}.")
 

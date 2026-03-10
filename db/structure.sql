@@ -1140,7 +1140,10 @@ CREATE TABLE public.messages (
     processing_time numeric(8,3),
     organization_id uuid,
     template_type character varying,
-    blocked boolean DEFAULT false
+    blocked boolean DEFAULT false,
+    thinking_text text,
+    thinking_signature text,
+    thinking_tokens integer
 );
 
 
@@ -1465,7 +1468,8 @@ CREATE TABLE public.tool_calls (
     arguments jsonb DEFAULT '{}'::jsonb,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    message_id uuid NOT NULL
+    message_id uuid NOT NULL,
+    thought_signature character varying
 );
 
 
@@ -3426,6 +3430,7 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260309225939'),
 ('20251208185450'),
 ('20251208185230'),
 ('20251208182655'),
