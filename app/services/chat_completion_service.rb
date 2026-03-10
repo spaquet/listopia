@@ -47,23 +47,28 @@ class ChatCompletionService < ApplicationService
         return continuation_result if continuation_result
       end
 
-      # Use AI to detect user intent
-      intent_result = AiIntentRouterService.new(
+      # PHASE 1 OPTIMIZATION: Combined intent detection + parameter extraction
+      # Single LLM call instead of two separate ones (saves 1-2 seconds)
+      intent_param_result = CombinedIntentParameterService.new(
         user_message: @user_message,
         chat: @chat,
         user: @context.user,
         organization: @context.organization
       ).call
 
+      return failure(errors: [ "Intent detection failed" ]) unless intent_param_result.success?
+
+      combined_data = intent_param_result.data
+      intent = combined_data[:intent]
+
       # If intent is to navigate to a page, do that instead of LLM response
-      if intent_result.success? && intent_result.data[:intent] == "navigate_to_page"
-        return handle_navigation_intent(intent_result.data)
+      if intent == "navigate_to_page"
+        return handle_navigation_intent(combined_data)
       end
 
       # Check for missing parameters in resource creation/management requests
-      intent = intent_result.success? ? intent_result.data[:intent] : nil
       if intent.in?([ "create_list", "create_resource", "manage_resource" ])
-        parameter_check = check_parameters_for_intent(intent)
+        parameter_check = check_parameters_for_intent_optimized(intent, combined_data)
         return parameter_check if parameter_check
       end
 
@@ -190,6 +195,94 @@ class ChatCompletionService < ApplicationService
 
       Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with resource creation")
       return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
+    end
+
+    # For other intents with complete parameters, return nil to continue normal flow
+    nil
+  end
+
+  # PHASE 1 OPTIMIZATION: Use combined intent+parameter data directly
+  # Avoids second LLM call by using data from CombinedIntentParameterService
+  def check_parameters_for_intent_optimized(intent, combined_data)
+    # Extract data from the combined service response
+    resource_type = combined_data[:resource_type]
+    parameters = combined_data[:parameters] || {}
+    missing_params = combined_data[:missing] || []
+    needs_clarification = combined_data[:needs_clarification] || false
+
+    # SAFETY CHECK: Detect if this was misclassified as user creation
+    if intent == "create_resource"
+      if looks_like_planning_request(@user_message.content)
+        # Reclassify as create_list
+        intent = "create_list"
+        resource_type = nil
+      end
+    end
+
+    Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Intent: #{intent}, Data: #{combined_data.inspect}")
+
+    # Filter out organization_id from missing params for teams/lists since it defaults to current org
+    if resource_type.in?([ "team", "list" ])
+      missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
+    end
+
+    # For list creation, check complexity FIRST (before asking for category clarification)
+    if intent == "create_list"
+      # Check if this is a complex request requiring pre-creation planning
+      complexity_result = ListComplexityDetectorService.new(
+        user_message: @user_message,
+        context: @context
+      ).call
+
+      if complexity_result.success? && complexity_result.data[:is_complex]
+        Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
+        planning_domain = complexity_result.data[:planning_domain] || "general"
+        return handle_pre_creation_planning(parameters, planning_domain)
+      end
+
+      # Not complex - now check if we need category clarification
+      if needs_clarification
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Returning category clarification")
+        # Build data structure for category clarification
+        data = {
+          resource_type: "list",
+          parameters: parameters,
+          missing: missing_params,
+          needs_clarification: needs_clarification
+        }
+        return handle_list_category_clarification(data)
+      end
+
+      # Check if there are other missing parameters
+      if missing_params.present?
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Missing params: #{missing_params.inspect}")
+        data = {
+          resource_type: "list",
+          parameters: parameters,
+          missing: missing_params,
+          needs_clarification: false
+        }
+        return handle_missing_parameters(data, missing_params)
+      end
+
+      # All parameters ready for simple list creation
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Proceeding with simple list creation")
+      return handle_list_creation("list", parameters)
+    elsif intent == "create_resource"
+      # If there are missing parameters for resource creation, ask the user for them
+      if missing_params.present?
+        Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Missing params: #{missing_params.inspect}")
+        data = {
+          resource_type: resource_type,
+          parameters: parameters,
+          missing: missing_params,
+          needs_clarification: false
+        }
+        return handle_missing_parameters(data, missing_params)
+      end
+
+      Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Proceeding with resource creation")
+      return handle_resource_creation(resource_type || "resource", parameters)
     end
 
     # For other intents with complete parameters, return nil to continue normal flow
@@ -689,7 +782,10 @@ class ChatCompletionService < ApplicationService
     success(data: assistant_message)
   end
 
-  # Trigger list refinement and ask clarifying questions
+  # PHASE 2 OPTIMIZATION: Trigger list refinement in background
+  # Instead of blocking user response waiting for refinement (2-3 seconds),
+  # immediately return the list and generate refinement questions in background.
+  # Refinement questions are pushed to user via Turbo Stream when ready.
   def trigger_list_refinement(list:, list_title:, category:, items:, message:, nested_sublists: [])
     # Skip post-creation refinement if we already did pre-creation planning
     if @chat.metadata&.dig("skip_post_creation_refinement")
@@ -697,6 +793,29 @@ class ChatCompletionService < ApplicationService
       return success(data: { needs_refinement: false, message: message })
     end
 
+    # OPTIMIZED: Queue refinement for background processing
+    # This returns immediately without waiting for LLM
+    Rails.logger.info("Queuing list refinement for background processing - list: #{list.id}, chat: #{@chat.id}")
+
+    ListRefinementJob.perform_later(list.id, @chat.id)
+
+    # Return immediately - user sees the list without waiting for refinement questions
+    success(data: {
+      needs_refinement: false,  # Don't block with refinement message
+      message: message           # Return just the list creation message
+    })
+  rescue => e
+    Rails.logger.error("Failed to queue refinement job: #{e.message}")
+    # Graceful fallback - continue without refinement
+    success(data: {
+      needs_refinement: false,
+      message: message
+    })
+  end
+
+  # LEGACY: Old blocking refinement method - kept for backward compatibility
+  # If you want to use this, be aware it will block the user response
+  def trigger_list_refinement_blocking(list:, list_title:, category:, items:, message:, nested_sublists: [])
     refinement = ListRefinementService.new(
       list_title: list_title,
       category: category,
