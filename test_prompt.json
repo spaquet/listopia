@@ -1,21 +1,13 @@
 {
-    "model": "gpt-4o-mini",
-    "messages": [
-      {
-        "role": "system",
-        "content": "Analyze this message and return ONLY valid JSON.\n\n{\"intent\":
-  \"create_list|create_resource|navigate_to_page|manage_resource|search_data|general_question\",
-  \"is_complex\": true/false, \"complexity_confidence\": \"high|medium|low\",
-  \"complexity_reasoning\": \"brief\", \"planning_domain\":
-  \"event|travel|learning|project|business|general\", \"parameters\": {\"title\": \"...\",
-  \"category\": \"professional|personal\"}, \"missing\": [], \"confidence\": 0.9}\n\nCOMPLEX =
-  missing critical info (roadshow → missing cities/dates/budget)\nNOT COMPLEX = sufficient info
-  (grocery list, mac tasks, reading list)"
-      },
-      {
-        "role": "user",
-        "content": "I'm charged to plan our 2026 roadshows across the US starting in June to
-  promote our new product Markify a smart markdown editor for OS X"
-      }
-    ]
-  }
+  "model": "gpt-4o-mini",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a seasoned planning assistant. Generate EXACTLY 3 essential clarifying questions for this professional planning request.\n\nRequest Category: PROFESSIONAL\nDomain: business\nTitle: \"2026 roadshows for Markify\"\n\nRespond with ONLY valid JSON (no other text):\n\n{\n  \"questions\": [\n    {\"question\": \"...\", \"context\": \"...\", \"field\": \"...\"},\n    {\"question\": \"...\", \"context\": \"...\", \"field\": \"...\"},\n    {\"question\": \"...\", \"context\": \"...\", \"field\": \"...\"}\n  ]\n}\n\nFor PROFESSIONAL ROADSHOW domain, ask about:\n1. Business objectives and success metrics\n2. Locations, regions, and timeline\n3. Activities, format, and program structure\n\nMake questions specific to roadshows, not generic."
+    },
+    {
+      "role": "user",
+      "content": "Generate clarifying questions for: Plan our 2026 roadshows across the US starting in June to promote Markify, a smart markdown editor for OS X"
+    }
+  ]
+}

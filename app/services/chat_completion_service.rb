@@ -365,51 +365,89 @@ class ChatCompletionService < ApplicationService
     title = parameters[:title] || parameters["title"] || "your list"
     category = parameters[:category] || parameters["category"] || "personal"
     items = parameters[:items] || parameters["items"] || []
-    nested_lists = parameters[:nested_lists] || parameters["nested_lists"] || []
 
-    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}, items: #{items.inspect}")
+    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}")
 
-    # Store pending pre-creation planning request immediately (non-blocking)
+    # Generate clarifying questions SYNCHRONOUSLY using fast model (gpt-4o-mini)
+    # This is fast (1-2 seconds) and returns immediately, no background jobs needed
+    question_result = QuestionGenerationService.new(
+      list_title: title,
+      category: category,
+      planning_domain: planning_domain
+    ).call
+
+    unless question_result.success?
+      Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Failed to generate questions, proceeding with creation")
+      # Graceful degradation: proceed with immediate list creation
+      return handle_list_creation("list", parameters)
+    end
+
+    questions = question_result.data[:questions]
+
+    # Store pending pre-creation planning state with generated questions
     @chat.metadata ||= {}
     @chat.metadata["pending_pre_creation_planning"] = {
       extracted_params: parameters,
-      questions_asked: [],  # Will be filled in by background job
-      refinement_context: {},
+      questions_asked: questions.map { |q| q["question"] },
+      refinement_context: {
+        list_title: title,
+        category: category,
+        initial_items: items,
+        refinement_stage: "awaiting_answers",
+        created_at: Time.current.iso8601
+      },
       intent: "create_list",
-      status: "generating_questions",
-      started_at: Time.current.iso8601
+      status: "ready"
     }
     @chat.save
 
-    # Show immediate response: "I'm asking clarifying questions..."
-    message_content = "I'm analyzing your request to gather key information. Let me ask a few clarifying questions to structure this list better."
-
+    # Create assistant message with the pre-creation planning form (with questions embedded)
     assistant_message = Message.create_assistant(
       chat: @chat,
-      content: message_content
+      content: "Let me ask a few clarifying questions to structure this list better:"
     )
 
     @chat.update(last_message_at: Time.current)
 
-    # BACKGROUND: Enqueue question generation in a background job
-    # Questions will be pushed to the chat via Turbo Stream when ready
-    PreCreationPlanningJob.set(wait: 0.1.seconds).perform_later(
-      @chat.id,
-      title,
-      category,
-      items,
-      nested_lists,
-      planning_domain
-    )
+    # Broadcast the pre-creation planning form via Turbo Stream
+    broadcast_planning_form(@chat, questions, title)
 
     elapsed_ms = ((Time.current - start_time) * 1000).round(2)
-    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Response prepared in #{elapsed_ms}ms (background job enqueued)")
+    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Pre-creation form returned in #{elapsed_ms}ms with #{questions.length} questions")
 
     return success(data: assistant_message)
   rescue => e
-    Rails.logger.error("Pre-creation planning failed: #{e.message}")
+    Rails.logger.error("Pre-creation planning failed: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
     # Graceful degradation: proceed with immediate creation
     handle_list_creation("list", parameters)
+  end
+
+  def broadcast_planning_form(chat, questions, list_title)
+    # Broadcast the pre-creation planning form immediately via Turbo Stream
+    # Render the partial first, then broadcast the HTML (matching ProcessChatMessageJob pattern)
+    begin
+      html = ApplicationController.render(
+        partial: "chats/pre_creation_planning_message",
+        locals: {
+          questions: questions,
+          chat: chat,
+          list_title: list_title
+        }
+      )
+
+      Rails.logger.info("ChatCompletionService - Rendered form partial (#{html.length} chars)")
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{chat.id}",
+        target: "chat-messages-#{chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - Pre-creation planning form broadcasted to chat_#{chat.id}")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast pre-creation form: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
+      # Non-blocking - form generation succeeded, broadcast is just a nice-to-have
+    end
   end
 
   # Create a message asking for missing parameters

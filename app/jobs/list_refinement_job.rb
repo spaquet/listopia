@@ -16,7 +16,6 @@
 
 class ListRefinementJob < ApplicationJob
   queue_as :default
-  sidekiq_options retry: 3, dead: true
 
   def perform(list_id, chat_id)
     list = List.find(list_id)
@@ -63,7 +62,7 @@ class ListRefinementJob < ApplicationJob
     end
   rescue => e
     Rails.logger.error("ListRefinementJob failed: #{e.class} - #{e.message}\n#{e.backtrace.join("\n")}")
-    # Let Sidekiq handle retries (configured via sidekiq_options)
+    # Let Solid Queue handle retries
     raise
   end
 

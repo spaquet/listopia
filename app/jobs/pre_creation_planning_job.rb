@@ -16,12 +16,11 @@
 
 class PreCreationPlanningJob < ApplicationJob
   queue_as :default
-  sidekiq_options retry: 2, dead: false
 
-  def perform(chat_id, list_title, category, items, nested_lists, planning_domain)
+  def perform(chat_id, list_title, category, items, nested_lists, planning_domain, location = :dashboard)
     chat = Chat.find(chat_id)
 
-    Rails.logger.info("PreCreationPlanningJob started for chat: #{chat.id}, list: #{list_title}")
+    Rails.logger.info("PreCreationPlanningJob started for chat: #{chat.id}, list: #{list_title}, location: #{location}")
 
     # Generate clarifying questions
     refinement = ListRefinementService.new(
@@ -34,7 +33,7 @@ class PreCreationPlanningJob < ApplicationJob
         chat: chat,
         user: chat.user,
         organization: chat.organization,
-        location: :chat
+        location: location
       )
     )
 

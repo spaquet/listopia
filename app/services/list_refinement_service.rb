@@ -57,13 +57,13 @@ class ListRefinementService < ApplicationService
 
   private
 
-  private
-
   # Generate clarifying questions based on list type and items
   def generate_refinement_questions
     # Use gpt-5 for reliable question generation
     # This is a critical user-facing feature that needs to work correctly
     # gpt-5-nano with extended thinking was causing parsing issues, so we use the reliable model
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - STARTING")
+
     llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5")
 
     system_prompt = build_refinement_prompt
@@ -76,7 +76,9 @@ class ListRefinementService < ApplicationService
     llm_chat.add_message(role: "system", content: system_prompt)
     llm_chat.add_message(role: "user", content: "Generate exactly 3 clarifying questions for this list. Match the category (professional vs personal) and domain. Use the provided examples as templates. Be specific and avoid generic questions.")
 
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - CALLING LLM")
     response = llm_chat.complete
+    Rails.logger.warn("ListRefinementService#generate_refinement_questions - LLM RETURNED, extracting content")
     response_text = extract_response_content(response)
 
     # DEBUG: Log the LLM response
