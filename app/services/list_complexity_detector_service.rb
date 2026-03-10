@@ -188,6 +188,14 @@ class ListComplexityDetectorService < ApplicationService
     reasoning = data["reasoning"] || ""
     planning_domain = data["planning_domain"] || "general"
 
+    # OPTIMIZATION: Only ask clarifying questions if confidence is HIGH
+    # Medium/Low confidence suggests the request is simple (grocery list, todo, etc.)
+    # This prevents unnecessary delays for straightforward list creation
+    if is_complex && confidence != "high"
+      Rails.logger.info("ListComplexityDetectorService: Complexity detected but confidence is #{confidence.inspect}, treating as simple")
+      is_complex = false
+    end
+
     success(data: {
       is_complex: is_complex,
       complexity_indicators: indicators,

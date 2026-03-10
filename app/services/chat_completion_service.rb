@@ -356,63 +356,49 @@ class ChatCompletionService < ApplicationService
 
   # Handle pre-creation planning for complex list requests
   # Ask clarifying questions BEFORE creating the list
+  # OPTIMIZATION: Move question generation to background job for fast response
   def handle_pre_creation_planning(parameters, planning_domain = "general")
     title = parameters[:title] || parameters["title"] || "your list"
     category = parameters[:category] || parameters["category"] || "personal"
     items = parameters[:items] || parameters["items"] || []
     nested_lists = parameters[:nested_lists] || parameters["nested_lists"] || []
 
-    # DEBUG: Log parameters being extracted for refinement
     Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}, items: #{items.inspect}")
 
-    # REUSE ListRefinementService to generate questions
-    refinement = ListRefinementService.new(
-      list_title: title,
-      category: category,
-      items: items,
-      nested_sublists: nested_lists,
-      planning_domain: planning_domain,
-      context: @context
+    # Store pending pre-creation planning request immediately (non-blocking)
+    @chat.metadata ||= {}
+    @chat.metadata["pending_pre_creation_planning"] = {
+      extracted_params: parameters,
+      questions_asked: [],  # Will be filled in by background job
+      refinement_context: {},
+      intent: "create_list",
+      status: "generating_questions",
+      started_at: Time.current.iso8601
+    }
+    @chat.save
+
+    # Show immediate response: "I'm asking clarifying questions..."
+    message_content = "I'm analyzing your request to gather key information. Let me ask a few clarifying questions to structure this list better."
+
+    assistant_message = Message.create_assistant(
+      chat: @chat,
+      content: message_content
     )
 
-    result = refinement.call
+    @chat.update(last_message_at: Time.current)
 
-    if result.success? && result.data[:needs_refinement]
-      questions = result.data[:questions] || []
+    # BACKGROUND: Enqueue question generation in a background job
+    # Questions will be pushed to the chat via Turbo Stream when ready
+    PreCreationPlanningJob.set(wait: 0.1.seconds).perform_later(
+      @chat.id,
+      title,
+      category,
+      items,
+      nested_lists,
+      planning_domain
+    )
 
-      if questions.present?
-        # Store pre-creation planning state in chat metadata
-        @chat.metadata ||= {}
-        @chat.metadata["pending_pre_creation_planning"] = {
-          extracted_params: parameters,
-          questions_asked: questions.map { |q| q["question"] },
-          refinement_context: result.data[:refinement_context],
-          intent: "create_list"
-        }
-        @chat.save
-
-        # Create templated message with form for answering questions
-        template_data = {
-          questions: questions,
-          chat_id: @chat.id,
-          list_title: title
-        }
-
-        assistant_message = Message.create_templated(
-          chat: @chat,
-          template_type: "pre_creation_planning",
-          template_data: template_data
-        )
-
-        @chat.update(last_message_at: Time.current)
-
-        return success(data: assistant_message)
-      end
-    end
-
-    # Fallback: if refinement fails or no questions, proceed with creation
-    Rails.logger.warn("Pre-creation planning failed to generate questions, falling back to immediate creation")
-    handle_list_creation("list", parameters)
+    return success(data: assistant_message)
   rescue => e
     Rails.logger.error("Pre-creation planning failed: #{e.message}")
     # Graceful degradation: proceed with immediate creation
