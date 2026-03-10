@@ -85,7 +85,7 @@ class List < ApplicationRecord
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
   belongs_to :organization, optional: true
   belongs_to :team, optional: true
-  has_many :list_items, dependent: :destroy, counter_cache: true
+  has_many :list_items, dependent: :destroy
 
   # Comments
   has_many :comments, as: :commentable, dependent: :destroy
