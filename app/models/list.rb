@@ -85,7 +85,7 @@ class List < ApplicationRecord
   belongs_to :owner, class_name: "User", foreign_key: "user_id"
   belongs_to :organization, optional: true
   belongs_to :team, optional: true
-  has_many :list_items, dependent: :destroy
+  has_many :list_items, dependent: :destroy, counter_cache: true
 
   # Comments
   has_many :comments, as: :commentable, dependent: :destroy
@@ -95,7 +95,7 @@ class List < ApplicationRecord
   has_many :sub_lists, class_name: "List", foreign_key: "parent_list_id", dependent: :destroy
 
   has_many :board_columns, dependent: :destroy
-  has_many :collaborators, as: :collaboratable, dependent: :destroy
+  has_many :collaborators, as: :collaboratable, dependent: :destroy, counter_cache: :list_collaborations_count
   has_many :collaborator_users, through: :collaborators, source: :user
   has_many :invitations, as: :invitable, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
