@@ -18,7 +18,7 @@
 require 'simplecov' if ENV['COVERAGE']
 SimpleCov.start('rails') if ENV['COVERAGE']
 
-# Load pundit-matchers early so it can configure RSpec properly
+# Load pundit-matchers so it can auto-configure RSpec
 begin
   require 'pundit/matchers'
 rescue LoadError

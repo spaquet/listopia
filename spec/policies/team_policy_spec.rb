@@ -35,19 +35,25 @@ RSpec.describe TeamPolicy, type: :policy do
 
   describe '#show?' do
     context 'when user is a team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user)) }
-
-      it { is_expected.to permit(:show) }
+      it 'allows team members to view' do
+        expect(policy.show?).to be_truthy
+      end
     end
 
     context 'when user is not a team member' do
-      it { is_expected.not_to permit(:show) }
+      let(:policy) { described_class.new(other_user, team) }
+
+      it 'denies non-team members' do
+        expect(policy.show?).to be_falsy
+      end
     end
   end
 
   describe '#create?' do
     context 'when user is admin in organization' do
-      it { is_expected.to permit(:create) }
+      it 'allows admin to create' do
+        expect(policy.create?).to be_truthy
+      end
     end
 
     context 'when user is member in organization' do
@@ -56,106 +62,162 @@ RSpec.describe TeamPolicy, type: :policy do
 
       before { create(:organization_membership, organization: organization, user: member_user, role: :member) }
 
-      it { is_expected.not_to permit(:create) }
+      it 'denies member from creating' do
+        expect(policy.create?).to be_falsy
+      end
     end
 
     context 'when user is not in organization' do
       let(:outside_user) { create(:user) }
       let(:policy) { described_class.new(outside_user, team) }
 
-      it { is_expected.not_to permit(:create) }
+      it 'denies outside user from creating' do
+        expect(policy.create?).to be_falsy
+      end
     end
   end
 
   describe '#update?' do
     context 'when user is team admin' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :admin) }
-
-      it { is_expected.to permit(:update) }
+      it 'allows admin to update' do
+        expect(policy.update?).to be_truthy
+      end
     end
 
     context 'when user is team lead' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :lead) }
+      let(:lead_user) { create(:user) }
+      let(:lead_membership) { create(:organization_membership, organization: organization, user: lead_user, role: :member) }
+      let(:policy) { described_class.new(lead_user, team) }
 
-      it { is_expected.to permit(:update) }
+      before { create(:team_membership, team: team, user: lead_user, organization_membership: lead_membership, role: :lead) }
+
+      it 'allows lead to update' do
+        expect(policy.update?).to be_truthy
+      end
     end
 
     context 'when user is team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :member) }
+      let(:member_user) { create(:user) }
+      let(:member_org_membership) { create(:organization_membership, organization: organization, user: member_user, role: :member) }
+      let(:policy) { described_class.new(member_user, team) }
 
-      it { is_expected.not_to permit(:update) }
+      before { create(:team_membership, team: team, user: member_user, organization_membership: member_org_membership, role: :member) }
+
+      it 'denies member from updating' do
+        expect(policy.update?).to be_falsy
+      end
     end
 
     context 'when user is not a team member' do
-      it { is_expected.not_to permit(:update) }
+      let(:policy) { described_class.new(other_user, team) }
+
+      it 'denies non-team member' do
+        expect(policy.update?).to be_falsy
+      end
     end
   end
 
   describe '#destroy?' do
     context 'when user is team admin' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :admin) }
-
-      it { is_expected.to permit(:destroy) }
+      it 'allows admin to destroy' do
+        expect(policy.destroy?).to be_truthy
+      end
     end
 
     context 'when user is team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :member) }
+      let(:member_user) { create(:user) }
+      let(:member_org_membership) { create(:organization_membership, organization: organization, user: member_user, role: :member) }
+      let(:policy) { described_class.new(member_user, team) }
 
-      it { is_expected.not_to permit(:destroy) }
+      before { create(:team_membership, team: team, user: member_user, organization_membership: member_org_membership, role: :member) }
+
+      it 'denies member from destroying' do
+        expect(policy.destroy?).to be_falsy
+      end
     end
   end
 
   describe '#manage_members?' do
     context 'when user is team admin' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :admin) }
-
-      it { is_expected.to permit(:manage_members) }
+      it 'allows admin to manage members' do
+        expect(policy.manage_members?).to be_truthy
+      end
     end
 
     context 'when user is team lead' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :lead) }
+      let(:lead_user) { create(:user) }
+      let(:lead_membership) { create(:organization_membership, organization: organization, user: lead_user, role: :member) }
+      let(:policy) { described_class.new(lead_user, team) }
 
-      it { is_expected.to permit(:manage_members) }
+      before { create(:team_membership, team: team, user: lead_user, organization_membership: lead_membership, role: :lead) }
+
+      it 'allows lead to manage members' do
+        expect(policy.manage_members?).to be_truthy
+      end
     end
 
     context 'when user is team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :member) }
+      let(:member_user) { create(:user) }
+      let(:member_org_membership) { create(:organization_membership, organization: organization, user: member_user, role: :member) }
+      let(:policy) { described_class.new(member_user, team) }
 
-      it { is_expected.not_to permit(:manage_members) }
+      before { create(:team_membership, team: team, user: member_user, organization_membership: member_org_membership, role: :member) }
+
+      it 'denies member from managing members' do
+        expect(policy.manage_members?).to be_falsy
+      end
     end
   end
 
   describe '#add_member?' do
     context 'when user is team admin' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :admin) }
-
-      it { is_expected.to permit(:add_member) }
+      it 'allows admin to add member' do
+        expect(policy.add_member?).to be_truthy
+      end
     end
 
     context 'when user is team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :member) }
+      let(:member_user) { create(:user) }
+      let(:member_org_membership) { create(:organization_membership, organization: organization, user: member_user, role: :member) }
+      let(:policy) { described_class.new(member_user, team) }
 
-      it { is_expected.not_to permit(:add_member) }
+      before { create(:team_membership, team: team, user: member_user, organization_membership: member_org_membership, role: :member) }
+
+      it 'denies member from adding member' do
+        expect(policy.add_member?).to be_falsy
+      end
     end
   end
 
   describe '#update_member_role?' do
     context 'when user is team admin' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :admin) }
-
-      it { is_expected.to permit(:update_member_role) }
+      it 'allows admin to update member role' do
+        expect(policy.update_member_role?).to be_truthy
+      end
     end
 
     context 'when user is team lead' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :lead) }
+      let(:lead_user) { create(:user) }
+      let(:lead_membership) { create(:organization_membership, organization: organization, user: lead_user, role: :member) }
+      let(:policy) { described_class.new(lead_user, team) }
 
-      it { is_expected.to permit(:update_member_role) }
+      before { create(:team_membership, team: team, user: lead_user, organization_membership: lead_membership, role: :lead) }
+
+      it 'allows lead to update member role' do
+        expect(policy.update_member_role?).to be_truthy
+      end
     end
 
     context 'when user is team member' do
-      before { create(:team_membership, team: team, user: user, organization_membership: organization.membership_for(user), role: :member) }
+      let(:member_user) { create(:user) }
+      let(:member_org_membership) { create(:organization_membership, organization: organization, user: member_user, role: :member) }
+      let(:policy) { described_class.new(member_user, team) }
 
-      it { is_expected.not_to permit(:update_member_role) }
+      before { create(:team_membership, team: team, user: member_user, organization_membership: member_org_membership, role: :member) }
+
+      it 'denies member from updating member role' do
+        expect(policy.update_member_role?).to be_falsy
+      end
     end
   end
 

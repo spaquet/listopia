@@ -9,7 +9,7 @@ RSpec.describe OrganizationPolicy, type: :policy do
 
   describe '#index?' do
     it 'allows authenticated users to see their organizations' do
-      expect(policy).to permit(:index)
+      expect(policy.index?).to be_truthy
     end
   end
 
@@ -17,17 +17,21 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is a member' do
       before { create(:organization_membership, organization: organization, user: user) }
 
-      it { is_expected.to permit(:show) }
+      it 'allows member to view' do
+        expect(policy.show?).to be_truthy
+      end
     end
 
     context 'when user is not a member' do
-      it { is_expected.not_to permit(:show) }
+      it 'denies non-member from viewing' do
+        expect(policy.show?).to be_falsy
+      end
     end
   end
 
   describe '#create?' do
     it 'allows authenticated users to create organizations' do
-      expect(policy).to permit(:create)
+      expect(policy.create?).to be_truthy
     end
   end
 
@@ -35,23 +39,31 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:update) }
+      it 'allows admin to update' do
+        expect(policy.update?).to be_truthy
+      end
     end
 
     context 'when user is owner' do
       before { create(:organization_membership, organization: organization, user: user, role: :owner) }
 
-      it { is_expected.to permit(:update) }
+      it 'allows owner to update' do
+        expect(policy.update?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:update) }
+      it 'denies member from updating' do
+        expect(policy.update?).to be_falsy
+      end
     end
 
     context 'when user is not a member' do
-      it { is_expected.not_to permit(:update) }
+      it 'denies non-member from updating' do
+        expect(policy.update?).to be_falsy
+      end
     end
   end
 
@@ -59,19 +71,25 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is owner' do
       before { create(:organization_membership, organization: organization, user: user, role: :owner) }
 
-      it { is_expected.to permit(:destroy) }
+      it 'allows owner to destroy' do
+        expect(policy.destroy?).to be_truthy
+      end
     end
 
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.not_to permit(:destroy) }
+      it 'denies admin from destroying' do
+        expect(policy.destroy?).to be_falsy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:destroy) }
+      it 'denies member from destroying' do
+        expect(policy.destroy?).to be_falsy
+      end
     end
   end
 
@@ -79,19 +97,25 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:manage_members) }
+      it 'allows admin to manage members' do
+        expect(policy.manage_members?).to be_truthy
+      end
     end
 
     context 'when user is owner' do
       before { create(:organization_membership, organization: organization, user: user, role: :owner) }
 
-      it { is_expected.to permit(:manage_members) }
+      it 'allows owner to manage members' do
+        expect(policy.manage_members?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:manage_members) }
+      it 'denies member from managing members' do
+        expect(policy.manage_members?).to be_falsy
+      end
     end
   end
 
@@ -99,13 +123,17 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:invite_member) }
+      it 'allows admin to invite member' do
+        expect(policy.invite_member?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:invite_member) }
+      it 'denies member from inviting' do
+        expect(policy.invite_member?).to be_falsy
+      end
     end
   end
 
@@ -113,13 +141,17 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:remove_member) }
+      it 'allows admin to remove member' do
+        expect(policy.remove_member?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:remove_member) }
+      it 'denies member from removing' do
+        expect(policy.remove_member?).to be_falsy
+      end
     end
   end
 
@@ -127,19 +159,25 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is owner' do
       before { create(:organization_membership, organization: organization, user: user, role: :owner) }
 
-      it { is_expected.to permit(:update_member_role) }
+      it 'allows owner to update member role' do
+        expect(policy.update_member_role?).to be_truthy
+      end
     end
 
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:update_member_role) }
+      it 'allows admin to update member role' do
+        expect(policy.update_member_role?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:update_member_role) }
+      it 'denies member from updating role' do
+        expect(policy.update_member_role?).to be_falsy
+      end
     end
   end
 
@@ -147,13 +185,17 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:manage_teams) }
+      it 'allows admin to manage teams' do
+        expect(policy.manage_teams?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:manage_teams) }
+      it 'denies member from managing teams' do
+        expect(policy.manage_teams?).to be_falsy
+      end
     end
   end
 
@@ -161,13 +203,17 @@ RSpec.describe OrganizationPolicy, type: :policy do
     context 'when user is admin' do
       before { create(:organization_membership, organization: organization, user: user, role: :admin) }
 
-      it { is_expected.to permit(:view_audit_logs) }
+      it 'allows admin to view audit logs' do
+        expect(policy.view_audit_logs?).to be_truthy
+      end
     end
 
     context 'when user is member' do
       before { create(:organization_membership, organization: organization, user: user, role: :member) }
 
-      it { is_expected.not_to permit(:view_audit_logs) }
+      it 'denies member from viewing audit logs' do
+        expect(policy.view_audit_logs?).to be_falsy
+      end
     end
   end
 

@@ -51,7 +51,7 @@ class ListPolicy < ApplicationPolicy
 
     # Write collaborators with can_invite_collaborators role can manage collaborators
     collaborator = record.collaborators.find_by(user: user)
-    return true if collaborator&.permission_write? && collaborator&.has_role?(:can_invite_collaborators)
+    return true if collaborator&.permission_write? && collaborator&.granted_roles&.include?(:can_invite_collaborators)
 
     false
   end
