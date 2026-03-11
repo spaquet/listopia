@@ -7,7 +7,6 @@ RSpec.describe TeamPolicy, type: :policy do
   let(:organization) { create(:organization, creator: user) }
   let(:team) { create(:team, organization: organization, creator: user) }
   let(:policy) { described_class.new(user, team) }
-  subject { policy }
 
   before do
     # Add user to organization (organization factory creates membership for creator)
@@ -17,16 +16,20 @@ RSpec.describe TeamPolicy, type: :policy do
 
   describe '#index?' do
     context 'when user is in the organization' do
-      it { is_expected.to permit(:index) }
+      it 'allows user in organization' do
+        expect(policy.index?).to be_truthy
+      end
     end
 
     context 'when user is not in the organization' do
       let(:other_user_not_in_org) { create(:user) }
       let(:other_org) { create(:organization) }
       let(:other_team) { create(:team, organization: other_org) }
-      subject { described_class.new(other_user_not_in_org, other_team) }
+      let(:policy) { described_class.new(other_user_not_in_org, other_team) }
 
-      it { is_expected.not_to permit(:index) }
+      it 'denies user not in organization' do
+        expect(policy.index?).to be_falsy
+      end
     end
   end
 
