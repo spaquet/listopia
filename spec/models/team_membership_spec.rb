@@ -56,9 +56,8 @@ RSpec.describe TeamMembership, type: :model do
       expect(duplicate).not_to be_valid
     end
 
-    it 'validates role inclusion' do
-      membership = build(:team_membership, role: 'invalid_role')
-      expect(membership).not_to be_valid
+    it 'raises error for invalid role' do
+      expect { build(:team_membership, role: 'invalid_role') }.to raise_error(ArgumentError)
     end
 
     it 'validates user must be org member' do
@@ -70,7 +69,7 @@ RSpec.describe TeamMembership, type: :model do
   end
 
   describe 'enums' do
-    it { is_expected.to define_enum_for(:role).with_values(member: 0, lead: 1, admin: 2) }
+    it { is_expected.to define_enum_for(:role).with_values(member: 0, lead: 1, admin: 2).with_prefix }
   end
 
   describe 'callbacks' do

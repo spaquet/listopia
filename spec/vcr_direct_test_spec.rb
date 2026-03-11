@@ -2,7 +2,7 @@
 require 'rails_helper'
 require 'net/http'
 
-RSpec.describe "Direct HTTP Test", vcr: { cassette_name: 'direct_http_test' } do
+RSpec.describe "Direct HTTP Test", :skip_vcr, vcr: { cassette_name: 'direct_http_test' } do
   it "records a direct HTTP request" do
     uri = URI('https://httpbin.org/get')
     http = Net::HTTP.new(uri.host, uri.port)

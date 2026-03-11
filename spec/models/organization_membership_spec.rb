@@ -52,20 +52,18 @@ RSpec.describe OrganizationMembership, type: :model do
       expect(duplicate).not_to be_valid
     end
 
-    it 'validates role inclusion' do
-      membership = build(:organization_membership, role: 'invalid_role')
-      expect(membership).not_to be_valid
+    it 'raises error for invalid role' do
+      expect { build(:organization_membership, role: 'invalid_role') }.to raise_error(ArgumentError)
     end
 
-    it 'validates status inclusion' do
-      membership = build(:organization_membership, status: 'invalid_status')
-      expect(membership).not_to be_valid
+    it 'raises error for invalid status' do
+      expect { build(:organization_membership, status: 'invalid_status') }.to raise_error(ArgumentError)
     end
   end
 
   describe 'enums' do
-    it { is_expected.to define_enum_for(:role).with_values(member: 0, admin: 1, owner: 2) }
-    it { is_expected.to define_enum_for(:status).with_values(pending: 0, active: 1, suspended: 2, revoked: 3) }
+    it { is_expected.to define_enum_for(:role).with_values(member: 0, admin: 1, owner: 2).with_prefix }
+    it { is_expected.to define_enum_for(:status).with_values(pending: 0, active: 1, suspended: 2, revoked: 3).with_prefix }
   end
 
   describe 'callbacks' do

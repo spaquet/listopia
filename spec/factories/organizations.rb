@@ -63,8 +63,18 @@ FactoryBot.define do
 
     trait :with_teams do
       after(:create) do |organization|
+        # Ensure the creator is an org member before creating teams
+        unless organization.membership_for(organization.creator)
+          organization.organization_memberships.create!(
+            user: organization.creator,
+            role: :owner,
+            status: :active,
+            joined_at: Time.current
+          )
+        end
+
         2.times do
-          create(:team, organization: organization, created_by: organization.creator)
+          create(:team, organization: organization, creator: organization.creator)
         end
       end
     end

@@ -137,8 +137,12 @@ group :test do
   gem "vcr", "~> 6.2"
   gem "webmock", "~> 3.18"
 
+  # Code coverage reporting
+  gem "simplecov", "~> 0.21.2", require: false
+
   # Additional RSpec gems
   gem "shoulda-matchers", "~> 7.0" # For better model validations testing
+  gem "pundit-matchers" # For Pundit authorization matchers
   gem "database_cleaner-active_record" # For cleaning test database
   gem "rails-controller-testing" # For testing controllers properly
   gem "rspec-retry" # For flaky test retries

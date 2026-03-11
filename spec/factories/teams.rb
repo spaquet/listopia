@@ -28,7 +28,19 @@ FactoryBot.define do
     organization { association :organization }
     sequence(:name) { |n| "Team #{n}" }
     sequence(:slug) { |n| "team-#{n}" }
-    created_by { association :user }
+    creator { association :user }
+
+    before(:create) do |team|
+      # Ensure the creator has an organization membership before after_create runs
+      unless team.organization.membership_for(team.creator)
+        team.organization.organization_memberships.create!(
+          user: team.creator,
+          role: :admin,
+          status: :active,
+          joined_at: Time.current
+        )
+      end
+    end
 
     trait :with_members do
       after(:create) do |team|

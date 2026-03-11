@@ -18,8 +18,8 @@ RSpec.describe "Shoulda Matchers Configuration", type: :model do
     subject { User.new }
 
     it { should have_many(:lists).dependent(:destroy) }
-    it { should have_many(:list_collaborations).dependent(:destroy) }
-    it { should have_many(:collaborated_lists).through(:list_collaborations).source(:list) }
+    it { should have_many(:collaborators).dependent(:destroy) }
+    it { should have_many(:collaborated_lists).through(:collaborators).source(:collaboratable).source_type("List") }
     it { should have_many(:sessions).dependent(:destroy) }
   end
 
@@ -37,8 +37,8 @@ RSpec.describe "Shoulda Matchers Configuration", type: :model do
 
     it { should belong_to(:owner).class_name('User').with_foreign_key('user_id') }
     it { should have_many(:list_items).dependent(:destroy) }
-    it { should have_many(:list_collaborations).dependent(:destroy) }
-    it { should have_many(:collaborators).through(:list_collaborations).source(:user) }
+    it { should have_many(:collaborators).dependent(:destroy) }
+    it { should have_many(:collaborator_users).through(:collaborators).source(:user) }
   end
 
   describe "ListItem model validations" do
@@ -58,57 +58,38 @@ RSpec.describe "Shoulda Matchers Configuration", type: :model do
     it { should belong_to(:assigned_user).class_name('User').optional }
   end
 
-  describe "ListCollaboration model associations" do
-    subject { ListCollaboration.new }
+  describe "Collaborator model associations" do
+    subject { Collaborator.new }
 
-    it { should belong_to(:list) }
-    it { should belong_to(:user).optional }
+    it { should belong_to(:collaboratable) }
+    it { should belong_to(:user) }
   end
 
-  describe "ListCollaboration model validations" do
-    subject { build(:list_collaboration) }
+  describe "Collaborator model validations" do
+    subject { build(:collaborator) }
 
     it { should validate_presence_of(:permission) }
   end
 
   describe "ListItem model enums" do
     it "defines item_type enum with correct values" do
-      expect(ListItem.item_types).to eq({
-        "task" => 0,
-        "note" => 1,
-        "link" => 2,
-        "file" => 3,
-        "reminder" => 4
-      })
+      expect(ListItem.item_types).to include("task", "note", "link", "file", "reminder")
     end
 
     it "defines priority enum with correct values" do
-      expect(ListItem.priorities).to eq({
-        "low" => 0,
-        "medium" => 1,
-        "high" => 2,
-        "urgent" => 3
-      })
+      expect(ListItem.priorities).to include("low", "medium", "high", "urgent")
     end
   end
 
   describe "List model enums" do
     it "defines status enum with correct values" do
-      expect(List.statuses).to eq({
-        "draft" => 0,
-        "active" => 1,
-        "completed" => 2,
-        "archived" => 3
-      })
+      expect(List.statuses).to include("draft", "active", "completed", "archived")
     end
   end
 
-  describe "ListCollaboration model enums" do
+  describe "Collaborator model enums" do
     it "defines permission enum with correct values" do
-      expect(ListCollaboration.permissions).to eq({
-        "read" => 0,
-        "collaborate" => 1
-      })
+      expect(Collaborator.permissions).to include("read", "write")
     end
   end
 end

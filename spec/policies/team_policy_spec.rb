@@ -5,12 +5,11 @@ RSpec.describe TeamPolicy, type: :policy do
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
   let(:organization) { create(:organization, creator: user) }
-  let(:team) { create(:team, organization: organization, created_by: user) }
+  let(:team) { create(:team, organization: organization, creator: user) }
   let(:policy) { described_class.new(user, team) }
 
   before do
-    # Add user to organization
-    create(:organization_membership, organization: organization, user: user, role: :admin)
+    # Add user to organization (organization factory creates membership for creator)
     # Add other_user to organization
     create(:organization_membership, organization: organization, user: other_user, role: :member)
   end
@@ -21,9 +20,10 @@ RSpec.describe TeamPolicy, type: :policy do
     end
 
     context 'when user is not in the organization' do
+      let(:other_user_not_in_org) { create(:user) }
       let(:other_org) { create(:organization) }
       let(:other_team) { create(:team, organization: other_org) }
-      let(:policy) { described_class.new(user, other_team) }
+      let(:policy) { described_class.new(other_user_not_in_org, other_team) }
 
       it { is_expected.not_to permit(:index) }
     end

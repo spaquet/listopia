@@ -61,8 +61,8 @@ RSpec.describe Organization, type: :model do
   end
 
   describe 'enums' do
-    it { is_expected.to define_enum_for(:size).with_values(small: 0, medium: 1, large: 2, enterprise: 3) }
-    it { is_expected.to define_enum_for(:status).with_values(active: 0, suspended: 1, deleted: 2) }
+    it { is_expected.to define_enum_for(:size).with_values(small: 0, medium: 1, large: 2, enterprise: 3).with_prefix }
+    it { is_expected.to define_enum_for(:status).with_values(active: 0, suspended: 1, deleted: 2).with_prefix }
   end
 
   describe '#generate_slug' do
