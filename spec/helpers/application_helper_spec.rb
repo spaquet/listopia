@@ -1,7 +1,9 @@
 # spec/helpers/application_helper_spec.rb
 require 'rails_helper'
+require 'active_support/testing/time_helpers'
 
 RSpec.describe ApplicationHelper, type: :helper do
+  include ActiveSupport::Testing::TimeHelpers
   describe "#time_ago_in_words_or_date" do
     it "returns empty string when time is nil" do
       expect(helper.time_ago_in_words_or_date(nil)).to eq("")
@@ -242,10 +244,14 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "returns orange text for due today" do
-      today = Time.current.end_of_day - 1.hour
-      result = helper.format_due_date(today)
-      expect(result).to include("Due today")
-      expect(result).to include("text-orange-600")
+      # Travel to a fixed time: March 11, 2026, 2 PM
+      travel_to Time.zone.local(2026, 3, 11, 14, 0, 0) do
+        # A time that is later today: March 11, 2026, 8 PM
+        later_today = Time.zone.local(2026, 3, 11, 20, 0, 0)
+        result = helper.format_due_date(later_today)
+        expect(result).to include("Due today")
+        expect(result).to include("text-orange-600")
+      end
     end
 
     it "returns yellow text for 2 days away" do
