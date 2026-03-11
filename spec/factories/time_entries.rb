@@ -15,5 +15,9 @@
 #
 FactoryBot.define do
   factory :time_entry do
+    association :list_item
+    association :user
+    started_at { Time.current }
+    duration { 1.5 }
   end
 end

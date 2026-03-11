@@ -20,5 +20,8 @@
 #
 FactoryBot.define do
   factory :board_column do
+    sequence(:name) { |n| "Column #{n}" }
+    position { 0 }
+    association :list
   end
 end

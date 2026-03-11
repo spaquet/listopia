@@ -83,7 +83,7 @@ class Organization < ApplicationRecord
 
   # Check if user is a member of this organization
   def member?(user)
-    users.exists?(user)
+    users.exists?(user.is_a?(User) ? user.id : user)
   end
 
   # Get user's role in this organization

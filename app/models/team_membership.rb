@@ -74,6 +74,7 @@ class TeamMembership < ApplicationRecord
 
   def set_organization_membership
     return if organization_membership.present?
+    return unless team&.organization
 
     self.organization_membership = team.organization.membership_for(user)
   end

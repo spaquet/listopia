@@ -9,10 +9,12 @@ RSpec.describe "Comment Workflows", type: :system, js: true do
     # Sign in via the login form
     visit new_session_path
 
-    # The form uses form_with with no model, so fields are :email and :password
-    fill_in 'email', with: owner.email
-    fill_in 'password', with: owner.password
-    click_button "Sign In"
+    # Use more specific selectors to avoid ambiguous matches
+    within("form[action='#{session_path}']") do
+      fill_in 'email', with: owner.email
+      fill_in 'password', with: owner.password
+      click_button "Sign In"
+    end
 
     # Navigate to the list
     visit list_path(list)

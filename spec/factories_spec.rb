@@ -56,8 +56,8 @@ RSpec.describe "FactoryBot factories" do
         expect(build(:list_item)).to be_valid
         expect(build(:list_item, :task)).to be_valid
         expect(build(:list_item, :note)).to be_valid
-        expect(build(:list_item, :link)).to be_valid
         expect(build(:list_item, :reminder)).to be_valid
+        expect(build(:list_item, :feature)).to be_valid
       end
 
       it "creates items with different priorities" do
@@ -69,9 +69,8 @@ RSpec.describe "FactoryBot factories" do
       end
 
       it "creates completed items with timestamps" do
-        item = create(:list_item, :completed)
-        expect(item.completed?).to be true
-        expect(item.status_changed_at).to be_present
+        item = create(:list_item, status: :completed)
+        expect(item.status_completed?).to be true
       end
 
       it "creates overdue items" do

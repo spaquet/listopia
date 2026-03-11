@@ -44,9 +44,15 @@ RSpec.describe Organization, type: :model do
     it { is_expected.to validate_presence_of(:name) }
     it { is_expected.to validate_length_of(:name).is_at_least(1).is_at_most(255) }
     it { is_expected.to validate_presence_of(:slug) }
-    it { is_expected.to validate_uniqueness_of(:slug) }
     it { is_expected.to validate_presence_of(:created_by_id) }
     it { is_expected.to validate_presence_of(:status) }
+
+    it 'validates uniqueness of slug' do
+      create(:organization, slug: 'test-org')
+      duplicate = build(:organization, creator: user, slug: 'test-org')
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:slug]).to be_present
+    end
 
     it 'validates slug format' do
       org = build(:organization, slug: 'Invalid Slug')
@@ -55,7 +61,7 @@ RSpec.describe Organization, type: :model do
     end
 
     it 'accepts valid slug formats' do
-      org = build(:organization, slug: 'valid-slug-123')
+      org = build(:organization, creator: user, slug: 'valid-slug-123')
       expect(org).to be_valid
     end
   end

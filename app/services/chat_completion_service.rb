@@ -1070,7 +1070,8 @@ class ChatCompletionService < ApplicationService
       end
     end
 
-    # Keep parent items - they're general tasks applicable to all subdivisions
+    # Clear parent items when nested lists are created - they're now specific to each subdivision
+    enriched["items"] = [] if enriched["nested_lists"].present?
     enriched
   end
 

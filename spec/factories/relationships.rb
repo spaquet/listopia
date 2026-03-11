@@ -20,5 +20,11 @@
 #
 FactoryBot.define do
   factory :relationship do
+    # Use list items as default parent/child
+    association :parent, factory: :list_item
+    association :child, factory: :list_item
+    parent_type { 'ListItem' }
+    child_type { 'ListItem' }
+    relationship_type { :parent_child }
   end
 end
