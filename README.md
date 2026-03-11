@@ -30,18 +30,18 @@ Listopia aims to provide a powerful yet intuitive platform for organizing tasks,
 Listopia has comprehensive documentation organized by task and audience. Get started with the right guide for your needs:
 
 - **Architecture Overview** → [CLAUDE.md](CLAUDE.md) - Master development reference with stack overview, architecture patterns, and standards
-- **Building Chat Features** → [CHAT_FEATURES.md](CHAT_FEATURES.md) - Implementation guide for adding commands, tools, and message templates
-- **Search & RAG** → [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md) - Complete guide to embeddings, vector search, and RAG integration
-- **Finding Documentation** → [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) - Quick navigation guide for all other documentation
+- **Chat System** → [docs/README.md](docs/README.md) - Complete chat documentation (flow, request types, model selection, features)
+- **Building Chat Features** → [docs/CHAT_FEATURES.md](docs/CHAT_FEATURES.md) - Implementation guide for adding commands, tools, and message templates
+- **Search & RAG** → [docs/RAG_SEMANTIC_SEARCH.md](docs/RAG_SEMANTIC_SEARCH.md) - Complete guide to embeddings, vector search, and RAG integration
 
 **For Developers:**
-- New team members? → Start with [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md)
-- Implementing chat features? → Follow [CHAT_FEATURES.md](CHAT_FEATURES.md)
-- Working with search/RAG? → Reference [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md)
+- New team members? → Start with [docs/README.md](docs/README.md) for documentation index
+- Want to understand chat? → Follow [docs/CHAT_FLOW.md](docs/CHAT_FLOW.md) then [docs/CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md)
+- Implementing chat features? → Follow [docs/CHAT_FEATURES.md](docs/CHAT_FEATURES.md)
 - Need architecture details? → See [CLAUDE.md](CLAUDE.md)
 
 **For AI Agents & Claude Code:**
-[DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) provides the complete documentation structure and optimal entry points for any task.
+[docs/README.md](docs/README.md) provides the complete documentation structure and optimal entry points for any task.
 
 ## Getting Started
 
@@ -57,7 +57,7 @@ Listopia is licensed under the [GNU Affero General Public License v3.0](LICENSE)
 
 ## Security
 
-For information on reporting security vulnerabilities, please see [SECURITY.md](SECURITY.md).
+Security features including authentication, authorization, prompt injection detection, and content moderation are documented in [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) and [docs/CHAT_FEATURES.md](docs/CHAT_FEATURES.md#authorization--security).
 
 ## Project Status
 

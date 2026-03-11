@@ -7,7 +7,7 @@ Quick reference for finding the right documentation for your task.
 ## 🚀 Quick Start by Task
 
 ### I want to understand the project architecture
-→ Start with [CLAUDE.md](CLAUDE.md)
+→ Start with [CLAUDE.md](../CLAUDE.md)
 - Stack overview
 - Architecture patterns
 - Key models and conventions
@@ -44,7 +44,7 @@ Quick reference for finding the right documentation for your task.
 → See [RAG_SEMANTIC_SEARCH.md - API Endpoints](RAG_SEMANTIC_SEARCH.md#api-endpoints)
 
 ### I want historical context
-→ See [docs/archived/README.md](docs/archived/README.md)
+→ See [archived/README.md](archived/README.md)
 - Why decisions were made
 - Original architectural proposals
 - Implementation history
@@ -127,7 +127,7 @@ docs/archived/README.md (Historical Reference)
 ### Backend Developer (Ruby/Rails)
 
 **Essential Reading:**
-1. [CLAUDE.md](CLAUDE.md) - Project overview
+1. [CLAUDE.md](../CLAUDE.md) - Project overview
 2. [CHAT_FEATURES.md](CHAT_FEATURES.md) - How to add features
 3. [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md) - Search implementation
 
@@ -153,7 +153,7 @@ docs/archived/README.md (Historical Reference)
 ### AI Agent (Claude Code)
 
 **Recommended Starting Point:**
-1. [CLAUDE.md](CLAUDE.md) - Comprehensive reference
+1. [CLAUDE.md](../CLAUDE.md) - Comprehensive reference
 2. [CHAT_FEATURES.md](CHAT_FEATURES.md) - Implementation patterns
 3. [RAG_SEMANTIC_SEARCH.md](RAG_SEMANTIC_SEARCH.md) - Search details
 
@@ -254,7 +254,7 @@ All active documentation follows these standards:
 ## 📞 Finding Help
 
 **Need architecture overview?**
-→ [CLAUDE.md](CLAUDE.md)
+→ [CLAUDE.md](../CLAUDE.md)
 
 **Can't find what you're looking for?**
 → Check the table of contents in each doc
@@ -274,7 +274,7 @@ All active documentation follows these standards:
 ## 🎓 Learning Path
 
 ### New to Listopia?
-1. Read [CLAUDE.md](CLAUDE.md) overview sections
+1. Read [CLAUDE.md](../CLAUDE.md) overview sections
 2. Read [CLAUDE.md - Stack Overview](CLAUDE.md#stack-overview)
 3. Read [CLAUDE.md - Architecture Patterns](CLAUDE.md#architecture-patterns)
 4. Read relevant feature docs (CHAT_FEATURES.md or RAG_SEMANTIC_SEARCH.md)

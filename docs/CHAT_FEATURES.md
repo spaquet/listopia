@@ -2,7 +2,7 @@
 
 A comprehensive guide for implementing and extending chat features in Listopia. This guide covers architecture, common patterns, and how to add new capabilities to the chat system.
 
-**For system architecture overview, see [CLAUDE.md - Chat System Architecture](CLAUDE.md#chat-system-architecture)**
+**For system architecture overview, see [CLAUDE.md - Chat System Architecture](../CLAUDE.md#architecture)**
 
 ---
 
@@ -883,4 +883,4 @@ Once you're familiar with this guide:
 5. **Write tests** - Test your features before merging
 6. **Monitor logs** - Track usage and debug issues
 
-For architecture details and system design, see [CLAUDE.md - Chat System Architecture](CLAUDE.md#chat-system-architecture)
+For architecture details and system design, see [CLAUDE.md - Chat System Architecture](../CLAUDE.md#architecture)
