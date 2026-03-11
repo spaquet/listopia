@@ -18,6 +18,13 @@
 require 'simplecov' if ENV['COVERAGE']
 SimpleCov.start('rails') if ENV['COVERAGE']
 
+# Load pundit-matchers early so it can configure RSpec properly
+begin
+  require 'pundit/matchers'
+rescue LoadError
+  # pundit-matchers not available
+end
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest

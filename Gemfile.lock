@@ -325,7 +325,7 @@ GEM
       nio4r (~> 2.0)
     pundit (2.5.2)
       activesupport (>= 3.0.0)
-    pundit-matchers (4.0.0)
+    pundit-matchers (3.1.2)
       rspec-core (~> 3.12)
       rspec-expectations (~> 3.12)
       rspec-mocks (~> 3.12)
@@ -580,7 +580,7 @@ DEPENDENCIES
   prosopite
   puma (>= 5.0)
   pundit
-  pundit-matchers
+  pundit-matchers (~> 3.1)
   rack-mini-profiler
   rails (~> 8.1.0)
   rails-controller-testing

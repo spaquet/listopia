@@ -142,7 +142,7 @@ group :test do
 
   # Additional RSpec gems
   gem "shoulda-matchers", "~> 7.0" # For better model validations testing
-  gem "pundit-matchers" # For Pundit authorization matchers
+  gem "pundit-matchers", "~> 3.1" # For Pundit authorization matchers
   gem "database_cleaner-active_record" # For cleaning test database
   gem "rails-controller-testing" # For testing controllers properly
   gem "rspec-retry" # For flaky test retries
