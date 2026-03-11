@@ -1,0 +1,9 @@
+<h1>You've been added as a collaborator</h1>
+
+<p>Hi <%= @collaborator.user.name %>,</p>
+
+<p>You've been added as a collaborator on <strong><%= @collaboratable.title %></strong>.</p>
+
+<p>You can now access and collaborate on this resource.</p>
+
+<%= link_to "View #{@collaboratable.title}", @resource_url %>

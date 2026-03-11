@@ -1,6 +1,17 @@
 class OrganizationsController < ApplicationController
   before_action :authenticate_user!
 
+  # Show organization details
+  def show
+    @organization = Organization.find(params[:id])
+    authorize @organization, :show?
+
+    respond_to do |format|
+      format.html { redirect_to dashboard_path, notice: "Switched to #{@organization.name}." }
+      format.json { render json: @organization }
+    end
+  end
+
   # Show the organization switcher modal
   def switcher
     # Only allow turbo_stream requests - HTML requests should not directly access this
