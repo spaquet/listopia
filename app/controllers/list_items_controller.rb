@@ -128,9 +128,7 @@ class ListItemsController < ApplicationController
   def visit_url
     authorize @list_item, :show?
 
-    if valid_redirect_url?(@list_item.url)
-      redirect_to @list_item.url, allow_other_host: true
-    else
+    safe_external_redirect(@list_item.url) do
       redirect_to list_list_item_path(@list, @list_item), alert: "This item doesn't have a valid URL."
     end
   end
@@ -272,7 +270,13 @@ class ListItemsController < ApplicationController
     updates = params[:updates] || {}
 
     items = @list.list_items.where(id: item_ids)
-    updated_count = items.update_all(updates.permit(:status, :priority, :assigned_user_id))
+    # Explicitly build safe updates hash from permitted parameters
+    safe_updates = {}
+    safe_updates[:status] = updates[:status] if updates[:status].present? && ListItem.statuses.key?(updates[:status])
+    safe_updates[:priority] = updates[:priority] if updates[:priority].present? && ListItem.priorities.key?(updates[:priority])
+    safe_updates[:assigned_user_id] = updates[:assigned_user_id] if updates[:assigned_user_id].present?
+
+    updated_count = items.update_all(safe_updates)
 
     respond_to do |format|
       format.html { redirect_to @list, notice: "#{updated_count} items updated." }
@@ -305,22 +309,6 @@ class ListItemsController < ApplicationController
   def authorize_list_access!
     unless @list.readable_by?(current_user)
       redirect_to lists_path, alert: "You don't have permission to access this list."
-    end
-  end
-
-  def valid_redirect_url?(url)
-    return false if url.blank?
-
-    # Allow http in development/test, https in production
-    allowed_schemes = Rails.env.production? ? [ "https://" ] : [ "http://", "https://" ]
-    return false unless allowed_schemes.any? { |scheme| url.start_with?(scheme) }
-
-    # Validate URL structure
-    begin
-      URI.parse(url)
-      true
-    rescue URI::InvalidURIError
-      false
     end
   end
 
