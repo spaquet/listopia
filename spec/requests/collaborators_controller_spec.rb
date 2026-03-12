@@ -80,7 +80,7 @@ RSpec.describe CollaboratorsController, type: :request do
         expect {
           post list_collaborators_path(list),
                params: { email: collaborator.email, collaborator: { permission: 'read' } }
-        }.to change(ListCollaboration, :count).by(1)
+        }.to change(Collaborator, :count).by(1)
       end
 
       it 'redirects to index' do
@@ -117,7 +117,7 @@ RSpec.describe CollaboratorsController, type: :request do
         expect {
           post list_collaborators_path(list),
                params: { email: '', collaborator: { permission: 'read' } }
-        }.not_to change(ListCollaboration, :count)
+        }.not_to change(Collaborator, :count)
       end
 
       it 'returns 422' do
@@ -135,8 +135,8 @@ RSpec.describe CollaboratorsController, type: :request do
 
     it 'updates permission' do
       patch list_collaborator_path(list, collab),
-            params: { collaborator: { permission: 'collaborate' } }
-      expect(collab.reload.permission).to eq('collaborate')
+            params: { collaborator: { permission: 'write' } }
+      expect(collab.reload.permission).to eq('write')
     end
 
     it 'redirects to index' do
@@ -148,7 +148,7 @@ RSpec.describe CollaboratorsController, type: :request do
     context 'turbo stream' do
       it 'returns turbo stream response' do
         patch list_collaborator_path(list, collab),
-              params: { collaborator: { permission: 'collaborate' } },
+              params: { collaborator: { permission: 'write' } },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 406]).to include(response.status)
       end
@@ -172,7 +172,7 @@ RSpec.describe CollaboratorsController, type: :request do
 
       delete list_collaborator_path(list, collab)
 
-      expect(ListCollaboration.exists?(collab_id)).to be false
+      expect(Collaborator.exists?(collab_id)).to be false
     end
 
     it 'redirects to index' do
@@ -222,7 +222,7 @@ RSpec.describe CollaboratorsController, type: :request do
         expect {
           post list_item_collaborators_path(list_item),
                params: { email: collaborator.email, collaborator: { permission: 'read' } }
-        }.to change(ListItemCollaboration, :count).by(1)
+        }.to change(Collaborator, :count).by(1)
       end
     end
   end

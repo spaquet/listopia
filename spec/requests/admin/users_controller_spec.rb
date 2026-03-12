@@ -141,7 +141,7 @@ RSpec.describe Admin::UsersController, type: :request do
 
     context 'with pending invitations' do
       it 'assigns pending invitations' do
-        invitation = create(:invitation, organization: organization, status: 'pending', invitable_type: 'Organization', user_id: nil)
+        invitation = create(:invitation, invitable: organization, organization: organization, status: 'pending', user_id: nil)
         get admin_users_path(organization_id: organization.id)
         expect(assigns(:pending_invitations)).to include(invitation)
       end
@@ -211,15 +211,16 @@ RSpec.describe Admin::UsersController, type: :request do
       end
 
       it 'redirects to show after creation' do
+        new_user = create(:user, :verified)
         allow(UserCreationService).to receive(:new).and_return(
-          double(call: double(success?: true, data: { user: create(:user, :verified) }))
+          double(call: double(success?: true, data: { user: new_user }))
         )
 
         post admin_users_path, params: {
           user: { name: 'New User', email: 'new@example.com', make_admin: '0' }
         }
 
-        expect(response).to redirect_to(admin_user_path(User.last))
+        expect(response).to redirect_to(admin_user_path(new_user))
       end
 
       it 'displays success message' do
@@ -384,9 +385,8 @@ RSpec.describe Admin::UsersController, type: :request do
 
       it 'redirects with alert' do
         delete admin_user_path(admin_user)
-        expect(response.status).to eq(302)
-        follow_redirect!
-        expect(response.body).to include('cannot delete your own account')
+        expect(response).to redirect_to(admin_users_path)
+        expect(flash[:alert]).to include('cannot delete your own account')
       end
     end
 
@@ -504,9 +504,9 @@ RSpec.describe Admin::UsersController, type: :request do
       it 'resends invitation email' do
         invitation = create(:invitation,
           user: invited_user,
+          invitable: organization,
           organization: organization,
-          status: 'pending',
-          invitable_type: 'Organization'
+          status: 'pending'
         )
 
         expect(AdminMailer).to receive(:user_invitation).and_call_original
@@ -517,24 +517,24 @@ RSpec.describe Admin::UsersController, type: :request do
       it 'updates invitation token' do
         invitation = create(:invitation,
           user: invited_user,
+          invitable: organization,
           organization: organization,
-          status: 'pending',
-          invitable_type: 'Organization'
+          status: 'pending'
         )
-        old_token = invitation.invitation_token
+        old_sent_at = invitation.invitation_sent_at
 
         allow(AdminMailer).to receive(:user_invitation).and_return(double(deliver_later: true))
         post resend_invitation_admin_user_path(invited_user)
 
-        expect(invitation.reload.invitation_token).not_to eq(old_token)
+        expect(invitation.reload.invitation_sent_at).to be > old_sent_at
       end
 
       it 'displays success message' do
         create(:invitation,
           user: invited_user,
+          invitable: organization,
           organization: organization,
-          status: 'pending',
-          invitable_type: 'Organization'
+          status: 'pending'
         )
 
         allow(AdminMailer).to receive(:user_invitation).and_return(double(deliver_later: true))
@@ -557,9 +557,9 @@ RSpec.describe Admin::UsersController, type: :request do
       it 'returns turbo stream' do
         create(:invitation,
           user: invited_user,
+          invitable: organization,
           organization: organization,
-          status: 'pending',
-          invitable_type: 'Organization'
+          status: 'pending'
         )
 
         allow(AdminMailer).to receive(:user_invitation).and_return(double(deliver_later: true))

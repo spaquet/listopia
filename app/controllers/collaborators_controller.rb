@@ -45,15 +45,22 @@ class CollaboratorsController < ApplicationController
   def update
     authorize @collaborator
 
-    if @collaborator.update(collaborator_params)
-      respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
-        format.html { redirect_to polymorphic_path([@collaboratable, :collaborators]), notice: "Permission updated!" }
+    begin
+      if @collaborator.update(collaborator_params)
+        respond_to do |format|
+          format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
+          format.html { redirect_to polymorphic_path([@collaboratable, :collaborators]), notice: "Permission updated!" }
+        end
+      else
+        respond_to do |format|
+          format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
+          format.html { redirect_to polymorphic_path([@collaboratable, :collaborators]), alert: "Failed to update permission." }
+        end
       end
-    else
+    rescue ArgumentError => e
       respond_to do |format|
         format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
-        format.html { redirect_to polymorphic_path([@collaboratable, :collaborators]), alert: "Failed to update permission." }
+        format.html { redirect_to polymorphic_path([@collaboratable, :collaborators]), alert: "Invalid permission value." }
       end
     end
   end

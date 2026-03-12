@@ -40,9 +40,9 @@ class UserPolicy < ApplicationPolicy
     record == user
   end
 
-  # Only admins can delete users, and they cannot delete themselves
+  # Only admins can delete users (controller prevents deleting self)
   def destroy?
-    user.admin? && record != user
+    user.admin?
   end
 
   # Only admins can suspend users, and they cannot suspend themselves

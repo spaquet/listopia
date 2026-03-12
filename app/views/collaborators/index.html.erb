@@ -58,7 +58,7 @@
       <% if @collaborators.any? %>
         <div class="space-y-3">
           <% @collaborators.each do |collaborator| %>
-            <%= render 'collaborator', collaborator: collaborator %>
+            <%= render 'collaborator', collaborator: collaborator, collaboratable: @collaboratable %>
           <% end %>
         </div>
       <% else %>
