@@ -33,7 +33,7 @@ RSpec.describe InvitationsController, type: :request do
 
     it 'returns 200' do
       get invitations_path
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'defaults to received tab' do
@@ -183,7 +183,7 @@ RSpec.describe InvitationsController, type: :request do
       it 'returns turbo stream response' do
         invitation = create(:invitation, invitable: list, invited_by: user, status: 'pending')
         delete invitation_path(invitation), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -204,7 +204,7 @@ RSpec.describe InvitationsController, type: :request do
       it 'returns turbo stream response' do
         invitation = create(:invitation, invitable: list, invited_by: user, status: 'pending')
         patch resend_invitation_path(invitation), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -228,7 +228,7 @@ RSpec.describe InvitationsController, type: :request do
       it 'returns turbo stream response' do
         invitation = create(:invitation, invitable: list, email: invited_user.email, status: 'pending')
         patch decline_invitation_path(invitation), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -293,7 +293,7 @@ RSpec.describe InvitationsController, type: :request do
     it 'shows collaboration invitation' do
       invitation = create(:invitation, invitable: list, invited_by: user, status: 'pending')
       get invitation_path(invitation)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     context 'with expired invitation' do

@@ -90,7 +90,7 @@ RSpec.describe ListItemsController, type: :request do
           post list_list_items_path(list),
                params: { list_item: { title: 'New Item', item_type: 'task' } },
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-          expect([200, 406]).to include(response.status)
+          expect([ 200, 406 ]).to include(response.status)
         end
       end
     end
@@ -106,7 +106,7 @@ RSpec.describe ListItemsController, type: :request do
       it 'returns error response' do
         post list_list_items_path(list),
              params: { list_item: { title: '', item_type: 'task' } }
-        expect([302, 422]).to include(response.status)
+        expect([ 302, 422 ]).to include(response.status)
       end
     end
   end
@@ -116,7 +116,7 @@ RSpec.describe ListItemsController, type: :request do
 
     it 'returns 200' do
       get list_list_item_path(list, list_item)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns the list item' do
@@ -142,7 +142,7 @@ RSpec.describe ListItemsController, type: :request do
 
     it 'returns 200' do
       get edit_list_list_item_path(list, list_item)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns the list item' do
@@ -179,7 +179,7 @@ RSpec.describe ListItemsController, type: :request do
           patch list_list_item_path(list, list_item),
                 params: { list_item: { title: 'Updated Title' } },
                 headers: { 'Accept' => Mime[:turbo_stream].to_s }
-          expect([200, 406]).to include(response.status)
+          expect([ 200, 406 ]).to include(response.status)
         end
       end
 
@@ -203,7 +203,7 @@ RSpec.describe ListItemsController, type: :request do
       it 'returns unprocessable entity' do
         patch list_list_item_path(list, list_item),
               params: { list_item: { title: '' } }
-        expect([302, 422]).to include(response.status)
+        expect([ 302, 422 ]).to include(response.status)
       end
     end
   end
@@ -222,7 +222,7 @@ RSpec.describe ListItemsController, type: :request do
         patch inline_update_list_list_item_path(list, list_item),
               params: { list_item: { title: 'Updated' } },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -256,7 +256,7 @@ RSpec.describe ListItemsController, type: :request do
       it 'returns JSON' do
         item = create(:list_item, list: list)
         delete list_list_item_path(list, item, format: :json)
-        expect(response.status).to be_in([200, 204])
+        expect(response.status).to be_in([ 200, 204 ])
       end
     end
   end
@@ -319,7 +319,7 @@ RSpec.describe ListItemsController, type: :request do
       patch list_list_item_path(list, list_item),
             params: { list_item: { title: 'Updated' } }
       # The test passes if the update succeeds without errors
-      expect(response.status).to be_in([200, 302])
+      expect(response.status).to be_in([ 200, 302 ])
     end
   end
 end

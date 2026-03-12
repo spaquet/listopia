@@ -43,7 +43,7 @@ RSpec.describe CollaboratorsController, type: :request do
 
     it 'returns 200' do
       get list_collaborators_path(list)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns collaborators' do
@@ -150,7 +150,7 @@ RSpec.describe CollaboratorsController, type: :request do
         patch list_collaborator_path(list, collab),
               params: { collaborator: { permission: 'write' } },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
 
@@ -193,7 +193,7 @@ RSpec.describe CollaboratorsController, type: :request do
         collab = create(:list_collaboration, list: list, user: collaborator)
         delete list_collaborator_path(list, collab),
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
 
@@ -215,7 +215,7 @@ RSpec.describe CollaboratorsController, type: :request do
 
       it 'index works with list_item' do
         get list_item_collaborators_path(list_item)
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
 
       it 'create works with list_item' do

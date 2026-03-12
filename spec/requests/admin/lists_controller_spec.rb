@@ -58,7 +58,7 @@ RSpec.describe Admin::ListsController, type: :request do
 
     it 'returns 200' do
       get admin_lists_path
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns pagy and lists' do
@@ -124,7 +124,7 @@ RSpec.describe Admin::ListsController, type: :request do
 
     it 'returns 200' do
       get admin_list_path(list)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns the list' do

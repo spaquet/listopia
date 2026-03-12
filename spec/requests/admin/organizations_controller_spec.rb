@@ -123,7 +123,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
     context 'Turbo Stream format' do
       it 'accepts turbo stream request' do
         get admin_organizations_path, headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect(response.status).to be_in([200, 406])
+        expect(response.status).to be_in([ 200, 406 ])
       end
     end
 
@@ -230,7 +230,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
         post admin_organizations_path,
              params: { organization: { name: 'New Org' } },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 303]).to include(response.status)
+        expect([ 200, 303 ]).to include(response.status)
       end
     end
   end
@@ -392,7 +392,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
       it 'returns turbo stream' do
         post suspend_admin_organization_path(organization),
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end
@@ -424,7 +424,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
       it 'returns turbo stream' do
         post reactivate_admin_organization_path(organization),
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end

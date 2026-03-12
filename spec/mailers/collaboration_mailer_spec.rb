@@ -11,7 +11,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([invitation.email])
+      expect(mail.to).to eq([ invitation.email ])
     end
 
     it "includes inviter name in subject" do
@@ -23,7 +23,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct from address" do
-      expect(mail.from).to eq(["noreply@listopia.com"])
+      expect(mail.from).to eq([ "noreply@listopia.com" ])
     end
 
     it "includes invitation URL in body" do
@@ -51,7 +51,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([invitation.email])
+      expect(mail.to).to eq([ invitation.email ])
     end
 
     it "includes reminder text in subject" do
@@ -91,7 +91,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes resource title in subject" do
@@ -99,7 +99,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct from address" do
-      expect(mail.from).to eq(["noreply@listopia.com"])
+      expect(mail.from).to eq([ "noreply@listopia.com" ])
     end
 
     it "includes resource URL in body" do
@@ -117,7 +117,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes resource title in subject" do
@@ -125,7 +125,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct from address" do
-      expect(mail.from).to eq(["noreply@listopia.com"])
+      expect(mail.from).to eq([ "noreply@listopia.com" ])
     end
   end
 
@@ -139,7 +139,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes resource title in subject" do
@@ -170,7 +170,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes organization name in subject" do
@@ -202,7 +202,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([invitation.email])
+      expect(mail.to).to eq([ invitation.email ])
     end
 
     it "includes organization name in subject" do
@@ -233,7 +233,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes team name in subject" do
@@ -270,7 +270,7 @@ RSpec.describe CollaborationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([invitation.email])
+      expect(mail.to).to eq([ invitation.email ])
     end
 
     it "includes team name in subject" do

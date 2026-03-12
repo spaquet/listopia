@@ -461,12 +461,12 @@ RSpec.describe ListsHelper, type: :helper do
 
     it "includes read only option" do
       options = helper.sharing_permission_options
-      expect(options).to include(["Read Only", "read"])
+      expect(options).to include([ "Read Only", "read" ])
     end
 
     it "includes read and write option" do
       options = helper.sharing_permission_options
-      expect(options).to include(["Read & Write", "write"])
+      expect(options).to include([ "Read & Write", "write" ])
     end
   end
 

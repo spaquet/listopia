@@ -31,7 +31,7 @@ RSpec.describe OrganizationMembersController, type: :request do
     end
 
     it 'requires user to be signed in for create' do
-      post organization_members_path(organization), params: { emails: ['test@example.com'] }
+      post organization_members_path(organization), params: { emails: [ 'test@example.com' ] }
       expect(response).to redirect_to(new_session_path)
     end
   end
@@ -55,7 +55,7 @@ RSpec.describe OrganizationMembersController, type: :request do
 
     it 'returns 200' do
       get organization_members_path(organization)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns members' do
@@ -89,7 +89,7 @@ RSpec.describe OrganizationMembersController, type: :request do
     it 'returns 200' do
       member = create(:organization_membership, organization: organization, user: other_user, role: :member)
       get organization_member_path(organization, member)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns the member' do
@@ -104,7 +104,7 @@ RSpec.describe OrganizationMembersController, type: :request do
 
     it 'returns 200' do
       get new_organization_member_path(organization)
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     it 'assigns new invitation' do
@@ -119,19 +119,19 @@ RSpec.describe OrganizationMembersController, type: :request do
     it 'invites users' do
       expect {
         post organization_members_path(organization),
-             params: { emails: ['new@example.com'], role: 'member' }
+             params: { emails: [ 'new@example.com' ], role: 'member' }
       }.to change(Invitation, :count)
     end
 
     it 'redirects to members index' do
       post organization_members_path(organization),
-           params: { emails: ['new@example.com'], role: 'member' }
+           params: { emails: [ 'new@example.com' ], role: 'member' }
       expect(response).to redirect_to(organization_members_path(organization))
     end
 
     it 'displays success message' do
       post organization_members_path(organization),
-           params: { emails: ['new@example.com'], role: 'member' }
+           params: { emails: [ 'new@example.com' ], role: 'member' }
       follow_redirect!
       expect(response.body).to include('sent')
     end
@@ -140,7 +140,7 @@ RSpec.describe OrganizationMembersController, type: :request do
       it 'invites all users' do
         expect {
           post organization_members_path(organization),
-               params: { emails: ['user1@example.com', 'user2@example.com'], role: 'admin' }
+               params: { emails: [ 'user1@example.com', 'user2@example.com' ], role: 'admin' }
         }.to change(Invitation, :count).by(2)
       end
     end
@@ -148,7 +148,7 @@ RSpec.describe OrganizationMembersController, type: :request do
     context 'with admin role' do
       it 'sets admin role' do
         post organization_members_path(organization),
-             params: { emails: ['new@example.com'], role: 'admin' }
+             params: { emails: [ 'new@example.com' ], role: 'admin' }
         invitation = Invitation.last
         expect(invitation.metadata['role']).to eq('admin')
       end
@@ -178,7 +178,7 @@ RSpec.describe OrganizationMembersController, type: :request do
         patch update_role_organization_member_path(organization, member),
               params: { role: 'admin' },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -222,7 +222,7 @@ RSpec.describe OrganizationMembersController, type: :request do
         member = create(:organization_membership, organization: organization, user: other_user, role: :member)
         delete remove_organization_member_path(organization, member),
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end

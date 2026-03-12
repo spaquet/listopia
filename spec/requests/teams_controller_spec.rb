@@ -88,7 +88,7 @@ RSpec.describe TeamsController, type: :request do
 
       get organization_teams_path(organization)
 
-      expect(assigns(:teams)).to match_array([team2, team1])
+      expect(assigns(:teams)).to match_array([ team2, team1 ])
     end
 
     it 'orders teams by creation date (newest first)' do
@@ -97,7 +97,7 @@ RSpec.describe TeamsController, type: :request do
 
       get organization_teams_path(organization)
 
-      expect(assigns(:teams)).to eq([team2, team1])
+      expect(assigns(:teams)).to eq([ team2, team1 ])
     end
 
     it 'does not include teams from other organizations' do

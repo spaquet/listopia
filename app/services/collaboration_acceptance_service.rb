@@ -19,7 +19,7 @@
 #     flash[:alert] = result.errors.join(", ")
 #   end
 
-require 'ostruct'
+require "ostruct"
 
 class CollaborationAcceptanceService
   def initialize(invitation)

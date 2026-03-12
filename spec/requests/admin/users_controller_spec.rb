@@ -135,7 +135,7 @@ RSpec.describe Admin::UsersController, type: :request do
     context 'Turbo Stream format' do
       it 'accepts turbo stream request' do
         get admin_users_path, headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect(response.status).to be_in([200, 406])
+        expect(response.status).to be_in([ 200, 406 ])
       end
     end
 
@@ -240,7 +240,7 @@ RSpec.describe Admin::UsersController, type: :request do
     context 'with invalid parameters' do
       it 'returns 422 on validation error' do
         allow(UserCreationService).to receive(:new).and_return(
-          double(call: double(success?: false, errors: ['Email already taken']))
+          double(call: double(success?: false, errors: [ 'Email already taken' ]))
         )
 
         post admin_users_path, params: {
@@ -252,7 +252,7 @@ RSpec.describe Admin::UsersController, type: :request do
 
       it 'renders new template on error' do
         allow(UserCreationService).to receive(:new).and_return(
-          double(call: double(success?: false, errors: ['Email invalid']))
+          double(call: double(success?: false, errors: [ 'Email invalid' ]))
         )
 
         post admin_users_path, params: {
@@ -345,7 +345,7 @@ RSpec.describe Admin::UsersController, type: :request do
               params: { user: { name: 'Updated' } },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -404,7 +404,7 @@ RSpec.describe Admin::UsersController, type: :request do
         delete admin_user_path(other_user),
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -447,7 +447,7 @@ RSpec.describe Admin::UsersController, type: :request do
         post toggle_status_admin_user_path(active_user),
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end
@@ -490,7 +490,7 @@ RSpec.describe Admin::UsersController, type: :request do
         post toggle_admin_admin_user_path(non_admin),
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end
@@ -567,7 +567,7 @@ RSpec.describe Admin::UsersController, type: :request do
         post resend_invitation_admin_user_path(invited_user),
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
 
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end

@@ -11,7 +11,7 @@ RSpec.describe AdminMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "sets the correct subject" do
@@ -23,7 +23,7 @@ RSpec.describe AdminMailer, type: :mailer do
     end
 
     it "sets the correct from address" do
-      expect(mail.from).to eq(["noreply@listopia.com"])
+      expect(mail.from).to eq([ "noreply@listopia.com" ])
     end
 
     it "passes the token to the setup URL" do

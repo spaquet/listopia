@@ -56,7 +56,7 @@ RSpec.describe NotificationsController, type: :request do
 
     it 'responds with Turbo Stream' do
       get notifications_path, headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      expect([200, 406]).to include(response.status) # Either OK or Not Acceptable if format not supported
+      expect([ 200, 406 ]).to include(response.status) # Either OK or Not Acceptable if format not supported
     end
 
     it 'filters by read status' do
@@ -90,18 +90,18 @@ RSpec.describe NotificationsController, type: :request do
 
     it 'accepts PATCH request' do
       patch mark_all_as_read_notifications_path
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
 
     it 'accepts Turbo Stream format' do
       patch mark_all_as_read_notifications_path,
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
 
     it 'accepts JSON format' do
       patch mark_all_as_read_notifications_path(format: :json)
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
   end
 
@@ -110,12 +110,12 @@ RSpec.describe NotificationsController, type: :request do
 
     it 'accepts PATCH request' do
       patch mark_all_as_seen_notifications_path
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
 
     it 'returns JSON response' do
       patch mark_all_as_seen_notifications_path(format: :json)
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
   end
 

@@ -43,7 +43,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "uses the event title as subject" do
@@ -51,7 +51,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct from address" do
-      expect(mail.from).to eq(["noreply@listopia.com"])
+      expect(mail.from).to eq([ "noreply@listopia.com" ])
     end
   end
 
@@ -77,7 +77,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes assigner name in subject" do
@@ -128,7 +128,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes commenter name in subject" do
@@ -182,7 +182,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes completer name in subject" do
@@ -224,7 +224,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes item title in subject" do
@@ -263,7 +263,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "indicates permission change in subject" do
@@ -296,7 +296,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes inviter name in subject" do
@@ -329,7 +329,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes list title in subject" do
@@ -362,7 +362,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes mentioner name in subject" do
@@ -399,7 +399,7 @@ RSpec.describe NotificationMailer, type: :mailer do
     end
 
     it "sets the correct recipient" do
-      expect(mail.to).to eq([user.email])
+      expect(mail.to).to eq([ user.email ])
     end
 
     it "includes daily digest text for daily frequency" do

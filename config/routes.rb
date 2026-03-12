@@ -209,7 +209,7 @@ Rails.application.routes.draw do
   post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
 
   # Organizations - switcher and switching only
-  resources :organizations, only: [:show] do
+  resources :organizations, only: [ :show ] do
     collection do
       get :switcher, as: :switcher
       patch :switch

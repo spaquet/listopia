@@ -38,7 +38,7 @@ RSpec.describe OrganizationInvitationsController, type: :request do
 
     it 'returns 200' do
       get organization_invitations_path(organization)
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
 
     it 'assigns pending invitations' do
@@ -88,7 +88,7 @@ RSpec.describe OrganizationInvitationsController, type: :request do
         invitable_type: 'Organization'
       )
       get organization_invitation_path(organization, invitation)
-      expect([200, 204, 406]).to include(response.status)
+      expect([ 200, 204, 406 ]).to include(response.status)
     end
   end
 
@@ -224,7 +224,7 @@ RSpec.describe OrganizationInvitationsController, type: :request do
         )
         patch resend_organization_invitation_path(organization, invitation),
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 204, 406]).to include(response.status)
+        expect([ 200, 204, 406 ]).to include(response.status)
       end
     end
   end
@@ -275,7 +275,7 @@ RSpec.describe OrganizationInvitationsController, type: :request do
         )
         delete revoke_organization_invitation_path(organization, invitation),
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 204, 406]).to include(response.status)
+        expect([ 200, 204, 406 ]).to include(response.status)
       end
     end
   end
@@ -290,13 +290,13 @@ RSpec.describe OrganizationInvitationsController, type: :request do
 
     it 'denies non-owner access to invitations index' do
       get organization_invitations_path(organization)
-      expect(response.status).to be_in([301, 302, 303, 307, 308])  # Check for redirect
+      expect(response.status).to be_in([ 301, 302, 303, 307, 308 ])  # Check for redirect
     end
 
     it 'denies non-owner from inviting members' do
       post organization_members_path(organization),
-           params: { emails: ['test@example.com'], role: 'member' }
-      expect(response.status).to be_in([301, 302, 303, 307, 308])  # Check for redirect
+           params: { emails: [ 'test@example.com' ], role: 'member' }
+      expect(response.status).to be_in([ 301, 302, 303, 307, 308 ])  # Check for redirect
     end
   end
 

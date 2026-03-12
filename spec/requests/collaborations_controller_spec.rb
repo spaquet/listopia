@@ -45,7 +45,7 @@ RSpec.describe CollaborationsController, type: :request do
     context 'for lists' do
       it 'returns turbo stream response' do
         get list_collaborations_path(list), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
 
       it 'assigns collaborators' do
@@ -64,7 +64,7 @@ RSpec.describe CollaborationsController, type: :request do
     context 'for list items' do
       it 'returns turbo stream response' do
         get list_list_item_collaborations_path(list, list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -104,7 +104,7 @@ RSpec.describe CollaborationsController, type: :request do
         post list_collaborations_path(list),
              params: { collaboration: { email: '', permission: 'write' } },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 422]).to include(response.status)
+        expect([ 200, 422 ]).to include(response.status)
       end
     end
 
@@ -116,7 +116,7 @@ RSpec.describe CollaborationsController, type: :request do
                can_invite_collaborators: '1'
              },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 302, 406]).to include(response.status)
+        expect([ 200, 302, 406 ]).to include(response.status)
       end
     end
   end
@@ -136,7 +136,7 @@ RSpec.describe CollaborationsController, type: :request do
       patch list_collaboration_path(list, collaboration),
             params: { collaboration: { permission: 'write' } },
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      expect([200, 406]).to include(response.status)
+      expect([ 200, 406 ]).to include(response.status)
     end
 
     context 'with role changes' do
@@ -146,7 +146,7 @@ RSpec.describe CollaborationsController, type: :request do
                 collaboration: { permission: 'write' },
                 can_invite_collaborators: '1'
               }
-        expect([200, 302]).to include(response.status)
+        expect([ 200, 302 ]).to include(response.status)
       end
     end
   end
@@ -184,7 +184,7 @@ RSpec.describe CollaborationsController, type: :request do
       it 'returns turbo stream' do
         delete list_collaboration_path(list, collaboration),
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -197,14 +197,14 @@ RSpec.describe CollaborationsController, type: :request do
     it 'resends invitation' do
       allow(CollaborationMailer).to receive_message_chain(:organization_invitation, :deliver_later)
       patch resend_list_collaboration_path(list, invitation)
-      expect([200, 302]).to include(response.status)
+      expect([ 200, 302 ]).to include(response.status)
     end
 
     context 'turbo stream' do
       it 'returns turbo stream response' do
         patch resend_list_collaboration_path(list, invitation),
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
     end
   end
@@ -214,7 +214,7 @@ RSpec.describe CollaborationsController, type: :request do
       it 'index works with list_item_id parameter' do
         login_as(user)
         get list_list_item_collaborations_path(list, list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect([200, 406]).to include(response.status)
+        expect([ 200, 406 ]).to include(response.status)
       end
 
       it 'create works with list_item_id parameter' do
@@ -240,7 +240,7 @@ RSpec.describe CollaborationsController, type: :request do
 
     it 'denies access to lists not owned by user' do
       get list_collaborations_path(list), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      expect([302, 403]).to include(response.status)
+      expect([ 302, 403 ]).to include(response.status)
     end
   end
 end

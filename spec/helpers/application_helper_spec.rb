@@ -391,7 +391,7 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "renders single breadcrumb without link" do
-      crumbs = [{ text: "Home", path: "/" }]
+      crumbs = [ { text: "Home", path: "/" } ]
       result = helper.breadcrumbs(*crumbs)
       expect(result).to include("Home")
       expect(result).to include("text-gray-500")
@@ -408,7 +408,7 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "uses correct accessibility label" do
-      crumbs = [{ text: "Home", path: "/" }]
+      crumbs = [ { text: "Home", path: "/" } ]
       result = helper.breadcrumbs(*crumbs)
       expect(result).to include("Breadcrumb")
     end

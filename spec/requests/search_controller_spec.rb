@@ -94,18 +94,18 @@ RSpec.describe SearchController, type: :request do
       it 'assigns results' do
         list = create(:list, owner: user, organization: organization)
         allow(SearchService).to receive(:call).and_return(
-          double(success?: true, data: [list])
+          double(success?: true, data: [ list ])
         )
 
         get search_path(q: 'test')
-        expect(assigns(:results)).to eq([list])
+        expect(assigns(:results)).to eq([ list ])
       end
     end
 
     context 'when SearchService fails' do
       it 'assigns empty array' do
         allow(SearchService).to receive(:call).and_return(
-          double(success?: false, errors: ['Search error'])
+          double(success?: false, errors: [ 'Search error' ])
         )
 
         get search_path(q: 'test')
@@ -114,7 +114,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'logs the error' do
         allow(SearchService).to receive(:call).and_return(
-          double(success?: false, errors: ['Search error'])
+          double(success?: false, errors: [ 'Search error' ])
         )
 
         expect(Rails.logger).to receive(:warn).with(/Search failed/)
@@ -146,7 +146,7 @@ RSpec.describe SearchController, type: :request do
       it 'returns JSON response' do
         list = create(:list, owner: user, organization: organization, title: 'Test List')
         allow(SearchService).to receive(:call).and_return(
-          double(success?: true, data: [list])
+          double(success?: true, data: [ list ])
         )
 
         get search_path(q: 'test', format: 'json')
@@ -165,7 +165,7 @@ RSpec.describe SearchController, type: :request do
       it 'includes result count in JSON' do
         list = create(:list, owner: user, organization: organization)
         allow(SearchService).to receive(:call).and_return(
-          double(success?: true, data: [list])
+          double(success?: true, data: [ list ])
         )
 
         get search_path(q: 'test', format: 'json')
@@ -177,7 +177,7 @@ RSpec.describe SearchController, type: :request do
       it 'formats results with required fields' do
         list = create(:list, owner: user, organization: organization, title: 'My List', description: 'Test')
         allow(SearchService).to receive(:call).and_return(
-          double(success?: true, data: [list])
+          double(success?: true, data: [ list ])
         )
 
         get search_path(q: 'test', format: 'json')
@@ -190,7 +190,7 @@ RSpec.describe SearchController, type: :request do
       it 'includes avatar_url for users' do
         user_result = create(:user, name: 'Test User')
         allow(SearchService).to receive(:call).and_return(
-          double(success?: true, data: [user_result])
+          double(success?: true, data: [ user_result ])
         )
 
         get search_path(q: 'test', format: 'json')
@@ -223,7 +223,7 @@ RSpec.describe SearchController, type: :request do
     context 'List results' do
       it 'extracts title from list' do
         list = create(:list, owner: user, organization: organization, title: 'Shopping List')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [list]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ list ]))
 
         get search_path(q: 'shopping', format: 'json')
         json = JSON.parse(response.body)
@@ -233,7 +233,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'extracts description from list' do
         list = create(:list, owner: user, organization: organization, description: 'Groceries')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [list]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ list ]))
 
         get search_path(q: 'test', format: 'json')
         json = JSON.parse(response.body)
@@ -247,7 +247,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'extracts title from list item' do
         item = create(:list_item, list: list, title: 'Buy milk')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [item]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ item ]))
 
         get search_path(q: 'milk', format: 'json')
         json = JSON.parse(response.body)
@@ -259,7 +259,7 @@ RSpec.describe SearchController, type: :request do
     context 'User results' do
       it 'extracts name from user' do
         search_user = create(:user, name: 'John Doe')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [search_user]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ search_user ]))
 
         get search_path(q: 'john', format: 'json')
         json = JSON.parse(response.body)
@@ -269,7 +269,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'extracts email as description for user' do
         search_user = create(:user, email: 'john@example.com')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [search_user]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ search_user ]))
 
         get search_path(q: 'john', format: 'json')
         json = JSON.parse(response.body)
@@ -283,7 +283,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'formats comment title with user name' do
         comment = create(:comment, user: user, commentable: list, content: 'Great list!')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [comment]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ comment ]))
 
         get search_path(q: 'great', format: 'json')
         json = JSON.parse(response.body)
@@ -293,7 +293,7 @@ RSpec.describe SearchController, type: :request do
 
       it 'extracts content from comment' do
         comment = create(:comment, user: user, commentable: list, content: 'Test comment')
-        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [comment]))
+        allow(SearchService).to receive(:call).and_return(double(success?: true, data: [ comment ]))
 
         get search_path(q: 'test', format: 'json')
         json = JSON.parse(response.body)
