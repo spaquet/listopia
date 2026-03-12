@@ -67,7 +67,10 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'GET #index' do
-    before { login_as(admin_user) }
+    before do
+      login_as(admin_user)
+      organization  # Ensure organization is created for tests
+    end
 
     it 'returns 200' do
       get admin_organizations_path
