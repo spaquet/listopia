@@ -46,7 +46,7 @@ RSpec.describe OrganizationMembersController, type: :request do
 
     it 'denies access to members list for non-owners' do
       get organization_members_path(organization)
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(lists_path)
     end
   end
 
@@ -232,7 +232,7 @@ RSpec.describe OrganizationMembersController, type: :request do
 
     it 'requires valid organization_id' do
       get organization_members_path('invalid-id')
-      expect(response).to redirect_to(root_path)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

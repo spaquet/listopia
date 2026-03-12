@@ -1,0 +1,33 @@
+<tr class="hover:bg-gray-50" id="<%= dom_id(membership) %>">
+  <td class="px-6 py-4 text-sm text-gray-900"><%= membership.user.name %></td>
+  <td class="px-6 py-4 text-sm text-gray-600"><%= membership.user.email %></td>
+  <td class="px-6 py-4 text-sm">
+    <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      <%= membership.role.titleize %>
+    </span>
+  </td>
+  <td class="px-6 py-4 text-sm">
+    <span class="px-2 py-1 rounded-full text-xs font-medium <%= membership.active? ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
+      <%= membership.status.titleize %>
+    </span>
+  </td>
+  <td class="px-6 py-4 text-sm text-gray-600">
+    <%= membership.joined_at.strftime("%b %d, %Y") %>
+  </td>
+  <td class="px-6 py-4 text-sm">
+    <% if policy(@organization).manage_members? && (membership.user_id != current_user.id || policy(@organization).update_member_role?) %>
+      <div class="flex gap-2">
+        <% if policy(@organization).update_member_role? %>
+          <%= button_to "Change Role", update_role_organization_member_path(@organization, membership),
+            method: :patch, params: { role: "admin" },
+            class: "text-sm text-blue-600 hover:text-blue-800" %>
+        <% end %>
+        <% if policy(@organization).remove_member? && membership.user_id != current_user.id %>
+          <%= button_to "Remove", remove_organization_member_path(@organization, membership),
+            method: :delete, data: { confirm: "Remove this member?" },
+            class: "text-sm text-red-600 hover:text-red-800" %>
+        <% end %>
+      </div>
+    <% end %>
+  </td>
+</tr>

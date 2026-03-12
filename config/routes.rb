@@ -52,11 +52,21 @@ Rails.application.routes.draw do
   get "/organizations/invitations/accept/:token", to: "organization_invitations#accept", as: "accept_organization_invitation"
 
   # Invitations management (list sent/received invitations with management features)
-  resources :invitations, only: [ :index, :show, :update ] do
+  resources :invitations, only: [ :index, :show, :update, :destroy ] do
     member do
       patch :decline
       delete :revoke
       patch :resend
+    end
+  end
+
+  # Organization invitations management (user-facing, nested under organization)
+  resources :organizations, only: [] do
+    resources :invitations, controller: "organization_invitations", only: [ :index, :show ] do
+      member do
+        patch :resend
+        delete :revoke
+      end
     end
   end
 
@@ -191,6 +201,14 @@ Rails.application.routes.draw do
     collection do
       get :switcher, as: :switcher
       patch :switch
+    end
+
+    # Organization members management
+    resources :members, controller: "organization_members" do
+      member do
+        patch :update_role
+        delete :remove
+      end
     end
 
     # Teams - user-facing team management

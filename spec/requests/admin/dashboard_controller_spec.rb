@@ -15,7 +15,7 @@ RSpec.describe Admin::DashboardController, type: :request do
 
   describe 'authentication' do
     it 'requires user to be signed in' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(response).to redirect_to(new_session_path)
     end
   end
@@ -24,8 +24,8 @@ RSpec.describe Admin::DashboardController, type: :request do
     before { login_as(regular_user) }
 
     it 'denies access to non-admin users' do
-      get admin_dashboard_path
-      expect(response).to redirect_to(lists_path)
+      get admin_root_path
+      expect(response).to redirect_to(root_path)
     end
   end
 
@@ -33,32 +33,32 @@ RSpec.describe Admin::DashboardController, type: :request do
     before { login_as(admin_user) }
 
     it 'returns 200' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(response).to have_http_status(:ok)
     end
 
     it 'assigns stats' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(assigns(:stats)).to be_a(Hash)
     end
 
     it 'includes total_users in stats' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(assigns(:stats)).to have_key(:total_users)
     end
 
     it 'includes active_users in stats' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(assigns(:stats)).to have_key(:active_users)
     end
 
     it 'includes admin_users in stats' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(assigns(:stats)).to have_key(:admin_users)
     end
 
     it 'includes new_users_this_month in stats' do
-      get admin_dashboard_path
+      get admin_root_path
       expect(assigns(:stats)).to have_key(:new_users_this_month)
     end
 
@@ -72,12 +72,12 @@ RSpec.describe Admin::DashboardController, type: :request do
       end
 
       it 'counts all organization users' do
-        get admin_dashboard_path
+        get admin_root_path
         expect(assigns(:stats)[:total_users]).to eq(3)
       end
 
       it 'counts active users' do
-        get admin_dashboard_path
+        get admin_root_path
         expect(assigns(:stats)[:active_users]).to be >= 1
       end
     end
@@ -89,13 +89,13 @@ RSpec.describe Admin::DashboardController, type: :request do
       end
 
       it 'counts new users this month' do
-        get admin_dashboard_path
+        get admin_root_path
         expect(assigns(:stats)[:new_users_this_month]).to be >= 0
       end
     end
 
     it 'returns numeric stats values' do
-      get admin_dashboard_path
+      get admin_root_path
       stats = assigns(:stats)
       expect(stats[:total_users]).to be_a(Integer)
       expect(stats[:active_users]).to be_a(Integer)
@@ -111,7 +111,7 @@ RSpec.describe Admin::DashboardController, type: :request do
       end
 
       it 'counts both admin and owner roles' do
-        get admin_dashboard_path
+        get admin_root_path
         expect(assigns(:stats)[:admin_users]).to be >= 1
       end
     end

@@ -5,10 +5,6 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   let(:non_admin_user) { create(:user, :verified) }
   let(:organization) { create(:organization, creator: admin_user) }
 
-  before do
-    create(:organization_membership, organization: organization, user: admin_user, role: :owner)
-  end
-
   def login_as(user)
     post session_path, params: { email: user.email, password: user.password }
   end
@@ -328,7 +324,6 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     before do
       login_as(admin_user)
-      create(:organization_membership, organization: organization, user: admin_user, role: :owner)
     end
 
     it 'returns 200' do
@@ -372,7 +367,6 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     before do
       login_as(admin_user)
-      create(:organization_membership, organization: organization, user: admin_user, role: :owner)
     end
 
     it 'suspends the organization' do
@@ -405,7 +399,6 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     before do
       login_as(admin_user)
-      create(:organization_membership, organization: organization, user: admin_user, role: :owner)
     end
 
     it 'reactivates the organization' do
@@ -438,7 +431,6 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     before do
       login_as(admin_user)
-      create(:organization_membership, organization: organization, user: admin_user, role: :owner)
     end
 
     it 'returns 200' do

@@ -70,6 +70,50 @@ end
   - Uses `db/structure.sql` (not schema.rb) — enforced by user change tracking service
   - All models annotated with `annotate` gem: see Schema Information at top of each model
 
+## Pagination (Pagy v43+)
+
+**CRITICAL: Pagy v43+ has major breaking changes from previous versions**
+
+This project uses **Pagy v43.3.2**, which has completely restructured its API. Do NOT rely on old Pagy documentation or examples from pre-v43 versions.
+
+**Key Differences:**
+- ❌ No `pagy_nav` method (was common in older versions)
+- ✅ Use `series_nav` for numeric pagination (requires `include Pagy::NumericHelpers` in helpers)
+- ❌ Old helper methods are renamed/removed
+- ✅ View helpers must be explicitly included: `include Pagy::NumericHelpers` in ApplicationHelper
+
+**Available Pagy v43+ View Helpers** (from `Pagy::NumericHelpers`):
+- `series_nav(@pagy)` - Numeric pagination with previous/next links
+- `series_nav_js(@pagy)` - JavaScript-powered pagination
+- `info_tag(@pagy)` - Shows "Displaying X of Y"
+- `previous_tag(@pagy)` - Previous page link
+- `input_nav_js(@pagy)` - Jump to page input
+
+**How to Use:**
+```erb
+<!-- Instead of old: <%= pagy_nav(@pagy) %> -->
+<!-- Use: -->
+<%= series_nav(@pagy) %>
+```
+
+**Common Patterns:**
+```ruby
+# In controller:
+include Pagy::Method  # Adds pagy method for backend
+
+# In helper:
+include Pagy::NumericHelpers  # Adds series_nav, info_tag, etc. for views
+
+# In view:
+@pagy, @items = pagy(collection)
+<%= series_nav(@pagy) %>
+```
+
+**Before implementing any Pagy features:**
+1. Check [Pagy v43 official docs](https://ddnexus.github.io/pagy/): Method names and APIs are NOT compatible with older tutorials
+2. Look for existing usage in `app/views/` to match patterns
+3. If unsure about a method name, check `lib/pagy/toolbox/helpers/loaders.rb` for available methods
+
 ## Development
 
 **Ruby LSP Integration**
