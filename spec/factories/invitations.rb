@@ -45,17 +45,6 @@ FactoryBot.define do
     association :invitable, factory: :list
     association :invited_by, factory: :user
 
-    transient do
-      organization { nil }
-    end
-
-    before(:create) do |invitation, evaluator|
-      if evaluator.organization
-        invitation.invitable = evaluator.organization
-        invitation.organization_id = evaluator.organization.id
-      end
-    end
-
     trait :pending do
       user_id { nil }
     end

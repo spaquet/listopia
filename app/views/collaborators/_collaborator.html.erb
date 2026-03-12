@@ -15,7 +15,7 @@
   </div>
   <div class="flex items-center space-x-2">
     <!-- Permission Toggle -->
-    <%= form_with model: collaborator, url: polymorphic_path([@collaboratable, collaborator]), method: :patch, local: false, class: "inline-block" do |f| %>
+    <%= form_with model: collaborator, url: collaborator_path(collaborator), method: :patch, local: false, class: "inline-block" do |f| %>
       <%= f.select :permission,
             options_for_select([
               ['Read Only', 'read'],
@@ -26,7 +26,7 @@
               onchange: "this.form.submit();" } %>
     <% end %>
     <!-- Remove Button -->
-    <%= button_to polymorphic_path([@collaboratable, collaborator]),
+    <%= button_to collaborator_path(collaborator),
           method: :delete,
           remote: true,
           form: { data: { confirm: "Are you sure you want to remove this collaborator?" } },

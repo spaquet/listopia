@@ -168,7 +168,6 @@ class Invitation < ApplicationRecord
   end
 
   def clear_invitation_token
-    # Only clear the token after the invitation has been accepted
-    self.invitation_token = nil if status_changed? && status == "accepted"
+    self.invitation_token = nil
   end
 end

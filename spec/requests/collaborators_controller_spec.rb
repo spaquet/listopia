@@ -135,20 +135,20 @@ RSpec.describe CollaboratorsController, type: :request do
 
     it 'updates permission' do
       patch list_collaborator_path(list, collab),
-            params: { collaborator: { permission: 'write' } }
-      expect(collab.reload.permission).to eq('write')
+            params: { collaborator: { permission: 'collaborate' } }
+      expect(collab.reload.permission).to eq('collaborate')
     end
 
     it 'redirects to index' do
       patch list_collaborator_path(list, collab),
-            params: { collaborator: { permission: 'write' } }
+            params: { collaborator: { permission: 'collaborate' } }
       expect(response).to redirect_to(list_collaborators_path(list))
     end
 
     context 'turbo stream' do
       it 'returns turbo stream response' do
         patch list_collaborator_path(list, collab),
-              params: { collaborator: { permission: 'write' } },
+              params: { collaborator: { permission: 'collaborate' } },
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 406]).to include(response.status)
       end
