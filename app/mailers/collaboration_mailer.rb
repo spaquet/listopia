@@ -46,7 +46,7 @@ class CollaborationMailer < ApplicationMailer
   def added_to_resource(collaborator)
     @collaborator = collaborator
     @collaboratable = collaborator.collaboratable
-    @resource_url = polymorphic_url(@collaboratable)
+    @resource_url = resource_url_for(@collaboratable)
 
     mail(
       to: @collaborator.user.email,
@@ -69,7 +69,7 @@ class CollaborationMailer < ApplicationMailer
     @collaboratable = collaborator.collaboratable
     @old_permission = old_permission
     @new_permission = collaborator.permission
-    @resource_url = polymorphic_url(@collaboratable)
+    @resource_url = resource_url_for(@collaboratable)
 
     mail(
       to: @collaborator.user.email,
@@ -98,6 +98,17 @@ class CollaborationMailer < ApplicationMailer
   end
 
   private
+
+  def resource_url_for(collaboratable)
+    case collaboratable
+    when ListItem
+      list_item_url(collaboratable.list, collaboratable)
+    when List
+      list_url(collaboratable)
+    else
+      dashboard_url
+    end
+  end
 
   def handle_organization_membership_email(membership)
     @membership = membership

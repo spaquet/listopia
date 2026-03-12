@@ -69,7 +69,7 @@ class Invitation < ApplicationRecord
 
   before_create :set_invitation_sent_at
   before_validation :set_default_status, on: :create
-  before_save :clear_invitation_token
+  before_save :clear_invitation_token, if: -> { status_changed? && status == "accepted" }
 
   def pending?
     status == "pending"
