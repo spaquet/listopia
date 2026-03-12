@@ -8,11 +8,14 @@ class NotificationMailer < ApplicationMailer
     @user = notification.recipient
     @event = notification.event
 
-    # Route to appropriate method based on notification type
-    method_name = @event.notification_type&.underscore
-    return unless respond_to?(method_name, true)
+    # Fallback to notification_email if no event or notification_type
+    return send(:notification_email, notification) unless @event.respond_to?(:notification_type)
 
-    send(method_name, notification)
+    # Route to appropriate method based on notification type
+    method_name = @event.notification_type.underscore
+    return send(:notification_email, notification) unless respond_to?(method_name, true)
+
+    public_send(method_name, notification)
   end
 
   # Generic notification delivery
