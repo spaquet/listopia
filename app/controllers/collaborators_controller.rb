@@ -2,7 +2,7 @@
 class CollaboratorsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_collaboratable
-  before_action :set_collaborator, only: [ :show, :update, :destroy ]
+  before_action :set_collaborator, only: [ :update, :destroy ]
 
   def index
     authorize Collaborator.new(collaboratable: @collaboratable)
