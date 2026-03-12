@@ -3,27 +3,24 @@ class NotificationMailer < ApplicationMailer
   default from: "noreply@listopia.com"
 
   # Noticed integration - routes to appropriate method based on notification_type
-  def deliver_notification(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  # The noticed gem's deliver method sets these parameters based on the Noticed::Notification record
+  def deliver_notification
+    # @notification should be set by the noticed gem's delivery mechanism
+    # If it's not set, we might be called directly (e.g., in tests)
+    return notification_email unless @notification&.event
 
-    # Fallback to notification_email if no event or notification_type
-    return send(:notification_email, notification) unless @event.respond_to?(:notification_type)
+    @user = @notification.recipient
+    @event = @notification.event
 
     # Route to appropriate method based on notification type
-    method_name = @event.notification_type.underscore
-    return send(:notification_email, notification) unless respond_to?(method_name, true)
+    method_name = @event.notification_type&.underscore
+    return notification_email unless method_name && respond_to?(method_name, true)
 
-    public_send(method_name, notification)
+    public_send(method_name)
   end
 
   # Generic notification delivery
-  def notification_email(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
-
+  def notification_email
     mail(
       to: @user.email,
       subject: @event.title
@@ -31,10 +28,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Collaboration notification
-  def collaboration(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def collaboration
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
 
@@ -45,10 +39,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item activity notification
-  def item_activity(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_activity
     @actor_name = @event.actor_name
 
     mail(
@@ -58,10 +49,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item priority changed notification
-  def item_priority_changed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_priority_changed
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @new_priority = @event.params[:new_priority]&.humanize
@@ -73,10 +61,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Status change notification
-  def status_change(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def status_change
     @actor_name = @event.actor_name
 
     mail(
@@ -86,10 +71,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # List activity notification
-  def list_activity(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def list_activity
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
 
@@ -100,10 +82,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item assignment notification
-  def item_assignment(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_assignment
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
     @actor_name = @event.actor_name
@@ -119,10 +98,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_assigned, :item_assignment
 
   # Comment notification
-  def item_comment(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_comment
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
@@ -138,10 +114,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_commented, :item_comment
 
   # Item completion notification
-  def item_completion(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_completion
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
@@ -157,10 +130,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_completed, :item_completion
 
   # Priority change notification
-  def priority_changed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def priority_changed
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @new_priority = @event.params[:new_priority]&.humanize
@@ -173,10 +143,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Permission change notification
-  def permission_changed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def permission_changed
     @actor_name = @event.actor_name
     @new_permission = @event.params[:new_permission]
     @list_title = @event.target_list&.title
@@ -189,10 +156,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Team invitation notification
-  def team_invitation(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def team_invitation
     @actor_name = @event.actor_name
     @team_name = @event.params[:team_name]
 
@@ -206,10 +170,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :team_invited, :team_invitation
 
   # List archived notification
-  def list_archived(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def list_archived
     @actor_name = @event.actor_name
     @list_title = @event.params[:list_title]
 
@@ -220,10 +181,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Mention notification
-  def mention(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def mention
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
@@ -238,10 +196,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :mentioned, :mention
 
   # Digest notification
-  def digest(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def digest
     @frequency = @event.params[:frequency] || "daily"
     @item_count = @event.params[:item_count] || 0
     @comment_count = @event.params[:comment_count] || 0
