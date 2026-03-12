@@ -488,7 +488,7 @@ RSpec.describe AnalyticsController, type: :request do
       let(:collaborator) { create(:user, :verified) }
 
       before do
-        create(:list_collaboration, list: list, user: collaborator, permission: 'read')
+        create(:collaborator, collaboratable: list, user: collaborator, permission: 'read')
       end
 
       it 'counts collaborators' do
@@ -518,8 +518,8 @@ RSpec.describe AnalyticsController, type: :request do
     let(:read_only_collaborator) { create(:user, :verified) }
 
     before do
-      create(:list_collaboration, list: list, user: collaborator, permission: 'collaborate')
-      create(:list_collaboration, list: list, user: read_only_collaborator, permission: 'read')
+      create(:collaborator, collaboratable: list, user: collaborator, permission: 'write')
+      create(:collaborator, collaboratable: list, user: read_only_collaborator, permission: 'read')
     end
 
     it 'allows read-only collaborators to view analytics' do

@@ -2,8 +2,14 @@
 class ListItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_list
-  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share, :visit_url ]
+  before_action :set_list_item, only: [ :show, :edit, :update, :destroy, :toggle_completion, :toggle_status, :share, :visit_url, :inline_update ]
   before_action :authorize_list_access!
+
+  def index
+    # Simply return list items - set_list already validates list exists
+    # This action is rarely used directly but needed for REST compliance
+    @list_items = @list.list_items
+  end
 
   def create
     # USE ListItemService for all item creation logic
@@ -98,6 +104,11 @@ class ListItemsController < ApplicationController
   def show
     # Loads @list_item and @list via before_action
     authorize @list_item, :show?
+
+    respond_to do |format|
+      format.html
+      format.json { render json: @list_item }
+    end
   end
 
   def edit
@@ -279,9 +290,10 @@ class ListItemsController < ApplicationController
   private
 
   def set_list
-    @list = List.find(params[:list_id])
-  rescue ActiveRecord::RecordNotFound
-    redirect_to lists_path, alert: "List not found."
+    @list = List.find_by(id: params[:list_id])
+    unless @list
+      redirect_to lists_path, alert: "List not found."
+    end
   end
 
   def set_list_item

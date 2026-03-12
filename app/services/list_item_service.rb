@@ -49,7 +49,7 @@ class ListItemService
           position: position,
           item_type: options[:item_type] || determine_item_type(title),
           priority: options[:priority] || :medium,
-          **options.slice(:due_date, :reminder_at, :assigned_user_id, :url, :metadata, :completed)
+          **options.slice(:due_date, :reminder_at, :assigned_user_id, :url, :metadata, :completed, :status)
         )
 
         unless item.save

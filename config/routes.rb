@@ -131,6 +131,7 @@ Rails.application.routes.draw do
     resources :list_items, path: "items", except: [ :new ] do
       member do
         patch :toggle_completion
+        patch :inline_update
         get :share
         get :visit_url
       end

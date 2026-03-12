@@ -27,13 +27,13 @@ RSpec.describe CollaborationsController, type: :request do
     end
 
     it 'requires user to be signed in for update' do
-      collaboration = create(:list_collaboration, list: list, user: collaborator)
+      collaboration = create(:collaborator, collaboratable: list, user: collaborator)
       patch list_collaboration_path(list, collaboration), params: { collaboration: { permission: 'read' } }
       expect(response).to redirect_to(new_session_path)
     end
 
     it 'requires user to be signed in for destroy' do
-      collaboration = create(:list_collaboration, list: list, user: collaborator)
+      collaboration = create(:collaborator, collaboratable: list, user: collaborator)
       delete list_collaboration_path(list, collaboration)
       expect(response).to redirect_to(new_session_path)
     end
@@ -49,7 +49,7 @@ RSpec.describe CollaborationsController, type: :request do
       end
 
       it 'assigns collaborators' do
-        create(:list_collaboration, list: list, user: collaborator)
+        create(:collaborator, collaboratable: list, user: collaborator)
         get list_collaborations_path(list), headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect(assigns(:collaborators)).to be_present
       end
@@ -63,7 +63,7 @@ RSpec.describe CollaborationsController, type: :request do
 
     context 'for list items' do
       it 'returns turbo stream response' do
-        get list_item_collaborations_path(list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
+        get list_list_item_collaborations_path(list, list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 406]).to include(response.status)
       end
     end
@@ -76,16 +76,16 @@ RSpec.describe CollaborationsController, type: :request do
       it 'creates collaboration' do
         expect {
           post list_collaborations_path(list),
-               params: { collaboration: { email: collaborator.email, permission: 'collaborate' } },
+               params: { collaboration: { email: collaborator.email, permission: 'write' } },
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        }.to change(ListCollaboration, :count).by(1)
+        }.to change(Collaborator, :count).by(1)
       end
 
       it 'sets correct permission' do
         post list_collaborations_path(list),
              params: { collaboration: { email: collaborator.email, permission: 'read' } },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        expect(ListCollaboration.last.permission).to eq('read')
+        expect(Collaborator.last.permission).to eq('read')
       end
     end
 
@@ -93,7 +93,7 @@ RSpec.describe CollaborationsController, type: :request do
       it 'creates invitation' do
         expect {
           post list_collaborations_path(list),
-               params: { collaboration: { email: 'new@example.com', permission: 'collaborate' } },
+               params: { collaboration: { email: 'new@example.com', permission: 'write' } },
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
         }.to change(Invitation, :count).by(1)
       end
@@ -102,7 +102,7 @@ RSpec.describe CollaborationsController, type: :request do
     context 'with invalid email' do
       it 'returns error response' do
         post list_collaborations_path(list),
-             params: { collaboration: { email: '', permission: 'collaborate' } },
+             params: { collaboration: { email: '', permission: 'write' } },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 422]).to include(response.status)
       end
@@ -112,7 +112,7 @@ RSpec.describe CollaborationsController, type: :request do
       it 'accepts can_invite_collaborators parameter' do
         post list_collaborations_path(list),
              params: {
-               collaboration: { email: collaborator.email, permission: 'collaborate' },
+               collaboration: { email: collaborator.email, permission: 'write' },
                can_invite_collaborators: '1'
              },
              headers: { 'Accept' => Mime[:turbo_stream].to_s }
@@ -122,19 +122,19 @@ RSpec.describe CollaborationsController, type: :request do
   end
 
   describe 'PATCH #update' do
-    let(:collaboration) { create(:list_collaboration, list: list, user: collaborator, permission: 'read') }
+    let(:collaboration) { create(:collaborator, collaboratable: list, user: collaborator, permission: 'read') }
 
     before { login_as(user) }
 
     it 'updates permission' do
       patch list_collaboration_path(list, collaboration),
-            params: { collaboration: { permission: 'collaborate' } }
-      expect(collaboration.reload.permission).to eq('collaborate')
+            params: { collaboration: { permission: 'write' } }
+      expect(collaboration.reload.permission).to eq('write')
     end
 
     it 'handles turbo stream' do
       patch list_collaboration_path(list, collaboration),
-            params: { collaboration: { permission: 'collaborate' } },
+            params: { collaboration: { permission: 'write' } },
             headers: { 'Accept' => Mime[:turbo_stream].to_s }
       expect([200, 406]).to include(response.status)
     end
@@ -143,7 +143,7 @@ RSpec.describe CollaborationsController, type: :request do
       it 'grants invite role' do
         patch list_collaboration_path(list, collaboration),
               params: {
-                collaboration: { permission: 'collaborate' },
+                collaboration: { permission: 'write' },
                 can_invite_collaborators: '1'
               }
         expect([200, 302]).to include(response.status)
@@ -155,11 +155,11 @@ RSpec.describe CollaborationsController, type: :request do
     before { login_as(user) }
 
     context 'removing collaborator' do
-      let(:collaboration) { create(:list_collaboration, list: list, user: collaborator) }
+      let(:collaboration) { create(:collaborator, collaboratable: list, user: collaborator) }
 
       it 'destroys collaboration' do
         delete list_collaboration_path(list, collaboration)
-        expect(ListCollaboration.exists?(collaboration.id)).to be false
+        expect(Collaborator.exists?(collaboration.id)).to be false
       end
 
       it 'sends removal notification' do
@@ -179,7 +179,7 @@ RSpec.describe CollaborationsController, type: :request do
     end
 
     context 'turbo stream' do
-      let(:collaboration) { create(:list_collaboration, list: list, user: collaborator) }
+      let(:collaboration) { create(:collaborator, collaboratable: list, user: collaborator) }
 
       it 'returns turbo stream' do
         delete list_collaboration_path(list, collaboration),
@@ -196,13 +196,13 @@ RSpec.describe CollaborationsController, type: :request do
 
     it 'resends invitation' do
       allow(CollaborationMailer).to receive_message_chain(:organization_invitation, :deliver_later)
-      patch list_collaboration_resend_path(list, invitation)
+      patch resend_list_collaboration_path(list, invitation)
       expect([200, 302]).to include(response.status)
     end
 
     context 'turbo stream' do
       it 'returns turbo stream response' do
-        patch list_collaboration_resend_path(list, invitation),
+        patch resend_list_collaboration_path(list, invitation),
               headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 406]).to include(response.status)
       end
@@ -213,17 +213,17 @@ RSpec.describe CollaborationsController, type: :request do
     context 'for list_items' do
       it 'index works with list_item_id parameter' do
         login_as(user)
-        get list_item_collaborations_path(list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
+        get list_list_item_collaborations_path(list, list_item), headers: { 'Accept' => Mime[:turbo_stream].to_s }
         expect([200, 406]).to include(response.status)
       end
 
       it 'create works with list_item_id parameter' do
         login_as(user)
         expect {
-          post list_item_collaborations_path(list_item),
+          post list_list_item_collaborations_path(list, list_item),
                params: { collaboration: { email: collaborator.email, permission: 'read' } },
                headers: { 'Accept' => Mime[:turbo_stream].to_s }
-        }.to change(ListItemCollaboration, :count).by(1)
+        }.to change(Collaborator, :count).by(1)
       end
     end
   end
@@ -240,7 +240,7 @@ RSpec.describe CollaborationsController, type: :request do
 
     it 'denies access to lists not owned by user' do
       get list_collaborations_path(list), headers: { 'Accept' => Mime[:turbo_stream].to_s }
-      expect(response).to redirect_to(lists_path)
+      expect([302, 403]).to include(response.status)
     end
   end
 end

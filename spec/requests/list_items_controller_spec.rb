@@ -291,8 +291,8 @@ RSpec.describe ListItemsController, type: :request do
 
     it 'accepts item_type' do
       post list_list_items_path(list),
-           params: { list_item: { title: 'Test', item_type: 'goal' } }
-      expect(ListItem.last.item_type).to eq('goal')
+           params: { list_item: { title: 'Test', item_type: 'learning' } }
+      expect(ListItem.last.item_type).to eq('learning')
     end
 
     it 'accepts status' do
@@ -306,7 +306,8 @@ RSpec.describe ListItemsController, type: :request do
     before { login_as(user) }
 
     it 'requires valid list_id' do
-      get list_list_items_path('invalid-id')
+      invalid_list_id = SecureRandom.uuid
+      get list_list_items_path(invalid_list_id)
       expect(response).to redirect_to(lists_path)
     end
   end

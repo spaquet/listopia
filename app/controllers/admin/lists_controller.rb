@@ -4,6 +4,7 @@ class Admin::ListsController < Admin::BaseController
 
   def index
     @pagy, @lists = pagy(List.includes(:owner).order(created_at: :desc))
+    @lists = @lists.to_a
   end
 
   def show

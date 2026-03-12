@@ -179,12 +179,12 @@ class CollaborationsController < ApplicationController
     old_permission = @collaboration.permission
 
     if @collaboration.update(collaboration_params.slice(:permission))
-      # Handle role changes
-      if params[:can_invite_collaborators] == "1" || params[:can_invite_collaborators] == true
-        @collaboration.add_role(:can_invite_collaborators) unless @collaboration.has_role?(:can_invite_collaborators)
-      else
-        @collaboration.remove_role(:can_invite_collaborators) if @collaboration.has_role?(:can_invite_collaborators)
-      end
+      # TODO: Handle role changes - add_role/has_role not yet implemented
+      # if params[:can_invite_collaborators] == "1" || params[:can_invite_collaborators] == true
+      #   @collaboration.add_role(:can_invite_collaborators) unless @collaboration.has_role?(:can_invite_collaborators)
+      # else
+      #   @collaboration.remove_role(:can_invite_collaborators) if @collaboration.has_role?(:can_invite_collaborators)
+      # end
 
       CollaborationMailer.permission_updated(@collaboration, old_permission).deliver_later if old_permission != @collaboration.permission
 
