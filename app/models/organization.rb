@@ -36,6 +36,7 @@ class Organization < ApplicationRecord
   has_many :team_memberships, through: :teams
   has_many :teams, dependent: :destroy
   has_many :lists, dependent: :destroy
+  has_many :chats, dependent: :destroy
   has_many :invitations, dependent: :destroy
 
   # Validations

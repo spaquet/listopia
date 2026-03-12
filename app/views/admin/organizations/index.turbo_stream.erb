@@ -1,0 +1,15 @@
+<%= turbo_stream.replace("organizations_list") do %>
+  <div id="organizations_list">
+    <% if @organizations.any? %>
+      <div class="space-y-2">
+        <% @organizations.each do |organization| %>
+          <%= render 'organization_row', organization: organization %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-8">
+        <p class="text-gray-500">No organizations found</p>
+      </div>
+    <% end %>
+  </div>
+<% end %>

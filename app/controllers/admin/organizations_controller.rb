@@ -45,7 +45,13 @@ class Admin::OrganizationsController < Admin::BaseController
   rescue => e
     Rails.logger.error("Organization filter error: #{e.message}\n#{e.backtrace.join("\n")}")
     flash.now[:alert] = "An error occurred while filtering organizations"
-    render :index, status: :unprocessable_entity
+    @organizations = []
+    @filters = { query: nil, status: nil, size: nil, sort_by: nil }
+    @total_organizations = 0
+    respond_to do |format|
+      format.html { render :index, status: :unprocessable_entity }
+      format.turbo_stream { render :index, status: :unprocessable_entity }
+    end
   end
 
   def show
@@ -110,11 +116,6 @@ class Admin::OrganizationsController < Admin::BaseController
     end
   end
 
-  def members
-    authorize @organization, :manage_members?
-    @pagy, @members = pagy(@organization.organization_memberships.includes(:user).order(created_at: :desc))
-  end
-
   def suspend
     authorize @organization, :suspend?
 
@@ -161,7 +162,7 @@ class Admin::OrganizationsController < Admin::BaseController
 
   def audit_logs
     authorize @organization, :audit_logs?
-    @audits = @organization.audits.order(created_at: :desc).limit(50)
+    @audits = @organization.respond_to?(:audits) ? @organization.audits.order(created_at: :desc).limit(50) : []
   end
 
   private

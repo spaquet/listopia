@@ -1,0 +1,43 @@
+<div class="max-w-6xl mx-auto p-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Organization Members</h2>
+      <p class="text-sm text-gray-600 mt-1"><%= @organization.name %></p>
+    </div>
+
+    <div class="px-6 py-4">
+      <% if @members.any? %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Joined At</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @members.each do |membership| %>
+                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                  <td class="px-4 py-2 text-sm text-gray-900"><%= membership.user.email %></td>
+                  <td class="px-4 py-2 text-sm text-gray-600 capitalize"><%= membership.role %></td>
+                  <td class="px-4 py-2 text-sm text-gray-600 capitalize"><%= membership.status %></td>
+                  <td class="px-4 py-2 text-sm text-gray-600"><%= membership.joined_at.strftime('%b %d, %Y') %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if @pagy && @pagy.pages > 1 %>
+          <div class="mt-6 flex justify-center">
+            <p class="text-gray-600">Page <%= @pagy.page %> of <%= @pagy.pages %></p>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="text-sm text-gray-500">No members found</p>
+      <% end %>
+    </div>
+  </div>
+</div>

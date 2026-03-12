@@ -86,5 +86,16 @@ FactoryBot.define do
         end
       end
     end
+
+    trait :with_creator_membership do
+      after(:create) do |organization|
+        organization.organization_memberships.create!(
+          user: organization.creator,
+          role: :owner,
+          status: :active,
+          joined_at: Time.current
+        )
+      end
+    end
   end
 end

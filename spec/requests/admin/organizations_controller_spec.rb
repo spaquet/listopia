@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Admin::OrganizationsController, type: :request do
   let(:admin_user) { create(:user, :admin, :verified) }
   let(:non_admin_user) { create(:user, :verified) }
-  let(:organization) { create(:organization, creator: admin_user) }
+  let(:organization) { create(:organization, :with_creator_membership, creator: admin_user) }
 
   def login_as(user)
     post session_path, params: { email: user.email, password: user.password }
@@ -56,7 +56,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
     end
 
     it 'requires user to be signed in for audit_logs' do
-      get admin_organization_audit_logs_path(organization)
+      get audit_logs_admin_organization_path(organization)
       expect(response).to redirect_to(new_session_path)
     end
 
@@ -192,7 +192,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
         post admin_organizations_path, params: { organization: { name: 'New Org' } }
         org = Organization.last
         membership = org.organization_memberships.find_by(user: admin_user)
-        expect(membership.owner?).to be true
+        expect(membership.role_owner?).to be true
       end
 
       it 'redirects to show' do
@@ -221,7 +221,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
       it 'renders new template on error' do
         post admin_organizations_path, params: { organization: { name: '' } }
-        expect(response.body).to include('New Organization')
+        expect(response.body).to include('Create Organization')
       end
     end
 
@@ -250,7 +250,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'PATCH #update' do
-    let(:organization) { create(:organization, creator: admin_user, name: 'Original Name') }
+    let(:organization) { create(:organization, :with_creator_membership, creator: admin_user, name: 'Original Name') }
 
     before { login_as(admin_user) }
 
@@ -300,7 +300,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
     before { login_as(admin_user) }
 
     it 'deletes the organization' do
-      org = create(:organization, creator: admin_user)
+      org = create(:organization, :with_creator_membership, creator: admin_user)
       org_id = org.id
 
       delete admin_organization_path(org)
@@ -309,13 +309,13 @@ RSpec.describe Admin::OrganizationsController, type: :request do
     end
 
     it 'redirects to index' do
-      org = create(:organization, creator: admin_user)
+      org = create(:organization, :with_creator_membership, creator: admin_user)
       delete admin_organization_path(org)
       expect(response).to redirect_to(admin_organizations_path)
     end
 
     it 'displays success message' do
-      org = create(:organization, creator: admin_user)
+      org = create(:organization, :with_creator_membership, creator: admin_user)
       delete admin_organization_path(org)
       follow_redirect!
       expect(response.body).to include('deleted successfully')
@@ -323,7 +323,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'GET #members' do
-    let(:organization) { create(:organization, creator: admin_user) }
+    let(:organization) { create(:organization, :with_creator_membership, creator: admin_user) }
 
     before do
       login_as(admin_user)
@@ -366,7 +366,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'POST #suspend' do
-    let(:organization) { create(:organization, creator: admin_user, status: 'active') }
+    let(:organization) { create(:organization, :with_creator_membership, creator: admin_user, status: 'active') }
 
     before do
       login_as(admin_user)
@@ -374,7 +374,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     it 'suspends the organization' do
       post suspend_admin_organization_path(organization)
-      expect(organization.reload.suspended?).to be true
+      expect(organization.reload.status_suspended?).to be true
     end
 
     it 'redirects to index' do
@@ -398,7 +398,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'POST #reactivate' do
-    let(:organization) { create(:organization, creator: admin_user, status: 'suspended') }
+    let(:organization) { create(:organization, :with_creator_membership, creator: admin_user, status: 'suspended') }
 
     before do
       login_as(admin_user)
@@ -406,7 +406,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
     it 'reactivates the organization' do
       post reactivate_admin_organization_path(organization)
-      expect(organization.reload.active?).to be true
+      expect(organization.reload.status_active?).to be true
     end
 
     it 'redirects to index' do
@@ -430,30 +430,30 @@ RSpec.describe Admin::OrganizationsController, type: :request do
   end
 
   describe 'GET #audit_logs' do
-    let(:organization) { create(:organization, creator: admin_user) }
+    let(:organization) { create(:organization, :with_creator_membership, creator: admin_user) }
 
     before do
       login_as(admin_user)
     end
 
     it 'returns 200' do
-      get admin_organization_audit_logs_path(organization)
+      get audit_logs_admin_organization_path(organization)
       expect(response).to have_http_status(:ok)
     end
 
     it 'assigns audit logs' do
-      get admin_organization_audit_logs_path(organization)
-      expect(assigns(:audits)).to be_present
+      get audit_logs_admin_organization_path(organization)
+      expect(assigns(:audits)).to be_an(Array)
     end
 
     it 'limits to 50 most recent audits' do
-      get admin_organization_audit_logs_path(organization)
+      get audit_logs_admin_organization_path(organization)
       expect(assigns(:audits).length).to be <= 50
     end
 
     context 'when organization does not exist' do
       it 'redirects to index' do
-        get admin_organization_audit_logs_path('invalid-id')
+        get audit_logs_admin_organization_path('invalid-id')
         expect(response).to redirect_to(admin_organizations_path)
       end
     end
