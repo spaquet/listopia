@@ -27,6 +27,75 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Collaboration notification
+  def collaboration(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+    @actor_name = @event.actor_name
+    @list_title = @event.target_list&.title
+
+    mail(
+      to: @user.email,
+      subject: "#{@actor_name} invited you to collaborate"
+    )
+  end
+
+  # Item activity notification
+  def item_activity(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+    @actor_name = @event.actor_name
+
+    mail(
+      to: @user.email,
+      subject: "Activity on an item you follow"
+    )
+  end
+
+  # Item priority changed notification
+  def item_priority_changed(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+    @actor_name = @event.actor_name
+    @item_title = @event.params[:item_title]
+    @new_priority = @event.params[:new_priority]&.humanize
+
+    mail(
+      to: @user.email,
+      subject: "Priority changed for \"#{@item_title}\""
+    )
+  end
+
+  # Status change notification
+  def status_change(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+    @actor_name = @event.actor_name
+
+    mail(
+      to: @user.email,
+      subject: "Status changed on a list you follow"
+    )
+  end
+
+  # List activity notification
+  def list_activity(notification)
+    @notification = notification
+    @user = notification.recipient
+    @event = notification.event
+    @actor_name = @event.actor_name
+    @list_title = @event.target_list&.title
+
+    mail(
+      to: @user.email,
+      subject: "Activity on \"#{@list_title}\""
+    )
+  end
+
   # Item assignment notification
   def item_assigned(notification)
     @notification = notification
