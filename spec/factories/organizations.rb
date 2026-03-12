@@ -32,6 +32,18 @@ FactoryBot.define do
     status { :active }
     creator { association :user }
 
+    after(:create) do |organization|
+      # Ensure the creator is an owner of the organization
+      unless organization.membership_for(organization.creator)
+        organization.organization_memberships.create!(
+          user: organization.creator,
+          role: :owner,
+          status: :active,
+          joined_at: Time.current
+        )
+      end
+    end
+
     trait :medium do
       size { :medium }
     end

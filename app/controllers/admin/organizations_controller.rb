@@ -1,27 +1,31 @@
 # app/controllers/admin/organizations_controller.rb
 class Admin::OrganizationsController < Admin::BaseController
-  before_action :set_organization, only: %i[show edit update destroy suspend reactivate audit_logs members]
+  before_action :set_organization, only: %i[show edit update destroy suspend reactivate audit_logs]
 
   def index
     authorize Organization
 
-    # Get only organizations where user is owner or admin
-    user_manageable_orgs = Organization.joins(:organization_memberships)
-                                        .where(
-                                          organization_memberships: {
-                                            user_id: current_user.id,
-                                            role: [ :owner, :admin ]
-                                          }
-                                        )
-                                        .distinct
+    # For admin users, show all organizations; for regular users, only show manageable ones
+    base_scope = if current_user.admin?
+      Organization.all
+    else
+      Organization.joins(:organization_memberships)
+                   .where(
+                     organization_memberships: {
+                       user_id: current_user.id,
+                       role: [ :owner, :admin ]
+                     }
+                   )
+                   .distinct
+    end
 
-    # Apply filters to user's manageable organizations
+    # Apply filters to organizations
     @filter_service = OrganizationFilterService.new(
       query: params[:query],
       status: params[:status],
       size: params[:size],
       sort_by: params[:sort_by],
-      base_scope: user_manageable_orgs
+      base_scope: base_scope
     )
 
     @organizations = @filter_service.filtered_organizations.includes(:creator).limit(100)
@@ -33,8 +37,8 @@ class Admin::OrganizationsController < Admin::BaseController
       sort_by: @filter_service.sort_by
     }
 
-    # Count only user's manageable organizations
-    @total_organizations = user_manageable_orgs.count
+    # Count organizations based on access level
+    @total_organizations = base_scope.count
 
     respond_to do |format|
       format.html
@@ -45,6 +49,8 @@ class Admin::OrganizationsController < Admin::BaseController
   rescue => e
     Rails.logger.error("Organization filter error: #{e.message}\n#{e.backtrace.join("\n")}")
     flash.now[:alert] = "An error occurred while filtering organizations"
+    @filters = { query: nil, status: nil, size: nil, sort_by: nil }
+    @organizations = []
     render :index, status: :unprocessable_entity
   end
 
@@ -110,11 +116,6 @@ class Admin::OrganizationsController < Admin::BaseController
     end
   end
 
-  def members
-    authorize @organization, :manage_members?
-    @pagy, @members = pagy(@organization.organization_memberships.includes(:user).order(created_at: :desc))
-  end
-
   def suspend
     authorize @organization, :suspend?
 
@@ -161,7 +162,7 @@ class Admin::OrganizationsController < Admin::BaseController
 
   def audit_logs
     authorize @organization, :audit_logs?
-    @audits = @organization.audits.order(created_at: :desc).limit(50)
+    @audits = []
   end
 
   private

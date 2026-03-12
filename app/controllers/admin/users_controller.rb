@@ -146,8 +146,6 @@ class Admin::UsersController < Admin::BaseController
   end
 
   def destroy
-    authorize @user, :destroy?
-
     if @user == current_user
       respond_to do |format|
         format.html { redirect_to admin_users_path, alert: "You cannot delete your own account." }
@@ -156,6 +154,7 @@ class Admin::UsersController < Admin::BaseController
         end
       end
     else
+      authorize @user, :destroy?
       @user.destroy
       respond_to do |format|
         format.html { redirect_to admin_users_path, notice: "User deleted successfully." }

@@ -37,6 +37,7 @@ class Organization < ApplicationRecord
   has_many :teams, dependent: :destroy
   has_many :lists, dependent: :destroy
   has_many :invitations, dependent: :destroy
+  has_many :chats, dependent: :destroy
 
   # Validations
   validates :name, presence: true, length: { minimum: 1, maximum: 255 }

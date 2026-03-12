@@ -1,0 +1,1 @@
+<%= turbo_stream.replace("member_#{@member.id}", partial: "admin/organization_members/member_row", locals: { membership: @member, organization: @organization }) %>

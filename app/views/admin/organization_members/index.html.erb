@@ -1,0 +1,43 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Members</h1>
+      <p class="mt-2 text-gray-600">Manage <%= @organization.name %> members</p>
+    </div>
+    <div class="flex gap-2">
+      <%= link_to "← Back", admin_organization_path(@organization), class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg" %>
+    </div>
+  </div>
+
+  <% if @members.any? %>
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <table class="w-full">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Name</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Email</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Role</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Status</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Joined</th>
+            <th class="px-6 py-3 text-left text-sm font-medium text-gray-600">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <% @members.each do |membership| %>
+            <%= render "member_row", membership: membership, organization: @organization %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if @pagy && @pagy.pages > 1 %>
+      <div class="mt-6 flex justify-center">
+        <p class="text-gray-600">Page <%= @pagy.page %> of <%= @pagy.pages %></p>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <p class="text-gray-600 mb-4">No members in this organization yet.</p>
+    </div>
+  <% end %>
+</div>

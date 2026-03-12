@@ -46,4 +46,48 @@ FactoryBot.define do
       permission { :write }
     end
   end
+
+  # Alias for backward compatibility and semantic clarity
+  factory :list_collaboration, class: "Collaborator" do
+    association :user
+    permission { :read }
+
+    transient do
+      list { nil }
+    end
+
+    before(:create) do |collaborator, evaluator|
+      if evaluator.list
+        collaborator.collaboratable = evaluator.list
+      else
+        collaborator.collaboratable ||= create(:list)
+      end
+    end
+
+    trait :with_write_permission do
+      permission { :write }
+    end
+  end
+
+  # Alias for list_item collaborators
+  factory :list_item_collaboration, class: "Collaborator" do
+    association :user
+    permission { :read }
+
+    transient do
+      list_item { nil }
+    end
+
+    before(:create) do |collaborator, evaluator|
+      if evaluator.list_item
+        collaborator.collaboratable = evaluator.list_item
+      else
+        collaborator.collaboratable ||= create(:list_item)
+      end
+    end
+
+    trait :with_write_permission do
+      permission { :write }
+    end
+  end
 end
