@@ -120,6 +120,9 @@ Rails.application.routes.draw do
     # Analytics routes
     resources :analytics, only: [ :index ]
 
+    # Collaborators - direct collaborator management
+    resources :collaborators, only: [ :index, :create, :update, :destroy ]
+
     # Collaborations
     resources :collaborations, except: [ :new, :edit ] do
       member do
@@ -135,6 +138,9 @@ Rails.application.routes.draw do
         get :share
         get :visit_url
       end
+
+      # Collaborators - direct collaborator management
+      resources :collaborators, only: [ :index, :create, :update, :destroy ]
 
       # Collaborations on ListItems
       resources :collaborations, except: [ :new, :edit ]
@@ -159,6 +165,11 @@ Rails.application.routes.draw do
         get :accept, path: "accept/:token", as: :accept
       end
     end
+  end
+
+  # Direct ListItem routes (not nested under lists, for polymorphic support)
+  resources :list_items, path: "items", only: [] do
+    resources :collaborators, only: [ :index, :create, :update, :destroy ]
   end
 
   # Notifications
