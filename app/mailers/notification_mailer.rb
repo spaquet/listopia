@@ -97,7 +97,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item assignment notification
-  def item_assigned(notification)
+  def item_assignment(notification)
     @notification = notification
     @user = notification.recipient
     @event = notification.event
@@ -113,7 +113,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Comment notification
-  def item_commented(notification)
+  def item_comment(notification)
     @notification = notification
     @user = notification.recipient
     @event = notification.event
@@ -129,7 +129,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item completion notification
-  def item_completed(notification)
+  def item_completion(notification)
     @notification = notification
     @user = notification.recipient
     @event = notification.event
@@ -177,7 +177,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Team invitation notification
-  def team_invited(notification)
+  def team_invitation(notification)
     @notification = notification
     @user = notification.recipient
     @event = notification.event
@@ -205,7 +205,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Mention notification
-  def mentioned(notification)
+  def mention(notification)
     @notification = notification
     @user = notification.recipient
     @event = notification.event
