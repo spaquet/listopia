@@ -67,6 +67,8 @@ end
 - Complex logic: `app/services/` (inherit ApplicationService)
 - Tests: RSpec with Factory Bot, Faker
 - Database: PostgreSQL with pgcrypto, plpgsql
+  - Uses `db/structure.sql` (not schema.rb) — enforced by user change tracking service
+  - All models annotated with `annotate` gem: see Schema Information at top of each model
 
 ## Development
 
