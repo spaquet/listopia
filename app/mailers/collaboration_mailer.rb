@@ -102,7 +102,8 @@ class CollaborationMailer < ApplicationMailer
   def resource_url_for(collaboratable)
     case collaboratable
     when ListItem
-      list_item_url(collaboratable.list, collaboratable)
+      # Use the nested route: /lists/:list_id/items/:id
+      list_list_item_url(collaboratable.list, collaboratable)
     when List
       list_url(collaboratable)
     else

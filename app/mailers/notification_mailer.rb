@@ -112,6 +112,9 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :item_assigned, :item_assignment
+
   # Comment notification
   def item_comment(notification)
     @notification = notification
@@ -128,6 +131,9 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :item_commented, :item_comment
+
   # Item completion notification
   def item_completion(notification)
     @notification = notification
@@ -143,6 +149,9 @@ class NotificationMailer < ApplicationMailer
       subject: "#{@actor_name} completed \"#{@item_title}\""
     )
   end
+
+  # Alias for backwards compatibility with tests
+  alias_method :item_completed, :item_completion
 
   # Priority change notification
   def priority_changed(notification)
@@ -190,6 +199,9 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :team_invited, :team_invitation
+
   # List archived notification
   def list_archived(notification)
     @notification = notification
@@ -218,6 +230,9 @@ class NotificationMailer < ApplicationMailer
       subject: "#{@actor_name} mentioned you"
     )
   end
+
+  # Alias for backwards compatibility with tests
+  alias_method :mentioned, :mention
 
   # Digest notification
   def digest(notification)
