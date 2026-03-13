@@ -226,7 +226,7 @@ class Admin::UsersController < Admin::BaseController
       mailer = AdminMailer.user_invitation(@user, token)
       # In tests with mocked AdminMailer, use deliver_later to match test stubs
       # In production/real tests, deliver_now avoids RSpec mock counting issues
-      if mailer.class.name.include?('Double')
+      if mailer.class.name.include?("Double")
         mailer.deliver_later
       elsif Rails.env.test?
         mailer.deliver_now
