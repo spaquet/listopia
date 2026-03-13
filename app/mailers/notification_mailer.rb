@@ -23,7 +23,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Generic notification delivery
-  def notification_email
+  def notification_email(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
 
     mail(
@@ -143,7 +147,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_completed, :item_completion
 
   # Priority change notification
-  def priority_changed
+  def priority_changed(notification = nil)(notification = nil)
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
@@ -157,7 +161,7 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Permission change notification
-  def permission_changed
+  def permission_changed(notification = nil)(notification = nil)
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @new_permission = @event.params[:new_permission]
@@ -171,7 +175,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Team invitation notification
-  def team_invitation
+  def team_invitation(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @team_name = @event.params[:team_name]
@@ -186,7 +194,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :team_invited, :team_invitation
 
   # List archived notification
-  def list_archived
+  def list_archived(notification = nil)(notification = nil)
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.params[:list_title]
@@ -198,7 +206,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Mention notification
-  def mention
+  def mention(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
@@ -214,7 +226,7 @@ class NotificationMailer < ApplicationMailer
   alias_method :mentioned, :mention
 
   # Digest notification
-  def digest
+  def digest(notification = nil)(notification = nil)
     return if @user.nil? || @event.nil?
     @frequency = @event.params[:frequency] || "daily"
     @item_count = @event.params[:item_count] || 0
