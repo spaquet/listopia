@@ -37,7 +37,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Collaboration notification
-  def collaboration
+  def collaboration(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
@@ -49,7 +53,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item activity notification
-  def item_activity
+  def item_activity(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
 
@@ -60,7 +68,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item priority changed notification
-  def item_priority_changed
+  def item_priority_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
@@ -73,7 +85,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Status change notification
-  def status_change
+  def status_change(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
 
@@ -84,7 +100,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # List activity notification
-  def list_activity
+  def list_activity(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
@@ -96,7 +116,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Item assignment notification
-  def item_assignment
+  def item_assignment(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
@@ -113,7 +137,11 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_assigned, :item_assignment
 
   # Comment notification
-  def item_comment
+  def item_comment(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
@@ -130,7 +158,11 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_commented, :item_comment
 
   # Item completion notification
-  def item_completion
+  def item_completion(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
@@ -226,7 +258,11 @@ class NotificationMailer < ApplicationMailer
   alias_method :mentioned, :mention
 
   # Digest notification
-  def digest(notification = nil)(notification = nil)
+  def digest(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @frequency = @event.params[:frequency] || "daily"
     @item_count = @event.params[:item_count] || 0
