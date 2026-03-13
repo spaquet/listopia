@@ -1,6 +1,6 @@
 # app/services/notification_service.rb
 class NotificationService < ApplicationService
-  def initialize(current_user)
+  def initialize(current_user = nil)
     @current_user = current_user
   end
 
@@ -40,6 +40,9 @@ class NotificationService < ApplicationService
 
     success(message: "Status change notifications sent")
   end
+
+  # Alias for backward compatibility
+  alias_method :notify_list_status_change, :notify_list_status_changed
 
   # Notify collaborators about item activity (only for active lists)
   def notify_item_activity(list_item, action, previous_title = nil)

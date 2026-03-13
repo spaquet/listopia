@@ -1,0 +1,10 @@
+Your permission has been updated
+
+Hi <%= @collaborator.user.name %>,
+
+Your permission for "<%= @collaboratable.title %>" has been updated.
+
+Previous permission: <%= @old_permission.to_s.capitalize %>
+New permission: <%= @new_permission.to_s.capitalize %>
+
+View "<%= @collaboratable.title %>": <%= @resource_url %>

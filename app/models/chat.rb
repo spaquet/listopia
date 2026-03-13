@@ -70,7 +70,7 @@ class Chat < ApplicationRecord
 
   scope :active, -> { where(status: :active) }
   scope :by_user, ->(user) { where(user_id: user.id) }
-  scope :by_organization, ->(org) { where(organization_id: org.id) }
+  scope :by_organization, ->(org) { org.present? ? where(organization_id: org.id) : none }
   scope :recent, -> { order(updated_at: :desc) }
   scope :ordered, -> { order(created_at: :asc) }
   scope :with_messages, -> { includes(:messages) }

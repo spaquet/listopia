@@ -27,7 +27,9 @@ class InvitationPolicy < ApplicationPolicy
   end
 
   def accept?
-    record.email == user&.email
+    # Allow both unauthenticated and authenticated users to attempt acceptance
+    # Email validation is handled at the controller level with a friendly error message
+    true
   end
 
   def show?

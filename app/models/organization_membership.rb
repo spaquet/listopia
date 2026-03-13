@@ -66,6 +66,10 @@ class OrganizationMembership < ApplicationRecord
   scope :admins_and_owners, -> { where(role: [ "admin", "owner" ]) }
 
   # Methods
+  def active?
+    status_active?
+  end
+
   def activate!
     update!(status: :active)
   end

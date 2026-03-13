@@ -190,6 +190,32 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # Safely redirect to an external URL with validation
+  def safe_external_redirect(url)
+    if valid_external_url?(url)
+      redirect_to url, allow_other_host: true
+    else
+      yield if block_given?
+    end
+  end
+
+  # Validate that a URL is safe to redirect to
+  def valid_external_url?(url)
+    return false if url.blank?
+
+    # Allow http in development/test, https in production
+    allowed_schemes = Rails.env.production? ? [ "https://" ] : [ "http://", "https://" ]
+    return false unless allowed_schemes.any? { |scheme| url.start_with?(scheme) }
+
+    # Validate URL structure
+    begin
+      URI.parse(url)
+      true
+    rescue URI::InvalidURIError
+      false
+    end
+  end
+
   # Build chat context for AI interactions
   def build_chat_context
     context = {

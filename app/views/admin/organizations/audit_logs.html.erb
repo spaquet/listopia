@@ -1,0 +1,23 @@
+<div class="max-w-6xl mx-auto p-6">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-xl font-semibold text-gray-900">Audit Logs</h2>
+      <p class="text-sm text-gray-600 mt-1"><%= @organization.name %></p>
+    </div>
+
+    <div class="px-6 py-4">
+      <% if @audits.any? %>
+        <div class="space-y-4">
+          <% @audits.each do |audit| %>
+            <div class="border-b pb-4">
+              <p class="text-sm font-medium text-gray-900"><%= audit.class %></p>
+              <p class="text-xs text-gray-500"><%= audit.created_at.strftime('%b %d, %Y %H:%M:%S') %></p>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-gray-500">No audit logs available</p>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -33,7 +33,7 @@ class OrganizationInvitationsController < ApplicationController
         # Accept the invitation
         accept_organization_invitation(@invitation, current_user)
       else
-        redirect_to sign_in_path, alert: "Please sign in with the email address #{@invitation.email} to accept this invitation."
+        redirect_to new_session_path, alert: "Please sign in with the email address #{@invitation.email} to accept this invitation."
       end
     else
       # User is not signed in - store token in session for later

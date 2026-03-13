@@ -2,7 +2,7 @@
 class CollaboratorsController < ApplicationController
   before_action :authenticate_user!
   before_action :set_collaboratable
-  before_action :set_collaborator, only: [ :show, :update, :destroy ]
+  before_action :set_collaborator, only: [ :update, :destroy ]
 
   def index
     authorize Collaborator.new(collaboratable: @collaboratable)
@@ -20,7 +20,7 @@ class CollaboratorsController < ApplicationController
       # Direct collaboration for existing user
       if @collaborator.save
         send_collaboration_notification(@collaborator)
-        redirect_to collaborators_path, notice: "Collaborator added successfully!"
+        redirect_to polymorphic_path([ @collaboratable, :collaborators ]), notice: "Collaborator added successfully!"
       else
         @collaborators = @collaboratable.collaborators.includes(:user)
         @invitations = @collaboratable.invitations.pending
@@ -32,7 +32,7 @@ class CollaboratorsController < ApplicationController
       result = invitation_service.invite(params[:email], collaborator_params[:permission])
 
       if result.success?
-        redirect_to collaborators_path, notice: "Invitation sent successfully!"
+        redirect_to polymorphic_path([ @collaboratable, :collaborators ]), notice: "Invitation sent successfully!"
       else
         flash.now[:alert] = result.errors.join(", ")
         @collaborators = @collaboratable.collaborators.includes(:user)
@@ -45,15 +45,22 @@ class CollaboratorsController < ApplicationController
   def update
     authorize @collaborator
 
-    if @collaborator.update(collaborator_params)
-      respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
-        format.html { redirect_to collaborators_path, notice: "Permission updated!" }
+    begin
+      if @collaborator.update(collaborator_params)
+        respond_to do |format|
+          format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
+          format.html { redirect_to polymorphic_path([ @collaboratable, :collaborators ]), notice: "Permission updated!" }
+        end
+      else
+        respond_to do |format|
+          format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
+          format.html { redirect_to polymorphic_path([ @collaboratable, :collaborators ]), alert: "Failed to update permission." }
+        end
       end
-    else
+    rescue ArgumentError => e
       respond_to do |format|
         format.turbo_stream { render turbo_stream: turbo_stream.replace(@collaborator, @collaborator) }
-        format.html { redirect_to collaborators_path, alert: "Failed to update permission." }
+        format.html { redirect_to polymorphic_path([ @collaboratable, :collaborators ]), alert: "Invalid permission value." }
       end
     end
   end
@@ -66,7 +73,7 @@ class CollaboratorsController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream { render turbo_stream: turbo_stream.remove(@collaborator) }
-      format.html { redirect_to collaborators_path, notice: "Collaborator removed!" }
+      format.html { redirect_to polymorphic_path([ @collaboratable, :collaborators ]), notice: "Collaborator removed!" }
     end
   end
 

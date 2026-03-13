@@ -1,7 +1,9 @@
 # spec/helpers/application_helper_spec.rb
 require 'rails_helper'
+require 'active_support/testing/time_helpers'
 
 RSpec.describe ApplicationHelper, type: :helper do
+  include ActiveSupport::Testing::TimeHelpers
   describe "#time_ago_in_words_or_date" do
     it "returns empty string when time is nil" do
       expect(helper.time_ago_in_words_or_date(nil)).to eq("")
@@ -242,10 +244,14 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     it "returns orange text for due today" do
-      today = Time.current.end_of_day - 1.hour
-      result = helper.format_due_date(today)
-      expect(result).to include("Due today")
-      expect(result).to include("text-orange-600")
+      # Travel to a fixed time: March 11, 2026, 2 PM
+      travel_to Time.zone.local(2026, 3, 11, 14, 0, 0) do
+        # A time that is later today: March 11, 2026, 8 PM
+        later_today = Time.zone.local(2026, 3, 11, 20, 0, 0)
+        result = helper.format_due_date(later_today)
+        expect(result).to include("Due today")
+        expect(result).to include("text-orange-600")
+      end
     end
 
     it "returns yellow text for 2 days away" do
@@ -348,6 +354,195 @@ RSpec.describe ApplicationHelper, type: :helper do
       allow_any_instance_of(DashboardStatsService).to receive(:call).and_return({})
       helper.dashboard_data_for_user(user)
       expect(DashboardStatsService).to have_received(:new).with(user)
+    end
+  end
+
+  describe "#breadcrumbs" do
+    it "renders breadcrumbs with nav and ol elements" do
+      crumbs = [
+        { text: "Home", path: "/" },
+        { text: "Lists", path: "/lists" }
+      ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("<nav")
+      expect(result).to include("<ol")
+      expect(result).to include("</nav>")
+      expect(result).to include("</ol>")
+    end
+
+    it "renders links for non-last crumbs" do
+      crumbs = [
+        { text: "Home", path: "/" },
+        { text: "Current", path: "/current" }
+      ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include('href="/"')
+      expect(result).to include("Home")
+    end
+
+    it "renders current page without link" do
+      crumbs = [
+        { text: "Home", path: "/" },
+        { text: "Current", path: "/current" }
+      ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("Current")
+      expect(result).to include("text-gray-500")
+    end
+
+    it "renders single breadcrumb without link" do
+      crumbs = [ { text: "Home", path: "/" } ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("Home")
+      expect(result).to include("text-gray-500")
+    end
+
+    it "includes SVG separator between crumbs" do
+      crumbs = [
+        { text: "Home", path: "/" },
+        { text: "Lists", path: "/lists" }
+      ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("<svg")
+      expect(result).to include("viewBox=\"0 0 20 20\"")
+    end
+
+    it "uses correct accessibility label" do
+      crumbs = [ { text: "Home", path: "/" } ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("Breadcrumb")
+    end
+
+    it "handles multiple breadcrumbs" do
+      crumbs = [
+        { text: "Home", path: "/" },
+        { text: "Lists", path: "/lists" },
+        { text: "My List", path: "/lists/123" }
+      ]
+      result = helper.breadcrumbs(*crumbs)
+      expect(result).to include("Home")
+      expect(result).to include("Lists")
+      expect(result).to include("My List")
+    end
+  end
+
+  describe "#icon" do
+    it "renders check-circle icon" do
+      result = helper.icon("check-circle")
+      expect(result).to include("M9 12l2 2 4-4")
+      expect(result).to include("<svg")
+    end
+
+    it "renders users icon" do
+      result = helper.icon("users")
+      expect(result).to include("viewBox=\"0 0 24 24\"")
+      expect(result).to include("<svg")
+    end
+
+    it "renders lightning-bolt icon" do
+      result = helper.icon("lightning-bolt")
+      expect(result).to include("M13 10V3L4 14h7v7l9-11h-7z")
+    end
+
+    it "renders plus icon" do
+      result = helper.icon("plus")
+      expect(result).to include("M12 4v16m8-8H4")
+    end
+
+    it "renders edit icon" do
+      result = helper.icon("edit")
+      expect(result).to include("viewBox=\"0 0 24 24\"")
+    end
+
+    it "renders share icon" do
+      result = helper.icon("share")
+      expect(result).to include("viewBox=\"0 0 24 24\"")
+    end
+
+    it "renders delete icon" do
+      result = helper.icon("delete")
+      expect(result).to include("M19 7l-.867 12.142")
+    end
+
+    it "uses default size when not specified" do
+      result = helper.icon("plus")
+      expect(result).to include("w-5 h-5")
+    end
+
+    it "uses custom size when specified" do
+      result = helper.icon("plus", size: "w-8 h-8")
+      expect(result).to include("w-8 h-8")
+    end
+
+    it "adds custom CSS class" do
+      result = helper.icon("plus", class: "text-blue-600")
+      expect(result).to include("text-blue-600")
+    end
+
+    it "combines size and class" do
+      result = helper.icon("plus", size: "w-6 h-6", class: "mr-2")
+      expect(result).to include("w-6 h-6")
+      expect(result).to include("mr-2")
+    end
+
+    it "returns empty string for unknown icon" do
+      result = helper.icon("unknown-icon")
+      expect(result).to include("<svg")
+    end
+
+    it "sets svg attributes correctly" do
+      result = helper.icon("plus")
+      expect(result).to include("fill=\"none\"")
+      expect(result).to include("stroke=\"currentColor\"")
+      expect(result).to include("viewBox=\"0 0 24 24\"")
+    end
+  end
+
+  describe "#current_page?" do
+    it "returns true when request path matches given path" do
+      allow(helper).to receive_message_chain(:request, :path).and_return("/lists")
+      expect(helper.current_page?("/lists")).to be(true)
+    end
+
+    it "returns false when request path does not match given path" do
+      allow(helper).to receive_message_chain(:request, :path).and_return("/lists")
+      expect(helper.current_page?("/dashboard")).to be(false)
+    end
+
+    it "handles root path" do
+      allow(helper).to receive_message_chain(:request, :path).and_return("/")
+      expect(helper.current_page?("/")).to be(true)
+    end
+
+    it "handles nested paths" do
+      allow(helper).to receive_message_chain(:request, :path).and_return("/lists/123/items")
+      expect(helper.current_page?("/lists/123/items")).to be(true)
+      expect(helper.current_page?("/lists/123")).to be(false)
+    end
+
+    it "is case sensitive" do
+      allow(helper).to receive_message_chain(:request, :path).and_return("/Lists")
+      expect(helper.current_page?("/lists")).to be(false)
+    end
+  end
+
+  describe "#can?" do
+    it "returns false for unknown action with List" do
+      list = create(:list)
+      expect(helper.can?(:unknown_action, list)).to be(false)
+    end
+
+    it "returns false for unknown resource type" do
+      expect(helper.can?(:edit, "not_a_resource")).to be(false)
+    end
+
+    it "returns false when resource is nil" do
+      expect(helper.can?(:read, nil)).to be(false)
+    end
+
+    it "returns false for unsupported action" do
+      list = create(:list)
+      expect(helper.can?(:nonexistent, list)).to be(false)
     end
   end
 end

@@ -29,7 +29,16 @@ require 'rails_helper'
 RSpec.describe Team, type: :model do
   let(:organization) { create(:organization) }
   let(:user) { create(:user) }
-  let(:team) { create(:team, organization: organization, created_by: user) }
+  let(:team) { create(:team, organization: organization, creator: user) }
+
+  before do
+    # Ensure user has organization membership before tests
+    organization.organization_memberships.find_or_create_by!(user: user) do |membership|
+      membership.role = :member
+      membership.status = :active
+      membership.joined_at = Time.current
+    end
+  end
 
   describe 'associations' do
     it { is_expected.to belong_to(:organization) }
@@ -54,8 +63,9 @@ RSpec.describe Team, type: :model do
 
     it 'allows same slug in different organizations' do
       other_org = create(:organization)
+      other_user = create(:user)
       create(:team, organization: organization, slug: 'test-team')
-      same_slug = build(:team, organization: other_org, slug: 'test-team')
+      same_slug = build(:team, organization: other_org, creator: other_user, slug: 'test-team')
       expect(same_slug).to be_valid
     end
 
@@ -82,7 +92,7 @@ RSpec.describe Team, type: :model do
 
   describe '#member?' do
     it 'returns true if user is a member' do
-      team.team_memberships.create!(user: user, organization_membership_id: create(:organization_membership, organization: organization, user: user).id)
+      # Creator is automatically added as member by after_create callback
       expect(team.member?(user)).to be true
     end
 
@@ -94,8 +104,7 @@ RSpec.describe Team, type: :model do
 
   describe '#user_role' do
     it 'returns the user role' do
-      org_membership = create(:organization_membership, organization: organization, user: user)
-      team.team_memberships.create!(user: user, organization_membership_id: org_membership.id, role: :admin)
+      # Creator is automatically added as admin by after_create callback
       expect(team.user_role(user)).to eq('admin')
     end
 
@@ -107,20 +116,19 @@ RSpec.describe Team, type: :model do
 
   describe '#user_is_admin?' do
     it 'returns true for admin role' do
-      org_membership = create(:organization_membership, organization: organization, user: user)
-      team.team_memberships.create!(user: user, organization_membership_id: org_membership.id, role: :admin)
+      # Creator is automatically added as admin by after_create callback
       expect(team.user_is_admin?(user)).to be true
     end
 
     it 'returns true for lead role' do
-      org_membership = create(:organization_membership, organization: organization, user: user)
-      team.team_memberships.create!(user: user, organization_membership_id: org_membership.id, role: :lead)
+      team_membership = team.team_memberships.find_by(user: user)
+      team_membership.update!(role: :lead)
       expect(team.user_is_admin?(user)).to be true
     end
 
     it 'returns false for member role' do
-      org_membership = create(:organization_membership, organization: organization, user: user)
-      team.team_memberships.create!(user: user, organization_membership_id: org_membership.id, role: :member)
+      team_membership = team.team_memberships.find_by(user: user)
+      team_membership.update!(role: :member)
       expect(team.user_is_admin?(user)).to be false
     end
   end

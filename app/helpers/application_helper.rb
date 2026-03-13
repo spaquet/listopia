@@ -1,5 +1,7 @@
 # app/helpers/application_helper.rb
 module ApplicationHelper
+  include Pagy::NumericHelpers
+
   # Format user-friendly timestamps
   def time_ago_in_words_or_date(time)
     return "" unless time
@@ -76,7 +78,7 @@ module ApplicationHelper
 
     if date < Time.current
       content_tag :span, date.strftime("%b %d"), class: "text-red-600 font-medium"
-    elsif date < 1.day.from_now
+    elsif date <= Time.current.end_of_day
       content_tag :span, "Due today", class: "text-orange-600 font-medium"
     elsif date < 3.days.from_now
       content_tag :span, date.strftime("%b %d"), class: "text-yellow-600"

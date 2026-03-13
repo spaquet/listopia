@@ -104,7 +104,7 @@ RSpec.describe "RSpec Configuration Smoke Test", type: :request do
 
     it "can use association matchers" do
       expect(User.new).to have_many(:lists).dependent(:destroy)
-      expect(User.new).to have_many(:list_collaborations).dependent(:destroy)
+      expect(User.new).to have_many(:collaborators).dependent(:destroy)
       expect(List.new).to belong_to(:owner).class_name('User')
       expect(ListItem.new).to belong_to(:list)
     end

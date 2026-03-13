@@ -29,5 +29,14 @@
 #
 FactoryBot.define do
   factory :notification_setting do
+    association :user
+    email_notifications { true }
+    push_notifications { true }
+    collaboration_notifications { true }
+    list_activity_notifications { true }
+    item_activity_notifications { true }
+    status_change_notifications { true }
+    notification_frequency { 'immediate' }
+    timezone { 'UTC' }
   end
 end

@@ -1,0 +1,43 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://httpbin.org/get
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Wed, 11 Mar 2026 19:19:14 GMT
+      Content-Type:
+      - application/json
+      Content-Length:
+      - '314'
+      Connection:
+      - keep-alive
+      Server:
+      - gunicorn/19.9.0
+      Access-Control-Allow-Origin:
+      - "*"
+      Access-Control-Allow-Credentials:
+      - 'true'
+    body:
+      encoding: UTF-8
+      string: "{\n  \"args\": {}, \n  \"headers\": {\n    \"Accept\": \"*/*\", \n
+        \   \"Accept-Encoding\": \"gzip;q=1.0,deflate;q=0.6,identity;q=0.3\", \n    \"Host\":
+        \"httpbin.org\", \n    \"User-Agent\": \"Ruby\", \n    \"X-Amzn-Trace-Id\":
+        \"Root=1-69b1c032-63c98b4c0d154a3f1525c9af\"\n  }, \n  \"origin\": \"76.21.126.59\",
+        \n  \"url\": \"https://httpbin.org/get\"\n}\n"
+  recorded_at: Wed, 11 Mar 2026 19:19:14 GMT
+recorded_with: VCR 6.4.0

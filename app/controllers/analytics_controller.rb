@@ -17,13 +17,13 @@ class AnalyticsController < ApplicationController
   private
 
   def set_list
-    @list = current_user.accessible_lists.find(params[:list_id])
+    @list = List.find(params[:list_id])
   rescue ActiveRecord::RecordNotFound
     redirect_to lists_path, alert: "List not found."
   end
 
   def authorize_analytics_access!
-    # Only collaborators with read access or higher can view analytics
+    # Check if user can read the list
     unless @list.readable_by?(current_user)
       redirect_to lists_path, alert: "You don't have permission to view analytics for this list."
     end
@@ -86,7 +86,7 @@ class AnalyticsController < ApplicationController
       median_completion_time_hours: completion_times.any? ? completion_times.sort[completion_times.size / 2].round(2) : 0,
       completion_by_priority: completion_by_priority,
       completion_by_type: completion_by_item_type,
-      completion_trend: completion_trend_last_30_days
+      completion_trend: recent_completion_trend
     }
   end
 
@@ -104,13 +104,13 @@ class AnalyticsController < ApplicationController
   end
 
   def collaboration_analytics
-    collaborations = @list.list_collaborations.includes(:user)
+    collaborations = @list.collaborators.includes(:user)
 
     {
       total_collaborators: collaborations.count,
       permission_breakdown: {
         read_only: collaborations.permission_read.count,
-        full_access: collaborations.permission_collaborate.count
+        write_access: collaborations.permission_write.count
       },
       contributor_activity: contributor_activity,
       items_by_assignee: items_by_assignee,
@@ -145,8 +145,8 @@ class AnalyticsController < ApplicationController
       by_type: type_counts,
       # Group by categories for better visualization
       by_category: {
-        planning: %w[task goal milestone action_item waiting_for reminder].sum { |type| type_counts[type] || 0 },
-        knowledge: %w[idea note reference].sum { |type| type_counts[type] || 0 },
+        planning: %w[task milestone feature decision reminder meeting bug].sum { |type| type_counts[type] || 0 },
+        knowledge: %w[note reference].sum { |type| type_counts[type] || 0 },
         personal: %w[habit health learning travel shopping home finance social entertainment].sum { |type| type_counts[type] || 0 }
       },
       avg_title_length: items.any? ? items.average("LENGTH(title)").to_f.round(1) : 0,
@@ -215,7 +215,7 @@ class AnalyticsController < ApplicationController
     items_with_due_dates = @list.list_items.where.not(due_date: nil)
     return 0 if items_with_due_dates.count.zero?
 
-    overdue_count = items_with_due_dates.where("due_date < ? AND status != ListItem.statuses[:completed]", Time.current).count
+    overdue_count = items_with_due_dates.where("due_date < ? AND status != ?", Time.current, 2).count
     (overdue_count.to_f / items_with_due_dates.count * 100).round(2)
   end
 
@@ -227,11 +227,11 @@ class AnalyticsController < ApplicationController
   def contributor_activity
     @list.list_items.joins(:assigned_user)
          .group("users.name")
-         .group("list_items.status_completed")
+         .group("list_items.status")
          .count
-         .each_with_object({}) do |((name, completed), count), hash|
+         .each_with_object({}) do |((name, status), count), hash|
            hash[name] ||= { completed: 0, pending: 0 }
-           hash[name][completed ? :completed : :pending] = count
+           hash[name][status == 2 ? :completed : :pending] = count
          end
   end
 
@@ -266,7 +266,7 @@ class AnalyticsController < ApplicationController
   def overdue_by_priority
     ListItem.priorities.keys.map do |priority|
       overdue = @list.list_items.where(priority: priority)
-                     .where("due_date < ? AND completed = false", Time.current)
+                     .where("due_date < ? AND status != ?", Time.current, ListItem.statuses[:completed])
                      .count
       [ priority, overdue ]
     end.to_h
@@ -277,8 +277,8 @@ class AnalyticsController < ApplicationController
 
     # Define category groupings
     categories = {
-      planning: %w[task goal milestone action_item waiting_for reminder],
-      knowledge: %w[idea note reference],
+      planning: %w[task milestone feature decision reminder meeting bug],
+      knowledge: %w[note reference],
       personal: %w[habit health learning travel shopping home finance social entertainment]
     }
 

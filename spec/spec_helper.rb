@@ -13,6 +13,18 @@
 # it.
 #
 # See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+
+# SimpleCov must be loaded before any application code
+require 'simplecov' if ENV['COVERAGE']
+SimpleCov.start('rails') if ENV['COVERAGE']
+
+# Load pundit-matchers so it can auto-configure RSpec
+begin
+  require 'pundit/matchers'
+rescue LoadError
+  # pundit-matchers not available
+end
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
@@ -49,6 +61,9 @@ RSpec.configure do |config|
   # aliases for `it`, `describe`, and `context` that include `:focus`
   # metadata: `fit`, `fdescribe` and `fcontext`, respectively.
   config.filter_run_when_matching :focus
+
+  # Skip tests tagged with :skip_vcr (for tests requiring VCR cassettes not yet recorded)
+  config.filter_run_excluding :skip_vcr unless ENV['INCLUDE_VCR_TESTS']
 
   # Allows RSpec to persist some state between runs in order to support
   # the `--only-failures` and `--next-failure` CLI options. We recommend

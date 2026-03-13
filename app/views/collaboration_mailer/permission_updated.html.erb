@@ -1,0 +1,12 @@
+<h1>Your permission has been updated</h1>
+
+<p>Hi <%= @collaborator.user.name %>,</p>
+
+<p>Your permission for <strong><%= @collaboratable.title %></strong> has been updated.</p>
+
+<p>
+  <strong>Previous permission:</strong> <%= @old_permission.to_s.capitalize %><br/>
+  <strong>New permission:</strong> <%= @new_permission.to_s.capitalize %>
+</p>
+
+<%= link_to "View #{@collaboratable.title}", @resource_url %>

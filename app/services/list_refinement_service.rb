@@ -125,6 +125,15 @@ class ListRefinementService < ApplicationService
 
       CRITICAL RULE: You are NOT creating the list yet. You are asking questions to UNDERSTAND THE TASK COMPLETELY before structuring it.
 
+      ESSENTIAL CLARIFICATION DIMENSIONS:
+      Consider these key dimensions when formulating questions:
+      - WHO: People involved, roles, team members, stakeholders, audience
+      - WHAT: Goals, objectives, deliverables, outcomes, specific items or services
+      - WHERE: Locations, venues, regions, physical or digital spaces
+      - WHEN: Dates, deadlines, timeline, duration, frequency, schedule
+      - WHY: Motivation, business case, purpose, success criteria
+      - HOW: Methods, resources, budget, tools, approach, constraints
+
       ⚠️ CRITICAL CONTEXT - READ THIS FIRST ⚠️
 
       User's Planning Request:

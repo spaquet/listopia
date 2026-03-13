@@ -1,7 +1,7 @@
 class OrganizationMembersController < ApplicationController
   before_action :authenticate_user!
   before_action :set_organization
-  before_action :set_member, only: [ :show, :edit, :update, :update_role, :remove ]
+  before_action :set_member, only: [ :show, :update_role, :remove ]
   before_action :authorize_access!
 
   def index

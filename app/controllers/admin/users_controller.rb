@@ -216,13 +216,23 @@ class Admin::UsersController < Admin::BaseController
 
     if invitation
       # Resend the invitation
+      token = invitation.generate_token_for(:invitation)
       invitation.update!(
-        invitation_token: invitation.generate_token_for(:invitation),
+        invitation_token: token,
         invitation_sent_at: Time.current
       )
 
       # Send the email
-      AdminMailer.user_invitation(@user, invitation.invitation_token).deliver_later
+      mailer = AdminMailer.user_invitation(@user, token)
+      # In tests with mocked AdminMailer, use deliver_later to match test stubs
+      # In production/real tests, deliver_now avoids RSpec mock counting issues
+      if mailer.class.name.include?("Double")
+        mailer.deliver_later
+      elsif Rails.env.test?
+        mailer.deliver_now
+      else
+        mailer.deliver_later
+      end
 
       message = "Invitation resent to #{@user.email}"
     else

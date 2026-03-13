@@ -3,23 +3,35 @@ class NotificationMailer < ApplicationMailer
   default from: "noreply@listopia.com"
 
   # Noticed integration - routes to appropriate method based on notification_type
-  def deliver_notification(notification)
-    @notification = notification
+  # The noticed gem's deliver method sets these parameters based on the Noticed::Notification record
+  def deliver_notification(notification = nil)
+    # Support both noticed gem (sets @notification) and direct calls with parameter
+    notification ||= @notification
+
+    # Guard against nil notification or missing event
+    return if notification.nil?
+    return unless notification.event.present?
+
     @user = notification.recipient
     @event = notification.event
 
+    # Guard against missing user
+    return if @user.nil?
+
     # Route to appropriate method based on notification type
     method_name = @event.notification_type&.underscore
-    return unless respond_to?(method_name, true)
+    return unless method_name && respond_to?(method_name, true)
 
     send(method_name, notification)
   end
 
   # Generic notification delivery
-  def notification_email(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def notification_email(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
 
     mail(
       to: @user.email,
@@ -27,11 +39,92 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Collaboration notification
+  def collaboration(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
+    @actor_name = @event.actor_name
+    @list_title = @event.target_list&.title
+
+    mail(
+      to: @user.email,
+      subject: "#{@actor_name} invited you to collaborate"
+    )
+  end
+
+  # Item activity notification
+  def item_activity(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
+    @actor_name = @event.actor_name
+
+    mail(
+      to: @user.email,
+      subject: "Activity on an item you follow"
+    )
+  end
+
+  # Item priority changed notification
+  def item_priority_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
+    @actor_name = @event.actor_name
+    @item_title = @event.params[:item_title]
+    @new_priority = @event.params[:new_priority]&.humanize
+
+    mail(
+      to: @user.email,
+      subject: "Priority changed for \"#{@item_title}\""
+    )
+  end
+
+  # Status change notification
+  def status_change(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
+    @actor_name = @event.actor_name
+
+    mail(
+      to: @user.email,
+      subject: "Status changed on a list you follow"
+    )
+  end
+
+  # List activity notification
+  def list_activity(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
+    @actor_name = @event.actor_name
+    @list_title = @event.target_list&.title
+
+    mail(
+      to: @user.email,
+      subject: "Activity on \"#{@list_title}\""
+    )
+  end
+
   # Item assignment notification
-  def item_assigned(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_assignment(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
     @actor_name = @event.actor_name
@@ -43,15 +136,21 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :item_assigned, :item_assignment
+
   # Comment notification
-  def item_commented(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_comment(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+    @notification ||= notification
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
-    @notification_url = notification_url(@notification)
+    @notification_url = notification_url(@notification) if @notification
 
     mail(
       to: @user.email,
@@ -59,11 +158,16 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :item_commented, :item_comment
+
   # Item completion notification
-  def item_completed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def item_completion(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
@@ -75,11 +179,16 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :item_completed, :item_completion
+
   # Priority change notification
-  def priority_changed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def priority_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @new_priority = @event.params[:new_priority]&.humanize
@@ -92,10 +201,12 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Permission change notification
-  def permission_changed(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def permission_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @new_permission = @event.params[:new_permission]
     @list_title = @event.target_list&.title
@@ -108,10 +219,12 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Team invitation notification
-  def team_invited(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def team_invitation(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @team_name = @event.params[:team_name]
 
@@ -121,11 +234,16 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :team_invited, :team_invitation
+
   # List archived notification
-  def list_archived(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def list_archived(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.params[:list_title]
 
@@ -136,10 +254,12 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Mention notification
-  def mentioned(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def mention(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
@@ -150,11 +270,16 @@ class NotificationMailer < ApplicationMailer
     )
   end
 
+  # Alias for backwards compatibility with tests
+  alias_method :mentioned, :mention
+
   # Digest notification
-  def digest(notification)
-    @notification = notification
-    @user = notification.recipient
-    @event = notification.event
+  def digest(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
+    return if @user.nil? || @event.nil?
     @frequency = @event.params[:frequency] || "daily"
     @item_count = @event.params[:item_count] || 0
     @comment_count = @event.params[:comment_count] || 0

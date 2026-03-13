@@ -35,7 +35,7 @@
     <% end %>
     <!-- Add Collaborator Form -->
     <div class="px-6 py-4 border-b border-gray-200">
-      <%= form_with url: collaborators_path, local: false, class: "space-y-4" do |f| %>
+      <%= form_with url: polymorphic_path([@collaboratable, :collaborators]), local: false, class: "space-y-4" do |f| %>
         <div class="flex space-x-3">
           <%= f.email_field :email, 
                 placeholder: "Enter email address",
@@ -58,7 +58,7 @@
       <% if @collaborators.any? %>
         <div class="space-y-3">
           <% @collaborators.each do |collaborator| %>
-            <%= render 'collaborator', collaborator: collaborator %>
+            <%= render 'collaborator', collaborator: collaborator, collaboratable: @collaboratable %>
           <% end %>
         </div>
       <% else %>

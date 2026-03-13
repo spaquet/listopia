@@ -29,14 +29,55 @@ FactoryBot.define do
     association :user
     permission { :read }
 
+    # Default collaboratable is a List (polymorphic association)
+    before(:create) do |collaborator|
+      collaborator.collaboratable ||= create(:list)
+    end
+
     # Use a polymorphic association - provide either list or list_item
     # In tests, use: create(:collaborator, collaboratable: list)
     trait :for_list do
-      association :collaboratable, factory: :list, as: :collaboratable
+      before(:create) do |collaborator|
+        collaborator.collaboratable = create(:list) unless collaborator.collaboratable
+      end
     end
 
     trait :with_write_permission do
       permission { :write }
+    end
+  end
+
+  factory :list_collaboration, class: "Collaborator" do
+    association :user
+    permission { :read }
+
+    transient do
+      list { nil }
+    end
+
+    before(:create) do |collaborator, evaluator|
+      if evaluator.list
+        collaborator.collaboratable = evaluator.list
+      else
+        collaborator.collaboratable ||= create(:list)
+      end
+    end
+  end
+
+  factory :list_item_collaboration, class: "Collaborator" do
+    association :user
+    permission { :read }
+
+    transient do
+      list_item { nil }
+    end
+
+    before(:create) do |collaborator, evaluator|
+      if evaluator.list_item
+        collaborator.collaboratable = evaluator.list_item
+      else
+        collaborator.collaboratable ||= create(:list_item)
+      end
     end
   end
 end

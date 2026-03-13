@@ -52,11 +52,21 @@ Rails.application.routes.draw do
   get "/organizations/invitations/accept/:token", to: "organization_invitations#accept", as: "accept_organization_invitation"
 
   # Invitations management (list sent/received invitations with management features)
-  resources :invitations, only: [ :index, :show, :update ] do
+  resources :invitations, only: [ :index, :show, :update, :destroy ] do
     member do
       patch :decline
       delete :revoke
       patch :resend
+    end
+  end
+
+  # Organization invitations management (user-facing, nested under organization)
+  resources :organizations, only: [] do
+    resources :invitations, controller: "organization_invitations", only: [ :index, :show ] do
+      member do
+        patch :resend
+        delete :revoke
+      end
     end
   end
 
@@ -110,6 +120,9 @@ Rails.application.routes.draw do
     # Analytics routes
     resources :analytics, only: [ :index ]
 
+    # Collaborators - direct collaborator management
+    resources :collaborators, only: [ :index, :create, :update, :destroy ]
+
     # Collaborations
     resources :collaborations, except: [ :new, :edit ] do
       member do
@@ -121,9 +134,13 @@ Rails.application.routes.draw do
     resources :list_items, path: "items", except: [ :new ] do
       member do
         patch :toggle_completion
+        patch :inline_update
         get :share
         get :visit_url
       end
+
+      # Collaborators - direct collaborator management
+      resources :collaborators, only: [ :index, :create, :update, :destroy ]
 
       # Collaborations on ListItems
       resources :collaborations, except: [ :new, :edit ]
@@ -148,6 +165,11 @@ Rails.application.routes.draw do
         get :accept, path: "accept/:token", as: :accept
       end
     end
+  end
+
+  # Direct ListItem routes (not nested under lists, for polymorphic support)
+  resources :list_items, path: "items", only: [] do
+    resources :collaborators, only: [ :index, :create, :update, :destroy ]
   end
 
   # Notifications
@@ -187,10 +209,18 @@ Rails.application.routes.draw do
   post "setup_password/:token", to: "registrations#complete_setup_password", as: :complete_setup_password_registration
 
   # Organizations - switcher and switching only
-  resources :organizations, only: [] do
+  resources :organizations, only: [ :show ] do
     collection do
       get :switcher, as: :switcher
       patch :switch
+    end
+
+    # Organization members management
+    resources :members, controller: "organization_members" do
+      member do
+        patch :update_role
+        delete :remove
+      end
     end
 
     # Teams - user-facing team management
