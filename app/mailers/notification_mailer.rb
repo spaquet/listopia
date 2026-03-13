@@ -5,12 +5,15 @@ class NotificationMailer < ApplicationMailer
   # Noticed integration - routes to appropriate method based on notification_type
   # The noticed gem's deliver method sets these parameters based on the Noticed::Notification record
   def deliver_notification
-    # @notification should be set by the noticed gem's delivery mechanism
-    # If it's not set, we might be called directly (e.g., in tests)
-    return notification_email unless @notification&.event
+    # Guard against nil notification or missing event
+    return if @notification.nil?
+    return unless @notification.event.present?
 
     @user = @notification.recipient
     @event = @notification.event
+
+    # Guard against missing user
+    return if @user.nil?
 
     # Route to appropriate method based on notification type
     method_name = @event.notification_type&.underscore
@@ -21,6 +24,8 @@ class NotificationMailer < ApplicationMailer
 
   # Generic notification delivery
   def notification_email
+    return if @user.nil? || @event.nil?
+
     mail(
       to: @user.email,
       subject: @event.title
@@ -29,6 +34,7 @@ class NotificationMailer < ApplicationMailer
 
   # Collaboration notification
   def collaboration
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
 
@@ -40,6 +46,7 @@ class NotificationMailer < ApplicationMailer
 
   # Item activity notification
   def item_activity
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
 
     mail(
@@ -50,6 +57,7 @@ class NotificationMailer < ApplicationMailer
 
   # Item priority changed notification
   def item_priority_changed
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @new_priority = @event.params[:new_priority]&.humanize
@@ -62,6 +70,7 @@ class NotificationMailer < ApplicationMailer
 
   # Status change notification
   def status_change
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
 
     mail(
@@ -72,6 +81,7 @@ class NotificationMailer < ApplicationMailer
 
   # List activity notification
   def list_activity
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.target_list&.title
 
@@ -83,6 +93,7 @@ class NotificationMailer < ApplicationMailer
 
   # Item assignment notification
   def item_assignment
+    return if @user.nil? || @event.nil?
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
     @actor_name = @event.actor_name
@@ -99,6 +110,7 @@ class NotificationMailer < ApplicationMailer
 
   # Comment notification
   def item_comment
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
@@ -115,6 +127,7 @@ class NotificationMailer < ApplicationMailer
 
   # Item completion notification
   def item_completion
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @list_title = @event.target_list&.title
@@ -131,6 +144,7 @@ class NotificationMailer < ApplicationMailer
 
   # Priority change notification
   def priority_changed
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
     @new_priority = @event.params[:new_priority]&.humanize
@@ -144,6 +158,7 @@ class NotificationMailer < ApplicationMailer
 
   # Permission change notification
   def permission_changed
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @new_permission = @event.params[:new_permission]
     @list_title = @event.target_list&.title
@@ -157,6 +172,7 @@ class NotificationMailer < ApplicationMailer
 
   # Team invitation notification
   def team_invitation
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @team_name = @event.params[:team_name]
 
@@ -171,6 +187,7 @@ class NotificationMailer < ApplicationMailer
 
   # List archived notification
   def list_archived
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.params[:list_title]
 
@@ -182,6 +199,7 @@ class NotificationMailer < ApplicationMailer
 
   # Mention notification
   def mention
+    return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
@@ -197,6 +215,7 @@ class NotificationMailer < ApplicationMailer
 
   # Digest notification
   def digest
+    return if @user.nil? || @event.nil?
     @frequency = @event.params[:frequency] || "daily"
     @item_count = @event.params[:item_count] || 0
     @comment_count = @event.params[:comment_count] || 0
