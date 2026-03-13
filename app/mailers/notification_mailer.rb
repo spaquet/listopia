@@ -4,22 +4,25 @@ class NotificationMailer < ApplicationMailer
 
   # Noticed integration - routes to appropriate method based on notification_type
   # The noticed gem's deliver method sets these parameters based on the Noticed::Notification record
-  def deliver_notification
-    # Guard against nil notification or missing event
-    return if @notification.nil?
-    return unless @notification.event.present?
+  def deliver_notification(notification = nil)
+    # Support both noticed gem (sets @notification) and direct calls with parameter
+    notification ||= @notification
 
-    @user = @notification.recipient
-    @event = @notification.event
+    # Guard against nil notification or missing event
+    return if notification.nil?
+    return unless notification.event.present?
+
+    @user = notification.recipient
+    @event = notification.event
 
     # Guard against missing user
     return if @user.nil?
 
     # Route to appropriate method based on notification type
     method_name = @event.notification_type&.underscore
-    return notification_email unless method_name && respond_to?(method_name, true)
+    return unless method_name && respond_to?(method_name, true)
 
-    public_send(method_name)
+    send(method_name, notification)
   end
 
   # Generic notification delivery
@@ -141,12 +144,13 @@ class NotificationMailer < ApplicationMailer
     # Extract user and event from notification if provided (for direct test calls)
     @user ||= notification&.recipient
     @event ||= notification&.event
+    @notification ||= notification
 
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @commentable_title = @event.params[:commentable_title]
     @comment_preview = @event.params[:comment_preview]&.truncate(200)
-    @notification_url = notification_url(@notification)
+    @notification_url = notification_url(@notification) if @notification
 
     mail(
       to: @user.email,
@@ -179,7 +183,11 @@ class NotificationMailer < ApplicationMailer
   alias_method :item_completed, :item_completion
 
   # Priority change notification
-  def priority_changed(notification = nil)(notification = nil)
+  def priority_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @item_title = @event.params[:item_title]
@@ -193,7 +201,11 @@ class NotificationMailer < ApplicationMailer
   end
 
   # Permission change notification
-  def permission_changed(notification = nil)(notification = nil)
+  def permission_changed(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @new_permission = @event.params[:new_permission]
@@ -226,7 +238,11 @@ class NotificationMailer < ApplicationMailer
   alias_method :team_invited, :team_invitation
 
   # List archived notification
-  def list_archived(notification = nil)(notification = nil)
+  def list_archived(notification = nil)
+    # Extract user and event from notification if provided (for direct test calls)
+    @user ||= notification&.recipient
+    @event ||= notification&.event
+
     return if @user.nil? || @event.nil?
     @actor_name = @event.actor_name
     @list_title = @event.params[:list_title]
