@@ -281,7 +281,7 @@ Rails.application.routes.draw do
 
     namespace :storage do
       namespace :google_drive do
-        resources :files, only: [ :index ]
+        resources :files, only: [ :index, :show ]
       end
     end
 

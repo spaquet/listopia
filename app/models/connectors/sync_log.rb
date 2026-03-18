@@ -21,7 +21,7 @@ module Connectors
   class SyncLog < ApplicationRecord
     self.table_name = "connector_sync_logs"
 
-    belongs_to :account, class_name: "Connectors::Account"
+    belongs_to :connector_account, class_name: "Connectors::Account", foreign_key: :connector_account_id
 
     validates :operation, presence: true
     validates :status, presence: true, inclusion: { in: %w(pending in_progress success failure) }

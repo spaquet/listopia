@@ -27,9 +27,9 @@ module Connectors
 
     belongs_to :user
     belongs_to :organization
-    has_many :settings, class_name: "Connectors::Setting", dependent: :destroy
-    has_many :sync_logs, class_name: "Connectors::SyncLog", dependent: :destroy
-    has_many :event_mappings, class_name: "Connectors::EventMapping", dependent: :destroy
+    has_many :settings, class_name: "Connectors::Setting", foreign_key: :connector_account_id, dependent: :destroy
+    has_many :sync_logs, class_name: "Connectors::SyncLog", foreign_key: :connector_account_id, dependent: :destroy
+    has_many :event_mappings, class_name: "Connectors::EventMapping", foreign_key: :connector_account_id, dependent: :destroy
 
     validates :user_id, :organization_id, :provider, :provider_uid, presence: true
     validates :provider_uid, uniqueness: { scope: [ :user_id, :provider ] }
