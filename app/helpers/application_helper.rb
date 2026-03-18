@@ -145,6 +145,79 @@ module ApplicationHelper
     end
   end
 
+  # Icon tag helper for connector services
+  def icon_tag(name, options = {})
+    css_class = options[:class] || "w-6 h-6"
+
+    svg_icon = case name
+    when "message-square"
+      slack_icon
+    when "hard-drive"
+      google_drive_icon
+    when "calendar"
+      google_calendar_icon
+    else
+      default_connector_icon
+    end
+
+    svg_icon.html_safe
+  end
+
+  private
+
+  def slack_icon
+    %(<svg class="w-6 h-6" viewBox="0 0 128 128">
+      <path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"></path>
+      <path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"></path>
+      <path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"></path>
+      <path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"></path>
+    </svg>)
+  end
+
+  def google_calendar_icon
+    %(<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm12-4v4M8 3v4m-4 4h16M7 14h.013m2.997 0h.005m2.995 0h.005m3 0h.005m-3.005 3h.005m-6.01 0h.005m2.995 0h.005"/>
+    </svg>)
+  end
+
+  def google_drive_icon
+    %(<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="M12 10L6 20l-3-5L9 5z"/>
+        <path d="M9 15h12l-3 5H6m9-5L9 5h6l6 10z"/>
+      </g>
+    </svg>)
+  end
+
+  def outlook_icon
+    %(<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+        <path d="M2 6l10 7.5L22 6"/>
+      </g>
+    </svg>)
+  end
+
+  def outlook_calendar_icon
+    %(<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+        <path d="M16 2v4M8 2v4M3 10h18"/>
+        <circle cx="8" cy="15" r="1"/>
+        <circle cx="12" cy="15" r="1"/>
+        <circle cx="16" cy="15" r="1"/>
+      </g>
+    </svg>)
+  end
+
+  def default_connector_icon
+    %(<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <g stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+      </g>
+    </svg>)
+  end
+
   # Helper to check if user can perform action on resource
   def can?(action, resource)
     case action.to_sym

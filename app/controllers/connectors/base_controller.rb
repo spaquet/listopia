@@ -2,7 +2,7 @@ module Connectors
   # Base controller for all connector routes
   class BaseController < ApplicationController
     before_action :authenticate_user!
-    before_action :load_connector, only: [ :show, :update, :test, :pause, :resume, :destroy ]
+    before_action :load_connector, only: [ :test, :pause, :resume, :destroy ]
 
     protected
 
