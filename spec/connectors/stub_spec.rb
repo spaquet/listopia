@@ -20,7 +20,7 @@ RSpec.describe Connectors::Stub, type: :model do
       expect(described_class.name).to eq("Stub Provider (Testing)")
       expect(described_class.category).to eq("testing")
       expect(described_class.oauth_required?).to be true
-      expect(described_class.oauth_scopes_list).to eq(["read", "write"])
+      expect(described_class.oauth_scopes_list).to eq([ "read", "write" ])
     end
 
     it "defines settings schema" do

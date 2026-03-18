@@ -149,7 +149,7 @@ RSpec.describe Connectors::Google::FileService, type: :service do
               size: "1024000",
               webViewLink: "https://drive.google.com/file/d/file1/view",
               modifiedTime: "2024-03-19T10:00:00Z",
-              owners: [{ displayName: "John Doe" }]
+              owners: [ { displayName: "John Doe" } ]
             }.to_json
           )
         )

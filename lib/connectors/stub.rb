@@ -8,12 +8,12 @@ module Connectors
     connector_icon "settings"
     connector_description "Testing connector for verifying OAuth and sync flows"
     requires_oauth true
-    oauth_scopes ["read", "write"]
+    oauth_scopes [ "read", "write" ]
     settings_schema(
       sync_direction: {
         label: "Sync Direction",
         type: :select,
-        options: ["push", "pull", "both"],
+        options: [ "push", "pull", "both" ],
         description: "Direction of data sync"
       },
       auto_sync: {

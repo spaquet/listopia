@@ -33,7 +33,7 @@ module Connectors
 
     validates :user_id, :organization_id, :provider, :provider_uid, presence: true
     validates :provider_uid, uniqueness: { scope: [ :user_id, :provider ] }
-    validates :status, inclusion: { in: %w(active paused revoked errored) }
+    validates :status, inclusion: { in: %w[active paused revoked errored] }
 
     enum :status, { active: "active", paused: "paused", revoked: "revoked", errored: "errored" }
 

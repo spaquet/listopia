@@ -19,8 +19,8 @@ module Connectors
 
         # Verify signature
         signing_secret = Rails.application.credentials.dig(:slack, :signing_secret) ||
-          ENV["SLACK_SIGNING_SECRET"] ||
-          return false
+          ENV["SLACK_SIGNING_SECRET"]
+        return false unless signing_secret.present?
 
         base_string = "v0:#{timestamp}:#{body}"
         computed_signature = "v0=#{OpenSSL::HMAC.hexdigest("SHA256", signing_secret, base_string)}"
@@ -86,6 +86,7 @@ module Connectors
 
         l.each_with_index { |byte, index| result |= byte ^ r[index] }
         result == 0
+      end
       end
     end
   end

@@ -152,6 +152,7 @@ module Connectors
           }
         ]
       end
+      end
     end
   end
 end

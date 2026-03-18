@@ -90,7 +90,7 @@ module Connectors
       private
 
       def build_query(search_query)
-        queries = ["trashed = false"]
+        queries = [ "trashed = false" ]
         queries << "name contains '#{search_query}'" if search_query.present?
         queries.join(" and ")
       end

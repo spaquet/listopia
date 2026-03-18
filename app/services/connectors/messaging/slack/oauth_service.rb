@@ -27,7 +27,7 @@ module Connectors
 
       # Exchange authorization code for tokens
       def exchange_code!(code, redirect_uri, user, organization)
-        return failure(errors: ["Invalid code"], message: "Authorization failed") if code.blank?
+        return failure(errors: [ "Invalid code" ], message: "Authorization failed") if code.blank?
 
         begin
           response = make_slack_request(
@@ -42,7 +42,7 @@ module Connectors
           data = JSON.parse(response.body)
 
           unless data["ok"]
-            return failure(errors: [data["error"]], message: "Slack authorization failed")
+            return failure(errors: [ data["error"] ], message: "Slack authorization failed")
           end
 
           # Fetch workspace and user info
@@ -61,7 +61,7 @@ module Connectors
           success(data: account)
         rescue StandardError => e
           Rails.logger.error("Slack OAuth exchange failed: #{e.message}")
-          failure(errors: [e.message], message: "Token exchange failed")
+          failure(errors: [ e.message ], message: "Token exchange failed")
         end
       end
 
@@ -152,6 +152,7 @@ module Connectors
 
       def oauth_scopes
         Connectors::Slack.oauth_scopes_list
+      end
       end
     end
   end

@@ -23,7 +23,7 @@ module Connectors
       sync_direction: {
         label: "Sync Direction",
         type: :select,
-        options: ["pull", "push", "both"],
+        options: [ "pull", "push", "both" ],
         description: "Direction of event sync"
       },
       auto_sync: {

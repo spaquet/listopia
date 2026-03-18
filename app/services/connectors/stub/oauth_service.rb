@@ -26,7 +26,7 @@ module Connectors
         # In real implementation, would make HTTP request to provider
         # For stub, we generate fake tokens
         if code.blank? || code == "invalid_code"
-          return failure(errors: ["Invalid authorization code"], message: "Authorization failed")
+          return failure(errors: [ "Invalid authorization code" ], message: "Authorization failed")
         end
 
         # Create connector account if it doesn't exist
@@ -41,7 +41,7 @@ module Connectors
 
         success(data: account)
       rescue StandardError => e
-        failure(errors: [e.message], message: "Token exchange failed")
+        failure(errors: [ e.message ], message: "Token exchange failed")
       end
 
       # Refresh expired access token
@@ -60,7 +60,7 @@ module Connectors
 
         success(data: { status: :refreshed })
       rescue StandardError => e
-        failure(errors: [e.message], message: "Token refresh failed")
+        failure(errors: [ e.message ], message: "Token refresh failed")
       end
 
       # Revoke tokens at stub provider

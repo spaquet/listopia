@@ -24,7 +24,7 @@ module Connectors
     belongs_to :connector_account, class_name: "Connectors::Account", foreign_key: :connector_account_id
 
     validates :operation, presence: true
-    validates :status, presence: true, inclusion: { in: %w(pending in_progress success failure) }
+    validates :status, presence: true, inclusion: { in: %w[pending in_progress success failure] }
 
     enum :status, { pending: "pending", in_progress: "in_progress", success: "success", failure: "failure" }
 

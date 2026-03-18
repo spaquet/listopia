@@ -23,7 +23,7 @@ module Connectors
 
     validates :external_id, :external_type, :local_type, presence: true
     validates :external_id, uniqueness: { scope: [ :connector_account_id, :external_type ] }
-    validates :sync_direction, inclusion: { in: %w(push pull both) }
+    validates :sync_direction, inclusion: { in: %w[push pull both] }
 
     enum :sync_direction, { push: "push", pull: "pull", both: "both" }
 

@@ -102,7 +102,7 @@ RSpec.describe Connectors::Slack::MessageService, type: :service do
       end
 
       it "includes blocks when provided" do
-        blocks = [{ type: "section", text: { type: "mrkdwn", text: "*Bold*" } }]
+        blocks = [ { type: "section", text: { type: "mrkdwn", text: "*Bold*" } } ]
 
         allow_any_instance_of(Net::HTTP).to receive(:request) do |_instance|
           expect_request_with_body("blocks" => blocks)

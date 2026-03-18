@@ -15,7 +15,7 @@ module Connectors
       sync_direction: {
         label: "Sync Direction",
         type: :select,
-        options: ["readonly"],
+        options: [ "readonly" ],
         description: "Google Drive is read-only (browsing and attaching files)"
       }
     )

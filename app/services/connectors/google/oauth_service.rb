@@ -26,7 +26,7 @@ module Connectors
 
       # Exchange authorization code for tokens
       def exchange_code!(code, redirect_uri, user, organization)
-        return failure(errors: ["Invalid code"], message: "Authorization failed") if code.blank?
+        return failure(errors: [ "Invalid code" ], message: "Authorization failed") if code.blank?
 
         begin
           # Make HTTP request to Google token endpoint
@@ -55,13 +55,13 @@ module Connectors
           success(data: account)
         rescue StandardError => e
           Rails.logger.error("Google OAuth exchange failed: #{e.message}")
-          failure(errors: [e.message], message: "Token exchange failed")
+          failure(errors: [ e.message ], message: "Token exchange failed")
         end
       end
 
       # Refresh expired access token using refresh token
       def refresh_token!
-        return failure(errors: ["No refresh token"], message: "Cannot refresh") unless connector_account.refresh_token.present?
+        return failure(errors: [ "No refresh token" ], message: "Cannot refresh") unless connector_account.refresh_token.present?
 
         begin
           response = make_token_request(
@@ -80,7 +80,7 @@ module Connectors
           success(data: { status: "refreshed" })
         rescue StandardError => e
           Rails.logger.error("Google token refresh failed: #{e.message}")
-          failure(errors: [e.message], message: "Token refresh failed")
+          failure(errors: [ e.message ], message: "Token refresh failed")
         end
       end
 
