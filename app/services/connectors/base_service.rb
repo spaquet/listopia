@@ -63,10 +63,22 @@ module Connectors
     def ensure_fresh_token!
       return unless connector_account.token_expired?
 
-      refresh_service = ::Connectors::OauthService.new(
+      # Find the provider's OAuth service class
+      provider = connector_account.provider
+      service_class_name = "::Connectors::#{provider.classify}::OauthService"
+
+      begin
+        oauth_service_class = service_class_name.constantize
+      rescue NameError
+        raise "OAuth service not found for provider: #{provider}"
+      end
+
+      refresh_service = oauth_service_class.new(
         connector_account: connector_account
       )
-      refresh_service.refresh_token!
+
+      result = refresh_service.refresh_token!
+      raise "Token refresh failed: #{result.message}" if result.failure?
     end
   end
 end
