@@ -135,7 +135,7 @@ group :test do
 
   # Used to test rubyllm integrations
   gem "vcr", "~> 6.2"
-  gem "webmock", "~> 3.18"
+  gem "webmock", "~> 3.26"
 
   # Code coverage reporting
   gem "simplecov", "~> 0.22.0", require: false
