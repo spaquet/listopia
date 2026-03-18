@@ -1469,7 +1469,7 @@ CREATE TABLE public.tool_calls (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     message_id uuid NOT NULL,
-    thought_signature character varying
+    thought_signature text
 );
 
 
@@ -3430,6 +3430,7 @@ ALTER TABLE ONLY public.chats
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260318020551'),
 ('20260309225939'),
 ('20251208185450'),
 ('20251208185230'),
