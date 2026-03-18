@@ -15,6 +15,19 @@
         <h1 class="text-2xl font-bold text-gray-900">Account Settings</h1>
         <p class="text-gray-600 mt-1">Manage your password, account preferences, and notification settings.</p>
       </div>
+
+      <!-- Application Version -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-medium text-gray-900 mb-1">Application Version</h2>
+        <p class="text-sm text-gray-500 mb-4">Current version of Listopia running on this server.</p>
+        <div class="flex items-center gap-4">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            v<%= APP_VERSION %>
+          </span>
+          <span class="text-xs text-gray-400 font-mono">Build: <%= APP_BUILD %></span>
+        </div>
+      </div>
+
   <!-- Change Password -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h2 class="text-lg font-medium text-gray-900 mb-4">Change Password</h2>
