@@ -1,0 +1,140 @@
+<div class="container mx-auto max-w-2xl px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2"><%= @connector.class.name.titleize %> Settings</h1>
+    <p class="text-gray-600 dark:text-gray-400">Manage your <%= @connector.class.name.titleize %> connection</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-8">
+    <% if @connector_account.last_error.present? %>
+      <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-sm text-red-800 dark:text-red-200">
+          <strong>Last Error:</strong> <%= @connector_account.last_error %>
+        </p>
+      </div>
+    <% end %>
+
+    <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Information</h2>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm font-medium text-gray-700 dark:text-gray-300">Connected As</dt>
+          <dd class="text-gray-900 dark:text-white">
+            <% if @connector_account.display_name.present? %>
+              <%= @connector_account.display_name %>
+            <% elsif @connector_account.email.present? %>
+              <%= @connector_account.email %>
+            <% else %>
+              <%= @connector_account.provider_uid %>
+            <% end %>
+          </dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-700 dark:text-gray-300">Status</dt>
+          <dd>
+            <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold
+              <% case @connector_account.status %>
+              <% when 'active' %>
+                bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+              <% when 'paused' %>
+                bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+              <% when 'errored' %>
+                bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+              <% else %>
+                bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+              <% end %>
+            ">
+              <%= @connector_account.status.titleize %>
+            </span>
+          </dd>
+        </div>
+        <% if @connector_account.last_sync_at.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-700 dark:text-gray-300">Last Sync</dt>
+            <dd class="text-gray-900 dark:text-white"><%= time_ago_in_words(@connector_account.last_sync_at) %> ago</dd>
+          </div>
+        <% end %>
+      </dl>
+    </div>
+
+    <% if @schema.any? %>
+      <div class="mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Settings</h2>
+        <form method="post" action="<%= connectors_setting_path(@connector_account) %>">
+          <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+          <div class="space-y-6">
+            <% @schema.each do |key, field_config| %>
+              <div>
+                <label for="settings[<%= key %>]" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <%= field_config[:label] || key.to_s.titleize %>
+                </label>
+                <% if field_config[:type] == :select %>
+                  <select name="settings[<%= key %>]" id="settings[<%= key %>]" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                    <% field_config[:options].each do |opt| %>
+                      <option value="<%= opt %>" <% if @settings[key.to_s]&.value == opt %>selected<% end %>>
+                        <%= opt.titleize %>
+                      </option>
+                    <% end %>
+                  </select>
+                <% elsif field_config[:type] == :boolean %>
+                  <input type="checkbox" name="settings[<%= key %>]" id="settings[<%= key %>]" value="true" <% if @settings[key.to_s]&.value == "true" %>checked<% end %> class="w-4 h-4 border border-gray-300 rounded">
+                <% elsif field_config[:type] == :list_select %>
+                  <input type="text" name="settings[<%= key %>]" id="settings[<%= key %>]" value="<%= @settings[key.to_s]&.value %>" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="Comma-separated list">
+                <% else %>
+                  <input type="text" name="settings[<%= key %>]" id="settings[<%= key %>]" value="<%= @settings[key.to_s]&.value %>" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <% end %>
+                <% if field_config[:description] %>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-1"><%= field_config[:description] %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          <div class="mt-6 flex gap-3">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 font-medium">Save Settings</button>
+            <%= link_to "Back", connectors_connector_accounts_path, class: "px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium" %>
+          </div>
+        </form>
+      </div>
+    <% end %>
+
+    <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sync History</h2>
+      <% if @connector_account.sync_logs.any? %>
+        <div class="space-y-3">
+          <% @connector_account.sync_logs.recent.limit(10).each do |log| %>
+            <div class="flex items-start justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              <div>
+                <p class="font-medium text-gray-900 dark:text-white"><%= log.operation.titleize %></p>
+                <p class="text-xs text-gray-600 dark:text-gray-400">
+                  <% if log.completed_at %>
+                    Completed <%= time_ago_in_words(log.completed_at) %> ago
+                  <% else %>
+                    Started <%= time_ago_in_words(log.started_at) %> ago
+                  <% end %>
+                </p>
+              </div>
+              <div class="text-right">
+                <span class="inline-block px-2 py-1 rounded text-xs font-semibold
+                  <% case log.status %>
+                  <% when 'success' %>
+                    bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                  <% when 'failure' %>
+                    bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                  <% else %>
+                    bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                  <% end %>
+                ">
+                  <%= log.status.titleize %>
+                </span>
+                <% if log.duration_ms %>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-1"><%= (log.duration_ms / 1000.0).round(1) %>s</p>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-600 dark:text-gray-400 text-sm">No sync history yet</p>
+      <% end %>
+    </div>
+  </div>
+</div>

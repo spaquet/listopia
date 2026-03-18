@@ -239,6 +239,60 @@ Rails.application.routes.draw do
     end
   end
 
+  # Connector routes - Third-party service integrations
+  namespace :connectors do
+    resources :connector_accounts, only: [ :index, :destroy ] do
+      member do
+        patch :pause
+        patch :resume
+        post :test
+      end
+      collection do
+        get :available
+      end
+    end
+
+    resources :settings, only: [ :show, :update ], param: :connector_account_id
+
+    scope :oauth, controller: "oauth" do
+      get ":provider/authorize", action: :authorize, as: :oauth_authorize
+      get ":provider/callback", action: :callback, as: :oauth_callback
+    end
+
+    namespace :calendars do
+      namespace :google do
+        resources :calendars, only: [ :index ] do
+          collection { post :select }
+        end
+        resources :events, only: [ :index ] do
+          collection { post :sync }
+        end
+      end
+
+      namespace :microsoft do
+        resources :calendars, only: [ :index ] do
+          collection { post :select }
+        end
+        resources :events, only: [ :index ] do
+          collection { post :sync }
+        end
+      end
+    end
+
+    namespace :storage do
+      namespace :google_drive do
+        resources :files, only: [ :index ]
+      end
+    end
+
+    namespace :messaging do
+      namespace :slack do
+        resources :channels, only: [ :index ]
+        post "webhooks", to: "webhooks#receive"
+      end
+    end
+  end
+
   # Admin routes
   namespace :admin do
     root "dashboard#index"
