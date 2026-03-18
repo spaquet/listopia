@@ -16,14 +16,13 @@ module Connectors
       state = SecureRandom.urlsafe_base64
       session[:oauth_state] = state
 
-      # Build authorization URL - this will be overridden per-provider in subclasses
-      # For now, we'll redirect to a provider-specific implementation
-      provider_service = "::Connectors::#{params[:provider].classify}::OauthService".constantize
-      redirect_to provider_service.new.authorization_url(
+      # Build authorization URL
+      service_class = find_oauth_service_class(params[:provider])
+      redirect_to service_class.new.authorization_url(
         redirect_uri: oauth_callback_url,
         state: state
       )
-    rescue NameError
+    rescue StandardError => e
       redirect_to connectors_connector_accounts_path, alert: "OAuth not configured for this provider"
     end
 
@@ -48,8 +47,8 @@ module Connectors
 
       # Exchange code for tokens - provider-specific
       begin
-        provider_service = "::Connectors::#{params[:provider].classify}::OauthService".constantize
-        service = provider_service.new
+        service_class = find_oauth_service_class(params[:provider])
+        service = service_class.new
         result = service.exchange_code!(
           code,
           oauth_callback_url,
@@ -74,6 +73,19 @@ module Connectors
 
     def oauth_callback_url
       connectors_oauth_callback_url(provider: params[:provider])
+    end
+
+    # Safely lookup OAuth service class using whitelist
+    # Prevents dynamic class instantiation with user input
+    def find_oauth_service_class(provider)
+      oauth_services = {
+        "google_calendar" => Connectors::Google::Calendar::OauthService,
+        "microsoft_outlook" => Connectors::Microsoft::Outlook::OauthService,
+        "google_drive" => Connectors::Google::Drive::OauthService,
+        "slack" => Connectors::Messaging::Slack::OauthService
+      }
+
+      oauth_services[provider] || raise("Unknown provider: #{provider}")
     end
 
     # Validate CSRF state parameter
