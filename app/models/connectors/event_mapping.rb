@@ -19,7 +19,7 @@ module Connectors
   class EventMapping < ApplicationRecord
     self.table_name = "connector_event_mappings"
 
-    belongs_to :account, class_name: "Connectors::Account"
+    belongs_to :account, class_name: "Connectors::Account", foreign_key: :connector_account_id
 
     validates :external_id, :external_type, :local_type, presence: true
     validates :external_id, uniqueness: { scope: [ :connector_account_id, :external_type ] }

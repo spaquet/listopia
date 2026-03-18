@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "OAuth Flow", type: :integration do
+RSpec.describe "OAuth Flow", type: :system do
   let(:user) { create(:user) }
   let(:organization) { create(:organization, creator: user) }
 

@@ -163,6 +163,55 @@ module ApplicationHelper
     svg_icon.html_safe
   end
 
+  # Helper to check if user can perform action on resource
+  def can?(action, resource)
+    case action.to_sym
+    when :edit, :update, :destroy
+      if resource.is_a?(List)
+        resource.owner == current_user || resource.collaboratable_by?(current_user)
+      elsif resource.is_a?(ListItem)
+        resource.list.owner == current_user || resource.editable_by?(current_user)
+      else
+        false
+      end
+    when :read, :show
+      if resource.is_a?(List)
+        resource.readable_by?(current_user)
+      elsif resource.is_a?(ListItem)
+        resource.list.readable_by?(current_user)
+      else
+        false
+      end
+    else
+      false
+    end
+  end
+
+  # Generate a random gradient class for visual variety
+  def random_gradient
+    gradients = [
+      "from-blue-600 to-purple-600",
+      "from-green-600 to-blue-600",
+      "from-purple-600 to-pink-600",
+      "from-yellow-600 to-red-600",
+      "from-indigo-600 to-purple-600",
+      "from-pink-600 to-rose-600"
+    ]
+
+    gradients.sample
+  end
+
+  # Helper method to get updated dashboard data for a user
+  # This is used in turbo stream templates to update dashboard sections
+  def dashboard_data_for_user(user)
+    {
+      my_lists: user.lists.order(updated_at: :desc).limit(10),
+      collaborated_lists: user.collaborated_lists.includes(:owner).order(updated_at: :desc).limit(10),
+      recent_items: ListItem.joins(:list).where(list: user.accessible_lists).includes(:list).order(updated_at: :desc).limit(20),
+      stats: DashboardStatsService.new(user).call
+    }
+  end
+
   private
 
   def slack_icon
@@ -216,54 +265,5 @@ module ApplicationHelper
         <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
       </g>
     </svg>)
-  end
-
-  # Helper to check if user can perform action on resource
-  def can?(action, resource)
-    case action.to_sym
-    when :edit, :update, :destroy
-      if resource.is_a?(List)
-        resource.owner == current_user || resource.collaboratable_by?(current_user)
-      elsif resource.is_a?(ListItem)
-        resource.list.owner == current_user || resource.editable_by?(current_user)
-      else
-        false
-      end
-    when :read, :show
-      if resource.is_a?(List)
-        resource.readable_by?(current_user)
-      elsif resource.is_a?(ListItem)
-        resource.list.readable_by?(current_user)
-      else
-        false
-      end
-    else
-      false
-    end
-  end
-
-  # Generate a random gradient class for visual variety
-  def random_gradient
-    gradients = [
-      "from-blue-600 to-purple-600",
-      "from-green-600 to-blue-600",
-      "from-purple-600 to-pink-600",
-      "from-yellow-600 to-red-600",
-      "from-indigo-600 to-purple-600",
-      "from-pink-600 to-rose-600"
-    ]
-
-    gradients.sample
-  end
-
-  # Helper method to get updated dashboard data for a user
-  # This is used in turbo stream templates to update dashboard sections
-  def dashboard_data_for_user(user)
-    {
-      my_lists: user.lists.order(updated_at: :desc).limit(10),
-      collaborated_lists: user.collaborated_lists.includes(:owner).order(updated_at: :desc).limit(10),
-      recent_items: ListItem.joins(:list).where(list: user.accessible_lists).includes(:list).order(updated_at: :desc).limit(20),
-      stats: DashboardStatsService.new(user).call
-    }
   end
 end

@@ -63,7 +63,7 @@ module Connectors
     def ensure_fresh_token!
       return unless account.token_expired?
 
-      service = Stub::OauthService.new(connector_account: account)
+      service = Connectors::Stub::OauthService.new(connector_account: account)
       result = service.refresh_token!
 
       raise "Token refresh failed" unless result.success?

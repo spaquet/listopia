@@ -1,36 +1,69 @@
 require "rails_helper"
 
 RSpec.describe Connectors::AccountPolicy, type: :policy do
-  subject { described_class }
-
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
   let(:account) { create(:connectors_account, user: user) }
   let(:other_account) { create(:connectors_account, user: other_user) }
 
-  permissions :index? do
-    it { is_expected.to permit(user) }
-    it { is_expected.not_to permit(nil) }
+  describe "#index?" do
+    it "allows authenticated users" do
+      policy = described_class.new(user, Connectors::Account)
+      expect(policy.index?).to be_truthy
+    end
+
+    it "denies unauthenticated users" do
+      policy = described_class.new(nil, Connectors::Account)
+      expect(policy.index?).to be_falsy
+    end
   end
 
-  permissions :show? do
-    it { is_expected.to permit(user, account) }
-    it { is_expected.not_to permit(other_user, account) }
+  describe "#show?" do
+    it "allows user to view own account" do
+      policy = described_class.new(user, account)
+      expect(policy.show?).to be_truthy
+    end
+
+    it "denies user from viewing other's account" do
+      policy = described_class.new(other_user, account)
+      expect(policy.show?).to be_falsy
+    end
   end
 
-  permissions :create? do
-    it { is_expected.to permit(user) }
-    it { is_expected.not_to permit(nil) }
+  describe "#create?" do
+    it "allows authenticated users" do
+      policy = described_class.new(user, Connectors::Account.new)
+      expect(policy.create?).to be_truthy
+    end
+
+    it "denies unauthenticated users" do
+      policy = described_class.new(nil, Connectors::Account.new)
+      expect(policy.create?).to be_falsy
+    end
   end
 
-  permissions :update? do
-    it { is_expected.to permit(user, account) }
-    it { is_expected.not_to permit(other_user, account) }
+  describe "#update?" do
+    it "allows user to update own account" do
+      policy = described_class.new(user, account)
+      expect(policy.update?).to be_truthy
+    end
+
+    it "denies user from updating other's account" do
+      policy = described_class.new(other_user, account)
+      expect(policy.update?).to be_falsy
+    end
   end
 
-  permissions :destroy? do
-    it { is_expected.to permit(user, account) }
-    it { is_expected.not_to permit(other_user, account) }
+  describe "#destroy?" do
+    it "allows user to destroy own account" do
+      policy = described_class.new(user, account)
+      expect(policy.destroy?).to be_truthy
+    end
+
+    it "denies user from destroying other's account" do
+      policy = described_class.new(other_user, account)
+      expect(policy.destroy?).to be_falsy
+    end
   end
 
   describe "Scope" do

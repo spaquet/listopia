@@ -4,13 +4,35 @@ module AuthenticationHelpers
   def sign_in_user(user = nil)
     user ||= create(:user, :verified)
 
-    # For controller specs
+    # Try system test approach first (Capybara)
+    if respond_to?(:page) && respond_to?(:visit)
+      begin
+        visit new_session_path
+        fill_in 'Email', with: user.email
+        fill_in 'Password', with: user.password
+        click_button 'Sign In'
+        return user
+      rescue Capybara::ElementNotFound, StandardError
+        # Not a system test, fallback to session approach
+      end
+    end
+
+    # For controller specs and request specs
     if respond_to?(:session)
-      session[:user_id] = user.id
-      session[:user_signed_in_at] = Time.current.to_s
+      begin
+        session[:user_id] = user.id
+        session[:user_signed_in_at] = Time.current.to_s
+      rescue StandardError
+        # Session not available
+      end
     end
 
     user
+  end
+
+  # Alias for sign_in_user
+  def sign_in(user = nil)
+    sign_in_user(user)
   end
 
   # Helper to sign out current user

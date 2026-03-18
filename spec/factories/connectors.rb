@@ -53,7 +53,7 @@ FactoryBot.define do
   end
 
   factory :connectors_sync_log, class: "Connectors::SyncLog" do
-    account { create(:connectors_account) }
+    connector_account { create(:connectors_account) }
     operation { "calendar_sync" }
     status { "success" }
     records_processed { 10 }
