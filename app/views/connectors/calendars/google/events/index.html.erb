@@ -1,0 +1,56 @@
+<div class="container mx-auto max-w-4xl px-4 py-8">
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Google Calendar Events</h1>
+      <p class="text-gray-600 dark:text-gray-400">View and sync events from Google Calendar</p>
+    </div>
+    <form method="post" action="<%= connectors_calendars_google_events_sync_path %>">
+      <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+      <%= hidden_field_tag :connector_account_id, @connector_account.id %>
+      <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 font-medium">
+        Sync Now
+      </button>
+    </form>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <% if @events.any? %>
+      <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <% @events.each do |event| %>
+          <div class="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white"><%= event["summary"] || "Untitled" %></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1"><%= event["description"] %></p>
+                <div class="flex gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
+                  <span>
+                    📅
+                    <% start_time = event.dig("start", "dateTime") || event.dig("start", "date") %>
+                    <% if start_time %>
+                      <%= Time.parse(start_time).strftime("%b %d, %Y at %I:%M %p") %>
+                    <% end %>
+                  </span>
+                  <% if event.dig("start", "timeZone") %>
+                    <span>🌍 <%= event["start"]["timeZone"] %></span>
+                  <% end %>
+                </div>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <%= event["status"]&.titleize || "Confirmed" %>
+              </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-8 text-center">
+        <p class="text-gray-600 dark:text-gray-400 mb-4">No events found in the selected calendar.</p>
+        <%= link_to "Select Different Calendar", connectors_calendars_google_calendars_path, class: "text-blue-600 hover:text-blue-800 dark:text-blue-400" %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-8">
+    <%= link_to "← Back to Settings", connectors_setting_path(@connector_account), class: "text-blue-600 hover:text-blue-800 dark:text-blue-400" %>
+  </div>
+</div>
