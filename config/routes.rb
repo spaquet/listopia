@@ -287,7 +287,9 @@ Rails.application.routes.draw do
 
     namespace :messaging do
       namespace :slack do
-        resources :channels, only: [ :index ]
+        resources :channels, only: [ :index ] do
+          collection { post :select }
+        end
         post "webhooks", to: "webhooks#receive"
       end
     end
