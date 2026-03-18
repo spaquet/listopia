@@ -43,6 +43,19 @@ Quick reference for finding the right documentation for your task.
 ### I need API endpoint documentation
 → See [RAG_SEMANTIC_SEARCH.md - API Endpoints](RAG_SEMANTIC_SEARCH.md#api-endpoints)
 
+### I'm integrating third-party services
+→ Read [CONNECTORS_ARCHITECTURE.md](CONNECTORS_ARCHITECTURE.md)
+- Complete connector overview
+- Implementation status (6 phases complete)
+- Security model and encryption
+- OAuth implementations (Google, Microsoft, Slack)
+
+→ Then [CONNECTORS_SECURITY_CHECKLIST.md](CONNECTORS_SECURITY_CHECKLIST.md)
+- Pre-testing security verification
+- Token encryption validation
+- Multi-layer authorization testing
+- CSRF protection verification
+
 ### I want historical context
 → See [archived/README.md](archived/README.md)
 - Why decisions were made
@@ -109,6 +122,79 @@ RAG_SEMANTIC_SEARCH.md (Search & RAG Guide)
 ├── Integration with Chat
 ├── Performance & Optimization
 ├── Troubleshooting
+└── Future Enhancements
+
+CONNECTORS_ARCHITECTURE.md (Third-Party Integrations) ✅ NEW
+├── Overview & Implementation Status
+├── Architecture Overview (6 phases complete)
+├── Directory Structure
+├── Database Schema
+├── Key Architectural Patterns
+├── Security Implementation
+├── OAuth Implementations
+├── Connector Features
+├── API Operations
+├── Testing
+├── Routes
+├── Future Enhancements
+├── Deployment
+└── Monitoring
+
+CONNECTORS_SECURITY_CHECKLIST.md (Pre-Testing Verification) ✅ NEW
+├── Pre-Testing Security Verification
+├── Token Encryption & Storage
+├── Multi-Layer Authorization
+├── OAuth Security
+├── Data Isolation & Multi-Tenancy
+├── Error Handling & Incident Response
+├── Logging & Audit Trail
+├── Deployment Security
+├── Rate Limiting & Abuse Prevention
+├── Secrets Rotation
+├── Testing Checklist
+├── Production Checklist
+└── Incident Response Procedures
+
+CONNECTORS_GOOGLE_CALENDAR.md (Google Calendar Details)
+├── Architecture
+├── OAuth Flow
+├── Event Sync
+├── Error Handling
+└── Future Enhancements
+
+CONNECTORS_MICROSOFT_OUTLOOK.md (Microsoft Outlook Details)
+├── Architecture
+├── PKCE Implementation
+├── Event Sync
+├── Differences from Google
+└── Error Handling
+
+CONNECTORS_SLACK.md (Slack Details)
+├── Architecture
+├── OAuth Flow
+├── Message Posting
+├── Webhook Handling
+└── Error Handling
+
+CONNECTORS_GOOGLE_DRIVE.md (Google Drive Details)
+├── Architecture
+├── File Browsing
+├── API Operations
+├── Future Enhancements
+└── Error Handling
+
+CONNECTORS_OAUTH.md (OAuth Implementation)
+├── OAuth 2.0 Patterns
+├── State Parameter Validation
+├── Token Lifecycle
+└── Error Handling
+
+CONNECTORS_SECURITY.md (Security Model)
+├── Authentication & Authorization
+├── OAuth Security
+├── User Isolation
+├── Incident Handling
+├── Deployment Requirements
 └── Future Enhancements
 
 docs/archived/README.md (Historical Reference)
@@ -204,6 +290,15 @@ docs/archived/README.md (Historical Reference)
 - Chat: [CHAT_FEATURES.md - Testing Scenarios](CHAT_FEATURES.md#testing-scenarios)
 - Authorization: [CHAT_FEATURES.md - Test Organization Boundary](CHAT_FEATURES.md#testing-scenarios)
 
+### Third-Party Integrations (Connectors)
+- **Architecture:** [CONNECTORS_ARCHITECTURE.md](CONNECTORS_ARCHITECTURE.md)
+- **Security:** [CONNECTORS_SECURITY_CHECKLIST.md](CONNECTORS_SECURITY_CHECKLIST.md)
+- **OAuth Details:** [CONNECTORS_OAUTH.md](CONNECTORS_OAUTH.md)
+- **Google Calendar:** [CONNECTORS_GOOGLE_CALENDAR.md](CONNECTORS_GOOGLE_CALENDAR.md)
+- **Microsoft Outlook:** [CONNECTORS_MICROSOFT_OUTLOOK.md](CONNECTORS_MICROSOFT_OUTLOOK.md)
+- **Slack:** [CONNECTORS_SLACK.md](CONNECTORS_SLACK.md)
+- **Google Drive:** [CONNECTORS_GOOGLE_DRIVE.md](CONNECTORS_GOOGLE_DRIVE.md)
+
 ---
 
 ## 📋 File Organization
@@ -215,7 +310,20 @@ docs/archived/README.md (Historical Reference)
 | **CLAUDE.md** | Master development reference | 750+ | First resource for any question |
 | **CHAT_FEATURES.md** | Chat implementation guide | 850+ | Building chat features |
 | **RAG_SEMANTIC_SEARCH.md** | Search & RAG guide | 800+ | Working with search/embeddings |
+| **CONNECTORS_ARCHITECTURE.md** | Third-party integrations | 500+ | Working with connectors (OAuth, sync, webhooks) |
+| **CONNECTORS_SECURITY_CHECKLIST.md** | Pre-testing security verification | 400+ | Before testing connector functionality |
 | **DOCUMENTATION_MAP.md** | This file | - | Finding the right doc |
+
+### In docs/ (Connectors - Active)
+
+| File | Purpose | When to Use |
+|------|---------|------------|
+| **CONNECTORS_OAUTH.md** | OAuth 2.0 implementation | Understanding OAuth patterns across all connectors |
+| **CONNECTORS_SECURITY.md** | Detailed security model | Deep dive on authorization, encryption, error handling |
+| **CONNECTORS_GOOGLE_CALENDAR.md** | Google Calendar specifics | Working with calendar sync and events |
+| **CONNECTORS_MICROSOFT_OUTLOOK.md** | Microsoft Outlook specifics | Working with Outlook calendars (PKCE flow) |
+| **CONNECTORS_SLACK.md** | Slack specifics | Working with messaging, webhooks, notifications |
+| **CONNECTORS_GOOGLE_DRIVE.md** | Google Drive specifics | Working with file browsing and metadata |
 
 ### In docs/archived/ (Reference Only)
 
