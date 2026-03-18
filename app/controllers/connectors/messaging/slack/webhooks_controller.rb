@@ -5,7 +5,7 @@ module Connectors
       class WebhooksController < ActionController::Base
         before_action :verify_slack_signature
 
-        skip_forgery_protection
+        protect_from_forgery with: :null_session
 
         # POST /connectors/messaging/slack/webhooks
         def receive
