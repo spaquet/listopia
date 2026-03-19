@@ -2,6 +2,8 @@ module Admin::AuditHelper
   # Query helpers for audit trail combining Logidze + Event model
   # All queries are organization-scoped for multi-tenant safety
 
+  SENSITIVE_FIELDS = %w[status priority assigned_user_id access is_public owner_id].freeze
+
   # Get all changes to a resource with actor information
   def audit_trail_for(resource, organization = nil)
     organization ||= resource.organization if resource.respond_to?(:organization)
@@ -57,8 +59,6 @@ module Admin::AuditHelper
 
   # Get sensitive field changes (status, priority, access, ownership)
   def sensitive_changes_log(organization, days = 30)
-    SENSITIVE_FIELDS = %w[status priority assigned_user_id access is_public].freeze
-
     events = Event.where(organization_id: organization.id)
                   .where(event_type: %w[list_item.updated list.updated])
                   .since(days.days.ago)
