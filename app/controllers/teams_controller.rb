@@ -26,7 +26,7 @@ class TeamsController < ApplicationController
     if @team.save
       redirect_to organization_team_path(@organization, @team), notice: "Team created successfully."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -40,7 +40,7 @@ class TeamsController < ApplicationController
     if @team.update(team_params)
       redirect_to organization_team_path(@organization, @team), notice: "Team updated successfully."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

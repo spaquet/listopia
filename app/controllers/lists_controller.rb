@@ -166,10 +166,10 @@ class ListsController < ApplicationController
     else
       @list = service.list # Get the unsaved list with errors for form redisplay
       respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
         format.turbo_stream do
           flash.now[:alert] = result.errors.join(", ")
-          render :new, status: :unprocessable_entity
+          render :new, status: :unprocessable_content
         end
       end
     end
@@ -194,7 +194,7 @@ class ListsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
         format.turbo_stream { render :edit_errors }
       end
     end

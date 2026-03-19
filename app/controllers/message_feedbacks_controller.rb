@@ -28,8 +28,8 @@ class MessageFeedbacksController < ApplicationController
       end
     else
       respond_to do |format|
-        format.json { render json: { success: false, errors: @feedback.errors }, status: :unprocessable_entity }
-        format.turbo_stream { render action: :error, status: :unprocessable_entity }
+        format.json { render json: { success: false, errors: @feedback.errors }, status: :unprocessable_content }
+        format.turbo_stream { render action: :error, status: :unprocessable_content }
       end
     end
   end

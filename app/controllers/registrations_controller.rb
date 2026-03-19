@@ -38,7 +38,7 @@ class RegistrationsController < ApplicationController
 
       redirect_to verify_email_path, notice: "Please check your email to verify your account."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -153,7 +153,7 @@ class RegistrationsController < ApplicationController
       end
     else
       flash.now[:alert] = @user.errors[:password].first || "Password update failed"
-      render :setup_password, status: :unprocessable_entity, locals: { token: token }
+      render :setup_password, status: :unprocessable_content, locals: { token: token }
     end
   end
 

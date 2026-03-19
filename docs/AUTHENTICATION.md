@@ -256,7 +256,7 @@ class RegistrationsController < ApplicationController
       sign_in(@user)
       redirect_to dashboard_path, notice: "Password set successfully! Welcome to Listopia."
     else
-      render :setup_password, status: :unprocessable_entity
+      render :setup_password, status: :unprocessable_content
     end
   end
 end

@@ -97,7 +97,7 @@ class TeamMembersController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to update role." }
-        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+        format.turbo_stream { render plain: "error", status: :unprocessable_content }
       end
     end
   end
@@ -122,7 +122,7 @@ class TeamMembersController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to remove member." }
-        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+        format.turbo_stream { render plain: "error", status: :unprocessable_content }
       end
     end
   end
@@ -158,7 +158,7 @@ class TeamMembersController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to organization_team_path(@organization, @team), alert: "Unable to cancel invitation." }
-        format.turbo_stream { render plain: "error", status: :unprocessable_entity }
+        format.turbo_stream { render plain: "error", status: :unprocessable_content }
       end
     end
   end

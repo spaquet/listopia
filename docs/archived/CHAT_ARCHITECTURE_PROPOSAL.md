@@ -1909,7 +1909,7 @@ module Chat
 
         render json: { success: true, feedback: @feedback }
       else
-        render json: { success: false, errors: @feedback.errors }, status: :unprocessable_entity
+        render json: { success: false, errors: @feedback.errors }, status: :unprocessable_content
       end
     end
 

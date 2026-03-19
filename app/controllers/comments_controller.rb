@@ -37,7 +37,7 @@ class CommentsController < ApplicationController
             "new_comment_form_#{@commentable.class.name.downcase}_#{@commentable.id}",
             partial: "comments/form",
             locals: { commentable: @commentable, comment: @comment }
-          ), status: :unprocessable_entity
+          ), status: :unprocessable_content
         end
       end
     end

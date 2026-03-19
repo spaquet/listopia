@@ -400,7 +400,7 @@ RSpec.describe ListsController, type: :controller do
 
     it "returns unprocessable_entity on validation error" do
       patch :update, params: { id: list, list: { title: "" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "denies access if not authorized" do

@@ -165,7 +165,7 @@ class CollaborationsController < ApplicationController
                 can_remove_collaborator: @can_remove_collaborator
               }
             )
-          ], status: :unprocessable_entity
+          ], status: :unprocessable_content
         end
       end
     end
@@ -210,7 +210,7 @@ class CollaborationsController < ApplicationController
             "flash-messages",
             partial: "shared/flash_messages",
             locals: { alert: @collaboration.errors.full_messages.join(", ") }
-          ), status: :unprocessable_entity
+          ), status: :unprocessable_content
         end
       end
     end

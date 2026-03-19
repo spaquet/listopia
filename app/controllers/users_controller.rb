@@ -28,7 +28,7 @@ class UsersController < ApplicationController
     if @user.update(allowed_params)
       redirect_to profile_path, notice: "Profile updated successfully."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -44,11 +44,11 @@ class UsersController < ApplicationController
         redirect_to settings_user_path, notice: "Password updated successfully."
       else
         flash.now[:alert] = "Password update failed."
-        render :settings, status: :unprocessable_entity
+        render :settings, status: :unprocessable_content
       end
     else
       flash.now[:alert] = "Current password is incorrect."
-      render :settings, status: :unprocessable_entity
+      render :settings, status: :unprocessable_content
     end
   end
 
@@ -58,7 +58,7 @@ class UsersController < ApplicationController
       redirect_to settings_user_path, notice: "Preferences updated successfully."
     else
       flash.now[:alert] = "Failed to update preferences."
-      render :settings, status: :unprocessable_entity
+      render :settings, status: :unprocessable_content
     end
   end
 
@@ -70,7 +70,7 @@ class UsersController < ApplicationController
       redirect_to settings_user_path, notice: "Notification preferences updated successfully."
     else
       flash.now[:alert] = "Failed to update notification preferences."
-      render :settings, status: :unprocessable_entity
+      render :settings, status: :unprocessable_content
     end
   end
 

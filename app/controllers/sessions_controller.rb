@@ -29,7 +29,7 @@ class SessionsController < ApplicationController
     else
       @user = User.new(email: params[:email]) # For form redisplay
       flash.now[:alert] = "Invalid email or password"
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -52,11 +52,11 @@ class SessionsController < ApplicationController
       rescue => e
         Rails.logger.error "Magic link generation failed: #{e.message}"
         flash.now[:alert] = "Failed to send magic link. Please try again."
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     else
       flash.now[:alert] = "No account found with that email address."
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

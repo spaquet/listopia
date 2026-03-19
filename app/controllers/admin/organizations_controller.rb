@@ -49,8 +49,8 @@ class Admin::OrganizationsController < Admin::BaseController
     @filters = { query: nil, status: nil, size: nil, sort_by: nil }
     @total_organizations = 0
     respond_to do |format|
-      format.html { render :index, status: :unprocessable_entity }
-      format.turbo_stream { render :index, status: :unprocessable_entity }
+      format.html { render :index, status: :unprocessable_content }
+      format.turbo_stream { render :index, status: :unprocessable_content }
     end
   end
 
@@ -86,7 +86,7 @@ class Admin::OrganizationsController < Admin::BaseController
       end
     else
       respond_to do |format|
-        format.html { render :new, status: :unprocessable_entity }
+        format.html { render :new, status: :unprocessable_content }
         format.turbo_stream { render :new }
       end
     end
@@ -102,7 +102,7 @@ class Admin::OrganizationsController < Admin::BaseController
     if @organization.update(organization_params)
       redirect_to admin_organization_path(@organization), notice: "Organization updated successfully."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

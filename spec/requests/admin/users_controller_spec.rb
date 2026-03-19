@@ -247,7 +247,7 @@ RSpec.describe Admin::UsersController, type: :request do
           user: { name: '', email: '', make_admin: '0' }
         }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'renders new template on error' do
@@ -272,7 +272,7 @@ RSpec.describe Admin::UsersController, type: :request do
           user: { name: 'Test', email: 'test@example.com', make_admin: '0' }
         }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
@@ -335,7 +335,7 @@ RSpec.describe Admin::UsersController, type: :request do
         patch admin_user_path(regular_user),
               params: { user: { email: '' } }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 
