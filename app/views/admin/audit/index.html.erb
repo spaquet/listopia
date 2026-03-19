@@ -26,9 +26,9 @@
           </div>
 
           <div class="flex gap-2">
-            <%= link_to "Compliance Report", admin_audit_compliance_report_path, class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" %>
-            <%= link_to "Activity Log", admin_audit_activity_log_path, class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" %>
-            <%= link_to "Export", admin_audit_export_audit_path(format: :csv), class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded" %>
+            <%= link_to "Compliance Report", compliance_report_admin_audit_index_path, class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" %>
+            <%= link_to "Activity Log", activity_log_admin_audit_index_path, class: "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" %>
+            <%= link_to "Export", export_audit_admin_audit_index_path(format: :csv), class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded" %>
           </div>
         </form>
       </div>
