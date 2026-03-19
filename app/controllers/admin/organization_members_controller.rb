@@ -24,7 +24,7 @@ class Admin::OrganizationMembersController < Admin::BaseController
     else
       respond_to do |format|
         format.html { redirect_to admin_organization_members_path(@organization), alert: "Unable to update role." }
-        format.turbo_stream { head :unprocessable_entity }
+        format.turbo_stream { head :unprocessable_content }
       end
     end
   end

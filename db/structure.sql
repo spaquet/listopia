@@ -940,6 +940,88 @@ CREATE TABLE public.comments (
 
 
 --
+-- Name: connector_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_accounts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    provider_uid character varying NOT NULL,
+    display_name character varying,
+    email character varying,
+    access_token_encrypted text,
+    refresh_token_encrypted text,
+    token_expires_at timestamp with time zone,
+    token_scope character varying,
+    status character varying DEFAULT 'active'::character varying NOT NULL,
+    last_sync_at timestamp with time zone,
+    last_error text,
+    error_count integer DEFAULT 0 NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: connector_event_mappings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_event_mappings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    connector_account_id uuid NOT NULL,
+    external_id character varying NOT NULL,
+    external_type character varying NOT NULL,
+    local_type character varying NOT NULL,
+    local_id uuid,
+    sync_direction character varying DEFAULT 'both'::character varying NOT NULL,
+    last_synced_at timestamp with time zone,
+    external_etag character varying,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: connector_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_settings (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    connector_account_id uuid NOT NULL,
+    key character varying NOT NULL,
+    value text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: connector_sync_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_sync_logs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    connector_account_id uuid NOT NULL,
+    operation character varying NOT NULL,
+    status character varying NOT NULL,
+    records_processed integer DEFAULT 0,
+    records_created integer DEFAULT 0,
+    records_updated integer DEFAULT 0,
+    records_failed integer DEFAULT 0,
+    error_message text,
+    duration_ms integer,
+    started_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: currents; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1605,6 +1687,38 @@ ALTER TABLE ONLY public.comments
 
 
 --
+-- Name: connector_accounts connector_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_accounts
+    ADD CONSTRAINT connector_accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: connector_event_mappings connector_event_mappings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_event_mappings
+    ADD CONSTRAINT connector_event_mappings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: connector_settings connector_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_settings
+    ADD CONSTRAINT connector_settings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: connector_sync_logs connector_sync_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_sync_logs
+    ADD CONSTRAINT connector_sync_logs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: currents currents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1813,6 +1927,20 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: idx_on_connector_account_id_external_id_external_ty_53f2784fcd; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_connector_account_id_external_id_external_ty_53f2784fcd ON public.connector_event_mappings USING btree (connector_account_id, external_id, external_type);
+
+
+--
+-- Name: idx_on_user_id_provider_provider_uid_1cce2a45f8; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_user_id_provider_provider_uid_1cce2a45f8 ON public.connector_accounts USING btree (user_id, provider, provider_uid);
+
+
+--
 -- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1999,6 +2127,97 @@ CREATE INDEX index_comments_on_search_document ON public.comments USING gin (sea
 --
 
 CREATE INDEX index_comments_on_user_id ON public.comments USING btree (user_id);
+
+
+--
+-- Name: index_connector_accounts_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_accounts_on_created_at ON public.connector_accounts USING btree (created_at);
+
+
+--
+-- Name: index_connector_accounts_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_accounts_on_organization_id ON public.connector_accounts USING btree (organization_id);
+
+
+--
+-- Name: index_connector_accounts_on_provider; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_accounts_on_provider ON public.connector_accounts USING btree (provider);
+
+
+--
+-- Name: index_connector_accounts_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_accounts_on_status ON public.connector_accounts USING btree (status);
+
+
+--
+-- Name: index_connector_accounts_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_accounts_on_user_id ON public.connector_accounts USING btree (user_id);
+
+
+--
+-- Name: index_connector_event_mappings_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_event_mappings_on_created_at ON public.connector_event_mappings USING btree (created_at);
+
+
+--
+-- Name: index_connector_event_mappings_on_local_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_event_mappings_on_local_id ON public.connector_event_mappings USING btree (local_id);
+
+
+--
+-- Name: index_connector_event_mappings_on_local_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_event_mappings_on_local_type ON public.connector_event_mappings USING btree (local_type);
+
+
+--
+-- Name: index_connector_settings_on_connector_account_id_and_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_connector_settings_on_connector_account_id_and_key ON public.connector_settings USING btree (connector_account_id, key);
+
+
+--
+-- Name: index_connector_sync_logs_on_connector_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_sync_logs_on_connector_account_id ON public.connector_sync_logs USING btree (connector_account_id);
+
+
+--
+-- Name: index_connector_sync_logs_on_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_sync_logs_on_created_at ON public.connector_sync_logs USING btree (created_at);
+
+
+--
+-- Name: index_connector_sync_logs_on_operation; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_sync_logs_on_operation ON public.connector_sync_logs USING btree (operation);
+
+
+--
+-- Name: index_connector_sync_logs_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_sync_logs_on_status ON public.connector_sync_logs USING btree (status);
 
 
 --
@@ -3144,6 +3363,14 @@ ALTER TABLE ONLY public.messages
 
 
 --
+-- Name: connector_sync_logs fk_rails_35b6930281; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_sync_logs
+    ADD CONSTRAINT fk_rails_35b6930281 FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: collaborators fk_rails_3d4aaacbb1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3296,6 +3523,14 @@ ALTER TABLE ONLY public.message_feedbacks
 
 
 --
+-- Name: connector_accounts fk_rails_909e7c6acc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_accounts
+    ADD CONSTRAINT fk_rails_909e7c6acc FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3304,11 +3539,27 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: connector_event_mappings fk_rails_9c2eb634de; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_event_mappings
+    ADD CONSTRAINT fk_rails_9c2eb634de FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: tool_calls fk_rails_9c8daee481; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tool_calls
     ADD CONSTRAINT fk_rails_9c8daee481 FOREIGN KEY (message_id) REFERENCES public.messages(id);
+
+
+--
+-- Name: connector_accounts fk_rails_9f398701e5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_accounts
+    ADD CONSTRAINT fk_rails_9f398701e5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
 
 
 --
@@ -3424,12 +3675,24 @@ ALTER TABLE ONLY public.chats
 
 
 --
+-- Name: connector_settings fk_rails_f8a296dae1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_settings
+    ADD CONSTRAINT fk_rails_f8a296dae1 FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260319000003'),
+('20260319000002'),
+('20260319000001'),
+('20260319000000'),
 ('20260318020551'),
 ('20260309225939'),
 ('20251208185450'),

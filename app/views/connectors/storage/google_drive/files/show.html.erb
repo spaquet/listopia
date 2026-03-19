@@ -1,0 +1,96 @@
+<div class="container mx-auto max-w-4xl px-4 py-8">
+  <div class="mb-8">
+    <%= link_to "← Back to Files", connectors_storage_google_drive_files_path(@connector_account.id), class: "text-blue-600 hover:text-blue-800 dark:text-blue-400 mb-4 inline-block" %>
+
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2"><%= @file["name"] %></h1>
+  </div>
+
+  <% if @file.blank? %>
+    <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
+      <p class="text-red-800 dark:text-red-200">Could not load file information. Please try again.</p>
+    </div>
+  <% else %>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- File details card -->
+      <div class="md:col-span-2">
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">File ID</label>
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 break-all"><%= @file["id"] %></p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">MIME Type</label>
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><%= @file["mimeType"] %></p>
+            </div>
+
+            <% if @file["size"].present? %>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">File Size</label>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><%= number_to_human_size(@file["size"]) %></p>
+              </div>
+            <% end %>
+
+            <% if @file["modifiedTime"].present? %>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Last Modified</label>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><%= Time.parse(@file["modifiedTime"]).strftime("%B %d, %Y at %I:%M %p") %></p>
+              </div>
+            <% end %>
+
+            <% if @file["owners"].present? %>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Owner</label>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><%= @file["owners"][0]["displayName"] %></p>
+              </div>
+            <% end %>
+
+            <% if @file["parents"].present? %>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Parent Folder</label>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400"><%= @file["parents"][0] %></p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions card -->
+      <div>
+        <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actions</h2>
+
+          <div class="space-y-3">
+            <% if @file["webViewLink"].present? %>
+              <%= link_to "Open in Google Drive", @file["webViewLink"], target: "_blank", class: "block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 font-medium text-center" %>
+            <% end %>
+
+            <button type="button" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 font-medium" data-action="copy-id" data-file-id="<%= @file["id"] %>">
+              Copy File ID
+            </button>
+
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+              You can use this file ID to reference this file in your lists.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+  document.querySelectorAll('[data-action="copy-id"]').forEach(button => {
+    button.addEventListener('click', function() {
+      const fileId = this.dataset.fileId;
+      navigator.clipboard.writeText(fileId).then(() => {
+        const originalText = this.textContent;
+        this.textContent = '✓ Copied!';
+        setTimeout(() => {
+          this.textContent = originalText;
+        }, 2000);
+      });
+    });
+  });
+</script>

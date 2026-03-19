@@ -1,0 +1,37 @@
+<div class="container mx-auto max-w-4xl px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Select Outlook Calendar</h1>
+    <p class="text-gray-600 dark:text-gray-400">Choose which calendar to sync with Listopia</p>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <% if @calendars.any? %>
+      <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <% @calendars.each do |calendar| %>
+          <div class="p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <div class="flex items-start justify-between">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white"><%= calendar["name"] %></h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400"><%= calendar["description"] || "No description" %></p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">ID: <%= calendar["id"] %></p>
+              </div>
+              <form method="post" action="<%= connectors_calendars_microsoft_calendars_select_path %>">
+                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                <%= hidden_field_tag :connector_account_id, @connector_account.id %>
+                <%= hidden_field_tag :calendar_id, calendar["id"] %>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 font-medium">
+                  Select
+                </button>
+              </form>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="p-8 text-center">
+        <p class="text-gray-600 dark:text-gray-400 mb-4">No calendars found. Make sure you have calendars in Outlook.</p>
+        <%= link_to "Back", connectors_setting_path(@connector_account), class: "text-blue-600 hover:text-blue-800 dark:text-blue-400" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -103,7 +103,7 @@ class ListItemsController < ApplicationController
         format.html { redirect_to @list }
       end
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -116,7 +116,7 @@ class ListItemsController < ApplicationController
         format.html { redirect_to @item.list }
       end
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

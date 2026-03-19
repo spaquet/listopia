@@ -131,7 +131,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
       it 'renders index with error' do
         allow(OrganizationFilterService).to receive(:new).and_raise(StandardError.new('Filter error'))
         get admin_organizations_path
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(flash.now[:alert]).to include('error')
       end
     end
@@ -216,7 +216,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
 
       it 'returns 422 when name is blank' do
         post admin_organizations_path, params: { organization: { name: '' } }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'renders new template on error' do
@@ -285,7 +285,7 @@ RSpec.describe Admin::OrganizationsController, type: :request do
       it 'returns 422 on validation error' do
         patch admin_organization_path(organization),
               params: { organization: { name: '' } }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'renders edit template' do

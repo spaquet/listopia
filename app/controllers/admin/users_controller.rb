@@ -69,7 +69,7 @@ class Admin::UsersController < Admin::BaseController
   rescue => e
     Rails.logger.error("User filter error: #{e.message}\n#{e.backtrace.join("\n")}")
     flash.now[:alert] = "An error occurred while filtering users"
-    render :index, status: :unprocessable_entity
+    render :index, status: :unprocessable_content
   end
 
   def show
@@ -101,7 +101,7 @@ class Admin::UsersController < Admin::BaseController
     # Validate organization access
     if organization_id.present? && !current_user.in_organization?(organization_id)
       @user.errors.add(:base, "Invalid organization")
-      render :new, status: :unprocessable_entity and return
+      render :new, status: :unprocessable_content and return
     end
 
     # Use UserCreationService to handle all user creation logic
@@ -121,7 +121,7 @@ class Admin::UsersController < Admin::BaseController
       end
     else
       @user.errors.add(:base, result.errors.first) if result.errors.present?
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -141,7 +141,7 @@ class Admin::UsersController < Admin::BaseController
         end
       end
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

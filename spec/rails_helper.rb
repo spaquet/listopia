@@ -88,6 +88,8 @@ RSpec.configure do |config|
   config.include AuthenticationHelpers, type: :request
   config.include AuthenticationHelpers, type: :feature
   config.include AuthenticationHelpers, type: :system
+  config.include AuthenticationHelpers, type: :integration
+  config.include Capybara::DSL, type: :system
 
   # Include custom request helpers
   config.include RequestHelpers, type: :request

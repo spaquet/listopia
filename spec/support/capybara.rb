@@ -5,7 +5,7 @@ Capybara.register_driver(:cuprite) do |app|
     app,
     browser_options: { 'no-sandbox': nil },
     timeout: 30,
-    process_timeout: 60,
+    process_timeout: 120,
     inspector: false,
     headless: true
   )
@@ -16,7 +16,7 @@ Capybara.register_driver(:cuprite_debug) do |app|
     app,
     browser_options: { 'no-sandbox': nil },
     timeout: 30,
-    process_timeout: 60,
+    process_timeout: 120,
     inspector: true,
     headless: false
   )

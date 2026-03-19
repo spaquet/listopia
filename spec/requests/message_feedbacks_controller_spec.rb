@@ -168,7 +168,7 @@ RSpec.describe MessageFeedbacksController, type: :request do
           post feedback_path_for(message) + '.json',
                params: { message_feedback: { comment: 'No rating' } }
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
         end
       end
     end

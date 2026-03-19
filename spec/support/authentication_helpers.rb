@@ -4,13 +4,30 @@ module AuthenticationHelpers
   def sign_in_user(user = nil)
     user ||= create(:user, :verified)
 
-    # For controller specs
-    if respond_to?(:session)
-      session[:user_id] = user.id
-      session[:user_signed_in_at] = Time.current.to_s
+    # Verify user is verified before signing in
+    user.verify_email! unless user.email_verified?
+
+    # For system tests (Capybara)
+    if respond_to?(:page) && respond_to?(:visit)
+      visit new_session_path
+      # Fill in the email and password fields (use match: :first to disambiguate email field)
+      fill_in 'email', with: user.email, match: :first
+      fill_in 'password', with: user.password
+      click_button 'Sign In'
+      return user
     end
 
+    # For controller specs (type: :controller) and request specs (type: :request)
+    # Both have access to the session object
+    session[:user_id] = user.id
+    session[:user_signed_in_at] = Time.current.to_s
+
     user
+  end
+
+  # Alias for sign_in_user
+  def sign_in(user = nil)
+    sign_in_user(user)
   end
 
   # Helper to sign out current user

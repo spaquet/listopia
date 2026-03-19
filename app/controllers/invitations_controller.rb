@@ -406,7 +406,7 @@ class InvitationsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to root_path, alert: result.errors.join(", ") }
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("invitation", partial: "error", locals: { error: result.errors.join(", ") }), status: :unprocessable_entity }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("invitation", partial: "error", locals: { error: result.errors.join(", ") }), status: :unprocessable_content }
       end
     end
   end

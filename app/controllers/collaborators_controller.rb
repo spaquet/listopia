@@ -24,7 +24,7 @@ class CollaboratorsController < ApplicationController
       else
         @collaborators = @collaboratable.collaborators.includes(:user)
         @invitations = @collaboratable.invitations.pending
-        render :index, status: :unprocessable_entity
+        render :index, status: :unprocessable_content
       end
     else
       # Create invitation for non-existing user
@@ -37,7 +37,7 @@ class CollaboratorsController < ApplicationController
         flash.now[:alert] = result.errors.join(", ")
         @collaborators = @collaboratable.collaborators.includes(:user)
         @invitations = @collaboratable.invitations.pending
-        render :index, status: :unprocessable_entity
+        render :index, status: :unprocessable_content
       end
     end
   end

@@ -60,6 +60,9 @@ gem "positioning"
 gem "ruby_llm"
 gem "neighbor"
 
+# JWT for OAuth token handling
+gem "jwt"
+
 # JSON processing for MCP responses
 gem "multi_json"
 

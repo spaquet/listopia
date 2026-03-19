@@ -123,7 +123,7 @@ RSpec.describe CollaboratorsController, type: :request do
       it 'returns 422' do
         post list_collaborators_path(list),
              params: { email: '', collaborator: { permission: 'read' } }
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

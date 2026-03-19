@@ -11,7 +11,7 @@
           <% if current_user.bio.present? %>
             <p class="text-sm text-gray-500 mt-2"><%= current_user.bio %></p>
           <% end %>
-          <p class="text-xs text-gray-400 mt-3">Member since <%= current_user.created_at.strftime("%B %Y") %></p>
+          <p class="text-xs text-gray-400 mt-3">Member since <%= current_user.created_at.strftime("%B %Y") %> • UID: <span class="font-mono"><%= current_user.id %></span></p>
         </div>
       </div>
       <div class="flex space-x-3">

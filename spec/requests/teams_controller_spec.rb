@@ -203,7 +203,7 @@ RSpec.describe TeamsController, type: :request do
         post organization_teams_path(organization),
              params: { team: { name: '' } }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'renders new template on validation error' do
@@ -298,7 +298,7 @@ RSpec.describe TeamsController, type: :request do
         patch organization_team_path(organization, team),
               params: { team: { name: '' } }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'renders edit template on validation error' do

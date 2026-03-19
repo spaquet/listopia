@@ -50,9 +50,9 @@ class ListItemsController < ApplicationController
             partial: "list_items/quick_add_form",
             locals: { list: @list, list_item: @list_item }
           ),
-          status: :unprocessable_entity
+          status: :unprocessable_content
         }
-        format.json { render json: { errors: result.errors }, status: :unprocessable_entity }
+        format.json { render json: { errors: result.errors }, status: :unprocessable_content }
       end
     end
   end
@@ -69,9 +69,9 @@ class ListItemsController < ApplicationController
       end
     else
       respond_to do |format|
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html { render :edit, status: :unprocessable_content }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("list_item_#{@list_item.id}", partial: "list_items/item", locals: { item: @list_item, list: @list }) }
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.json { render json: @list_item.errors, status: :unprocessable_content }
       end
     end
   end
@@ -94,9 +94,9 @@ class ListItemsController < ApplicationController
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: turbo_stream.replace("list_item_#{@list_item.id}", partial: "list_items/item", locals: { item: @list_item, list: @list }),
-          status: :unprocessable_entity
+          status: :unprocessable_content
         end
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.json { render json: @list_item.errors, status: :unprocessable_content }
       end
     end
   end
@@ -173,8 +173,8 @@ class ListItemsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to @list, alert: "Unable to update item status." }
-        format.turbo_stream { head :unprocessable_entity }
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.turbo_stream { head :unprocessable_content }
+        format.json { render json: @list_item.errors, status: :unprocessable_content }
       end
     end
   end
@@ -196,7 +196,7 @@ class ListItemsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to @list, alert: "Unable to update item status." }
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.json { render json: @list_item.errors, status: :unprocessable_content }
       end
     end
   end
@@ -214,7 +214,7 @@ class ListItemsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to @list, alert: "Unable to assign item." }
-        format.json { render json: @list_item.errors, status: :unprocessable_entity }
+        format.json { render json: @list_item.errors, status: :unprocessable_content }
       end
     end
   end
