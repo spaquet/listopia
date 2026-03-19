@@ -283,6 +283,21 @@ class ListItem < ApplicationRecord
   def notify_item_created
     return if skip_notifications || !Current.user
 
+    # Emit event for integrations
+    ActiveSupport::Notifications.instrument(
+      "list_item.created",
+      item: self,
+      user_id: Current.user.id
+    )
+
+    # Log to audit trail
+    Event.emit(
+      "list_item.created",
+      Current.organization.id,
+      Current.user.id,
+      { item_id: id, title: title, list_id: list_id }
+    )
+
     NotificationService.new(Current.user)
                       .notify_item_activity(self, "created")
   end
@@ -303,9 +318,42 @@ class ListItem < ApplicationRecord
                  "updated"
       end
 
+      # Emit event for integrations
+      ActiveSupport::Notifications.instrument(
+        "list_item.status_changed",
+        item: self,
+        user_id: Current.user.id,
+        previous_status: @previous_status_value,
+        new_status: status
+      )
+
+      # Log to audit trail
+      Event.emit(
+        "list_item.status_changed",
+        Current.organization.id,
+        Current.user.id,
+        { item_id: id, from: @previous_status_value, to: status }
+      )
+
       NotificationService.new(Current.user)
                         .notify_item_activity(self, action, previous_title_value)
     elsif saved_changes.except("updated_at", "status_changed_at").any?
+      # Emit generic update event
+      ActiveSupport::Notifications.instrument(
+        "list_item.updated",
+        item: self,
+        user_id: Current.user.id,
+        changes: saved_changes.except("updated_at", "status_changed_at")
+      )
+
+      # Log to audit trail
+      Event.emit(
+        "list_item.updated",
+        Current.organization.id,
+        Current.user.id,
+        { item_id: id, changes: saved_changes.except("updated_at", "status_changed_at") }
+      )
+
       NotificationService.new(Current.user)
                         .notify_item_activity(self, "updated", previous_title_value)
     end
@@ -318,6 +366,21 @@ class ListItem < ApplicationRecord
     # Don't send notifications if the list is being destroyed
     # (which would cascade destroy items)
     return if list.nil? || list.destroyed? || list.marked_for_destruction?
+
+    # Emit event for integrations
+    ActiveSupport::Notifications.instrument(
+      "list_item.deleted",
+      item: self,
+      user_id: Current.user.id
+    )
+
+    # Log to audit trail
+    Event.emit(
+      "list_item.deleted",
+      Current.organization.id,
+      Current.user.id,
+      { item_id: id, title: title, list_id: list_id }
+    )
 
     NotificationService.new(Current.user)
                       .notify_item_activity(self, "deleted")
@@ -361,6 +424,22 @@ class ListItem < ApplicationRecord
   def notify_item_assigned
     return if skip_notifications || !Current.user || !assigned_user
 
+    # Emit event for integrations
+    ActiveSupport::Notifications.instrument(
+      "list_item.assigned",
+      item: self,
+      user_id: Current.user.id,
+      assigned_to: assigned_user
+    )
+
+    # Log to audit trail
+    Event.emit(
+      "list_item.assigned",
+      Current.organization.id,
+      Current.user.id,
+      { item_id: id, assigned_user_id: assigned_user.id }
+    )
+
     NotificationService.new(Current.user)
                       .notify_item_assigned(self, assigned_user)
   end
@@ -369,6 +448,23 @@ class ListItem < ApplicationRecord
   def notify_priority_changed
     return if skip_notifications || !Current.user || !(@previous_priority_value.present?)
 
+    # Emit event for integrations
+    ActiveSupport::Notifications.instrument(
+      "list_item.priority_changed",
+      item: self,
+      user_id: Current.user.id,
+      previous_priority: @previous_priority_value,
+      new_priority: priority
+    )
+
+    # Log to audit trail
+    Event.emit(
+      "list_item.priority_changed",
+      Current.organization.id,
+      Current.user.id,
+      { item_id: id, from: @previous_priority_value, to: priority }
+    )
+
     NotificationService.new(Current.user)
                       .notify_priority_changed(self, @previous_priority_value)
   end
@@ -376,6 +472,22 @@ class ListItem < ApplicationRecord
   # Notify when item is completed
   def notify_item_completed
     return if skip_notifications || !Current.user
+
+    # Emit event for integrations
+    ActiveSupport::Notifications.instrument(
+      "list_item.completed",
+      item: self,
+      user_id: Current.user.id,
+      completed_at: completed_at
+    )
+
+    # Log to audit trail
+    Event.emit(
+      "list_item.completed",
+      Current.organization.id,
+      Current.user.id,
+      { item_id: id, title: title, completed_at: completed_at }
+    )
 
     NotificationService.new(Current.user)
                       .notify_item_completed(self)

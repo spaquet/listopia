@@ -1052,6 +1052,21 @@ ALTER SEQUENCE public.currents_id_seq OWNED BY public.currents.id;
 
 
 --
+-- Name: events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    event_type character varying NOT NULL,
+    actor_id uuid,
+    event_data jsonb DEFAULT '{}'::jsonb,
+    organization_id uuid NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: invitations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1727,6 +1742,14 @@ ALTER TABLE ONLY public.currents
 
 
 --
+-- Name: events events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: invitations invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2218,6 +2241,41 @@ CREATE INDEX index_connector_sync_logs_on_operation ON public.connector_sync_log
 --
 
 CREATE INDEX index_connector_sync_logs_on_status ON public.connector_sync_logs USING btree (status);
+
+
+--
+-- Name: index_events_on_actor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_actor_id ON public.events USING btree (actor_id);
+
+
+--
+-- Name: index_events_on_actor_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_actor_id_and_created_at ON public.events USING btree (actor_id, created_at);
+
+
+--
+-- Name: index_events_on_event_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_event_type ON public.events USING btree (event_type);
+
+
+--
+-- Name: index_events_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_organization_id ON public.events USING btree (organization_id);
+
+
+--
+-- Name: index_events_on_organization_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_events_on_organization_id_and_created_at ON public.events USING btree (organization_id, created_at);
 
 
 --
@@ -3347,6 +3405,14 @@ ALTER TABLE ONLY public.list_items
 
 
 --
+-- Name: events fk_rails_163b5130b5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT fk_rails_163b5130b5 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: chats fk_rails_1835d93df1; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3360,6 +3426,14 @@ ALTER TABLE ONLY public.chats
 
 ALTER TABLE ONLY public.messages
     ADD CONSTRAINT fk_rails_273a25a7a6 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: events fk_rails_2c515e778f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT fk_rails_2c515e778f FOREIGN KEY (actor_id) REFERENCES public.users(id);
 
 
 --
@@ -3689,6 +3763,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260319230043'),
 ('20260319000003'),
 ('20260319000002'),
 ('20260319000001'),
