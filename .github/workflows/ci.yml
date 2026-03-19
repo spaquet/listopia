@@ -9,15 +9,6 @@ on:
       - 'images/**'
       - 'db/**'
       - 'public/**'
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '**.txt'
-      - 'docs/**'
-      - 'images/**'
-      - 'db/**'
-      - 'public/**'
 
 jobs:
   scan_ruby:
@@ -88,7 +79,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.17
+          bun-version: 1.3.11
 
       - name: Install JS dependencies
         run: bun install
