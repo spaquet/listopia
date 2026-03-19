@@ -24,11 +24,12 @@ module Admin::AuditHelper
   end
 
   # Get changes to a specific field across all records in an organization
-  def field_change_audit(organization, model_class, field_name, days = 30)
+  # Returns events where event_data contains changes to the specified field
+  def field_change_audit(organization, field_name, days = 30)
     events = Event.where(organization_id: organization.id)
-                  .where("event_data->>'#{model_class.to_s.tableize}' IS NOT NULL")
                   .since(days.days.ago)
 
+    # Filter in Ruby to avoid SQL injection and handle complex JSONB logic safely
     events.select do |event|
       changes = event.event_data["changes"]
       changes&.key?(field_name)
@@ -89,7 +90,7 @@ module Admin::AuditHelper
                   .recent
 
     CSV.generate do |csv|
-      csv << ["Timestamp", "User", "Event Type", "Details", "Changes"]
+      csv << [ "Timestamp", "User", "Event Type", "Details", "Changes" ]
 
       events.each do |event|
         csv << [
