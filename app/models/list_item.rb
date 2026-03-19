@@ -64,6 +64,7 @@ class ListItem < ApplicationRecord
   include Turbo::Broadcastable
   include SearchableEmbeddable
   include PgSearch::Model
+  include Recurrence
 
   attr_accessor :skip_notifications, :previous_title_value, :is_kanban_update
 

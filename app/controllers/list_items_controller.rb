@@ -154,6 +154,8 @@ class ListItemsController < ApplicationController
 
   # Toggle completion status using the new status enum
   def toggle_completion
+    was_pending_or_in_progress = @list_item.status_pending? || @list_item.status_in_progress?
+
     new_status = @list_item.status_completed? ? :pending : :completed
     new_column = if new_status == :completed
                    @list.board_columns.find_by(name: "Done")
@@ -162,6 +164,11 @@ class ListItemsController < ApplicationController
     end
 
     if @list_item.update(status: new_status, board_column_id: new_column&.id)
+      # Spawn next occurrence if item was just completed and is recurring
+      if @list_item.status_completed? && was_pending_or_in_progress
+        Recurring::SpawnNextOccurrenceService.call(@list_item)
+      end
+
       # Reload list associations to get fresh count data for stats
       @list.reload
 
@@ -316,7 +323,8 @@ class ListItemsController < ApplicationController
     params.require(:list_item).permit(
       :title, :description, :item_type, :priority, :status,
       :due_date, :assigned_user_id, :url, :position,
-      :estimated_duration, :duration_days, :start_date, :board_column_id
+      :estimated_duration, :duration_days, :start_date, :board_column_id,
+      :recurrence_rule, :recurrence_end_date
     )
   end
 end
