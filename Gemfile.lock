@@ -91,7 +91,7 @@ GEM
       activesupport (>= 6.0.0)
     ast (2.4.3)
     base64 (0.3.0)
-    bcrypt (3.1.21)
+    bcrypt (3.1.22)
     bcrypt_pbkdf (1.1.2)
     bigdecimal (4.0.1)
     bindex (0.8.1)
@@ -208,7 +208,7 @@ GEM
       bigdecimal (>= 3.1, < 5)
     jwt (3.1.2)
       base64
-    kamal (2.10.1)
+    kamal (2.11.0)
       activesupport (>= 7.0)
       base64 (~> 0.2)
       bcrypt_pbkdf (~> 1.0)
@@ -290,7 +290,7 @@ GEM
     noticed (3.0.0)
       rails (>= 6.1.0)
     ostruct (0.6.3)
-    pagy (43.4.0)
+    pagy (43.4.1)
       json
       uri
       yaml
@@ -521,7 +521,7 @@ GEM
       actionview (>= 8.0.0)
       bindex (>= 0.4.0)
       railties (>= 8.0.0)
-    webmock (3.26.1)
+    webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
