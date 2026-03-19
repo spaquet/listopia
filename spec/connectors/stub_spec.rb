@@ -65,14 +65,15 @@ RSpec.describe Connectors::Stub, type: :model do
     end
 
     it "ensures token is fresh before pulling" do
-      account.update!(token_expires_at: 30.minutes.from_now)
+      # Set token to have already expired
+      account.update!(token_expires_at: 1.minute.ago)
 
       # Mock the token refresh
       allow_any_instance_of(Connectors::Stub::OauthService).to receive(:refresh_token!).and_call_original
 
       connector.pull
 
-      # Token refresh should have been attempted
+      # Token refresh should have been attempted and token should be fresh
       expect(account.reload.token_expires_at).to be_within(2.seconds).of(1.hour.from_now)
     end
   end

@@ -4,28 +4,23 @@ module AuthenticationHelpers
   def sign_in_user(user = nil)
     user ||= create(:user, :verified)
 
-    # Try system test approach first (Capybara)
+    # Verify user is verified before signing in
+    user.verify_email! unless user.email_verified?
+
+    # For system tests (Capybara)
     if respond_to?(:page) && respond_to?(:visit)
-      begin
-        visit new_session_path
-        fill_in 'Email', with: user.email
-        fill_in 'Password', with: user.password
-        click_button 'Sign In'
-        return user
-      rescue Capybara::ElementNotFound, StandardError
-        # Not a system test, fallback to session approach
-      end
+      visit new_session_path
+      # Fill in the email and password fields (use match: :first to disambiguate email field)
+      fill_in 'email', with: user.email, match: :first
+      fill_in 'password', with: user.password
+      click_button 'Sign In'
+      return user
     end
 
-    # For controller specs and request specs
-    if respond_to?(:session)
-      begin
-        session[:user_id] = user.id
-        session[:user_signed_in_at] = Time.current.to_s
-      rescue StandardError
-        # Session not available
-      end
-    end
+    # For controller specs (type: :controller) and request specs (type: :request)
+    # Both have access to the session object
+    session[:user_id] = user.id
+    session[:user_signed_in_at] = Time.current.to_s
 
     user
   end

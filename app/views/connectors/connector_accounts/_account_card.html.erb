@@ -4,7 +4,7 @@
   <!-- Quick Actions (icons only, on hover) -->
   <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center space-x-1 z-10">
     <!-- Settings -->
-    <%= link_to connectors_setting_path(account),
+    <%= link_to connectors_setting_path(connector_account_id: account.id),
               class: "p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all duration-200",
               title: "Settings" do %>
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,7 +15,7 @@
 
     <!-- Pause/Resume -->
     <% if account.active? %>
-      <%= button_to connectors_pause_connector_account_path(account),
+      <%= button_to pause_connectors_connector_account_path(account),
                     method: :patch,
                     class: "p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded transition-all duration-200",
                     title: "Pause" do %>
@@ -24,7 +24,7 @@
         </svg>
       <% end %>
     <% elsif account.paused? %>
-      <%= button_to connectors_resume_connector_account_path(account),
+      <%= button_to resume_connectors_connector_account_path(account),
                     method: :patch,
                     class: "p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-all duration-200",
                     title: "Resume" do %>

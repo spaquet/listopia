@@ -40,6 +40,7 @@ RSpec.describe Connectors::ConnectorAccountsController, type: :controller do
     let(:account) { create(:connectors_account, user: user, organization: organization) }
 
     it "destroys the account" do
+      account  # Force creation before count check
       expect {
         delete :destroy, params: { id: account.id }
       }.to change(Connectors::Account, :count).by(-1)
@@ -52,13 +53,10 @@ RSpec.describe Connectors::ConnectorAccountsController, type: :controller do
   end
 
   describe "POST #test" do
-    let(:account) { create(:connectors_account, user: user, organization: organization) }
-
-    before do
-      allow_any_instance_of(Connectors::BaseConnector).to receive(:test_connection).and_return(true)
-    end
+    let(:account) { create(:connectors_account, :with_tokens, user: user, organization: organization, provider: "stub") }
 
     it "returns success JSON" do
+      account  # Force creation
       post :test, params: { id: account.id }, format: :json
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)["status"]).to eq("success")
