@@ -7,13 +7,14 @@ module Connectors
     def index
       authorize ::Connectors::Account, policy_class: ::Connectors::AccountPolicy
 
-      @accounts = if params[:provider].present?
-                    policy_scope(::Connectors::Account)
-                      .for_user(current_user)
-                      .by_provider(params[:provider])
-                  else
-                    policy_scope(::Connectors::Account).for_user(current_user)
-                  end
+      @accounts =
+        if params[:provider].present?
+          policy_scope(::Connectors::Account)
+            .for_user(current_user)
+            .by_provider(params[:provider])
+        else
+          policy_scope(::Connectors::Account).for_user(current_user)
+        end
       @connectors = ::Connectors::Registry.all
     end
 
