@@ -345,5 +345,15 @@ Rails.application.routes.draw do
     end
 
     resources :lists, only: [ :index, :show, :destroy ]
+
+    # Audit and compliance tracking
+    resources :audit, only: [ :index ] do
+      collection do
+        get :compliance_report
+        get :activity_log
+        get :audit_trail
+        get :export_audit
+      end
+    end
   end
 end
