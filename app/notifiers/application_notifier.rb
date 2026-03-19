@@ -1,10 +1,7 @@
 # app/notifiers/application_notifier.rb
 class ApplicationNotifier < Noticed::Event
   # Base class for all notifiers with common functionality
-
-  deliver_by :database do |config|
-    config.association = :notifications
-  end
+  # Note: Database persistence is automatic in Noticed 3.0+
 
   deliver_by :email do |config|
     config.mailer = "NotificationMailer"

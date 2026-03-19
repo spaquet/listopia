@@ -10,17 +10,27 @@
 #     schedule: at 5am every day
 
 production:
+  recurring_item_job:
+    class: RecurringItemJob
+    cron: "0 2 * * *"  # Daily at 2 AM
+    queue: default
+
   conversation_context_cleanup:
     class: ConversationContextCleanupJob
     cron: "0 2 * * *"  # Daily at 2 AM
     queue: low_priority
-    
+
   conversation_health_check:
     class: ConversationHealthJob
     cron: "0 */6 * * *"  # Every 6 hours
     queue: low_priority
 
 development:
+  recurring_item_job:
+    class: RecurringItemJob
+    cron: "0 */1 * * *"  # Every hour in development for testing
+    queue: default
+
   conversation_context_cleanup:
     class: ConversationContextCleanupJob
     cron: "0 */2 * * *"  # Every 2 hours in development
