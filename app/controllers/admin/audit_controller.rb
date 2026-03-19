@@ -7,9 +7,10 @@ module Admin
       @days = params[:days]&.to_i || 30
 
       if @organization
-        @summary = audit_summary(@organization, @days.days.ago, Time.current)
-        @sensitive_changes = sensitive_changes_log(@organization, @days)
-        @recent_events = organization_events(@organization, limit: 50)
+        query_service = AuditQueryService.new(@organization)
+        @summary = query_service.audit_summary(@days.days.ago, Time.current)
+        @sensitive_changes = query_service.sensitive_changes_log(@days)
+        @recent_events = query_service.organization_events({}, limit: 50)
       else
         redirect_to admin_root_path, alert: "Please select an organization first"
       end
@@ -46,7 +47,8 @@ module Admin
       @days = params[:days]&.to_i || 30
 
       if @user
-        @events = user_activity_log(@organization, @user, @days)
+        query_service = AuditQueryService.new(@organization)
+        @events = query_service.user_activity_log(@user, @days)
         @summary = {
           total_events: @events.count,
           events_by_type: @events.group_by(&:event_type).transform_values(&:count),
@@ -94,14 +96,13 @@ module Admin
       @days = params[:days]&.to_i || 90
       @format = params[:format] || "csv"
 
-      events = Event.where(organization_id: @organization.id)
-                    .since(@days.days.ago)
+      query_service = AuditQueryService.new(@organization)
 
       case @format
       when "csv"
-        send_data export_audit_trail_csv(@organization, @days), filename: "audit_export_#{@organization.id}_#{Time.current.to_date}.csv"
+        send_data query_service.export_audit_trail_csv(@days), filename: "audit_export_#{@organization.id}_#{Time.current.to_date}.csv"
       when "json"
-        @report = compliance_report(@organization)
+        @report = ComplianceReport.new(@organization, Event.where(organization_id: @organization.id).since(@days.days.ago))
         send_data @report.to_json, filename: "audit_export_#{@organization.id}_#{Time.current.to_date}.json"
       end
     end
