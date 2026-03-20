@@ -61,9 +61,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
           <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5.5m0 0H9m11 0v-3.5a6.5 6.5 0 00-13 0V21"></path>
-            </svg>
+            <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12a2 2 0 0 1 2 2v18H4V4a2 2 0 0 1 2-2m0 18h4v-4h4v4h4V4H6zm7-14h3v3h-3zm-5 5h3v3H8zm5 0h3v3h-3zM8 6h3v3H8z"/></svg>
           </div>
           <div>
             <h3 class="text-lg font-semibold text-gray-900">Manage Organizations</h3>
@@ -86,6 +84,22 @@
           <div>
             <h3 class="text-lg font-semibold text-gray-900">Manage Users</h3>
             <p class="text-sm text-gray-600">Add, edit, or remove users and manage their roles</p>
+          </div>
+        </div>
+        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </div>
+    <% end %>
+    <%= link_to admin_audit_index_path, class: "bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" do %>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-amber-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Audit & Compliance</h3>
+            <p class="text-sm text-gray-600">View audit trail, compliance reports, and activity logs</p>
           </div>
         </div>
         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,0 +1,121 @@
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Compliance Report</h1>
+        <p class="mt-2 text-gray-600">Regulatory audit trail and change tracking</p>
+      </div>
+      <%= link_to "← Back to Audit", admin_audit_index_path, class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors" %>
+    </div>
+
+    <!-- Organization Context -->
+    <div class="mb-6 bg-white rounded-lg shadow p-4">
+      <p class="text-sm text-gray-600">Organization</p>
+      <p class="text-xl font-semibold text-gray-900"><%= @organization.name %></p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-600">Total Events</div>
+        <div class="text-3xl font-bold text-gray-900"><%= @html_report[:summary][:total_events] %></div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-600">Sensitive Changes</div>
+        <div class="text-3xl font-bold text-amber-600"><%= @html_report[:summary][:sensitive_changes] %></div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-600">Critical Actions</div>
+        <div class="text-3xl font-bold text-red-600"><%= @html_report[:summary][:critical_actions] %></div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="text-sm text-gray-600">Active Users</div>
+        <div class="text-3xl font-bold text-gray-900"><%= @html_report[:summary][:unique_users] %></div>
+      </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Risk Assessment</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="border-l-4 border-red-500 pl-4">
+          <div class="text-sm text-gray-600">Bulk Deletions</div>
+          <div class="text-2xl font-bold text-gray-900"><%= @html_report[:risk_assessment][:high_risk][:bulk_deletions] ? '⚠️ Yes' : '✅ No' %></div>
+        </div>
+        <div class="border-l-4 border-amber-500 pl-4">
+          <div class="text-sm text-gray-600">Access Changes</div>
+          <div class="text-2xl font-bold text-gray-900"><%= @html_report[:risk_assessment][:high_risk][:access_changes] %></div>
+        </div>
+        <div class="border-l-4 border-amber-500 pl-4">
+          <div class="text-sm text-gray-600">Ownership Changes</div>
+          <div class="text-2xl font-bold text-gray-900"><%= @html_report[:risk_assessment][:high_risk][:ownership_changes] %></div>
+        </div>
+      </div>
+
+      <% if @html_report[:risk_assessment][:anomalies].any? %>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="text-sm font-medium text-red-600">Anomalies Detected:</div>
+          <ul class="mt-2 space-y-1">
+            <% @html_report[:risk_assessment][:anomalies].each do |anomaly| %>
+              <li class="text-sm text-gray-700">• <%= anomaly %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Export Options -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Export Report</h2>
+      <div class="flex gap-3">
+        <%= link_to compliance_report_admin_audit_index_path(format: :csv), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          Download CSV
+        <% end %>
+        <%= link_to compliance_report_admin_audit_index_path(format: :json), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          Download JSON
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Sensitive Changes Table -->
+    <% if @html_report[:sensitive_changes].any? %>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Sensitive Field Changes</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Timestamp</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">User</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Event</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Details</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% @html_report[:sensitive_changes].first(50).each do |event| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-3 text-sm text-gray-600"><%= event["created_at"] %></td>
+                  <td class="px-6 py-3 text-sm text-gray-900"><%= event["actor_id"] || "System" %></td>
+                  <td class="px-6 py-3 text-sm"><span class="inline-block bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium"><%= event["event_type"] %></span></td>
+                  <td class="px-6 py-3 text-sm text-gray-600"><%= event["event_data"]&.to_s&.truncate(80) || "—" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

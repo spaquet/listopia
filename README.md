@@ -2,7 +2,7 @@
 
 [![Ruby on Rails](https://img.shields.io/badge/Rails-8.0+-d82c20?style=flat-square&logo=rails)](https://rubyonrails.org)
 [![Ruby](https://img.shields.io/badge/Ruby-3.4.7-d91c1c?style=flat-square&logo=ruby)](https://www.ruby-lang.org)
-[![Tests](https://img.shields.io/badge/Tests-672%20Passing-4CAF50?style=flat-square&logo=rspec)](https://github.com/spaquet/listopia)
+[![Tests](https://github.com/spaquet/listopia/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/spaquet/listopia/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-AGPL%20v3-blue?style=flat-square)](LICENSE)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org)
 [![Hotwire](https://img.shields.io/badge/Hotwire-Turbo%20%26%20Stimulus-5F3DC4?style=flat-square&logo=turbo)](https://hotwired.dev)

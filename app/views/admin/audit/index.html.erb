@@ -1,0 +1,146 @@
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Audit & Compliance Dashboard</h1>
+      <p class="mt-2 text-gray-600">Track changes, monitor compliance, and view audit trails</p>
+    </div>
+
+    <!-- Organization Context & Filter Options -->
+    <div class="mb-6 bg-white rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600">Organization</p>
+          <p class="text-xl font-semibold text-gray-900"><%= @organization.name %></p>
+        </div>
+
+        <form method="get" class="flex gap-4 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Days to show</label>
+            <select name="days" class="rounded border-gray-300 shadow-sm px-3 py-2" onchange="this.form.submit()">
+              <option value="7" <%= "selected" if @days == 7 %>>Last 7 days</option>
+              <option value="30" <%= "selected" if @days == 30 %>>Last 30 days</option>
+              <option value="90" <%= "selected" if @days == 90 %>>Last 90 days</option>
+              <option value="365" <%= "selected" if @days == 365 %>>Last year</option>
+            </select>
+          </div>
+
+          <div class="flex gap-3">
+            <%= link_to compliance_report_admin_audit_index_path, class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Compliance Report
+            <% end %>
+            <%= link_to activity_log_admin_audit_index_path, class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Activity Log
+            <% end %>
+            <%= link_to export_audit_admin_audit_index_path(format: :csv), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Export
+            <% end %>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <% if @summary %>
+      <!-- Summary Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="text-sm text-gray-600">Total Events</div>
+          <div class="text-3xl font-bold text-gray-900"><%= @summary[:total_events] %></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="text-sm text-gray-600">Event Types</div>
+          <div class="text-3xl font-bold text-gray-900"><%= @summary[:events_by_type]&.keys&.count || 0 %></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="text-sm text-gray-600">Active Users</div>
+          <div class="text-3xl font-bold text-gray-900"><%= @summary[:events_by_actor]&.keys&.count || 0 %></div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="text-sm text-gray-600">Sensitive Changes</div>
+          <div class="text-3xl font-bold text-red-600"><%= @sensitive_changes.count %></div>
+        </div>
+      </div>
+
+      <!-- Events by Type -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Events by Type</h2>
+          <div class="space-y-2">
+            <% @summary[:events_by_type]&.each do |type, count| %>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-700"><%= type %></span>
+                <span class="text-lg font-semibold text-gray-900"><%= count %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Top Contributors</h2>
+          <div class="space-y-2">
+            <% @summary[:events_by_actor]&.to_a&.sort_by { |_, v| -v }&.first(5)&.each do |user, count| %>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-700"><%= user %></span>
+                <span class="text-lg font-semibold text-gray-900"><%= count %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Changes -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Recent Changes</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Timestamp</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">User</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Event</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Details</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% @recent_events.each do |event| %>
+                <tr>
+                  <td class="px-6 py-3 text-sm text-gray-600"><%= event.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
+                  <td class="px-6 py-3 text-sm text-gray-900"><%= event.actor&.email || "System" %></td>
+                  <td class="px-6 py-3 text-sm text-gray-900"><%= event.event_type %></td>
+                  <td class="px-6 py-3 text-sm text-gray-600">
+                    <% case event.event_type %>
+                      <% when "list_item.created" %>
+                        Created: <%= event.event_data["title"] %>
+                      <% when "list_item.deleted" %>
+                        Deleted: <%= event.event_data["title"] %>
+                      <% when "list_item.assigned" %>
+                        Assigned to user
+                      <% when "list_item.status_changed" %>
+                        <%= event.event_data["from"] %> → <%= event.event_data["to"] %>
+                      <% else %>
+                        <%= event.event_type %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

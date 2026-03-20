@@ -17,6 +17,15 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 - All queries scoped to organization (use `policy_scope`)
 - See: [ORGANIZATIONS_TEAMS.md](docs/ORGANIZATIONS_TEAMS.md)
 
+**Organization Context & Current Organization**
+- **Critical Requirement**: Every user MUST belong to at least one organization
+- Organization selection happens in the navigation bar (single place)
+- Use `Current.organization` to access the current organization in any controller/service
+- **Never** implement local organization selectors in views (use the nav bar selector)
+- If no organization is selected, redirect to dashboard/root with alert
+- Pattern: `redirect_to root_path, alert: "Please select an organization first" unless Current.organization`
+- See: [ORGANIZATIONS_TEAMS.md](docs/ORGANIZATIONS_TEAMS.md)
+
 **Real-Time Collaboration**
 - Prefer Turbo Streams for all reactive UI
 - Use Stimulus only when Turbo can't solve it
@@ -40,6 +49,19 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 policy_scope(List)  # Returns only user's org lists
 current_organization.lists  # Access through org
 .where(organization_id: current_user.organizations.select(:id))  # Explicit filter
+```
+
+**Organization Context (Critical)**
+```ruby
+# In controllers - ensure organization is selected
+@organization = Current.organization
+redirect_to root_path, alert: "Select organization" unless @organization
+
+# In models/services - access the current context
+Event.where(organization_id: Current.organization.id)
+
+# For admin/audit features - verify org is set
+redirect_to admin_root_path, alert: "Please select an organization first" unless @organization
 ```
 
 **Authorization**
@@ -148,6 +170,9 @@ bundle exec brakeman         # Security
 | Auth Failed | Call `authorize @resource` after load |
 | Turbo not working | Respond with `format.turbo_stream` |
 | Test DB issues | `RAILS_ENV=test rails db:reset` |
+| No organization selected | User must select one in nav bar; redirect if `Current.organization` is nil |
+| Cross-org data leak | Always scope queries with `organization_id`; use `Current.organization` |
+| Organization selector on view | Don't add local selectors; use nav bar only |
 
 ## Detailed Docs
 

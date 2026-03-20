@@ -66,6 +66,9 @@ gem "jwt"
 # JSON processing for MCP responses
 gem "multi_json"
 
+# CSV processing (required for Ruby 3.4+)
+gem "csv"
+
 # Markdown rendering with syntax highlighting
 gem "redcarpet"
 gem "rouge"
