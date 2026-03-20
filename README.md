@@ -59,10 +59,6 @@ Listopia is licensed under the [GNU Affero General Public License v3.0](LICENSE)
 
 Security features including authentication, authorization, prompt injection detection, and content moderation are documented in [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) and [docs/CHAT_FEATURES.md](docs/CHAT_FEATURES.md#authorization--security).
 
-## Project Status
-
-For the latest updates on development progress, features, and contributors, check [STATUS.md](STATUS.md).
-
 ## Why Listopia?
 
 Listopia is both a practical tool and a showcase of Rails 8's capabilities, including Solid Queue, Zeitwerk autoloading, and modern authentication patterns. Whether you're a developer exploring Rails or a user seeking a robust list management solution, Listopia offers a blend of innovation and utility.
