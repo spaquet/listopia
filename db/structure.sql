@@ -875,6 +875,35 @@ CREATE TABLE public.board_columns (
 
 
 --
+-- Name: calendar_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.calendar_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    connector_account_id uuid,
+    external_event_id character varying NOT NULL,
+    provider character varying NOT NULL,
+    summary character varying NOT NULL,
+    description text,
+    start_time timestamp with time zone NOT NULL,
+    end_time timestamp with time zone,
+    status character varying DEFAULT 'confirmed'::character varying,
+    timezone character varying,
+    attendees jsonb DEFAULT '[]'::jsonb NOT NULL,
+    organizer_email character varying,
+    organizer_name character varying,
+    is_organizer boolean DEFAULT false,
+    embedding public.vector(1536),
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: chats; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1678,6 +1707,14 @@ ALTER TABLE ONLY public.board_columns
 
 
 --
+-- Name: calendar_events calendar_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT calendar_events_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: chats chats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1996,6 +2033,48 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 --
 
 CREATE INDEX index_board_columns_on_list_id ON public.board_columns USING btree (list_id);
+
+
+--
+-- Name: index_calendar_events_on_attendees; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_attendees ON public.calendar_events USING gin (attendees);
+
+
+--
+-- Name: index_calendar_events_on_connector_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_connector_account_id ON public.calendar_events USING btree (connector_account_id);
+
+
+--
+-- Name: index_calendar_events_on_external_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_calendar_events_on_external_event_id ON public.calendar_events USING btree (external_event_id);
+
+
+--
+-- Name: index_calendar_events_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_organization_id ON public.calendar_events USING btree (organization_id);
+
+
+--
+-- Name: index_calendar_events_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_user_id ON public.calendar_events USING btree (user_id);
+
+
+--
+-- Name: index_calendar_events_on_user_id_and_start_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_user_id_and_start_time ON public.calendar_events USING btree (user_id, start_time);
 
 
 --
@@ -3405,6 +3484,14 @@ ALTER TABLE ONLY public.list_items
 
 
 --
+-- Name: calendar_events fk_rails_15e1fec6ce; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_15e1fec6ce FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: events fk_rails_163b5130b5; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3605,6 +3692,22 @@ ALTER TABLE ONLY public.connector_accounts
 
 
 --
+-- Name: calendar_events fk_rails_90c7e652b9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_90c7e652b9 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: calendar_events fk_rails_930e3c0bf4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_930e3c0bf4 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3763,6 +3866,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260320000000'),
 ('20260319230043'),
 ('20260319000003'),
 ('20260319000002'),

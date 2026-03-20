@@ -103,6 +103,36 @@ module Connectors
         []
       end
 
+      def fetch_events_in_range(start_time, end_time, calendar_id)
+        require "net/http"
+        require "uri"
+
+        url = "#{GOOGLE_CALENDAR_API}/calendars/#{calendar_id}/events"
+        uri = URI(url)
+        uri.query = URI.encode_www_form(
+          timeMin: start_time.iso8601,
+          timeMax: end_time.iso8601,
+          singleEvents: true,
+          orderBy: "startTime"
+        )
+
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+
+        request = Net::HTTP::Get.new(uri)
+        request["Authorization"] = "Bearer #{connector_account.access_token}"
+
+        response = http.request(request)
+
+        raise "Failed to fetch events" unless response.is_a?(Net::HTTPSuccess)
+
+        data = JSON.parse(response.body)
+        data["items"] || []
+      rescue StandardError => e
+        Rails.logger.error("Failed to fetch Google Calendar events in range: #{e.message}")
+        []
+      end
+
       def push_to_google(event_data, calendar_id)
         require "net/http"
         require "uri"

@@ -260,6 +260,9 @@ Rails.application.routes.draw do
     end
 
     namespace :calendars do
+      # Collision detection
+      post "collisions/check", to: "collisions#check"
+
       namespace :google do
         resources :calendars, only: [ :index ] do
           collection { post :select }
