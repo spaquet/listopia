@@ -57,6 +57,7 @@ class AuditQueryService
 
   # Export audit trail as CSV
   def export_audit_trail_csv(days = 30)
+    require "csv"
     events = Event.where(organization_id: organization.id)
                   .since(days.days.ago)
                   .recent

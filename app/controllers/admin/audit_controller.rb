@@ -121,6 +121,7 @@ module Admin
     end
 
     def export_activity_log_csv(events)
+      require "csv"
       CSV.generate do |csv|
         csv << [ "Timestamp", "Event Type", "Details", "Changes" ]
 
