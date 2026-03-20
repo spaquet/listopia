@@ -7,6 +7,8 @@
 #   report.user_activity            # => What each user did
 #   report.to_csv                   # => Export as CSV
 
+require "csv"
+
 class ComplianceReport
   SENSITIVE_FIELDS = %w[status priority assigned_user_id access is_public owner_id].freeze
   CRITICAL_ACTIONS = %w[deleted completed assigned].freeze
@@ -96,7 +98,6 @@ class ComplianceReport
 
   # Export as CSV
   def to_csv
-    require "csv"
     CSV.generate do |csv|
       csv << [ "Timestamp", "User", "Action", "Resource Type", "Resource ID", "Details", "Sensitive", "Risk Level" ]
 
