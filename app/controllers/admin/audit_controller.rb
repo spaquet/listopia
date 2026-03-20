@@ -27,14 +27,14 @@ module Admin
       events = Event.where(organization_id: @organization.id)
                     .where("created_at >= ? AND created_at <= ?", @start_date, @end_date)
 
-      @report = compliance_report(@organization, start_date: @start_date, end_date: @end_date)
+      @report = ComplianceReport.new(@organization, events, start_date: @start_date, end_date: @end_date)
       @html_report = @report.to_html
 
       respond_to do |format|
         format.html
         format.json { render json: @report.to_json }
         format.csv do
-          send_data @report.to_csv, filename: "compliance_report_#{@selected_org.id}_#{Time.current.to_date}.csv"
+          send_data @report.to_csv, filename: "compliance_report_#{@organization.id}_#{Time.current.to_date}.csv"
         end
       end
     end
