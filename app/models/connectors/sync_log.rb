@@ -3,20 +3,31 @@ module Connectors
   #
   # Table name: connector_sync_logs
   #
-  #  id                     :uuid
-  #  connector_account_id   :uuid
-  #  operation              :string
-  #  status                 :string
-  #  records_processed      :integer
-  #  records_created        :integer
-  #  records_updated        :integer
-  #  records_failed         :integer
-  #  error_message          :text
-  #  duration_ms            :integer
-  #  started_at             :timestamptz
-  #  completed_at           :timestamptz
-  #  created_at             :timestamptz
-  #  updated_at             :timestamptz
+  #  id                   :uuid             not null, primary key
+  #  completed_at         :timestamptz
+  #  duration_ms          :integer
+  #  error_message        :text
+  #  operation            :string           not null
+  #  records_created      :integer          default(0)
+  #  records_failed       :integer          default(0)
+  #  records_processed    :integer          default(0)
+  #  records_updated      :integer          default(0)
+  #  started_at           :timestamptz
+  #  status               :string           not null
+  #  created_at           :datetime         not null
+  #  updated_at           :datetime         not null
+  #  connector_account_id :uuid             not null
+  #
+  # Indexes
+  #
+  #  index_connector_sync_logs_on_connector_account_id  (connector_account_id)
+  #  index_connector_sync_logs_on_created_at            (created_at)
+  #  index_connector_sync_logs_on_operation             (operation)
+  #  index_connector_sync_logs_on_status                (status)
+  #
+  # Foreign Keys
+  #
+  #  fk_rails_...  (connector_account_id => connector_accounts.id)
   #
   class SyncLog < ApplicationRecord
     self.table_name = "connector_sync_logs"

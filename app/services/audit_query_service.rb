@@ -62,7 +62,7 @@ class AuditQueryService
                   .recent
 
     CSV.generate do |csv|
-      csv << ["Timestamp", "User", "Event Type", "Details", "Changes"]
+      csv << [ "Timestamp", "User", "Event Type", "Details", "Changes" ]
 
       events.each do |event|
         csv << [

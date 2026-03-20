@@ -85,7 +85,7 @@ module Admin
         @entries = @audit_trail.entries
         @changes_by_field = @audit_trail.changes_by_field
       else
-        @resource_types = ["List", "ListItem"]
+        @resource_types = [ "List", "ListItem" ]
       end
     end
 
@@ -122,7 +122,7 @@ module Admin
 
     def export_activity_log_csv(events)
       CSV.generate do |csv|
-        csv << ["Timestamp", "Event Type", "Details", "Changes"]
+        csv << [ "Timestamp", "Event Type", "Details", "Changes" ]
 
         events.each do |event|
           csv << [

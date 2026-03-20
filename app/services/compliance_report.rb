@@ -99,7 +99,7 @@ class ComplianceReport
   # Export as CSV
   def to_csv
     CSV.generate do |csv|
-      csv << ["Timestamp", "User", "Action", "Resource Type", "Resource ID", "Details", "Sensitive", "Risk Level"]
+      csv << [ "Timestamp", "User", "Action", "Resource Type", "Resource ID", "Details", "Sensitive", "Risk Level" ]
 
       events.each do |event|
         is_sensitive = sensitive_changes.include?(event)

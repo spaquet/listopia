@@ -77,7 +77,7 @@ RSpec.describe Event, type: :model do
       it 'returns events of the specified type' do
         events = Event.by_type('list_item.created')
         expect(events.count).to eq(2)
-        expect(events.map(&:event_type).uniq).to eq(['list_item.created'])
+        expect(events.map(&:event_type).uniq).to eq([ 'list_item.created' ])
       end
     end
 
@@ -85,7 +85,7 @@ RSpec.describe Event, type: :model do
       it 'returns events created by a specific user' do
         events = Event.by_actor(user)
         expect(events.count).to eq(2)
-        expect(events.map(&:actor_id).uniq).to eq([user.id])
+        expect(events.map(&:actor_id).uniq).to eq([ user.id ])
       end
     end
 

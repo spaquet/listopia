@@ -10,7 +10,7 @@ class CreateEvents < ActiveRecord::Migration[8.1]
     end
 
     add_index :events, :event_type
-    add_index :events, [:organization_id, :created_at]
-    add_index :events, [:actor_id, :created_at]
+    add_index :events, [ :organization_id, :created_at ]
+    add_index :events, [ :actor_id, :created_at ]
   end
 end
