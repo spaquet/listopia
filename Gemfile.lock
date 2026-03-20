@@ -122,6 +122,7 @@ GEM
     crass (1.0.6)
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
+    csv (3.3.5)
     cuprite (0.17)
       capybara (~> 3.0)
       ferrum (~> 0.17.0)
@@ -556,6 +557,7 @@ DEPENDENCIES
   bullet
   capybara
   cssbundling-rails
+  csv
   cuprite
   database_cleaner-active_record
   debug
