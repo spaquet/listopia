@@ -25,9 +25,23 @@
 #
 FactoryBot.define do
   factory :event do
-    event_type { "MyString" }
+    event_type { "list_item.created" }
+    organization { association :organization }
     actor { nil }
-    event_data { "" }
-    created_at { "2026-03-19 16:00:43" }
+    event_data { { item_id: SecureRandom.uuid, title: "Test Item" } }
+
+    trait :with_actor do
+      actor { association :user }
+    end
+
+    trait :status_changed do
+      event_type { "list_item.status_changed" }
+      event_data { { item_id: SecureRandom.uuid, from: "pending", to: "completed" } }
+    end
+
+    trait :deleted do
+      event_type { "list_item.deleted" }
+      event_data { { item_id: SecureRandom.uuid, title: "Deleted Item" } }
+    end
   end
 end
