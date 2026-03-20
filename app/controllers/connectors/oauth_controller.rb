@@ -57,6 +57,12 @@ module Connectors
         )
 
         if result.success?
+          # Enqueue calendar event sync for calendar providers
+          if %w[google_calendar microsoft_outlook].include?(params[:provider])
+            Connectors::CalendarEventSyncJob.perform_later(
+              connector_account_id: result.data.id
+            )
+          end
           redirect_to connectors_setting_path(result.data),
             notice: "Account connected successfully"
         else

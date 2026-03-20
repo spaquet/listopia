@@ -5,6 +5,8 @@ module SearchHelper
       "List"
     when ListItem
       "Item"
+    when CalendarEvent
+      "Event"
     when Comment
       "Comment"
     when ActsAsTaggableOn::Tag
@@ -20,6 +22,8 @@ module SearchHelper
       "bg-blue-100 text-blue-800"
     when ListItem
       "bg-green-100 text-green-800"
+    when CalendarEvent
+      "bg-cyan-100 text-cyan-800"
     when Comment
       "bg-purple-100 text-purple-800"
     when ActsAsTaggableOn::Tag
@@ -35,6 +39,8 @@ module SearchHelper
       record.title
     when ListItem
       record.title
+    when CalendarEvent
+      record.summary
     when Comment
       "Comment by #{record.user.name}"
     when ActsAsTaggableOn::Tag
@@ -50,6 +56,9 @@ module SearchHelper
       record.description
     when ListItem
       record.description
+    when CalendarEvent
+      "#{record.start_time.strftime('%b %d, %Y at %l:%M %p')}" +
+      (record.organizer_name.present? ? " · #{record.organizer_name}" : "")
     when Comment
       record.content
     when ActsAsTaggableOn::Tag
@@ -65,6 +74,8 @@ module SearchHelper
       list_path(record)
     when ListItem
       list_item_path(record.list, record)
+    when CalendarEvent
+      root_path
     when Comment
       case record.commentable
       when List

@@ -10,6 +10,9 @@ application.register("auto-save", AutoSaveController)
 import ChatMentionsController from "./chat_mentions_controller"
 application.register("chat-mentions", ChatMentionsController)
 
+import CalendarCollisionController from "./calendar_collision_controller"
+application.register("calendar-collision", CalendarCollisionController)
+
 import ChatNavigationController from "./chat_navigation_controller"
 application.register("chat-navigation", ChatNavigationController)
 

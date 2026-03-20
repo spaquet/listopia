@@ -33,7 +33,8 @@ class LlmToolsService < ApplicationService
       create_list_tool,
       update_user_tool,
       update_team_tool,
-      suspend_user_tool
+      suspend_user_tool,
+      check_calendar_conflicts_tool
     ]
   end
 
@@ -501,6 +502,31 @@ class LlmToolsService < ApplicationService
             }
           },
           required: [ "user_id", "action" ]
+        }
+      }
+    }
+  end
+
+  # Tool: Check calendar conflicts
+  def check_calendar_conflicts_tool
+    {
+      type: "function",
+      function: {
+        name: "check_calendar_conflicts",
+        description: "Check if a proposed time slot has scheduling conflicts with the user's connected calendars (Google Calendar, Outlook). Use when the user wants to schedule a meeting, event, or time-blocked task.",
+        parameters: {
+          type: "object",
+          properties: {
+            start_at: {
+              type: "string",
+              description: "Proposed start time in ISO 8601 format (e.g. 2026-03-21T14:00:00Z)"
+            },
+            end_at: {
+              type: "string",
+              description: "Proposed end time in ISO 8601 format (e.g. 2026-03-21T15:00:00Z)"
+            }
+          },
+          required: [ "start_at", "end_at" ]
         }
       }
     }
