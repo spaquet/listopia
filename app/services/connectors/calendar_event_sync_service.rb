@@ -77,7 +77,8 @@ module Connectors
         organizer_email: extract_organizer_email(event),
         organizer_name: extract_organizer_name(event),
         is_organizer: check_is_organizer(event),
-        attendees: extract_attendees(event)
+        attendees: extract_attendees(event),
+        external_event_url: extract_external_event_url(event)
       )
 
       # Mark for embedding update if new or content changed
@@ -183,6 +184,15 @@ module Connectors
       end
 
       attendees.compact
+    end
+
+    def extract_external_event_url(event)
+      case connector_account.provider
+      when "google_calendar"
+        event["htmlLink"]
+      when "microsoft_outlook"
+        event["webLink"]
+      end
     end
   end
 end

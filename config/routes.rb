@@ -187,6 +187,9 @@ Rails.application.routes.draw do
   # Notification preferences
   resource :notification_preferences, only: [ :show, :update ]
 
+  # Calendar events - synced from Google Calendar and Outlook
+  resources :calendar_events, only: [ :show ]
+
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 

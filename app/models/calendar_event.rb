@@ -9,6 +9,7 @@
 #  embedding                 :vector(1536)
 #  embedding_generated_at    :datetime
 #  end_time                  :timestamptz
+#  external_event_url        :string
 #  is_organizer              :boolean          default(FALSE)
 #  organizer_email           :string
 #  organizer_name            :string

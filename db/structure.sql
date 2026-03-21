@@ -899,7 +899,8 @@ CREATE TABLE public.calendar_events (
     embedding_generated_at timestamp(6) without time zone,
     requires_embedding_update boolean DEFAULT false NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    external_event_url character varying
 );
 
 
@@ -3866,6 +3867,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260320000001'),
 ('20260320000000'),
 ('20260319230043'),
 ('20260319000003'),

@@ -75,7 +75,7 @@ module SearchHelper
     when ListItem
       list_item_path(record.list, record)
     when CalendarEvent
-      root_path
+      calendar_event_path(record)
     when Comment
       case record.commentable
       when List

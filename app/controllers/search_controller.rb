@@ -110,9 +110,7 @@ class SearchController < ApplicationController
     when ListItem
       list_list_item_path(record.list, record)
     when CalendarEvent
-      # Calendar events don't have a specific detail view yet
-      # Return root_path for now (can be updated to calendar view when implemented)
-      root_path
+      calendar_event_path(record)
     when User
       profile_path(record)
     when Comment
