@@ -860,6 +860,35 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: attendee_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.attendee_contacts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    user_id uuid,
+    email character varying NOT NULL,
+    display_name character varying,
+    title character varying,
+    company character varying,
+    location character varying,
+    bio text,
+    avatar_url character varying,
+    linkedin_url character varying,
+    github_username character varying,
+    twitter_url character varying,
+    website_url character varying,
+    linkedin_data jsonb,
+    github_data jsonb,
+    clearbit_data jsonb,
+    enrichment_status character varying DEFAULT 'pending'::character varying,
+    enriched_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: board_columns; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1719,6 +1748,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: attendee_contacts attendee_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT attendee_contacts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: board_columns board_columns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2029,6 +2066,13 @@ CREATE INDEX idx_on_connector_account_id_status_517af4a019 ON public.connector_w
 
 
 --
+-- Name: idx_on_organization_id_enrichment_status_172943d07b; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_enrichment_status_172943d07b ON public.attendee_contacts USING btree (organization_id, enrichment_status);
+
+
+--
 -- Name: idx_on_user_id_provider_provider_uid_1cce2a45f8; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2061,6 +2105,27 @@ CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_b
 --
 
 CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_attendee_contacts_on_enriched_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_attendee_contacts_on_enriched_at ON public.attendee_contacts USING btree (enriched_at);
+
+
+--
+-- Name: index_attendee_contacts_on_enrichment_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_attendee_contacts_on_enrichment_status ON public.attendee_contacts USING btree (enrichment_status);
+
+
+--
+-- Name: index_attendee_contacts_on_organization_id_and_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_attendee_contacts_on_organization_id_and_email ON public.attendee_contacts USING btree (organization_id, email);
 
 
 --
@@ -3805,11 +3870,27 @@ ALTER TABLE ONLY public.taggings
 
 
 --
+-- Name: attendee_contacts fk_rails_9fd5ba6572; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT fk_rails_9fd5ba6572 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: teams fk_rails_a068b3a692; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT fk_rails_a068b3a692 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: attendee_contacts fk_rails_b1199659c3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT fk_rails_b1199659c3 FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -3923,6 +4004,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260320000003'),
 ('20260320000002'),
 ('20260320000001'),
 ('20260320000000'),

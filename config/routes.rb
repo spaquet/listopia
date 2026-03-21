@@ -190,6 +190,10 @@ Rails.application.routes.draw do
   # Calendar events - synced from Google Calendar and Outlook
   resources :calendar_events, only: [ :show ]
 
+  # People and collaborators
+  resources :people, only: [ :index ]
+  resources :attendee_contacts, only: [ :show, :update ]
+
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 

@@ -85,6 +85,14 @@ module Connectors
       cal_event.requires_embedding_update = true if cal_event.new_record? || cal_event.summary_changed? || cal_event.description_changed?
 
       cal_event.save!
+
+      # Sync attendees to AttendeeContact records for collaboration graph
+      organization = Organization.find(connector_account.organization_id)
+      AttendeeContactSyncService.new(
+        calendar_event: cal_event,
+        organization: organization
+      ).call
+
       cal_event
     end
 
