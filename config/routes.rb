@@ -273,6 +273,7 @@ Rails.application.routes.draw do
         resources :events, only: [ :index ] do
           collection { post :sync }
         end
+        post "webhooks", to: "webhooks#receive"
       end
 
       namespace :microsoft do
@@ -282,6 +283,7 @@ Rails.application.routes.draw do
         resources :events, only: [ :index ] do
           collection { post :sync }
         end
+        match "webhooks", to: "webhooks#receive", via: [:get, :post]
       end
     end
 

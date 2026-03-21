@@ -1052,6 +1052,25 @@ CREATE TABLE public.connector_sync_logs (
 
 
 --
+-- Name: connector_webhook_subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_webhook_subscriptions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    connector_account_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    calendar_id character varying NOT NULL,
+    subscription_id character varying NOT NULL,
+    resource_id character varying,
+    channel_token character varying,
+    expires_at timestamp with time zone,
+    status character varying DEFAULT 'active'::character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: currents; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1772,6 +1791,14 @@ ALTER TABLE ONLY public.connector_sync_logs
 
 
 --
+-- Name: connector_webhook_subscriptions connector_webhook_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_webhook_subscriptions
+    ADD CONSTRAINT connector_webhook_subscriptions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: currents currents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1992,6 +2019,13 @@ ALTER TABLE ONLY public.users
 --
 
 CREATE UNIQUE INDEX idx_on_connector_account_id_external_id_external_ty_53f2784fcd ON public.connector_event_mappings USING btree (connector_account_id, external_id, external_type);
+
+
+--
+-- Name: idx_on_connector_account_id_status_517af4a019; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_connector_account_id_status_517af4a019 ON public.connector_webhook_subscriptions USING btree (connector_account_id, status);
 
 
 --
@@ -2321,6 +2355,20 @@ CREATE INDEX index_connector_sync_logs_on_operation ON public.connector_sync_log
 --
 
 CREATE INDEX index_connector_sync_logs_on_status ON public.connector_sync_logs USING btree (status);
+
+
+--
+-- Name: index_connector_webhook_subscriptions_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_webhook_subscriptions_on_expires_at ON public.connector_webhook_subscriptions USING btree (expires_at);
+
+
+--
+-- Name: index_connector_webhook_subscriptions_on_subscription_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_connector_webhook_subscriptions_on_subscription_id ON public.connector_webhook_subscriptions USING btree (subscription_id);
 
 
 --
@@ -3653,6 +3701,14 @@ ALTER TABLE ONLY public.sessions
 
 
 --
+-- Name: connector_webhook_subscriptions fk_rails_7e61d1ae5e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_webhook_subscriptions
+    ADD CONSTRAINT fk_rails_7e61d1ae5e FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: invitations fk_rails_7eae413fe6; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3867,6 +3923,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260320000002'),
 ('20260320000001'),
 ('20260320000000'),
 ('20260319230043'),
