@@ -27,7 +27,13 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
-      # Check if we're in pre-creation planning state FIRST
+      # PHASE 3: Check if this chat has a PlanningContext in pre_creation state
+      if @chat.planning_context&.state == "pre_creation"
+        planning_result = handle_pre_creation_planning_response_new
+        return planning_result if planning_result
+      end
+
+      # Check if we're in pre-creation planning state (old flow, metadata-based) FIRST
       # This takes precedence over other pending flows
       if pending_pre_creation_planning?
         planning_result = handle_pre_creation_planning_response
@@ -239,7 +245,8 @@ class ChatCompletionService < ApplicationService
 
       if is_complex
         Rails.logger.info("ChatCompletionService - Complex list detected: #{combined_data[:complexity_reasoning]} (confidence: #{complexity_confidence})")
-        return handle_pre_creation_planning(parameters, planning_domain)
+        # PHASE 3: Use new PlanningContext-based flow
+        return initialize_planning_with_new_context(combined_data)
       end
 
       # Not complex - now check if we need category clarification
@@ -1460,5 +1467,433 @@ class ChatCompletionService < ApplicationService
     PROMPT
 
     "#{base_prompt}\n\n#{tool_instructions}"
+  end
+
+  # ===== PHASE 3: PlanningContext Integration =====
+
+  # Check if this chat has an existing PlanningContext
+  def existing_planning_context?
+    @chat.planning_context.present?
+  end
+
+  # Get or create planning context for this chat
+  def get_or_create_planning_context
+    return @chat.planning_context if @chat.planning_context.present?
+
+    # Create new planning context using PlanningContextHandler
+    handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+    result = handler.call
+
+    return nil unless result.success?
+
+    result.data[:planning_context]
+  end
+
+  # Initialize planning context for list creation (new Phase 3 flow)
+  def initialize_planning_with_new_context(combined_data)
+    begin
+      Rails.logger.info("ChatCompletionService - Initializing planning context for list creation")
+
+      # Use PlanningContextHandler to create context and detect complexity
+      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+      handler_result = handler.call
+
+      return handler_result unless handler_result.success?
+
+      handler_data = handler_result.data
+
+      # If not a list creation request, return early
+      unless handler_data[:should_create_context]
+        Rails.logger.info("ChatCompletionService - Not a list creation request, skipping planning context")
+        return nil
+      end
+
+      planning_context = handler_data[:planning_context]
+
+      # If simple request, generate items and create list immediately
+      unless planning_context.is_complex
+        Rails.logger.info("ChatCompletionService - Simple list request, generating items and creating list")
+        generation_result = handler.generate_items_for_context(planning_context)
+        return generation_result unless generation_result.success?
+
+        # Items generated, now create the actual list
+        return auto_create_list_from_planning(planning_context)
+      end
+
+      # For complex requests, generate and show pre-creation planning form
+      Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
+      show_pre_creation_planning_form(planning_context)
+    rescue StandardError => e
+      Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Show pre-creation planning form using new PlanningContext model
+  def show_pre_creation_planning_form(planning_context)
+    begin
+      # Show planning state indicator (PHASE 5)
+      show_planning_state(planning_context)
+
+      # Generate clarifying questions based on planning domain
+      question_result = QuestionGenerationService.new(
+        list_title: planning_context.request_content,
+        category: planning_context.parameters[:category] || "personal",
+        planning_domain: planning_context.planning_domain
+      ).call
+
+      unless question_result.success?
+        Rails.logger.warn("ChatCompletionService - Failed to generate questions, proceeding with immediate creation")
+        # Graceful degradation: proceed with item generation
+        handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+        return handler.generate_items_for_context(planning_context)
+      end
+
+      questions = question_result.data[:questions]
+
+      # Store questions in PlanningContext (not in chat.metadata)
+      planning_context.update!(
+        pre_creation_questions: questions.map { |q| q["question"] },
+        state: :pre_creation
+      )
+
+      # Create assistant message
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: "Let me ask a few clarifying questions to structure this list better:"
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      # Broadcast the pre-creation planning form
+      broadcast_planning_form_new(@chat, questions, planning_context)
+
+      Rails.logger.info("ChatCompletionService - Pre-creation form shown with #{questions.length} questions")
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("show_pre_creation_planning_form error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Handle user answers to pre-creation planning questions using new flow
+  def handle_pre_creation_planning_response_new
+    planning_context = @chat.planning_context
+    return nil unless planning_context&.state == "pre_creation"
+
+    begin
+      Rails.logger.info("ChatCompletionService - Processing pre-creation planning answers")
+
+      # Extract answers from user message
+      answers = extract_answers_from_user_input(@user_message.content, planning_context.pre_creation_questions)
+
+      # Store answers in PlanningContext
+      planning_context.record_answers(answers)
+
+      # Use PlanningContextHandler to process answers and generate items
+      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+      generation_result = handler.process_answers(planning_context, answers)
+
+      return generation_result unless generation_result.success?
+
+      gen_data = generation_result.data
+      updated_context = gen_data[:planning_context]
+
+      Rails.logger.info("ChatCompletionService - Items generated, now creating list from planning context")
+
+      # Items generated, create the actual list
+      auto_create_list_from_planning(updated_context)
+    rescue StandardError => e
+      Rails.logger.error("handle_pre_creation_planning_response_new error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Extract structured answers from user's free-form text response
+  def extract_answers_from_user_input(user_input, questions)
+    answers = {}
+
+    # Try to map each question to extracted answer
+    # For now, store the entire input as the response
+    # In Phase 4, we can use LLM to extract structured answers
+    questions.each_with_index do |question, index|
+      answers[index.to_s] = user_input
+    end
+
+    answers
+  end
+
+  # Build a summary message for list creation
+  def build_list_creation_summary(planning_context)
+    summary_parts = [
+      "Perfect! I've created a #{planning_context.planning_domain} list with the following structure:"
+    ]
+
+    # Add hierarchical structure info
+    if planning_context.hierarchical_items.dig("subdivisions").present?
+      subdivisions = planning_context.hierarchical_items["subdivisions"]
+      subdivision_type = planning_context.hierarchical_items["subdivision_type"]
+
+      case subdivision_type
+      when "locations"
+        locations = subdivisions.keys
+        summary_parts << "- **Locations**: #{locations.join(', ')}"
+      when "phases"
+        phases = subdivisions.keys
+        summary_parts << "- **Phases**: #{phases.join(', ')}"
+      when "teams"
+        teams = subdivisions.keys
+        summary_parts << "- **Teams**: #{teams.join(', ')}"
+      end
+    end
+
+    # Add item count
+    item_count = planning_context.generated_items.length
+    summary_parts << "- **Total items**: #{item_count}"
+
+    summary_parts.join("\n")
+  end
+
+  # Broadcast pre-creation planning form using new PlanningContext
+  def broadcast_planning_form_new(chat, questions, planning_context)
+    begin
+      html = ApplicationController.render(
+        partial: "chats/pre_creation_planning_message",
+        locals: {
+          questions: questions,
+          chat: chat,
+          list_title: planning_context.request_content
+        }
+      )
+
+      Rails.logger.info("ChatCompletionService - Rendered form partial (#{html.length} chars)")
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{chat.id}",
+        target: "chat-messages-#{chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - Pre-creation planning form broadcasted")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast pre-creation form: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # ===== PHASE 4: Planning Context to List Creation =====
+
+  # Create an actual List from a completed PlanningContext
+  def create_list_from_planning_context(planning_context)
+    begin
+      Rails.logger.info("ChatCompletionService - Creating list from planning context: #{planning_context.id}")
+
+      # Verify context is completed
+      unless planning_context.state == "completed"
+        return failure(errors: [ "Planning context not ready for list creation. Current state: #{planning_context.state}" ])
+      end
+
+      # Use PlanningContextToListService to create the list
+      service = PlanningContextToListService.new(
+        planning_context,
+        @context.user,
+        @context.organization
+      )
+
+      result = service.call
+      return result unless result.success?
+
+      list = result.data[:list]
+      updated_context = result.data[:planning_context]
+
+      Rails.logger.info("ChatCompletionService - List created successfully: #{list.id} with #{result.data[:items_count]} items")
+
+      success(data: {
+        list: list,
+        planning_context: updated_context,
+        message: "List created successfully!"
+      })
+    rescue StandardError => e
+      Rails.logger.error("create_list_from_planning_context error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Trigger list creation as an automatic follow-up after item generation
+  # This is called after PlanningContext is marked as "completed"
+  def auto_create_list_from_planning(planning_context)
+    begin
+      Rails.logger.info("ChatCompletionService - Auto-creating list from completed planning context")
+
+      # Show list preview first (PHASE 5 enhancement)
+      show_list_preview(planning_context)
+
+      # Create the list
+      list_result = create_list_from_planning_context(planning_context)
+      return list_result unless list_result.success?
+
+      list = list_result.data[:list]
+      updated_context = list_result.data[:planning_context]
+
+      # Create brief text message
+      brief_message = "✨ Creating your list..."
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: brief_message
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      # Broadcast the success confirmation (PHASE 5 enhancement)
+      broadcast_list_created_confirmation(list, updated_context)
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("auto_create_list_from_planning error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Build a confirmation message about the created list (Markdown version - legacy)
+  def build_list_creation_confirmation(list)
+    parts = [
+      "✅ **List Created Successfully!**",
+      "",
+      "**#{list.title}**",
+      "#{list.list_items.count} items across #{list.sub_lists.count + 1} lists"
+    ]
+
+    # Add sublists info if present
+    if list.sub_lists.any?
+      parts << ""
+      parts << "**Sublists:**"
+      list.sub_lists.each do |sublist|
+        parts << "  • #{sublist.title} (#{sublist.list_items.count} items)"
+      end
+    end
+
+    parts << ""
+    parts << "[View List](#{Rails.application.routes.url_helpers.list_path(list)})"
+
+    parts.join("\n")
+  end
+
+  # ===== PHASE 5: Frontend & Views Integration =====
+
+  # Show planning state indicator in chat
+  def show_planning_state(planning_context)
+    begin
+      html = ApplicationController.render(
+        partial: "message_templates/planning_state_indicator",
+        locals: {
+          planning_context: planning_context
+        }
+      )
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{@chat.id}",
+        target: "chat-messages-#{@chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - Planning state indicator broadcasted")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast planning state: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # Show list preview before creation
+  def show_list_preview(planning_context)
+    begin
+      html = ApplicationController.render(
+        partial: "message_templates/list_preview",
+        locals: {
+          planning_context: planning_context
+        }
+      )
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{@chat.id}",
+        target: "chat-messages-#{@chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - List preview broadcasted")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast list preview: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # Show item generation progress
+  def show_item_generation_progress(planning_context)
+    begin
+      subdivisions = planning_context.hierarchical_items.dig("subdivisions")&.keys || []
+
+      html = ApplicationController.render(
+        partial: "message_templates/item_generation_progress",
+        locals: {
+          subdivisions: subdivisions,
+          total: subdivisions.length
+        }
+      )
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{@chat.id}",
+        target: "chat-messages-#{@chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - Item generation progress broadcasted")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast progress: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # Show list created confirmation (using new view component)
+  def broadcast_list_created_confirmation(list, planning_context = nil)
+    begin
+      html = ApplicationController.render(
+        partial: "message_templates/list_created_confirmation",
+        locals: {
+          list: list,
+          planning_context: planning_context
+        }
+      )
+
+      Rails.logger.info("ChatCompletionService - Rendered list confirmation (#{html.length} chars)")
+
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{@chat.id}",
+        target: "chat-messages-#{@chat.id}",
+        html: html
+      )
+
+      Rails.logger.info("ChatCompletionService - List created confirmation broadcasted")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to broadcast confirmation: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # Handle the complete flow for simple list creation (no pre-creation planning needed)
+  def create_simple_list_from_context(planning_context)
+    begin
+      Rails.logger.info("ChatCompletionService - Creating simple list from context")
+
+      # For simple requests, go straight from intent detection to creation
+      unless planning_context.hierarchical_items.present?
+        return failure(errors: [ "No items generated for simple list" ])
+      end
+
+      # Create the list
+      auto_create_list_from_planning(planning_context)
+    rescue StandardError => e
+      Rails.logger.error("create_simple_list_from_context error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
   end
 end

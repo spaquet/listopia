@@ -1,0 +1,102 @@
+<!-- app/views/message_templates/_item_generation_progress.html.erb
+     Shows progress of item generation for subdivisions
+     Displays animated progress indicator during LLM calls
+-->
+
+<% subdivisions = data[:subdivisions] || [] %>
+<% current_index = data[:current_index] || 0 %>
+<% total = data[:total] || subdivisions.length %>
+
+<div id="item-generation-progress" class="flex justify-start mb-4">
+  <div class="max-w-2xl">
+    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+      <!-- Header -->
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center justify-center">
+          <div class="animate-spin">
+            <svg class="w-5 h-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">
+            Generating items...
+          </h3>
+          <p class="text-xs text-gray-600 mt-1">
+            Creating items for <%= total %> <%= total == 1 ? 'location' : 'locations' %>
+          </p>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-medium text-gray-700">
+            Progress: <span id="progress-count"><%= current_index %></span>/<%= total %>
+          </span>
+          <span class="text-xs text-gray-600" id="progress-percent">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="progress-bar"
+               class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+               style="width: <%= (current_index.to_f / total * 100).round %>%">
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Item Being Generated -->
+      <div class="space-y-2">
+        <% subdivisions.each_with_index do |subdivision, idx| %>
+          <div class="flex items-center gap-2 text-xs">
+            <% if idx < current_index %>
+              <span class="text-green-600">✓</span>
+              <span class="text-gray-700 line-through"><%= subdivision %></span>
+            <% elsif idx == current_index %>
+              <span class="inline-block animate-pulse">⚙</span>
+              <span class="text-gray-900 font-medium"><%= subdivision %></span>
+            <% else %>
+              <span class="text-gray-400">◦</span>
+              <span class="text-gray-500"><%= subdivision %></span>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Estimated Time -->
+      <div class="text-xs text-gray-600 mt-4 pt-4 border-t border-blue-200">
+        ⏱️ Estimated time: <span id="estimated-time"><%= total * 2 %>-<%= total * 3 %></span> seconds
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Update progress dynamically
+  document.addEventListener('turbo:load', function() {
+    const progressBar = document.getElementById('progress-bar');
+    const progressCount = document.getElementById('progress-count');
+    const progressPercent = document.getElementById('progress-percent');
+
+    if (progressBar) {
+      // Listen for progress updates via data attributes
+      const total = <%= total %>;
+      const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.attributeName === 'data-current-index') {
+            const current = parseInt(mutation.target.dataset.currentIndex) || 0;
+            const percent = Math.round((current / total) * 100);
+            progressBar.style.width = percent + '%';
+            progressCount.textContent = current;
+            progressPercent.textContent = percent + '%';
+          }
+        });
+      });
+
+      observer.observe(document.getElementById('item-generation-progress'), {
+        attributes: true
+      });
+    }
+  });
+</script>

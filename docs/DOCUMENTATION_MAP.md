@@ -14,6 +14,14 @@ Quick reference for finding the right documentation for your task.
 - Frontend approach
 - **Chat System Architecture section** (350+ lines)
 
+### I'm implementing intelligent list creation
+→ Read [CHAT_CONTEXT.md](CHAT_CONTEXT.md)
+- System overview and architecture
+- Service pipeline (detection, analysis, generation)
+- State machine and flows
+- UI components and real-time feedback
+- Testing and data migration
+
 ### I'm implementing a chat feature
 → Read [CHAT_FEATURES.md](CHAT_FEATURES.md)
 - Quick start examples
@@ -86,6 +94,19 @@ CLAUDE.md (Master Reference)
 │   └── Chat UI Patterns ✅ (NEW)
 ├── Common Tasks
 └── Development Standards
+
+CHAT_CONTEXT.md (Chat Context Management) ✅ NEW
+├── Understanding Chat Context
+├── Implementation Details
+│   ├── Phase 1: Models & Database
+│   ├── Phase 2: Core Services
+│   ├── Phase 3: ChatCompletionService Integration
+│   ├── Phase 4: List Creation
+│   ├── Phase 5: User Interface
+│   └── Phase 6: Testing & Migration
+├── Flows (Simple & Complex)
+├── Common Patterns
+└── Testing & Deployment
 
 CHAT_FEATURES.md (Implementation Guide)
 ├── Quick Start
@@ -261,6 +282,13 @@ docs/archived/README.md (Historical Reference)
 - Messages: [CHAT_FEATURES.md - Message Templates](CHAT_FEATURES.md#message-templates)
 - Testing: [CHAT_FEATURES.md - Testing Scenarios](CHAT_FEATURES.md#testing-scenarios)
 
+### Chat Context & List Planning
+- System Overview: [CHAT_CONTEXT.md](CHAT_CONTEXT.md)
+- Services Architecture: [CHAT_CONTEXT.md - Implementation Details](CHAT_CONTEXT.md#implementation-details)
+- State Machine: [CHAT_CONTEXT.md - Understanding Chat Context](CHAT_CONTEXT.md#understanding-chat-context)
+- UI Components: [CHAT_CONTEXT.md - Phase 5: User Interface](CHAT_CONTEXT.md#phase-5-user-interface)
+- Testing: [CHAT_CONTEXT.md - Phase 6: Testing & Migration](CHAT_CONTEXT.md#phase-6-testing--migration)
+
 ### Search & RAG
 - Embeddings: [RAG_SEMANTIC_SEARCH.md - Core Concepts](RAG_SEMANTIC_SEARCH.md#core-concepts)
 - Hybrid Search: [RAG_SEMANTIC_SEARCH.md - Hybrid Search](RAG_SEMANTIC_SEARCH.md#hybrid-search)
@@ -313,6 +341,12 @@ docs/archived/README.md (Historical Reference)
 | **CONNECTORS_ARCHITECTURE.md** | Third-party integrations | 500+ | Working with connectors (OAuth, sync, webhooks) |
 | **CONNECTORS_SECURITY_CHECKLIST.md** | Pre-testing security verification | 400+ | Before testing connector functionality |
 | **DOCUMENTATION_MAP.md** | This file | - | Finding the right doc |
+
+### In docs/ (Chat Context - Active)
+
+| File | Purpose | Lines | When to Use |
+|------|---------|-------|------------|
+| **CHAT_CONTEXT.md** | Chat context & list planning system | 350+ | Implementing intelligent list creation |
 
 ### In docs/ (Connectors - Active)
 
@@ -386,6 +420,12 @@ All active documentation follows these standards:
 2. Read [CLAUDE.md - Stack Overview](CLAUDE.md#stack-overview)
 3. Read [CLAUDE.md - Architecture Patterns](CLAUDE.md#architecture-patterns)
 4. Read relevant feature docs (CHAT_FEATURES.md or RAG_SEMANTIC_SEARCH.md)
+
+### New to Chat Context & List Planning?
+1. [CHAT_CONTEXT.md - Understanding Chat Context](CHAT_CONTEXT.md#understanding-chat-context)
+2. [CHAT_CONTEXT.md - Implementation Details](CHAT_CONTEXT.md#implementation-details)
+3. [CHAT_CONTEXT.md - Flows](CHAT_CONTEXT.md#flows)
+4. Review the test files to understand usage
 
 ### New to Chat Features?
 1. [CHAT_FEATURES.md - Quick Start](CHAT_FEATURES.md#quick-start)

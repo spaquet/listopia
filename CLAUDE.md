@@ -38,10 +38,13 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 
 **AI Chat & List Creation**
 - Unified chat interface for natural language list creation and management
+- **Chat context system** for semantic state persistence across chat messages
 - LLM-powered intent detection, complexity analysis, and pre-creation planning
-- Intelligent item generation with `ItemGenerationService`: generates appropriate items for ANY list type (roadshow, vacation, learning, project, etc.) and ANY subdivision (locations, phases, weeks, chapters, etc.)
-- Built-in security: prompt injection detection, content moderation
-- See: [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md), [CHAT_FEATURES.md](docs/CHAT_FEATURES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
+- Domain-aware item generation: Automatically detects planning type (event, project, travel, learning, personal) and generates appropriate parent items and subdivision items
+- Generic `ItemGenerationService` replaces hardcoded methods: Generates items for ANY list type and ANY subdivision strategy
+- Real-time UI feedback: State indicator, progress tracking, list preview, success confirmation
+- Built-in security: Prompt injection detection, content moderation
+- **Documentation:** [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) (consolidated reference), [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
 
 ## Common Patterns
 
@@ -177,7 +180,10 @@ bundle exec brakeman         # Security
 
 ## Detailed Docs
 
-**Chat System** (Start here for AI features)
+**Chat Context System** (Consolidated reference)
+- [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) - Complete system overview: architecture, services, integration, UI components, testing & migration
+
+**Chat System** (Integration with chat flow)
 - [CHAT_FLOW.md](docs/CHAT_FLOW.md) - Complete message flow & state machine
 - [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md) - Simple/complex/nested list handling
 - [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md) - Model selection strategy
