@@ -1,0 +1,119 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">Your Collaborators</h1>
+      <p class="text-gray-600">People you meet with most frequently in calendar events</p>
+    </div>
+
+    <!-- Time range filters -->
+    <div class="mb-6 flex gap-2 flex-wrap">
+      <%= link_to "Last 30 Days", people_path(since: 30),
+          class: "px-4 py-2 rounded-lg font-medium transition-colors #{@since_days == 30 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}" %>
+      <%= link_to "Last 90 Days", people_path(since: 90),
+          class: "px-4 py-2 rounded-lg font-medium transition-colors #{@since_days == 90 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}" %>
+      <%= link_to "Last Year", people_path(since: 365),
+          class: "px-4 py-2 rounded-lg font-medium transition-colors #{@since_days == 365 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}" %>
+    </div>
+
+    <% if @collaborators.any? %>
+      <!-- Collaborators table -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Collaborator</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Shared Meetings</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Last Together</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Social</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <% @collaborators.each do |collab| %>
+                <% contact = collab[:contact] %>
+                <tr class="hover:bg-gray-50 cursor-pointer transition-colors"
+                    data-turbo-frame="profile_modal"
+                    data-action="click->modal-opener#openFrame"
+                    data-modal-opener-url-value="<%= attendee_contact_path(contact) %>">
+                  <!-- Name and title -->
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <% if contact.avatar_url.present? %>
+                        <img src="<%= contact.avatar_url %>" alt="<%= contact.name %>" class="w-10 h-10 rounded-full object-cover">
+                      <% else %>
+                        <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium text-gray-600">
+                          <%= contact.name.first.upcase %>
+                        </div>
+                      <% end %>
+                      <div>
+                        <p class="font-medium text-gray-900"><%= contact.name %></p>
+                        <% if contact.title.present? || contact.company.present? %>
+                          <p class="text-sm text-gray-600">
+                            <%= contact.title %><%= contact.title.present? && contact.company.present? ? " at " : "" %><%= contact.company %>
+                          </p>
+                        <% end %>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Shared meetings count -->
+                  <td class="px-6 py-4 text-sm text-gray-900 font-medium">
+                    <%= collab[:shared_meetings] %>
+                  </td>
+
+                  <!-- Last together -->
+                  <td class="px-6 py-4 text-sm text-gray-600">
+                    <% if collab[:last_together] %>
+                      <%= time_ago_in_words(collab[:last_together]) %> ago
+                    <% else %>
+                      Never
+                    <% end %>
+                  </td>
+
+                  <!-- Social links -->
+                  <td class="px-6 py-4">
+                    <div class="flex gap-2">
+                      <% if contact.linkedin_url.present? %>
+                        <%= link_to "in", contact.linkedin_url, target: "_blank", rel: "noopener noreferrer",
+                            class: "text-blue-600 hover:text-blue-800 font-medium text-xs" %>
+                      <% end %>
+                      <% if contact.github_username.present? %>
+                        <%= link_to "gh", "https://github.com/#{contact.github_username}", target: "_blank", rel: "noopener noreferrer",
+                            class: "text-gray-800 hover:text-gray-600 font-medium text-xs" %>
+                      <% end %>
+                      <% if contact.twitter_url.present? %>
+                        <%= link_to "𝕏", contact.twitter_url, target: "_blank", rel: "noopener noreferrer",
+                            class: "text-gray-800 hover:text-gray-600 font-medium text-xs" %>
+                      <% end %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Profile modal placeholder -->
+      <div class="mt-8">
+        <%= turbo_frame_tag :profile_modal, class: "block" do %>
+          <!-- Will be populated when row is clicked -->
+        <% end %>
+      </div>
+    <% else %>
+      <!-- Empty state -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a6 6 0 11-12 0 6 6 0 0112 0z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No collaborators yet</h3>
+        <p class="text-gray-600">
+          Connect your calendar and sync events to see who you collaborate with most.
+        </p>
+        <%= link_to "Connect Calendar", connectors_connector_accounts_path,
+            class: "mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium" %>
+      </div>
+    <% end %>
+  </div>
+</div>

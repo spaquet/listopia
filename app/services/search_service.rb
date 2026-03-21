@@ -6,7 +6,7 @@ class SearchService < ApplicationService
   def initialize(query:, user:, models: nil, limit: 20, use_vector: true)
     @query = query
     @user = user
-    @models = Array(models || [ List, ListItem, Comment, User, ActsAsTaggableOn::Tag ]).compact
+    @models = Array(models || [ List, ListItem, Comment, User, ActsAsTaggableOn::Tag, CalendarEvent ]).compact
     @limit = limit
     @use_vector = use_vector && embedding_api_available?
   end
@@ -119,6 +119,9 @@ class SearchService < ApplicationService
         return true if list.readable_by?(@user) && @user.in_organization?(list.organization)
       end
       false
+    when CalendarEvent
+      # Calendar events are only accessible to the user who owns them
+      record.user_id == @user.id
     when User
       # Users are searchable if they're in the same organization
       # Exclude the current user

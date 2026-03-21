@@ -1,0 +1,137 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <!-- Back link -->
+    <div class="mb-6">
+      <%= link_to "← Back to search", search_path, class: "text-sm text-blue-600 hover:text-blue-800 font-medium" %>
+    </div>
+
+    <!-- Header with title and status -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div class="flex-1">
+          <h1 class="text-3xl font-bold text-gray-900 break-words"><%= @calendar_event.summary %></h1>
+        </div>
+        <div class="flex gap-2 flex-shrink-0">
+          <!-- Status badge -->
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium <%= status_badge_classes(@calendar_event.status) %>">
+            <%= status_badge_label(@calendar_event.status) %>
+          </span>
+
+          <!-- Provider badge -->
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium <%= provider_badge_classes(@calendar_event.provider) %>">
+            <%= provider_badge_icon(@calendar_event.provider) %>
+            <%= provider_badge_label(@calendar_event.provider) %>
+          </span>
+        </div>
+      </div>
+
+      <!-- External calendar link -->
+      <% if safe_url(@calendar_event.external_event_url) %>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <%= link_to external_calendar_link_label(@calendar_event.provider), safe_url(@calendar_event.external_event_url),
+              target: "_blank", rel: "noopener noreferrer",
+              class: "inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm" %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Event details -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Main content -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Date & Time -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Date & Time</h2>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm text-gray-500 mb-1">Start</p>
+              <p class="text-base font-medium text-gray-900">
+                <%= @calendar_event.start_time.strftime("%A, %B %d, %Y at %l:%M %p") %>
+              </p>
+            </div>
+            <% if @calendar_event.end_time.present? %>
+              <div>
+                <p class="text-sm text-gray-500 mb-1">End</p>
+                <p class="text-base font-medium text-gray-900">
+                  <%= @calendar_event.end_time.strftime("%A, %B %d, %Y at %l:%M %p") %>
+                </p>
+              </div>
+            <% end %>
+            <% if @calendar_event.timezone.present? %>
+              <div>
+                <p class="text-sm text-gray-500 mb-1">Timezone</p>
+                <p class="text-base font-medium text-gray-900"><%= @calendar_event.timezone %></p>
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <% if @calendar_event.description.present? %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Description</h2>
+            <div class="prose prose-sm text-gray-700 max-w-none">
+              <%= simple_format(@calendar_event.description) %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Organizer -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">Organizer</h2>
+          <div class="space-y-2">
+            <% if @calendar_event.organizer_name.present? %>
+              <p class="text-base font-medium text-gray-900"><%= @calendar_event.organizer_name %></p>
+            <% end %>
+            <% if @calendar_event.organizer_email.present? %>
+              <p class="text-sm text-gray-600">
+                <%= mail_to @calendar_event.organizer_email, @calendar_event.organizer_email, class: "text-blue-600 hover:text-blue-800" %>
+              </p>
+            <% end %>
+            <% if @calendar_event.is_organizer %>
+              <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 mt-2">
+                You are the organizer
+              </span>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Attendees -->
+        <% if @calendar_event.attendees.present? && @calendar_event.attendees.any? %>
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Attendees</h2>
+            <div class="space-y-3">
+              <% @calendar_event.attendees.each do |attendee| %>
+                <div class="flex items-start justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">
+                      <%= attendee["displayName"] || attendee["email"] %>
+                    </p>
+                    <% if attendee["displayName"].present? && attendee["email"].present? %>
+                      <p class="text-xs text-gray-500"><%= attendee["email"] %></p>
+                    <% end %>
+                  </div>
+                  <% if attendee["responseStatus"].present? %>
+                    <span class="text-xs font-medium <%= attendee_response_classes(attendee["responseStatus"]) %>">
+                      <%= attendee_response_label(attendee["responseStatus"]) %>
+                    </span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .prose {
+    --tw-prose-body: rgb(55 65 81);
+    --tw-prose-headings: rgb(17 24 39);
+  }
+</style>

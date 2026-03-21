@@ -860,6 +860,35 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: attendee_contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.attendee_contacts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    user_id uuid,
+    email character varying NOT NULL,
+    display_name character varying,
+    title character varying,
+    company character varying,
+    location character varying,
+    bio text,
+    avatar_url character varying,
+    linkedin_url character varying,
+    github_username character varying,
+    twitter_url character varying,
+    website_url character varying,
+    linkedin_data jsonb,
+    github_data jsonb,
+    clearbit_data jsonb,
+    enrichment_status character varying DEFAULT 'pending'::character varying,
+    enriched_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: board_columns; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -871,6 +900,36 @@ CREATE TABLE public.board_columns (
     metadata json DEFAULT '{}'::json,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: calendar_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.calendar_events (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    connector_account_id uuid,
+    external_event_id character varying NOT NULL,
+    provider character varying NOT NULL,
+    summary character varying NOT NULL,
+    description text,
+    start_time timestamp with time zone NOT NULL,
+    end_time timestamp with time zone,
+    status character varying DEFAULT 'confirmed'::character varying,
+    timezone character varying,
+    attendees jsonb DEFAULT '[]'::jsonb NOT NULL,
+    organizer_email character varying,
+    organizer_name character varying,
+    is_organizer boolean DEFAULT false,
+    embedding public.vector(1536),
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    external_event_url character varying
 );
 
 
@@ -1016,6 +1075,25 @@ CREATE TABLE public.connector_sync_logs (
     duration_ms integer,
     started_at timestamp with time zone,
     completed_at timestamp with time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: connector_webhook_subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.connector_webhook_subscriptions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    connector_account_id uuid NOT NULL,
+    provider character varying NOT NULL,
+    calendar_id character varying NOT NULL,
+    subscription_id character varying NOT NULL,
+    resource_id character varying,
+    channel_token character varying,
+    expires_at timestamp with time zone,
+    status character varying DEFAULT 'active'::character varying,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -1670,11 +1748,27 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: attendee_contacts attendee_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT attendee_contacts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: board_columns board_columns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.board_columns
     ADD CONSTRAINT board_columns_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: calendar_events calendar_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT calendar_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -1731,6 +1825,14 @@ ALTER TABLE ONLY public.connector_settings
 
 ALTER TABLE ONLY public.connector_sync_logs
     ADD CONSTRAINT connector_sync_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: connector_webhook_subscriptions connector_webhook_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_webhook_subscriptions
+    ADD CONSTRAINT connector_webhook_subscriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -1957,6 +2059,20 @@ CREATE UNIQUE INDEX idx_on_connector_account_id_external_id_external_ty_53f2784f
 
 
 --
+-- Name: idx_on_connector_account_id_status_517af4a019; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_connector_account_id_status_517af4a019 ON public.connector_webhook_subscriptions USING btree (connector_account_id, status);
+
+
+--
+-- Name: idx_on_organization_id_enrichment_status_172943d07b; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_organization_id_enrichment_status_172943d07b ON public.attendee_contacts USING btree (organization_id, enrichment_status);
+
+
+--
 -- Name: idx_on_user_id_provider_provider_uid_1cce2a45f8; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1992,10 +2108,73 @@ CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.ac
 
 
 --
+-- Name: index_attendee_contacts_on_enriched_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_attendee_contacts_on_enriched_at ON public.attendee_contacts USING btree (enriched_at);
+
+
+--
+-- Name: index_attendee_contacts_on_enrichment_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_attendee_contacts_on_enrichment_status ON public.attendee_contacts USING btree (enrichment_status);
+
+
+--
+-- Name: index_attendee_contacts_on_organization_id_and_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_attendee_contacts_on_organization_id_and_email ON public.attendee_contacts USING btree (organization_id, email);
+
+
+--
 -- Name: index_board_columns_on_list_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_board_columns_on_list_id ON public.board_columns USING btree (list_id);
+
+
+--
+-- Name: index_calendar_events_on_attendees; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_attendees ON public.calendar_events USING gin (attendees);
+
+
+--
+-- Name: index_calendar_events_on_connector_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_connector_account_id ON public.calendar_events USING btree (connector_account_id);
+
+
+--
+-- Name: index_calendar_events_on_external_event_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_calendar_events_on_external_event_id ON public.calendar_events USING btree (external_event_id);
+
+
+--
+-- Name: index_calendar_events_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_organization_id ON public.calendar_events USING btree (organization_id);
+
+
+--
+-- Name: index_calendar_events_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_user_id ON public.calendar_events USING btree (user_id);
+
+
+--
+-- Name: index_calendar_events_on_user_id_and_start_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_calendar_events_on_user_id_and_start_time ON public.calendar_events USING btree (user_id, start_time);
 
 
 --
@@ -2241,6 +2420,20 @@ CREATE INDEX index_connector_sync_logs_on_operation ON public.connector_sync_log
 --
 
 CREATE INDEX index_connector_sync_logs_on_status ON public.connector_sync_logs USING btree (status);
+
+
+--
+-- Name: index_connector_webhook_subscriptions_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_connector_webhook_subscriptions_on_expires_at ON public.connector_webhook_subscriptions USING btree (expires_at);
+
+
+--
+-- Name: index_connector_webhook_subscriptions_on_subscription_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_connector_webhook_subscriptions_on_subscription_id ON public.connector_webhook_subscriptions USING btree (subscription_id);
 
 
 --
@@ -3405,6 +3598,14 @@ ALTER TABLE ONLY public.list_items
 
 
 --
+-- Name: calendar_events fk_rails_15e1fec6ce; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_15e1fec6ce FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: events fk_rails_163b5130b5; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3565,6 +3766,14 @@ ALTER TABLE ONLY public.sessions
 
 
 --
+-- Name: connector_webhook_subscriptions fk_rails_7e61d1ae5e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.connector_webhook_subscriptions
+    ADD CONSTRAINT fk_rails_7e61d1ae5e FOREIGN KEY (connector_account_id) REFERENCES public.connector_accounts(id);
+
+
+--
 -- Name: invitations fk_rails_7eae413fe6; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3602,6 +3811,22 @@ ALTER TABLE ONLY public.message_feedbacks
 
 ALTER TABLE ONLY public.connector_accounts
     ADD CONSTRAINT fk_rails_909e7c6acc FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: calendar_events fk_rails_90c7e652b9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_90c7e652b9 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: calendar_events fk_rails_930e3c0bf4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.calendar_events
+    ADD CONSTRAINT fk_rails_930e3c0bf4 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -3645,11 +3870,27 @@ ALTER TABLE ONLY public.taggings
 
 
 --
+-- Name: attendee_contacts fk_rails_9fd5ba6572; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT fk_rails_9fd5ba6572 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: teams fk_rails_a068b3a692; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT fk_rails_a068b3a692 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: attendee_contacts fk_rails_b1199659c3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.attendee_contacts
+    ADD CONSTRAINT fk_rails_b1199659c3 FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
@@ -3763,6 +4004,10 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260320000003'),
+('20260320000002'),
+('20260320000001'),
+('20260320000000'),
 ('20260319230043'),
 ('20260319000003'),
 ('20260319000002'),

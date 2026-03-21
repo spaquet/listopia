@@ -187,6 +187,13 @@ Rails.application.routes.draw do
   # Notification preferences
   resource :notification_preferences, only: [ :show, :update ]
 
+  # Calendar events - synced from Google Calendar and Outlook
+  resources :calendar_events, only: [ :show ]
+
+  # People and collaborators
+  resources :people, only: [ :index ]
+  resources :attendee_contacts, only: [ :show, :update ]
+
   # Public lists - prettier URLs for sharing (optional, both routes work)
   get "public/:slug", to: "lists#show_by_slug", as: :public_list
 
@@ -260,6 +267,12 @@ Rails.application.routes.draw do
     end
 
     namespace :calendars do
+      # Collision detection
+      post "collisions/check", to: "collisions#check"
+
+      # Conflict detection and resolution
+      resources :conflicts, only: [ :index ], controller: "conflicts"
+
       namespace :google do
         resources :calendars, only: [ :index ] do
           collection { post :select }
@@ -267,6 +280,7 @@ Rails.application.routes.draw do
         resources :events, only: [ :index ] do
           collection { post :sync }
         end
+        post "webhooks", to: "webhooks#receive"
       end
 
       namespace :microsoft do
@@ -276,6 +290,7 @@ Rails.application.routes.draw do
         resources :events, only: [ :index ] do
           collection { post :sync }
         end
+        match "webhooks", to: "webhooks#receive", via: [ :get, :post ]
       end
     end
 

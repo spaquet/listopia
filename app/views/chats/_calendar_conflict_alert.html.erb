@@ -1,0 +1,33 @@
+<div id="calendar-conflict-<%= Time.current.to_i %>" class="mx-4 my-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+  <div class="flex gap-3">
+    <!-- Warning icon -->
+    <div class="flex-shrink-0 mt-0.5">
+      <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+    </div>
+
+    <!-- Alert content -->
+    <div class="flex-1">
+      <h4 class="font-semibold text-red-900 mb-2">Calendar Conflict Alert</h4>
+      <p class="text-sm text-red-800 mb-3">
+        I found <strong><%= conflicts.count %> scheduling conflict<%= conflicts.count > 1 ? 's' : '' %></strong> in the next 14 days:
+      </p>
+
+      <!-- Conflict list (max 3 shown inline) -->
+      <div class="space-y-2 mb-3">
+        <% conflicts.first(3).each do |conflict| %>
+          <div class="text-sm text-red-800">
+            <strong><%= conflict[:event].summary %></strong> at <%= conflict[:event].start_time.strftime("%l:%M %p") %>
+            <br>
+            <span class="text-red-700">↔ overlaps with</span> <strong><%= conflict[:overlapping_event].summary %></strong> at <%= conflict[:overlapping_event].start_time.strftime("%l:%M %p") %>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Link to conflicts page -->
+      <%= link_to "View all conflicts →", connectors_calendars_conflicts_path,
+          class: "inline-flex items-center gap-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors" %>
+    </div>
+  </div>
+</div>

@@ -103,13 +103,18 @@
         </div>
       </div>
       <!-- Due Date -->
-      <div>
+      <div data-controller="calendar-collision">
         <%= f.label :due_date, class: "block text-sm font-medium text-gray-700 mb-2" do %>
           Due Date <span class="text-xs text-gray-500 font-normal">(optional)</span>
         <% end %>
         <%= f.datetime_local_field :due_date,
                                    value: (item.due_date&.strftime("%Y-%m-%dT%H:%M") if item.due_date),
-                                   class: "w-full h-11 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+                                   class: "w-full h-11 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                                   data: {
+                                     calendar_collision_target: "dueDateInput",
+                                     action: "change->calendar-collision#check"
+                                   } %>
+        <div data-calendar-collision-target="collisionWarning"></div>
       </div>
     </div>
     <!-- Recurrence Fields -->

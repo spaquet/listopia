@@ -212,6 +212,37 @@ module ApplicationHelper
     }
   end
 
+  # Validate and sanitize URLs for use in link_to href attributes
+  # Prevents open redirect vulnerabilities and ensures protocol safety
+  def safe_url(url, allowed_protocols: %w[http https])
+    return nil if url.blank?
+
+    url_str = url.to_s.strip
+    return nil if url_str.blank?
+
+    # Check if URL has a protocol
+    if url_str.start_with?("//")
+      # Protocol-relative URL
+      url_str = "https:#{url_str}"
+    elsif !url_str.match?(%r{\A[a-z][a-z0-9+.-]*:}i)
+      # No protocol, return nil (invalid URL)
+      return nil
+    end
+
+    begin
+      uri = URI.parse(url_str)
+      # Only allow safe protocols
+      if allowed_protocols.include?(uri.scheme&.downcase)
+        uri.to_s
+      else
+        nil
+      end
+    rescue URI::InvalidURIError
+      # Invalid URL, return nil
+      nil
+    end
+  end
+
   private
 
   def slack_icon

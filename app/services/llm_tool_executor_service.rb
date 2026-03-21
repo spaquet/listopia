@@ -40,6 +40,8 @@ class LlmToolExecutorService < ApplicationService
       execute_update_team(@tool_input)
     when "suspend_user"
       execute_suspend_user(@tool_input)
+    when "check_calendar_conflicts"
+      execute_check_calendar_conflicts(@tool_input)
     else
       failure(errors: [ "Unknown tool: #{@tool_name}" ])
     end
@@ -409,6 +411,37 @@ class LlmToolExecutorService < ApplicationService
       action: action,
       item: format_user(user)
     })
+  end
+
+  # Check calendar conflicts
+  def execute_check_calendar_conflicts(input)
+    start_at = Time.parse(input["start_at"])
+    end_at   = Time.parse(input["end_at"])
+
+    result = Connectors::CollisionDetectorService.call(
+      user: @user,
+      start_time: start_at,
+      end_time: end_at
+    )
+
+    return failure(errors: result.errors) if result.failure?
+
+    success(data: {
+      type: "calendar_conflicts",
+      has_conflicts: result.data[:has_conflicts],
+      conflict_count: result.data[:collisions].size,
+      collisions: result.data[:collisions].map { |c|
+        {
+          title: c[:title],
+          start: c[:start],
+          end: c[:end],
+          calendar: c[:calendar],
+          provider: c[:provider]
+        }
+      }
+    })
+  rescue ArgumentError => e
+    failure(errors: [ "Invalid time format: #{e.message}" ])
   end
 
   # Format helpers

@@ -71,6 +71,8 @@ class SearchController < ApplicationController
       record.title
     when ListItem
       record.title
+    when CalendarEvent
+      record.summary
     when User
       record.name
     when Comment
@@ -88,6 +90,8 @@ class SearchController < ApplicationController
       record.description
     when ListItem
       record.description
+    when CalendarEvent
+      "#{record.start_time.strftime('%b %d, %Y at %l:%M %p')} - #{record.organizer_name || record.organizer_email}"
     when User
       record.email
     when Comment
@@ -105,6 +109,8 @@ class SearchController < ApplicationController
       list_path(record)
     when ListItem
       list_list_item_path(record.list, record)
+    when CalendarEvent
+      calendar_event_path(record)
     when User
       profile_path(record)
     when Comment
