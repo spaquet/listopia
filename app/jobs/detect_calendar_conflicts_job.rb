@@ -33,7 +33,7 @@ class DetectCalendarConflictsJob < ApplicationJob
       user_id: user.id,
       conflict_count: conflicts.size,
       first_conflict_summary: conflicts.first[:event].summary
-    ).deliver([user])
+    ).deliver([ user ])
   rescue ActiveRecord::RecordNotFound
     # User or org deleted
   end

@@ -271,7 +271,7 @@ Rails.application.routes.draw do
       post "collisions/check", to: "collisions#check"
 
       # Conflict detection and resolution
-      resources :conflicts, only: [:index], controller: "conflicts"
+      resources :conflicts, only: [ :index ], controller: "conflicts"
 
       namespace :google do
         resources :calendars, only: [ :index ] do

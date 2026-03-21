@@ -57,9 +57,9 @@
                     </p>
                   <% end %>
                 </div>
-                <% if event.external_event_url.present? %>
+                <% if safe_url(event.external_event_url) %>
                   <div class="mt-3">
-                    <%= link_to "Open in Calendar", event.external_event_url, target: "_blank", rel: "noopener noreferrer",
+                    <%= link_to "Open in Calendar", safe_url(event.external_event_url), target: "_blank", rel: "noopener noreferrer",
                         class: "inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium" %>
                   </div>
                 <% end %>
@@ -86,9 +86,9 @@
                     </p>
                   <% end %>
                 </div>
-                <% if overlapping.external_event_url.present? %>
+                <% if safe_url(overlapping.external_event_url) %>
                   <div class="mt-3">
-                    <%= link_to "Open in Calendar", overlapping.external_event_url, target: "_blank", rel: "noopener noreferrer",
+                    <%= link_to "Open in Calendar", safe_url(overlapping.external_event_url), target: "_blank", rel: "noopener noreferrer",
                         class: "inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium" %>
                   </div>
                 <% end %>
