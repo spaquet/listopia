@@ -91,9 +91,9 @@ class ItemGenerationService < ApplicationService
 
       #{if @sublist_title.present?
         "Focus: Generate items SPECIFICALLY for: #{@sublist_title}"
-      else
+        else
         "Focus: Generate items for the overall plan"
-      end}
+        end}
 
       ==== PLANNING CONTEXT ====
       #{format_planning_context}
@@ -106,9 +106,9 @@ class ItemGenerationService < ApplicationService
       2. Generate items that are SPECIFIC and APPROPRIATE
          #{if @sublist_title.present?
            "- These items should be unique to #{@sublist_title}, not generic duplicates"
-         else
+           else
            "- Items should be relevant to the overall planning context"
-         end}
+           end}
          - Each item should be actionable and concrete
          - Items should reflect actual work that needs to be done
          - Consider constraints, timeline, budget, locations, phases, etc.
@@ -121,11 +121,11 @@ class ItemGenerationService < ApplicationService
       4. Consider what's different about this item/subdivision
          #{if @sublist_title.present?
            "- If this is a location: what local logistics, vendors, regulations are needed?"
-         elsif @planning_context["phases"].present?
+           elsif @planning_context["phases"].present?
            "- If this is a phase: what's unique to this phase vs others?"
-         else
+           else
            "- What makes each item distinct and necessary?"
-         end}
+           end}
 
       ==== RESPONSE FORMAT (REQUIRED) ====
       Respond with ONLY a valid JSON array. Each item MUST have:
