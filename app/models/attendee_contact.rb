@@ -48,7 +48,7 @@ class AttendeeContact < ApplicationRecord
   }, validate: true
 
   scope :for_org, ->(org) { where(organization_id: org.id) }
-  scope :needing_enrichment, -> { where(enrichment_status: ["pending", "failed"]).where("enriched_at IS NULL OR enriched_at < ?", 7.days.ago) }
+  scope :needing_enrichment, -> { where(enrichment_status: [ "pending", "failed" ]).where("enriched_at IS NULL OR enriched_at < ?", 7.days.ago) }
 
   # Best available name
   def name

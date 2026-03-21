@@ -26,8 +26,8 @@ class CreateAttendeeContacts < ActiveRecord::Migration[8.0]
     add_foreign_key :attendee_contacts, :organizations, column: :organization_id
     add_foreign_key :attendee_contacts, :users, column: :user_id, on_delete: :nullify
 
-    add_index :attendee_contacts, [:organization_id, :email], unique: true
-    add_index :attendee_contacts, [:organization_id, :enrichment_status]
+    add_index :attendee_contacts, [ :organization_id, :email ], unique: true
+    add_index :attendee_contacts, [ :organization_id, :enrichment_status ]
     add_index :attendee_contacts, :enrichment_status
     add_index :attendee_contacts, :enriched_at
   end

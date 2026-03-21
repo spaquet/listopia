@@ -28,6 +28,12 @@ module Connectors
           records_created: synced_count
         )
 
+        # Trigger async conflict detection after sync completes
+        DetectCalendarConflictsJob.perform_later(
+          user_id: connector_account.user_id,
+          organization_id: connector_account.organization_id
+        )
+
         success(data: { synced: synced_count })
       end
     end

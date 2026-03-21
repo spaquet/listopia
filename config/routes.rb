@@ -270,6 +270,9 @@ Rails.application.routes.draw do
       # Collision detection
       post "collisions/check", to: "collisions#check"
 
+      # Conflict detection and resolution
+      resources :conflicts, only: [:index], controller: "conflicts"
+
       namespace :google do
         resources :calendars, only: [ :index ] do
           collection { post :select }
@@ -287,7 +290,7 @@ Rails.application.routes.draw do
         resources :events, only: [ :index ] do
           collection { post :sync }
         end
-        match "webhooks", to: "webhooks#receive", via: [:get, :post]
+        match "webhooks", to: "webhooks#receive", via: [ :get, :post ]
       end
     end
 

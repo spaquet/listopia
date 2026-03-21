@@ -47,6 +47,8 @@ module NotificationsHelper
       "amber"
     when "digest"
       "blue"
+    when "calendar_conflict"
+      "red"
     else
       "gray"
     end
@@ -67,7 +69,8 @@ module NotificationsHelper
       "team_invitation" => { text: "Team Invite", color: "pink" },
       "list_archived" => { text: "List Archived", color: "slate" },
       "mention" => { text: "Mention", color: "amber" },
-      "digest" => { text: "Digest", color: "blue" }
+      "digest" => { text: "Digest", color: "blue" },
+      "calendar_conflict" => { text: "Schedule Conflict", color: "red" }
     }
 
     config = type_config[notification.notification_type] || { text: "Notification", color: "gray" }
@@ -221,6 +224,8 @@ module NotificationsHelper
       "at-sign"
     when "digest"
       "inbox"
+    when "calendar_conflict"
+      "calendar_x"
     else
       "bell"
     end

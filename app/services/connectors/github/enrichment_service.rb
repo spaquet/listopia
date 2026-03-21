@@ -14,19 +14,19 @@ module Connectors
         req["X-GitHub-Api-Version"] = "2022-11-28"
 
         resp = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
-        return failure(errors: ["GitHub search failed: #{resp.code}"]) unless resp.code.to_i == 200
+        return failure(errors: [ "GitHub search failed: #{resp.code}" ]) unless resp.code.to_i == 200
 
         results = JSON.parse(resp.body)
-        return failure(errors: ["No GitHub user found"]) if results["total_count"].to_i.zero?
+        return failure(errors: [ "No GitHub user found" ]) if results["total_count"].to_i.zero?
 
         # Fetch full profile for the first result
         user_login = results["items"].first["login"]
         profile_resp = fetch_profile(user_login)
-        return failure(errors: ["GitHub profile fetch failed"]) unless profile_resp
+        return failure(errors: [ "GitHub profile fetch failed" ]) unless profile_resp
 
         success(data: profile_resp)
       rescue StandardError => e
-        failure(errors: ["GitHub enrichment error: #{e.message}"])
+        failure(errors: [ "GitHub enrichment error: #{e.message}" ])
       end
 
       private

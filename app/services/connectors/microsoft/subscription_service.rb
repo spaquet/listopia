@@ -39,11 +39,11 @@ module Connectors
           else
             error_msg = "Failed to register subscription: #{resp.code} - #{resp.body}"
             log.update!(status: "error", error_message: error_msg)
-            failure(errors: [error_msg])
+            failure(errors: [ error_msg ])
           end
         end
       rescue StandardError => e
-        failure(errors: ["Subscription registration failed: #{e.message}"])
+        failure(errors: [ "Subscription registration failed: #{e.message}" ])
       end
 
       # Renew an existing subscription before it expires
@@ -64,10 +64,10 @@ module Connectors
           subscription.update!(expires_at: expires_at)
           success(data: subscription)
         else
-          failure(errors: ["Failed to renew subscription: #{resp.code}"])
+          failure(errors: [ "Failed to renew subscription: #{resp.code}" ])
         end
       rescue StandardError => e
-        failure(errors: ["Subscription renewal failed: #{e.message}"])
+        failure(errors: [ "Subscription renewal failed: #{e.message}" ])
       end
 
       # Stop a subscription
@@ -81,10 +81,10 @@ module Connectors
           subscription.update!(status: "revoked")
           success(data: subscription)
         else
-          failure(errors: ["Failed to stop subscription: #{resp.code}"])
+          failure(errors: [ "Failed to stop subscription: #{resp.code}" ])
         end
       rescue StandardError => e
-        failure(errors: ["Stop subscription failed: #{e.message}"])
+        failure(errors: [ "Stop subscription failed: #{e.message}" ])
       end
 
       private

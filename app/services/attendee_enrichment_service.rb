@@ -27,6 +27,6 @@ class AttendeeEnrichmentService < ApplicationService
     success(data: @contact)
   rescue StandardError => e
     @contact.update!(enrichment_status: :failed, enriched_at: Time.current)
-    failure(errors: [e.message])
+    failure(errors: [ e.message ])
   end
 end

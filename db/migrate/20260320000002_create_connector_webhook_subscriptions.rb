@@ -15,7 +15,7 @@ class CreateConnectorWebhookSubscriptions < ActiveRecord::Migration[8.0]
 
     add_foreign_key :connector_webhook_subscriptions, :connector_accounts, column: :connector_account_id
     add_index :connector_webhook_subscriptions, :subscription_id, unique: true
-    add_index :connector_webhook_subscriptions, [:connector_account_id, :status]
+    add_index :connector_webhook_subscriptions, [ :connector_account_id, :status ]
     add_index :connector_webhook_subscriptions, :expires_at
   end
 end

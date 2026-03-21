@@ -6,7 +6,7 @@ class AttendeeContactsController < ApplicationController
     # Loads profile card via Turbo Frame
     @shared_meetings = CalendarEvent
       .where(user_id: current_user.id)
-      .where("attendees @> ?", [{ email: @contact.email }].to_json)
+      .where("attendees @> ?", [ { email: @contact.email } ].to_json)
       .order(start_time: :desc)
       .limit(10)
   end
