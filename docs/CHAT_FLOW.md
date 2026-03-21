@@ -273,9 +273,9 @@ Step 2: Trigger Pre-Creation Planning
   → Set state: pending_pre_creation_planning
 
 Step 3: Generate Questions
-  Service: ListRefinementService (refactored 2026-03-21)
-  Model: gpt-5 (reliable question generation)
-  Time: ~2-3 seconds
+  Service: QuestionGenerationService
+  Model: gpt-4.1-nano (fast question generation)
+  Time: ~1-2 seconds
   Questions Generated: 3 clarifying questions specific to the domain
     Q1: "What is the target schedule for the roadshow, including start and end dates?"
     Q2: "What is the estimated budget allocated for the entire roadshow?"
@@ -726,7 +726,8 @@ puts result.data.inspect
 |---------|---------|--------|----------|
 | **ChatCompletionService** | Main orchestrator for message processing | gpt-4.1-nano, gpt-5 | `app/services/chat_completion_service.rb` |
 | **CombinedIntentComplexityService** | Detect intent and complexity in one call | gpt-4.1-nano | `app/services/combined_intent_complexity_service.rb` |
-| **ListRefinementService** | Generate clarifying questions for complex requests | gpt-5 | `app/services/list_refinement_service.rb` |
+| **QuestionGenerationService** | Generate pre-creation clarifying questions | gpt-4.1-nano | `app/services/question_generation_service.rb` |
+| **ListRefinementService** | Generate post-creation refinement questions | gpt-5 | `app/services/list_refinement_service.rb` |
 | **ItemGenerationService** | Generate items for sublists (NEW 2026-03-21) | gpt-5.4-2026-03-05 | `app/services/item_generation_service.rb` |
 
 ### List Creation
@@ -752,6 +753,13 @@ puts result.data.inspect
 | `enrich_list_structure_with_planning` | Build list structure with location/phase subdivisions |
 | `extract_planning_parameters_from_answers` | Parse user answers to extract params |
 | `determine_subdivision_type` | Identify if subdivisions are locations, phases, etc. |
+
+### Supporting Services (Legacy/Specific Use Cases)
+
+| Service | Purpose | Status | Location |
+|---------|---------|--------|----------|
+| **ParameterExtractionService** | Extract parameters from user messages for resource creation | In use (lines 136, 637) | `app/services/parameter_extraction_service.rb` |
+| **ListHierarchyService** | (Unused) Historical service for list hierarchy | Dead code - never called | `app/services/list_hierarchy_service.rb` |
 
 For more details on ItemGenerationService, see: [ITEM_GENERATION.md](ITEM_GENERATION.md)
 
