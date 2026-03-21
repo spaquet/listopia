@@ -1017,55 +1017,54 @@ class ChatCompletionService < ApplicationService
     case subdivision_type
     when :locations
       enriched["nested_lists"] = planning_params["locations"].map do |location|
-        location_items = generate_location_specific_items(
-          base_title: enriched["title"],
-          location: location,
-          base_items: enriched["items"],
-          planning_params: planning_params
-        )
+        result = ItemGenerationService.new(
+          list_title: enriched["title"],
+          description: enriched["description"],
+          category: enriched["category"] || enriched["list_type"] || "professional",
+          planning_context: planning_params,
+          sublist_title: location
+        ).call
 
         {
           "title" => location,
-          "description" => "Tasks and activities for #{location}",
-          "items" => location_items
+          "description" => "Planning for #{location}",
+          "items" => result.success? ? result.data : []
         }
       end
 
     when :phases
-      enriched["nested_lists"] = planning_params["phases"].map.with_index do |phase, idx|
-        phase_items = generate_phase_specific_items(
-          base_title: enriched["title"],
-          phase: phase,
-          phase_number: idx + 1,
-          total_phases: planning_params["phases"].length,
-          base_items: enriched["items"],
-          planning_params: planning_params
-        )
+      enriched["nested_lists"] = planning_params["phases"].map do |phase|
+        result = ItemGenerationService.new(
+          list_title: enriched["title"],
+          description: enriched["description"],
+          category: enriched["category"] || enriched["list_type"] || "professional",
+          planning_context: planning_params,
+          sublist_title: phase
+        ).call
 
         {
           "title" => phase,
-          "description" => "Phase #{idx + 1} of #{planning_params["phases"].length}",
-          "items" => phase_items
+          "description" => "Phase: #{phase}",
+          "items" => result.success? ? result.data : []
         }
       end
 
     when :other
-      # For other subdivision types (if any), use generic generation
+      # For other subdivision types, use generic generation
       other_items = planning_params["other_items"] || []
-      enriched["nested_lists"] = other_items.map.with_index do |item, idx|
-        sub_items = generate_context_aware_items(
-          base_title: enriched["title"],
-          sublist_title: item,
-          sublist_index: idx,
-          total_sublists: other_items.length,
-          base_items: enriched["items"],
-          planning_params: planning_params
-        )
+      enriched["nested_lists"] = other_items.map do |item|
+        result = ItemGenerationService.new(
+          list_title: enriched["title"],
+          description: enriched["description"],
+          category: enriched["category"] || enriched["list_type"] || "professional",
+          planning_context: planning_params,
+          sublist_title: item
+        ).call
 
         {
           "title" => item,
-          "description" => "Tasks and activities for #{item}",
-          "items" => sub_items
+          "description" => "Items for #{item}",
+          "items" => result.success? ? result.data : []
         }
       end
     end
@@ -1075,171 +1074,6 @@ class ChatCompletionService < ApplicationService
     enriched
   end
 
-  # Generate location-specific items for a sublist
-  def generate_location_specific_items(base_title:, location:, base_items:, planning_params:)
-    prompt = <<~PROMPT
-      You are a smart planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" as it applies to #{location}.
-
-      Context:
-      - Base plan: #{base_title}
-      - Location: #{location}
-      - Base/general items: #{base_items.join(", ")}
-      - Budget: #{planning_params["budget"].presence || "Not specified"}
-      - Duration: #{planning_params["duration"].presence || "Not specified"}
-      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
-
-      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for this location, not generic copies.
-      Each location has unique needs, vendors, regulations, logistics, and constraints.
-
-      For each location, consider:
-      - Local venue and logistics requirements
-      - Regional regulations and permits
-      - Local market conditions and audience
-      - Transportation and accommodation needs
-      - Time zone and scheduling impacts
-      - Local partnerships and resources
-      - Regional customizations needed
-
-      Generate tasks that reflect what actually needs to be done differently in #{location}.
-      Avoid duplicating base items - focus on location-specific considerations.
-
-      Respond with ONLY a JSON array (no other text):
-      ["specific task 1 for #{location}", "specific task 2 for #{location}", ...]
-    PROMPT
-
-    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
-    # Reduces latency significantly without sacrificing quality
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
-    llm_chat.add_message(role: "system", content: prompt)
-    llm_chat.add_message(role: "user", content: "Generate location-specific tasks for #{location}.")
-
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
-
-    json_match = response_text.match(/\[[\s\S]*\]/m)
-    return [] unless json_match
-
-    begin
-      JSON.parse(json_match[0])
-    rescue JSON::ParserError
-      []
-    end
-  rescue => e
-    Rails.logger.error("Location-specific item generation failed for #{location}: #{e.message}")
-    []
-  end
-
-  # Generate phase-specific items for a sublist
-  def generate_phase_specific_items(base_title:, phase:, phase_number:, total_phases:, base_items:, planning_params:)
-    prompt = <<~PROMPT
-      You are a smart project planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" during Phase #{phase_number}: #{phase}.
-
-      Context:
-      - Base plan: #{base_title}
-      - Current phase: #{phase} (Phase #{phase_number} of #{total_phases})
-      - Base/general items: #{base_items.join(", ")}
-      - Duration: #{planning_params["duration"].presence || "Not specified"}
-      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
-
-      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for this phase, not generic copies.
-      Each phase has completely different focus, priorities, and activities.
-
-      Phase characteristics for "#{phase}":
-      - What is the PRIMARY GOAL of this phase?
-      - What are the KEY ACTIVITIES unique to this phase?
-      - What DEPENDENCIES exist on previous phases?
-      - What OUTPUTS or DELIVERABLES does this phase produce?
-      - What RISKS or CHALLENGES are specific to this phase?
-
-      For a learning/training context (6 weeks):
-      - Week 1 might focus on fundamentals, setup, prerequisites
-      - Week 2 might focus on core concepts, building blocks
-      - Week 3 might deepen knowledge, practice basics
-      - Week 4 might tackle intermediate topics, projects
-      - Week 5 might work on advanced topics, capstone
-      - Week 6 might involve review, consolidation, assessment
-
-      Generate tasks that are UNIQUE to #{phase}, not repeating earlier phases.
-      Each phase should have different activities, learning objectives, or milestones.
-
-      Respond with ONLY a JSON array (no other text):
-      ["specific task 1 for #{phase}", "specific task 2 for #{phase}", ...]
-    PROMPT
-
-    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
-    # Reduces latency significantly without sacrificing quality
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
-    llm_chat.add_message(role: "system", content: prompt)
-    llm_chat.add_message(role: "user", content: "Generate phase-specific tasks for #{phase}.")
-
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
-
-    json_match = response_text.match(/\[[\s\S]*\]/m)
-    return [] unless json_match
-
-    begin
-      JSON.parse(json_match[0])
-    rescue JSON::ParserError
-      []
-    end
-  rescue => e
-    Rails.logger.error("Phase-specific item generation failed for #{phase}: #{e.message}")
-    []
-  end
-
-  # Generate context-aware items for any type of sublist
-  # This is a flexible method that adapts to the sublist type (weeks, chapters, modules, etc.)
-  def generate_context_aware_items(base_title:, sublist_title:, sublist_index:, total_sublists:, base_items:, planning_params:)
-    prompt = <<~PROMPT
-      You are a smart planning assistant. Generate 4-6 specific, actionable tasks for "#{base_title}" in section "#{sublist_title}".
-
-      Context:
-      - Base plan: #{base_title}
-      - Current section: #{sublist_title} (Item #{sublist_index + 1} of #{total_sublists})
-      - Base/general items: #{base_items.join(", ")}
-      - Planning domain: #{planning_params["planning_domain"].presence || "Not specified"}
-      - Duration: #{planning_params["duration"].presence || "Not specified"}
-
-      IMPORTANT: Generate tasks that are SPECIFIC and DIFFERENT for "#{sublist_title}".
-      Each section has unique focus, objectives, and activities.
-
-      Consider what makes "#{sublist_title}" different from other sections:
-      - Progressive complexity or skill level
-      - Different scope or focus area
-      - Different stakeholders or teams
-      - Different resources or constraints
-      - Different objectives or milestones
-      - Different deliverables or outputs
-
-      Generate tasks that are UNIQUE to #{sublist_title}, showing progression through the plan.
-      Each section should have different activities, not duplicates.
-
-      Respond with ONLY a JSON array (no other text):
-      ["specific task 1 for #{sublist_title}", "specific task 2 for #{sublist_title}", ...]
-    PROMPT
-
-    # OPTIMIZED: Use gpt-5-nano for task generation during pre-creation planning
-    # Reduces latency significantly without sacrificing quality
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
-    llm_chat.add_message(role: "system", content: prompt)
-    llm_chat.add_message(role: "user", content: "Generate section-specific tasks for #{sublist_title}.")
-
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
-
-    json_match = response_text.match(/\[[\s\S]*\]/m)
-    return [] unless json_match
-
-    begin
-      JSON.parse(json_match[0])
-    rescue JSON::ParserError
-      []
-    end
-  rescue => e
-    Rails.logger.error("Context-aware item generation failed for #{sublist_title}: #{e.message}")
-    []
-  end
 
   # Determine what type of subdivision to use for nested lists
   # Locations take precedence, then phases, then other subdivisions
