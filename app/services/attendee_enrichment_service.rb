@@ -14,7 +14,7 @@ class AttendeeEnrichmentService < ApplicationService
     end
 
     # Try GitHub (public API, no key needed)
-    github = Connectors::GitHub::EnrichmentService.new(email: @contact.email).call
+    github = Connectors::Github::EnrichmentService.new(email: @contact.email).call
     if github.success?
       @contact.apply_github(github.data)
       enriched = true

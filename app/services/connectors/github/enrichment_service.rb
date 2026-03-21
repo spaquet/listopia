@@ -1,5 +1,5 @@
 module Connectors
-  module GitHub
+  module Github
     class EnrichmentService < ApplicationService
       def initialize(email:)
         @email = email
