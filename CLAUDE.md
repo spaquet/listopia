@@ -39,8 +39,9 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 **AI Chat & List Creation**
 - Unified chat interface for natural language list creation and management
 - LLM-powered intent detection, complexity analysis, and pre-creation planning
+- Intelligent item generation with `ItemGenerationService`: generates appropriate items for ANY list type (roadshow, vacation, learning, project, etc.) and ANY subdivision (locations, phases, weeks, chapters, etc.)
 - Built-in security: prompt injection detection, content moderation
-- See: [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md), [CHAT_FEATURES.md](docs/CHAT_FEATURES.md)
+- See: [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md), [CHAT_FEATURES.md](docs/CHAT_FEATURES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
 
 ## Common Patterns
 
