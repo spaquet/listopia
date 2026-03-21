@@ -2,6 +2,12 @@ module Connectors
   module Calendars
     module Microsoft
       class WebhooksController < ActionController::Base
+        # Webhook endpoint called by Microsoft Graph API (third-party service)
+        # CSRF protection disabled because:
+        # 1. Webhooks are called by external APIs, not browsers (no CSRF tokens)
+        # 2. Authentication uses cryptographic token in request body (clientState)
+        # 3. :null_session clears session on validation failure (prevents hijacking)
+        # 4. This follows Rails security guidelines for webhook endpoints
         protect_from_forgery with: :null_session
 
         # GET/POST /connectors/calendars/microsoft/webhooks

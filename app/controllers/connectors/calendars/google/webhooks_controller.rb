@@ -2,6 +2,12 @@ module Connectors
   module Calendars
     module Google
       class WebhooksController < ActionController::Base
+        # Webhook endpoint called by Google Calendar API (third-party service)
+        # CSRF protection disabled because:
+        # 1. Webhooks are called by external APIs, not browsers (no CSRF tokens)
+        # 2. Authentication uses cryptographic header tokens (X-Goog-Channel-Token)
+        # 3. :null_session clears session on validation failure (prevents hijacking)
+        # 4. This follows Rails security guidelines for webhook endpoints
         protect_from_forgery with: :null_session
         before_action :verify_channel_token
 
