@@ -1494,25 +1494,36 @@ class ChatCompletionService < ApplicationService
   def initialize_planning_with_new_context(combined_data)
     begin
       Rails.logger.info("ChatCompletionService - Initializing planning context for list creation")
+      Rails.logger.info("ChatCompletionService - Using combined_data: is_complex=#{combined_data[:is_complex]}, domain=#{combined_data[:planning_domain]}")
 
-      # Use PlanningContextHandler to create context and detect complexity
-      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
-      handler_result = handler.call
-
-      return handler_result unless handler_result.success?
-
-      handler_data = handler_result.data
-      planning_context = handler_data[:planning_context]
-
-      # If planning context wasn't created, return early
-      unless planning_context.present?
-        Rails.logger.info("ChatCompletionService - Planning context not created, skipping flow")
-        return nil
+      # Check if planning context already exists for this chat
+      if @chat.planning_context.present?
+        Rails.logger.info("ChatCompletionService - Planning context already exists for chat, returning existing")
+        planning_context = @chat.planning_context
+      else
+        # Create planning context directly using the data from CombinedIntentComplexityService
+        # This avoids re-analyzing the request and ensures consistency
+        planning_context = PlanningContext.create!(
+          user: @context.user,
+          chat: @chat,
+          organization: @context.organization,
+          request_content: @user_message.content,
+          detected_intent: combined_data[:intent],
+          intent_confidence: combined_data[:confidence] || 0.0,
+          planning_domain: combined_data[:planning_domain] || "general",
+          complexity_level: combined_data[:is_complex] ? "complex" : "simple",
+          is_complex: combined_data[:is_complex],
+          complexity_reasoning: combined_data[:complexity_reasoning],
+          parameters: combined_data[:parameters] || {},
+          state: :initial,
+          status: combined_data[:is_complex] ? :analyzing : :processing
+        )
       end
 
       # If simple request, generate items and create list immediately
       unless planning_context.is_complex
         Rails.logger.info("ChatCompletionService - Simple list request, generating items and creating list")
+        handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
         generation_result = handler.generate_items_for_context(planning_context)
         return generation_result unless generation_result.success?
 
@@ -1521,7 +1532,7 @@ class ChatCompletionService < ApplicationService
       end
 
       # For complex requests, generate and show pre-creation planning form
-      Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
+      Rails.logger.info("ChatCompletionService - Complex list request (confirmed), generating pre-creation questions")
       return show_pre_creation_planning_form(planning_context)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
