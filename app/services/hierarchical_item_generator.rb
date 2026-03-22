@@ -91,7 +91,7 @@ class HierarchicalItemGenerator < ApplicationService
       list_title: @planning_context.request_content,
       description: build_item_context(subdivision_type),
       category: (@parameters[:category] || @parameters["category"] || "professional"),
-      planning_context: @planning_context,
+      planning_context: @parameters,
       sublist_title: subdivision_title
     )
 
