@@ -8,10 +8,12 @@ Complete guide to how user messages flow through Listopia's unified chat system,
 
 **Key Flows:**
 1. **Simple Requests** → Direct response or creation (0.5-1s)
-2. **Complex Requests** → Ask clarifying questions first (1-2s to show form)
+2. **Complex Requests** → Ask clarifying questions first (1-2s to show form) → Generate items for sublists using ItemGenerationService (10-15s)
 3. **Commands** → Synchronous processing (0.5s)
 4. **Navigation** → Route to page (0.3s)
 5. **Resource Creation** → Collect missing parameters → Create
+
+**NEW (2026-03-21):** Complex requests with subdivisions (locations, phases, etc.) now use `ItemGenerationService` to intelligently generate location/phase-specific items. See [ITEM_GENERATION.md](ITEM_GENERATION.md) for details.
 
 ---
 
@@ -272,47 +274,81 @@ Step 2: Trigger Pre-Creation Planning
 
 Step 3: Generate Questions
   Service: QuestionGenerationService
-  Model: gpt-4.1-nano
+  Model: gpt-4.1-nano (fast question generation)
   Time: ~1-2 seconds
-  Questions:
-    Q1: "Which cities will you visit?"
-    Q2: "What's the timeline for the roadshow?"
-    Q3: "What are the main objectives (sales, marketing, training)?"
+  Questions Generated: 3 clarifying questions specific to the domain
+    Q1: "What is the target schedule for the roadshow, including start and end dates?"
+    Q2: "What is the estimated budget allocated for the entire roadshow?"
+    Q3: "How many locations or cities are planned for the roadshow, and what resources are available for each?"
 
 Step 4: Show Form
-  Chat displays form to user
-  User sees form immediately (~2 seconds from input)
+  Chat displays pre-creation planning form with questions
+  Background Job: PreCreationPlanningJob
+  User sees form immediately (~100ms after clicking submit, actual questions pushed via Turbo Stream)
 
 Step 5: User Provides Answers
-  "NYC, Chicago, Boston. June 1-30. Sales focus.
-   Each stop 2-3 days with team of 5 people."
+  "June and September of this year. $500,000.
+   New York, Los Angeles, Chicago, San Francisco, Seattle"
 
 Step 6: Process Answers
-  Service: ParameterExtractionService
+  Service: extract_planning_parameters_from_answers (method in ChatCompletionService)
+  Model: gpt-5-nano
   Extracts:
-    - cities: ["NYC", "Chicago", "Boston"]
-    - timeline: "June 1-30"
-    - objective: "sales"
-    - team_size: 5
+    - locations: ["New York", "Los Angeles", "Chicago", "San Francisco", "Seattle"]
+    - budget: "$500,000"
+    - timeline: "June 2026 to September 2026"
+    - planning_domain: "event"
 
-Step 7: Create Enriched List
-  Service: ListHierarchyService
+Step 7: Enrich List Structure
+  Service: enrich_list_structure_with_planning (method in ChatCompletionService)
+  Determines subdivision type based on extracted params:
+    → Has locations array → Use :locations subdivision
+  For each location, calls ItemGenerationService:
+
+Step 8: Generate Location-Specific Items
+  Service: ItemGenerationService (NEW - refactored 2026-03-21)
+  Model: gpt-5.4-2026-03-05 (reasoning model for quality)
+  For each location (5 calls total, could be parallelized):
+    Input:
+      - List title: "roadshow for Listopia"
+      - Description: "Budget: $500,000 | Start: June 2026"
+      - Category: "professional"
+      - Planning context: locations, budget, timeline, etc.
+      - Sublist title: "New York" (or other location)
+
+    Output: 5-8 location-specific items
+      - Confirm venue booking at Times Square location
+      - Arrange local transportation logistics
+      - Coordinate with NY-based vendors and partners
+      - Plan media outreach for NY market
+      - Setup local team accommodations
+      - Arrange audio/visual equipment for NYC venue
+
+Step 9: Create List with Items
+  Service: ChatResourceCreatorService → ListCreationService#create_list_with_structure
   Creates:
-    Main List: "US Roadshow"
-    ├─ Pre-roadshow planning (team prep, materials)
-    ├─ Sub-list: "NYC" (venue, marketing, team assignments)
-    ├─ Sub-list: "Chicago" (same structure)
-    ├─ Sub-list: "Boston" (same structure)
-    └─ Post-roadshow (feedback, follow-ups)
+    Main List: "roadshow for Listopia"
+    ├─ Sub-list: "New York" (with 5-8 generated items)
+    ├─ Sub-list: "Los Angeles" (with 5-8 generated items)
+    ├─ Sub-list: "Chicago" (with 5-8 generated items)
+    ├─ Sub-list: "San Francisco" (with 5-8 generated items)
+    └─ Sub-list: "Seattle" (with 5-8 generated items)
 
-Step 8: Response with Summary
-  "Perfect! I've created a structured roadshow plan:
-   - 3 cities: NYC, Chicago, Boston (June 1-30)
-   - 5-person team
-   - Focus on sales
-   - Each stop has venue booking, marketing, and team coordination tasks"
+  Note: Main list items are cleared (empty) as all work is now specific to each location
 
-Total Time: 2-3 seconds perceived (+ user answer time) ✅
+Step 10: Response with Summary
+  Broadcast via Turbo Stream
+  Message: "Perfect! I've created a roadshow plan across 5 cities:
+   - Locations: New York, Los Angeles, Chicago, San Francisco, Seattle
+   - Timeline: June - September 2026
+   - Budget: $500,000
+   - Each location has specific tasks for venue booking, logistics, partnerships, media, and team coordination"
+
+Total Time:
+  - Question display: ~100ms perceived (questions generated in background)
+  - Item generation: ~10-15 seconds (5 cities × 2-3s per city)
+  - List creation: ~2-3 seconds
+  - Total user perceived: User submits answers → 15-20s → List appears ✅
 ```
 
 ---
@@ -680,12 +716,63 @@ puts result.data.inspect
 
 ---
 
+---
+
+## Services Reference
+
+### Core Chat Processing
+
+| Service | Purpose | Models | Location |
+|---------|---------|--------|----------|
+| **ChatCompletionService** | Main orchestrator for message processing | gpt-4.1-nano, gpt-5 | `app/services/chat_completion_service.rb` |
+| **CombinedIntentComplexityService** | Detect intent and complexity in one call | gpt-4.1-nano | `app/services/combined_intent_complexity_service.rb` |
+| **QuestionGenerationService** | Generate pre-creation clarifying questions | gpt-4.1-nano | `app/services/question_generation_service.rb` |
+| **ListRefinementService** | Generate post-creation refinement questions | gpt-5 | `app/services/list_refinement_service.rb` |
+| **ItemGenerationService** | Generate items for sublists (NEW 2026-03-21) | gpt-5.4-2026-03-05 | `app/services/item_generation_service.rb` |
+
+### List Creation
+
+| Service | Purpose | Location |
+|---------|---------|----------|
+| **ChatResourceCreatorService** | Create lists/users/teams from chat parameters | `app/services/chat_resource_creator_service.rb` |
+| **ListCreationService** | Create list with items and nested structure | `app/services/list_creation_service.rb` |
+
+### Supporting Services
+
+| Service | Purpose | Location |
+|---------|---------|----------|
+| **PreCreationPlanningJob** | Background job for question generation | `app/jobs/pre_creation_planning_job.rb` |
+| **ProcessChatMessageJob** | Background job for message processing | `app/jobs/process_chat_message_job.rb` |
+
+### Key Methods in ChatCompletionService
+
+| Method | Purpose |
+|--------|---------|
+| `handle_pre_creation_planning` | Show clarifying questions for complex requests |
+| `handle_pre_creation_planning_response` | Process user answers and create enriched list |
+| `enrich_list_structure_with_planning` | Build list structure with location/phase subdivisions |
+| `extract_planning_parameters_from_answers` | Parse user answers to extract params |
+| `determine_subdivision_type` | Identify if subdivisions are locations, phases, etc. |
+
+### Supporting Services (Legacy/Specific Use Cases)
+
+| Service | Purpose | Status | Location |
+|---------|---------|--------|----------|
+| **ParameterExtractionService** | Extract parameters from user messages for resource creation | In use (lines 136, 637) | `app/services/parameter_extraction_service.rb` |
+| **ListHierarchyService** | (Unused) Historical service for list hierarchy | Dead code - never called | `app/services/list_hierarchy_service.rb` |
+
+For more details on ItemGenerationService, see: [ITEM_GENERATION.md](ITEM_GENERATION.md)
+
+---
+
 ## Testing Checklist
 
 - [ ] Simple list request completes in <2 seconds
-- [ ] Complex list shows questions form in <3 seconds
+- [ ] Complex list shows questions form in <3 seconds (questions generated async)
 - [ ] Pre-creation planning questions are domain-appropriate
-- [ ] List created after answering questions
+- [ ] Items are generated for each sublist (location/phase/etc)
+- [ ] Items are location-specific or phase-specific, not generic duplicates
+- [ ] List created after answering questions (~15-20s total for 5 sublists)
 - [ ] Navigation intent routes correctly
 - [ ] Commands execute synchronously
 - [ ] Resource creation collects missing params

@@ -1,0 +1,126 @@
+<!-- app/views/message_templates/_list_created_confirmation.html.erb
+     Success message when a list has been created
+     Shows created list details and navigation options
+-->
+
+<% list = data[:list] %>
+<% planning_context = data[:planning_context] %>
+
+<% if list.present? %>
+  <div id="list-created-<%= list.id %>" class="flex justify-start">
+    <div class="max-w-2xl w-full">
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-4 border border-emerald-300 shadow-sm">
+        <!-- Success Header -->
+        <div class="flex items-start gap-3 mb-4">
+          <span class="text-3xl animate-bounce">✨</span>
+          <div class="flex-1">
+            <h3 class="text-base font-bold text-emerald-900">
+              List Created Successfully!
+            </h3>
+            <p class="text-xs text-emerald-700 mt-1">
+              Your list "<%= list.title %>" is ready to use
+            </p>
+          </div>
+        </div>
+
+        <!-- List Details Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 pb-4 border-b border-emerald-200">
+          <!-- Items Count -->
+          <div class="bg-white rounded p-2">
+            <div class="text-lg font-bold text-teal-600">
+              <%= list.list_items.count %>
+            </div>
+            <div class="text-xs text-gray-600">
+              <%= list.list_items.count == 1 ? 'Item' : 'Items' %>
+            </div>
+          </div>
+
+          <!-- Sublists Count -->
+          <div class="bg-white rounded p-2">
+            <div class="text-lg font-bold text-teal-600">
+              <%= list.sub_lists.count %>
+            </div>
+            <div class="text-xs text-gray-600">
+              <%= list.sub_lists.count == 1 ? 'Sublist' : 'Sublists' %>
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div class="bg-white rounded p-2">
+            <div class="text-sm font-semibold text-teal-700">
+              <%= list.list_type.titleize %>
+            </div>
+            <div class="text-xs text-gray-600">
+              Category
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div class="bg-white rounded p-2">
+            <div class="text-sm font-semibold text-emerald-700">
+              Active
+            </div>
+            <div class="text-xs text-gray-600">
+              Status
+            </div>
+          </div>
+        </div>
+
+        <!-- Sublists Summary -->
+        <% if list.sub_lists.present? %>
+          <div class="mb-4">
+            <h4 class="text-xs font-semibold text-emerald-900 mb-2">📁 Sublists Created:</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <% list.sub_lists.each do |sublist| %>
+                <div class="flex items-center gap-2 bg-white rounded p-2 border border-emerald-100">
+                  <span class="text-xs text-emerald-600 font-semibold">
+                    <% if sublist.list_items.count > 0 %>
+                      <span class="px-1.5 py-0.5 bg-emerald-100 rounded text-xs">
+                        <%= sublist.list_items.count %>
+                      </span>
+                    <% end %>
+                  </span>
+                  <span class="text-xs text-gray-700 truncate">
+                    <%= sublist.title %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-2 pt-3 border-t border-emerald-200">
+          <!-- View List Button -->
+          <a href="<%= Rails.application.routes.url_helpers.list_path(list) %>"
+             class="flex-1 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-center text-sm">
+            View List →
+          </a>
+
+          <!-- Edit Items Button -->
+          <a href="<%= Rails.application.routes.url_helpers.list_path(list) %>#items"
+             class="flex-1 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 font-medium rounded-lg hover:bg-emerald-50 transition-colors text-center text-sm">
+            Edit Items
+          </a>
+
+          <!-- Continue Planning Button -->
+          <button class="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                  data-action="click->chats#startNewPlanning">
+            Create Another List
+          </button>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="mt-4 pt-4 border-t border-emerald-200 text-xs text-emerald-800 bg-emerald-100 bg-opacity-50 rounded p-3">
+          <strong>💡 Tips:</strong>
+          <ul class="mt-2 space-y-1 list-disc list-inside">
+            <li>Click items to mark them as done</li>
+            <li>Reorder items by dragging them</li>
+            <li>Add more items anytime</li>
+            <li>Share with your team</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

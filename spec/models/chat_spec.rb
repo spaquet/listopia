@@ -19,6 +19,7 @@
 #  focused_resource_id   :uuid
 #  model_id              :bigint
 #  organization_id       :uuid
+#  planning_context_id   :uuid
 #  team_id               :uuid
 #  user_id               :uuid             not null
 #
@@ -32,6 +33,7 @@
 #  index_chats_on_organization_id                                (organization_id)
 #  index_chats_on_organization_id_and_created_at                 (organization_id,created_at)
 #  index_chats_on_organization_id_and_user_id                    (organization_id,user_id)
+#  index_chats_on_planning_context_id                            (planning_context_id)
 #  index_chats_on_status                                         (status)
 #  index_chats_on_team_id                                        (team_id)
 #  index_chats_on_team_id_and_user_id                            (team_id,user_id)
@@ -44,6 +46,7 @@
 #
 #  fk_rails_...  (model_id => models.id)
 #  fk_rails_...  (organization_id => organizations.id)
+#  fk_rails_...  (planning_context_id => planning_contexts.id)
 #  fk_rails_...  (team_id => teams.id)
 #  fk_rails_...  (user_id => users.id)
 #

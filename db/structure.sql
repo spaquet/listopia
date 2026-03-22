@@ -956,7 +956,8 @@ CREATE TABLE public.chats (
     team_id uuid,
     visibility character varying DEFAULT 'private'::character varying,
     focused_resource_type character varying,
-    focused_resource_id uuid
+    focused_resource_id uuid,
+    planning_context_id uuid
 );
 
 
@@ -1476,6 +1477,65 @@ CREATE TABLE public.organizations (
 
 
 --
+-- Name: planning_contexts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.planning_contexts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    chat_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    state character varying DEFAULT 'initial'::character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    error_message character varying(500),
+    request_content text,
+    detected_intent character varying,
+    intent_confidence numeric(3,2),
+    planning_domain character varying,
+    complexity_level character varying,
+    complexity_reasoning text,
+    is_complex boolean DEFAULT false,
+    parent_requirements jsonb DEFAULT '{}'::jsonb,
+    child_requirements jsonb DEFAULT '{}'::jsonb,
+    item_generation_strategy jsonb DEFAULT '{}'::jsonb,
+    parameters jsonb DEFAULT '{}'::jsonb,
+    missing_parameters character varying[] DEFAULT '{}'::character varying[],
+    pre_creation_questions jsonb[] DEFAULT '{}'::jsonb[],
+    pre_creation_answers jsonb DEFAULT '{}'::jsonb,
+    generated_items jsonb[] DEFAULT '{}'::jsonb[],
+    hierarchical_items jsonb DEFAULT '{}'::jsonb,
+    list_created_id uuid,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: COLUMN planning_contexts.request_content; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_contexts.request_content IS 'Original user request';
+
+
+--
+-- Name: planning_relationships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.planning_relationships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    planning_context_id uuid NOT NULL,
+    parent_type character varying NOT NULL,
+    child_type character varying NOT NULL,
+    relationship_type character varying NOT NULL,
+    "position" integer DEFAULT 0,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: recovery_contexts; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1956,6 +2016,22 @@ ALTER TABLE ONLY public.organizations
 
 
 --
+-- Name: planning_contexts planning_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.planning_contexts
+    ADD CONSTRAINT planning_contexts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: planning_relationships planning_relationships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.planning_relationships
+    ADD CONSTRAINT planning_relationships_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: recovery_contexts recovery_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2070,6 +2146,13 @@ CREATE INDEX idx_on_connector_account_id_status_517af4a019 ON public.connector_w
 --
 
 CREATE INDEX idx_on_organization_id_enrichment_status_172943d07b ON public.attendee_contacts USING btree (organization_id, enrichment_status);
+
+
+--
+-- Name: idx_on_relationship_type_planning_context_id_12f5db6f2c; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_relationship_type_planning_context_id_12f5db6f2c ON public.planning_relationships USING btree (relationship_type, planning_context_id);
 
 
 --
@@ -2231,6 +2314,13 @@ CREATE INDEX index_chats_on_organization_id_and_created_at ON public.chats USING
 --
 
 CREATE INDEX index_chats_on_organization_id_and_user_id ON public.chats USING btree (organization_id, user_id);
+
+
+--
+-- Name: index_chats_on_planning_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chats_on_planning_context_id ON public.chats USING btree (planning_context_id);
 
 
 --
@@ -3151,6 +3241,83 @@ CREATE INDEX index_organizations_on_status ON public.organizations USING btree (
 
 
 --
+-- Name: index_planning_contexts_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_planning_contexts_on_chat_id ON public.planning_contexts USING btree (chat_id);
+
+
+--
+-- Name: index_planning_contexts_on_detected_intent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_detected_intent ON public.planning_contexts USING btree (detected_intent);
+
+
+--
+-- Name: index_planning_contexts_on_detected_intent_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_detected_intent_and_created_at ON public.planning_contexts USING btree (detected_intent, created_at);
+
+
+--
+-- Name: index_planning_contexts_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_organization_id ON public.planning_contexts USING btree (organization_id);
+
+
+--
+-- Name: index_planning_contexts_on_planning_domain; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_planning_domain ON public.planning_contexts USING btree (planning_domain);
+
+
+--
+-- Name: index_planning_contexts_on_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_state ON public.planning_contexts USING btree (state);
+
+
+--
+-- Name: index_planning_contexts_on_state_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_state_and_status ON public.planning_contexts USING btree (state, status);
+
+
+--
+-- Name: index_planning_contexts_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_user_id ON public.planning_contexts USING btree (user_id);
+
+
+--
+-- Name: index_planning_contexts_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_contexts_on_user_id_and_created_at ON public.planning_contexts USING btree (user_id, created_at);
+
+
+--
+-- Name: index_planning_relationships_on_parent_type_and_child_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_relationships_on_parent_type_and_child_type ON public.planning_relationships USING btree (parent_type, child_type);
+
+
+--
+-- Name: index_planning_relationships_on_planning_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_planning_relationships_on_planning_context_id ON public.planning_relationships USING btree (planning_context_id);
+
+
+--
 -- Name: index_recovery_contexts_on_chat_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3662,6 +3829,22 @@ ALTER TABLE ONLY public.messages
 
 
 --
+-- Name: chats fk_rails_45ed269b19; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_45ed269b19 FOREIGN KEY (planning_context_id) REFERENCES public.planning_contexts(id);
+
+
+--
+-- Name: planning_relationships fk_rails_49a1b58fd5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.planning_relationships
+    ADD CONSTRAINT fk_rails_49a1b58fd5 FOREIGN KEY (planning_context_id) REFERENCES public.planning_contexts(id);
+
+
+--
 -- Name: recovery_contexts fk_rails_51e01bf1ba; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4004,6 +4187,9 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260321000006'),
+('20260321000005'),
+('20260321000004'),
 ('20260320000003'),
 ('20260320000002'),
 ('20260320000001'),

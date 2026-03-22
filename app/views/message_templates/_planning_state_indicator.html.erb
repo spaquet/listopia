@@ -1,0 +1,133 @@
+<!-- app/views/message_templates/_planning_state_indicator.html.erb
+     Shows the current state of a planning context
+     Displays progress through the planning journey
+-->
+
+<% planning_context = data[:planning_context] %>
+<% state = planning_context&.state %>
+<% status = planning_context&.status %>
+
+<% if planning_context.present? %>
+  <div class="flex items-start gap-3 mb-4">
+    <div class="flex-1">
+      <!-- State Progress Indicator -->
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-sm font-semibold text-gray-700">Planning Progress:</span>
+
+        <!-- Visual State Machine -->
+        <div class="flex items-center gap-1 text-xs">
+          <!-- Initial -->
+          <div class="flex items-center">
+            <div class="<%= state.to_s == 'initial' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600' %> rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">
+              ✓
+            </div>
+            <span class="text-gray-500 text-xs ml-1">Initial</span>
+          </div>
+
+          <!-- Arrow -->
+          <span class="text-gray-400 mx-1">→</span>
+
+          <!-- Pre-Creation -->
+          <div class="flex items-center">
+            <div class="<%= ['pre_creation', 'refinement'].include?(state.to_s) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600' %> rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">
+              <% if state.to_s == 'pre_creation' %>
+                ?
+              <% else %>
+                ✓
+              <% end %>
+            </div>
+            <span class="text-gray-500 text-xs ml-1">Questions</span>
+          </div>
+
+          <!-- Arrow -->
+          <span class="text-gray-400 mx-1">→</span>
+
+          <!-- Resource Creation -->
+          <div class="flex items-center">
+            <div class="<%= ['resource_creation', 'completed'].include?(state.to_s) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600' %> rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">
+              <% if state.to_s == 'resource_creation' %>
+                ⚙
+              <% elsif state.to_s == 'completed' %>
+                ✓
+              <% else %>
+                -
+              <% end %>
+            </div>
+            <span class="text-gray-500 text-xs ml-1">Creation</span>
+          </div>
+
+          <!-- Arrow -->
+          <span class="text-gray-400 mx-1">→</span>
+
+          <!-- Completed -->
+          <div class="flex items-center">
+            <div class="<%= state.to_s == 'completed' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600' %> rounded-full w-6 h-6 flex items-center justify-center font-semibold text-xs">
+              <% if state.to_s == 'completed' %>
+                ✓
+              <% else %>
+                -
+              <% end %>
+            </div>
+            <span class="text-gray-500 text-xs ml-1">Done</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Info -->
+      <div class="text-xs text-gray-600 flex items-center gap-2">
+        <span class="inline-block">
+          <% case status.to_s %>
+          <% when 'pending' %>
+            ⏳ Pending
+          <% when 'analyzing' %>
+            🔍 Analyzing your request...
+          <% when 'awaiting_user_input' %>
+            💬 Waiting for your answers
+          <% when 'processing' %>
+            ⚙️ Generating items...
+          <% when 'complete' %>
+            ✅ Complete
+          <% when 'error' %>
+            ❌ Error: <%= planning_context.error_message %>
+          <% else %>
+            📋 <%= status.to_s.titleize %>
+          <% end %>
+        </span>
+      </div>
+
+      <!-- Context Details -->
+      <% if planning_context.planning_domain.present? %>
+        <div class="text-xs text-gray-600 mt-2 flex items-center gap-2">
+          <span class="font-semibold">Domain:</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-gray-700">
+            <%= planning_context.planning_domain.titleize %>
+          </span>
+          <% if planning_context.is_complex %>
+            <span class="px-2 py-1 bg-orange-100 rounded text-orange-700">
+              Complex
+            </span>
+          <% else %>
+            <span class="px-2 py-1 bg-green-100 rounded text-green-700">
+              Simple
+            </span>
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Generated Items Count -->
+      <% if planning_context.generated_items.present? %>
+        <div class="text-xs text-gray-600 mt-2">
+          📊 <span class="font-semibold"><%= planning_context.generated_items.length %> items</span> generated
+        </div>
+      <% end %>
+
+      <!-- Subdivisions Info -->
+      <% if planning_context.hierarchical_items.dig('subdivisions').present? %>
+        <div class="text-xs text-gray-600 mt-2">
+          📁 <span class="font-semibold"><%= planning_context.hierarchical_items['subdivisions'].length %> sublists</span>
+          (<%= planning_context.hierarchical_items['subdivision_type']&.titleize %>)
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
