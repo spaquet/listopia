@@ -66,10 +66,10 @@ class PlanningContextToListService < ApplicationService
   def determine_list_type
     # Map planning domain to valid list_type
     case @planning_context.planning_domain
-    when 'event', 'project', 'travel', 'learning'
-      'professional'
+    when "event", "project", "travel", "learning"
+      "professional"
     else
-      'personal'
+      "personal"
     end
   end
 

@@ -1522,7 +1522,7 @@ class ChatCompletionService < ApplicationService
 
       # For complex requests, generate and show pre-creation planning form
       Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
-      return show_pre_creation_planning_form(planning_context)
+      show_pre_creation_planning_form(planning_context)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1540,14 +1540,14 @@ class ChatCompletionService < ApplicationService
         user: @context.user,
         organization: @context.organization,
         request_content: @user_message.content,
-        state: 'completed',
-        status: 'complete',
+        state: "completed",
+        status: "complete",
         detected_intent: combined_data[:intent],
         intent_confidence: combined_data[:intent_confidence] || 0.95,
-        planning_domain: combined_data[:planning_domain] || 'personal',
-        complexity_level: 'simple',
+        planning_domain: combined_data[:planning_domain] || "personal",
+        complexity_level: "simple",
         parameters: parameters,
-        complexity_reasoning: combined_data[:complexity_reasoning] || 'Simple, straightforward request',
+        complexity_reasoning: combined_data[:complexity_reasoning] || "Simple, straightforward request",
         hierarchical_items: build_simple_list_structure(combined_data, parameters)
       )
 
@@ -1670,7 +1670,7 @@ class ChatCompletionService < ApplicationService
       # Ensure context is marked as completed (PlanningContextToListService may change it)
       updated_context.update!(state: :completed) if result.success?
 
-      return result
+      result
     rescue StandardError => e
       Rails.logger.error("handle_pre_creation_planning_response_new error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])

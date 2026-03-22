@@ -201,7 +201,7 @@ RSpec.describe ChatCompletionService, type: :service do
         allow_any_instance_of(ParameterMapperService).to receive(:call) do
           # Update the planning context with parameters
           planning_context.add_parameters({
-            locations: ['Paris', 'Rome', 'Barcelona'],
+            locations: [ 'Paris', 'Rome', 'Barcelona' ],
             start_date: 'June 1',
             end_date: 'June 15',
             budget: '$5000',
@@ -316,7 +316,7 @@ RSpec.describe ChatCompletionService, type: :service do
         result = ChatCompletionService.new(chat, user_message).call
 
         # Should handle the message gracefully (either succeed with list creation or fail gracefully)
-        expect([true, false]).to include(result.success?)
+        expect([ true, false ]).to include(result.success?)
       end
 
       it 'prioritizes PlanningContext flow when it exists' do
@@ -350,7 +350,7 @@ RSpec.describe ChatCompletionService, type: :service do
         allow_any_instance_of(ParameterMapperService).to receive(:call).and_return(
           ApplicationService::Result.success(data: {
             parameters: {
-              locations: ['Paris', 'Rome'],
+              locations: [ 'Paris', 'Rome' ],
               start_date: 'June 1',
               end_date: 'June 15',
               budget: '$5000',

@@ -70,7 +70,7 @@ FactoryBot.define do
     trait :with_parameters do
       parameters do
         {
-          locations: ["New York", "Los Angeles"],
+          locations: [ "New York", "Los Angeles" ],
           budget: "$50,000",
           timeline: "Q2 2026"
         }
