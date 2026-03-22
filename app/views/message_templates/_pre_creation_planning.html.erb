@@ -7,14 +7,24 @@
 <% chat_id = data[:chat_id] %>
 <% list_title = data[:list_title] %>
 
-<div class="text-xs bg-blue-50 rounded-lg p-4 border border-blue-200">
+<% Rails.logger.debug("PreCreationPlanning - questions: #{questions.inspect}") %>
+<% Rails.logger.debug("PreCreationPlanning - questions count: #{questions.length}") %>
+<% if questions.any? %>
+  <% Rails.logger.debug("PreCreationPlanning - first question: #{questions[0].inspect}") %>
+<% end %>
+
+<div class="text-xs bg-blue-50 rounded-lg p-4 border border-blue-200" style="min-height: 100px;">
   <div class="mb-4">
     <h3 class="text-xs font-semibold text-gray-900 flex items-center gap-2">
       <span class="text-lg">❓</span>
       Before I create "<%= list_title %>", I have a few questions
     </h3>
     <p class="text-xs text-gray-600 mt-2">
-      Please provide answers to help me structure this list better.
+      <% if questions.empty? %>
+        🔴 No questions loaded (questions array is empty)
+      <% else %>
+        ✓ <%= questions.length %> question<%= questions.length != 1 ? 's' : '' %> - Please provide answers to help me structure this list better.
+      <% end %>
     </p>
   </div>
 
