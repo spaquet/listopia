@@ -92,12 +92,11 @@ class HierarchicalItemGenerator < ApplicationService
       description: build_item_context(subdivision_type),
       category: (@parameters[:category] || @parameters["category"] || "professional"),
       planning_context: @planning_context,
-      sublist_title: subdivision_title,
-      subdivision_type: subdivision_type
+      sublist_title: subdivision_title
     )
 
     result = service.call
-    result.success? ? result.data[:items] : []
+    result.success? ? result.data : []
   end
 
   def generate_relationships
