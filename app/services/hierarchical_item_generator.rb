@@ -10,19 +10,28 @@ class HierarchicalItemGenerator < ApplicationService
 
   def call
     begin
+      Rails.logger.info("HierarchicalItemGenerator#call - Starting hierarchical item generation")
+      Rails.logger.info("HierarchicalItemGenerator#call - Parameters: #{@parameters.inspect}")
+
       # Generate parent-level items first
       parent_items = @planning_context.parent_requirements.dig("items") || []
+      Rails.logger.info("HierarchicalItemGenerator#call - Parent items count: #{parent_items.length}")
 
       # Determine subdivision strategy
       subdivision_type = @parameters[:subdivision_type] || infer_subdivision_type
+      Rails.logger.info("HierarchicalItemGenerator#call - Subdivision type: #{subdivision_type}")
 
       # Generate hierarchical structure with subdivisions
+      subdivisions = generate_subdivisions(subdivision_type)
+      Rails.logger.info("HierarchicalItemGenerator#call - Subdivisions generated: #{subdivisions.keys.inspect}")
+
       hierarchical_items = {
         parent_items: parent_items,
-        subdivisions: generate_subdivisions(subdivision_type),
+        subdivisions: subdivisions,
         relationships: generate_relationships,
         subdivision_type: subdivision_type
       }
+      Rails.logger.info("HierarchicalItemGenerator#call - Hierarchical structure built with #{subdivisions.length} subdivisions")
 
       # Update planning context
       @planning_context.update!(
@@ -50,20 +59,26 @@ class HierarchicalItemGenerator < ApplicationService
   end
 
   def generate_subdivisions(subdivision_type)
+    Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Starting with type: #{subdivision_type}")
     subdivisions = {}
     return {} if subdivision_type == "none"
 
     # Generic subdivision generation based on detected type and parameter key
     subdivision_key = @parameters[:subdivision_key] || subdivision_type
+    Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Looking for key: #{subdivision_key}")
+
     subdivision_data = @parameters[subdivision_key.to_sym] || @parameters[subdivision_key]
+    Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Found subdivision data: #{subdivision_data.inspect}")
 
     return {} unless subdivision_data.present?
 
     # Handle both array and non-array subdivision data
     items_to_subdivide = subdivision_data.is_a?(Array) ? subdivision_data : [subdivision_data]
+    Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Items to subdivide: #{items_to_subdivide.length}")
 
     items_to_subdivide.each do |item|
       item_title = item.is_a?(Hash) ? (item[:title] || item["title"] || item.to_s) : item.to_s
+      Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Generating sublist for: #{item_title}")
 
       subdivisions[item_title] = {
         title: item_title,
@@ -72,6 +87,7 @@ class HierarchicalItemGenerator < ApplicationService
       }
     end
 
+    Rails.logger.info("HierarchicalItemGenerator#generate_subdivisions - Generated #{subdivisions.length} subdivisions")
     subdivisions
 end
 
