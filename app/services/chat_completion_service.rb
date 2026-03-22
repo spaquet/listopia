@@ -27,6 +27,12 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # PHASE 3: Check if this chat has a PlanningContext in context_reuse state
+      if @chat.planning_context&.state == "context_reuse"
+        reuse_result = handle_context_reuse_choice(@chat.planning_context, @user_message.content)
+        return reuse_result if reuse_result
+      end
+
       # PHASE 3: Check if this chat has a PlanningContext in pre_creation state
       if @chat.planning_context&.state == "pre_creation"
         planning_result = handle_pre_creation_planning_response_new
@@ -1498,8 +1504,15 @@ class ChatCompletionService < ApplicationService
 
       # Check if planning context already exists for this chat
       if @chat.planning_context.present?
-        Rails.logger.info("ChatCompletionService - Planning context already exists for chat, returning existing")
         planning_context = @chat.planning_context
+
+        # If context is complete (has hierarchical items), offer to use it or clear it
+        if planning_context.hierarchical_items.present?
+          Rails.logger.info("ChatCompletionService - Context is complete with items/sublists, offering to reuse or clear")
+          return show_context_reuse_options(planning_context)
+        else
+          Rails.logger.info("ChatCompletionService - Context exists but incomplete, continuing")
+        end
       else
         # Create planning context directly using the data from CombinedIntentComplexityService
         # This avoids re-analyzing the request and ensures consistency
@@ -1643,6 +1656,68 @@ class ChatCompletionService < ApplicationService
       success(data: assistant_message)
     rescue StandardError => e
       Rails.logger.error("show_pre_creation_planning_form error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Show options to reuse or clear existing planning context
+  def show_context_reuse_options(planning_context)
+    begin
+      items_count = planning_context.generated_items&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig('subdivisions')&.length || 0
+
+      # Create assistant message with context summary
+      message_content = <<~TEXT
+        I already have a plan with:
+        • #{items_count} items
+        • #{sublists_count} sublists
+
+        Would you like to:
+        1. **Use this plan** - Create the list with the existing items
+        2. **Clear and start over** - Begin with a fresh planning context
+      TEXT
+
+      # Set state to context_reuse so next user message is handled as a choice
+      planning_context.update!(state: :context_reuse)
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content.strip
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - Context reuse options shown (#{items_count} items, #{sublists_count} sublists)")
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("show_context_reuse_options error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Handle user choice to use or clear planning context
+  def handle_context_reuse_choice(planning_context, user_choice)
+    begin
+      if user_choice.downcase.include?("clear") || user_choice.downcase.include?("fresh") || user_choice.downcase.include?("start")
+        # Clear the context
+        Rails.logger.info("ChatCompletionService - User chose to clear context, resetting")
+        planning_context.update!(
+          hierarchical_items: nil,
+          generated_items: nil,
+          pre_creation_questions: nil,
+          parameters: {},
+          state: :initial,
+          status: :analyzing
+        )
+        return show_pre_creation_planning_form(planning_context)
+      else
+        # Use existing context and create list
+        Rails.logger.info("ChatCompletionService - User chose to use existing context, creating list")
+        return auto_create_list_from_planning(planning_context)
+      end
+    rescue StandardError => e
+      Rails.logger.error("handle_context_reuse_choice error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
   end
