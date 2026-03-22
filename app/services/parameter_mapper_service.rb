@@ -90,6 +90,8 @@ class ParameterMapperService < ApplicationService
 
   def detect_subdivision_strategy(parameters)
     begin
+      Rails.logger.info("detect_subdivision_strategy - Starting with parameters: #{parameters.keys.inspect}")
+
       # Check if there are actual subdivision candidates
       subdivision_candidates = {
         locations: parameters[:locations],
@@ -101,16 +103,22 @@ class ParameterMapperService < ApplicationService
         teams: parameters[:team_members]
       }.reject { |_k, v| v.blank? }
 
+      Rails.logger.info("detect_subdivision_strategy - Found candidates: #{subdivision_candidates.keys.inspect}")
+
       return success(data: { type: "none", count: 0, key: nil }) if subdivision_candidates.empty?
 
       # Build prompt for LLM to determine best subdivision strategy
       prompt = build_subdivision_detection_prompt(parameters, subdivision_candidates)
 
       response = detect_via_llm(prompt)
+      Rails.logger.info("detect_subdivision_strategy - LLM response: #{response.inspect}")
+
       return failure(errors: ["Failed to detect subdivision"]) if response.blank?
 
       # Parse LLM response
       parsed = JSON.parse(response) rescue nil
+      Rails.logger.info("detect_subdivision_strategy - Parsed response: #{parsed.inspect}")
+
       return failure(errors: ["Invalid subdivision response"]) unless parsed.is_a?(Hash)
 
       success(data: {
