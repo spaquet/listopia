@@ -27,6 +27,12 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
+      # Check for /clear command to reset planning context
+      if @user_message.content.strip.downcase.start_with?("/clear")
+        clear_result = handle_clear_context_command
+        return clear_result if clear_result
+      end
+
       # PHASE 3: Check if this chat has a PlanningContext in context_reuse state
       if @chat.planning_context&.state == "context_reuse"
         reuse_result = handle_context_reuse_choice(@chat.planning_context, @user_message.content)
@@ -1660,6 +1666,42 @@ class ChatCompletionService < ApplicationService
     end
   end
 
+  # Handle /clear command to clear the planning context
+  def handle_clear_context_command
+    begin
+      planning_context = @chat.planning_context
+
+      if planning_context.blank?
+        message_content = "No active planning context to clear."
+      else
+        # Clear the planning context
+        planning_context.update!(
+          hierarchical_items: nil,
+          generated_items: nil,
+          pre_creation_questions: nil,
+          parameters: {},
+          state: :initial,
+          status: :pending
+        )
+        message_content = "✓ Planning context cleared. Ready to start fresh planning!"
+      end
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - /clear command executed")
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("handle_clear_context_command error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
   # Show options to reuse or clear existing planning context
   def show_context_reuse_options(planning_context)
     begin
@@ -1979,6 +2021,9 @@ class ChatCompletionService < ApplicationService
       # Broadcast the success confirmation (PHASE 5 enhancement)
       broadcast_list_created_confirmation(list, updated_context)
 
+      # Show context management buttons (keep or clear for next task)
+      show_context_management_buttons(updated_context)
+
       success(data: assistant_message)
     rescue StandardError => e
       Rails.logger.error("auto_create_list_from_planning error: #{e.class} - #{e.message}")
@@ -2109,6 +2154,38 @@ class ChatCompletionService < ApplicationService
       Rails.logger.info("ChatCompletionService - List created confirmation broadcasted")
     rescue => e
       Rails.logger.error("ChatCompletionService - Failed to broadcast confirmation: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
+  # Show buttons to clear or keep context after list creation
+  def show_context_management_buttons(planning_context)
+    begin
+      items_count = planning_context.generated_items&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig('subdivisions')&.length || 0
+
+      message_content = <<~TEXT
+        **Ready for the next task?**
+
+        Your current context has #{items_count} items in #{sublists_count} sublists.
+        Would you like to:
+        • **/keep** - Keep this context for building on it
+        • **/clear** - Clear and start fresh planning
+      TEXT
+
+      # Set state to context_reuse so user can interact with buttons
+      planning_context.update!(state: :context_reuse)
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content.strip
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - Context management buttons shown")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to show context buttons: #{e.message}")
       # Non-blocking error
     end
   end
