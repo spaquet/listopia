@@ -71,6 +71,12 @@ FactoryBot.define do
       content { "User message content" }
     end
 
+    trait :user_message do
+      role { :user }
+      user { association :user }
+      content { "User message content" }
+    end
+
     trait :assistant do
       role { :assistant }
       content { "Assistant response" }

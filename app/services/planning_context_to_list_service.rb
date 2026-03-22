@@ -59,8 +59,18 @@ class PlanningContextToListService < ApplicationService
       nested_lists: build_nested_lists,
       organization: @organization,
       status: :active,
-      list_type: @planning_context.planning_domain
+      list_type: determine_list_type
     }
+  end
+
+  def determine_list_type
+    # Map planning domain to valid list_type
+    case @planning_context.planning_domain
+    when 'event', 'project', 'travel', 'learning'
+      'professional'
+    else
+      'personal'
+    end
   end
 
   def extract_title
@@ -105,10 +115,10 @@ class PlanningContextToListService < ApplicationService
 
     subdivisions.each do |sublist_name, sublist_data|
       nested_list = {
-        title: sublist_data[:title] || sublist_name,
-        description: sublist_data[:description] || "#{subdivision_type.titleize}: #{sublist_name}",
+        title: sublist_data[:title] || sublist_data["title"] || sublist_name,
+        description: sublist_data[:description] || sublist_data["description"] || "#{subdivision_type.titleize}: #{sublist_name}",
         items: build_sublist_items(sublist_data),
-        type: sublist_data[:type] || "sublist"
+        type: sublist_data[:type] || sublist_data["type"] || "sublist"
       }
 
       nested_lists << nested_list
@@ -118,7 +128,8 @@ class PlanningContextToListService < ApplicationService
   end
 
   def build_sublist_items(sublist_data)
-    items = sublist_data[:items] || []
+    # Handle both symbol and string keys (JSONB returns strings)
+    items = sublist_data[:items] || sublist_data["items"] || []
 
     items.map do |item|
       # Items from ItemGenerationService have: title, description, priority, type

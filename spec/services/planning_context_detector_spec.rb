@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe PlanningContextDetector, type: :service do
   let(:user) { create(:user) }
-  let(:organization) { create(:organization, created_by: user) }
+  let(:organization) { create(:organization, creator: user) }
   let(:chat) { create(:chat, user: user, organization: organization) }
   let(:user_message) { create(:message, :user_message, chat: chat, user: user) }
 

@@ -1,7 +1,7 @@
 RSpec.shared_examples "a connector" do
   let(:connector_class) { described_class }
   let(:user) { create(:user) }
-  let(:organization) { create(:organization, created_by: user) }
+  let(:organization) { create(:organization, creator: user) }
   let(:account) do
     create(:connectors_account,
       user: user,

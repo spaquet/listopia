@@ -276,7 +276,8 @@ class ChatCompletionService < ApplicationService
 
       # All parameters ready for simple list creation
       Rails.logger.info("ChatCompletionService#check_parameters_for_intent_optimized - Proceeding with simple list creation")
-      return handle_list_creation("list", parameters)
+      # Create planning context for simple lists too (in completed state)
+      return create_and_process_simple_list(combined_data, parameters)
     elsif intent == "create_resource"
       # If there are missing parameters for resource creation, ask the user for them
       if missing_params.present?
@@ -1501,14 +1502,13 @@ class ChatCompletionService < ApplicationService
       return handler_result unless handler_result.success?
 
       handler_data = handler_result.data
+      planning_context = handler_data[:planning_context]
 
-      # If not a list creation request, return early
-      unless handler_data[:should_create_context]
-        Rails.logger.info("ChatCompletionService - Not a list creation request, skipping planning context")
+      # If planning context wasn't created, return early
+      unless planning_context.present?
+        Rails.logger.info("ChatCompletionService - Planning context not created, skipping flow")
         return nil
       end
-
-      planning_context = handler_data[:planning_context]
 
       # If simple request, generate items and create list immediately
       unless planning_context.is_complex
@@ -1522,11 +1522,70 @@ class ChatCompletionService < ApplicationService
 
       # For complex requests, generate and show pre-creation planning form
       Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
-      show_pre_creation_planning_form(planning_context)
+      return show_pre_creation_planning_form(planning_context)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
+  end
+
+  # Create and process a simple list (goes directly to completed state)
+  def create_and_process_simple_list(combined_data, parameters)
+    begin
+      Rails.logger.info("ChatCompletionService - Creating planning context for simple list")
+
+      # Create planning context for this chat
+      planning_context = PlanningContext.create!(
+        chat: @chat,
+        user: @context.user,
+        organization: @context.organization,
+        request_content: @user_message.content,
+        state: 'completed',
+        status: 'complete',
+        detected_intent: combined_data[:intent],
+        intent_confidence: combined_data[:intent_confidence] || 0.95,
+        planning_domain: combined_data[:planning_domain] || 'personal',
+        complexity_level: 'simple',
+        parameters: parameters,
+        complexity_reasoning: combined_data[:complexity_reasoning] || 'Simple, straightforward request',
+        hierarchical_items: build_simple_list_structure(combined_data, parameters)
+      )
+
+      Rails.logger.info("ChatCompletionService - Created planning context: #{planning_context.id}")
+
+      # Use PlanningContextToListService to create the list
+      list_service = PlanningContextToListService.new(planning_context, @context.user, @context.organization)
+      list_result = list_service.call
+
+      return list_result unless list_result.success?
+
+      # For simple lists, mark as completed (after list is created)
+      planning_context.update!(state: :completed)
+
+      Rails.logger.info("ChatCompletionService - Simple list created successfully")
+      success(data: list_result.data)
+    rescue StandardError => e
+      Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Build hierarchical items structure for a simple list
+  def build_simple_list_structure(combined_data, parameters)
+    # Extract parent requirements if available (fallback to generic structure)
+    parent_reqs = combined_data[:parent_requirements] || {}
+    parent_items = parent_reqs.is_a?(Hash) ? (parent_reqs["items"] || []) : []
+
+    {
+      "parent_items" => parent_items.map { |item|
+        {
+          title: item[:title] || item["title"] || "Item",
+          description: item[:description] || item["description"] || ""
+        }
+      },
+      "subdivisions" => {},
+      "subdivision_type" => "none"
+    }
   end
 
   # Show pre-creation planning form using new PlanningContext model
@@ -1602,8 +1661,16 @@ class ChatCompletionService < ApplicationService
 
       Rails.logger.info("ChatCompletionService - Items generated, now creating list from planning context")
 
+      # Mark context as completed before list creation
+      updated_context.mark_complete!
+
       # Items generated, create the actual list
-      auto_create_list_from_planning(updated_context)
+      result = auto_create_list_from_planning(updated_context)
+
+      # Ensure context is marked as completed (PlanningContextToListService may change it)
+      updated_context.update!(state: :completed) if result.success?
+
+      return result
     rescue StandardError => e
       Rails.logger.error("handle_pre_creation_planning_response_new error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
