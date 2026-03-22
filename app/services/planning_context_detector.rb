@@ -12,6 +12,16 @@ class PlanningContextDetector < ApplicationService
 
   def call
     begin
+      # Check if planning context already exists for this chat
+      if @chat.planning_context.present?
+        Rails.logger.info("PlanningContextDetector - Planning context already exists for chat #{@chat.id}, returning existing context")
+        return success(data: {
+          should_create_context: false,
+          planning_context: @chat.planning_context,
+          reasoning: "Planning context already exists"
+        })
+      end
+
       # Use CombinedIntentComplexityService to analyze the request
       analysis_result = CombinedIntentComplexityService.new(
         user_message: @user_message,

@@ -1,16 +1,19 @@
 # Chat Context System
 
-AI-powered intelligent chat context management for semantic list planning, domain-aware item generation, and real-time progress tracking. Persists planning state across messages to enable complex list creation with clarifying questions.
+AI-powered intelligent chat context management for semantic list planning, **fully domain-agnostic** item generation, and real-time progress tracking. Persists planning state across messages to enable complex list creation with clarifying questions.
 
 **Status:** Production Ready ✅
+
+**Important:** This system is domain-agnostic and works with ANY list type. While examples may show events/roadshows repeatedly, the architecture supports reading lists, courses, recipes, projects, travel planning, and any other planning use case equally well.
 
 ## Quick Start
 
 ### For Users
 1. Open the chat interface
-2. Describe your list: "Help me plan a US roadshow" or "Create a grocery list"
+2. Describe ANY type of list: "Help me plan a US roadshow", "Create a reading list on AI", "Plan my product launch", or "Organize my grocery shopping"
 3. System automatically detects complexity and asks clarifying questions if needed
-4. Items are generated intelligently and list is created automatically
+4. Items are generated intelligently based on YOUR specific domain/context
+5. List is created with appropriate subdivisions and items for your use case
 
 ### For Developers
 1. Read [Understanding Planning Context](#understanding-planning-context) below
@@ -29,24 +32,25 @@ planning_context = PlanningContext.create!(
   user: current_user,
   chat: current_chat,
   organization: current_organization,
-  request_content: "Help me plan US roadshow",
+  request_content: "Help me plan US roadshow",  # Or: "Create reading list on AI", "Plan product launch", etc.
   detected_intent: "create_list",
-  planning_domain: "event",
+  planning_domain: "event",  # Detected by LLM: event, learning, project, travel, personal, etc.
   is_complex: true,
   state: :pre_creation,
   status: :awaiting_user_input,
-  parameters: { locations: [...], budget: "...", timeline: "..." },
+  parameters: { locations: [...], budget: "...", timeline: "..." },  # Varies by domain
   pre_creation_questions: [...],
   pre_creation_answers: {...},
-  hierarchical_items: { parent_items: [...], subdivisions: {...} }
+  hierarchical_items: { parent_items: [...], subdivisions: {...}, subdivision_type: "locations" }  # Or "books", "modules", "phases", etc.
 )
 ```
 
 **Benefits:**
 - ✅ Persistent planning state (resume across sessions)
-- ✅ Domain-aware parent item generation
+- ✅ **Truly domain-agnostic**: Works with ANY list type
+- ✅ LLM-powered subdivision detection: Automatically identifies best way to organize items
 - ✅ State machine for predictable flow
-- ✅ Automatic list creation with full hierarchy
+- ✅ Automatic list creation with full hierarchy (parent items + subdivisions)
 - ✅ Real-time progress tracking with views
 
 ## Architecture Overview

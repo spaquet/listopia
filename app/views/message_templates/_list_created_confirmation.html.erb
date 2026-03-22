@@ -3,8 +3,7 @@
      Shows created list details and navigation options
 -->
 
-<% list = data[:list] %>
-<% planning_context = data[:planning_context] %>
+<!-- list and planning_context passed as locals -->
 
 <% if list.present? %>
   <div id="list-created-<%= list.id %>" class="flex justify-start">

@@ -69,22 +69,123 @@ class ParameterMapperService < ApplicationService
   def enrich_parameters(base_params)
     parameters = base_params.dup
 
-    # Determine subdivision strategy based on parameters
-    if parameters[:locations].present? && parameters[:locations].is_a?(Array)
-      parameters[:subdivision_type] = "locations"
-      parameters[:subdivision_count] = parameters[:locations].length
-    elsif parameters[:timeline].present? || (parameters[:start_date].present? && parameters[:end_date].present?)
-      # Infer phases/weeks from timeline
-      parameters[:subdivision_type] = "phases"
-      parameters[:subdivision_count] = infer_phase_count(parameters)
-    elsif parameters[:team_size].present? && parameters[:team_size].to_i > 1
-      parameters[:subdivision_type] = "teams"
+    # Use LLM to intelligently detect the best subdivision strategy for this specific use case
+    subdivision_result = detect_subdivision_strategy(parameters)
+
+    if subdivision_result.success?
+      subdivision_data = subdivision_result.data
+      parameters[:subdivision_type] = subdivision_data[:type]
+      parameters[:subdivision_count] = subdivision_data[:count]
+      parameters[:subdivision_key] = subdivision_data[:key]  # e.g., "locations", "books", "modules", "topics"
+    else
+      # Fallback to simple rules if LLM detection fails
+      parameters[:subdivision_type] = "none"
     end
 
     # Classify complexity if not already done
     parameters[:domain_hint] = @planning_context.planning_domain if @planning_context.planning_domain.present?
 
     parameters
+  end
+
+  def detect_subdivision_strategy(parameters)
+    begin
+      # Check if there are actual subdivision candidates
+      subdivision_candidates = {
+        locations: parameters[:locations],
+        books: parameters[:books],
+        topics: parameters[:topics],
+        modules: parameters[:modules],
+        items: parameters[:items],
+        phases: parameters[:timeline],
+        teams: parameters[:team_members]
+      }.reject { |_k, v| v.blank? }
+
+      return success(data: { type: "none", count: 0, key: nil }) if subdivision_candidates.empty?
+
+      # Build prompt for LLM to determine best subdivision strategy
+      prompt = build_subdivision_detection_prompt(parameters, subdivision_candidates)
+
+      response = detect_via_llm(prompt)
+      return failure(errors: ["Failed to detect subdivision"]) if response.blank?
+
+      # Parse LLM response
+      parsed = JSON.parse(response) rescue nil
+      return failure(errors: ["Invalid subdivision response"]) unless parsed.is_a?(Hash)
+
+      success(data: {
+        type: parsed["type"] || "none",
+        count: parsed["count"] || 0,
+        key: parsed["key"] || nil
+      })
+    rescue StandardError => e
+      Rails.logger.error("detect_subdivision_strategy error: #{e.class} - #{e.message}")
+      failure(errors: [e.message])
+    end
+  end
+
+  def build_subdivision_detection_prompt(parameters, candidates)
+    domain = @planning_context.planning_domain || "general"
+    title = @planning_context.request_content || ""
+
+    <<~PROMPT
+      Based on this planning request, determine the best way to subdivide the list.
+
+      Domain: #{domain}
+      Title: #{title}
+      Category: #{parameters[:category]}
+
+      Available subdivision candidates:
+      #{candidates.map { |k, v| "- #{k}: #{v.is_a?(Array) ? v.length : 'present'}" }.join("\n")}
+
+      Return JSON with:
+      {
+        "type": "locations" | "books" | "topics" | "modules" | "items" | "phases" | "teams" | "none",
+        "count": number of subdivisions,
+        "key": the parameter key that contains the subdivision data
+      }
+
+      Choose the most natural subdivision for this use case:
+      - For events/travel: use "locations"
+      - For courses/learning: use "modules" or "topics"
+      - For reading: use "books"
+      - For projects: use "modules" or "phases"
+      - For cooking/recipes: use "items"
+      - For product: use "phases" or "modules"
+
+      Return ONLY valid JSON.
+    PROMPT
+  end
+
+  def detect_via_llm(prompt)
+    begin
+      llm_chat = RubyLLM::Chat.new(
+        provider: :openai,
+        model: "gpt-5-nano"
+      )
+
+      llm_chat.add_message(
+        role: "system",
+        content: "You are a planning expert. Determine the best subdivision strategy for organizing a list based on the context provided."
+      )
+
+      llm_chat.add_message(role: "user", content: prompt)
+
+      response = llm_chat.complete
+
+      # Extract text from response
+      case response
+      when String
+        response
+      when Hash
+        response["content"] || response[:content] || response.to_s
+      else
+        response&.content&.text || response.to_s
+      end
+    rescue StandardError => e
+      Rails.logger.error("detect_via_llm error: #{e.class} - #{e.message}")
+      nil
+    end
   end
 
   def infer_phase_count(parameters)

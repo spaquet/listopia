@@ -61,7 +61,13 @@ class PlanningContextHandler < ApplicationService
 
       planning_context = mapper_result.data[:planning_context]
 
-      # Step 2: Generate hierarchical items
+      # Step 2: Analyze parent requirements (needed for hierarchical item generation)
+      analyzer_result = ParentRequirementsAnalyzer.new(planning_context).call
+      return analyzer_result unless analyzer_result.success?
+
+      planning_context = analyzer_result.data[:planning_context]
+
+      # Step 3: Generate hierarchical items
       generate_items_for_context(planning_context)
     rescue StandardError => e
       Rails.logger.error("PlanningContextHandler#process_answers error: #{e.class} - #{e.message}")

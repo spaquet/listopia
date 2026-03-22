@@ -1522,7 +1522,7 @@ class ChatCompletionService < ApplicationService
 
       # For complex requests, generate and show pre-creation planning form
       Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
-      show_pre_creation_planning_form(planning_context)
+      return show_pre_creation_planning_form(planning_context)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1679,16 +1679,94 @@ class ChatCompletionService < ApplicationService
 
   # Extract structured answers from user's free-form text response
   def extract_answers_from_user_input(user_input, questions)
-    answers = {}
+    # Use LLM to parse free-form answers into structured format
+    extraction_result = extract_structured_parameters_from_answers(user_input, questions)
 
-    # Try to map each question to extracted answer
-    # For now, store the entire input as the response
-    # In Phase 4, we can use LLM to extract structured answers
-    questions.each_with_index do |question, index|
-      answers[index.to_s] = user_input
+    if extraction_result.success?
+      extraction_result.data
+    else
+      # Fallback: store entire input if parsing fails
+      answers = {}
+      questions.each_with_index do |question, index|
+        answers[index.to_s] = user_input
+      end
+      answers
     end
+  end
 
-    answers
+  # Use LLM to parse free-form user answers into structured parameters
+  def extract_structured_parameters_from_answers(user_input, questions)
+    begin
+      prompt = build_answer_extraction_prompt(user_input, questions)
+
+      response = call_llm_for_answer_extraction(prompt)
+      return failure(errors: [ "Failed to parse answers" ]) if response.blank?
+
+      # Try to parse JSON response
+      parsed = JSON.parse(response) rescue nil
+      return failure(errors: [ "Invalid response format" ]) unless parsed.is_a?(Hash)
+
+      success(data: parsed)
+    rescue StandardError => e
+      Rails.logger.error("extract_structured_parameters_from_answers error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  def build_answer_extraction_prompt(user_input, questions)
+    <<~PROMPT
+      Extract structured parameters from the user's answers below.
+
+      Original questions were:
+      #{questions.map.with_index { |q, i| "#{i + 1}. #{q}" }.join("\n")}
+
+      User's answers:
+      #{user_input}
+
+      Extract and return as JSON with these keys (extract only what's explicitly provided):
+      {
+        "locations": ["city, state country with date if provided", ...],
+        "budget": "total amount if mentioned",
+        "timeline": "duration/dates if mentioned",
+        "team_members": ["name/role", ...],
+        "duration": "length of event/project",
+        "activities": ["activity1", "activity2", ...],
+        "audience": "target audience description",
+        "category": "professional/personal"
+      }
+
+      Return ONLY valid JSON, no other text.
+    PROMPT
+  end
+
+  def call_llm_for_answer_extraction(prompt)
+    begin
+      model = "gpt-5-nano"
+
+      # Create RubyLLM::Chat instance
+      llm_chat = RubyLLM::Chat.new(
+        provider: :openai,
+        model: model
+      )
+
+      # Add system prompt
+      llm_chat.add_message(
+        role: "system",
+        content: "You are a data extraction assistant. Extract structured data from user input and return valid JSON."
+      )
+
+      # Add user prompt
+      llm_chat.add_message(role: "user", content: prompt)
+
+      # Get completion
+      response = llm_chat.complete
+
+      # Extract response content
+      extract_response_content(response)
+    rescue StandardError => e
+      Rails.logger.error("call_llm_for_answer_extraction error: #{e.class} - #{e.message}")
+      nil
+    end
   end
 
   # Build a summary message for list creation

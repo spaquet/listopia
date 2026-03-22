@@ -2,18 +2,24 @@
 
 Complete guide to how user messages flow through Listopia's unified chat system, from input to response.
 
+**Important:** This flow is **domain-agnostic** and works for ANY type of list. The system doesn't hardcode specific domains - it intelligently adapts to whatever the user is planning (events, courses, recipes, projects, reading lists, etc.).
+
 ## Quick Summary
 
-**Single Unified Chat Interface** - Handles everything from general questions to list creation to resource management.
+**Single Unified Chat Interface** - Handles everything from general questions to list creation to resource management, for any domain.
 
 **Key Flows:**
 1. **Simple Requests** → Direct response or creation (0.5-1s)
-2. **Complex Requests** → Ask clarifying questions first (1-2s to show form) → Generate items for sublists using ItemGenerationService (10-15s)
+   - Examples: Quick grocery list, simple task list
+2. **Complex Requests** → Ask clarifying questions first (1-2s to show form) → Generate context-appropriate items for subdivisions (10-15s)
+   - LLM intelligently detects best subdivision type (locations, books, modules, phases, topics, etc.)
+   - ItemGenerationService generates items specific to each subdivision
+   - Examples: Roadshow with locations, reading list with books, course with modules
 3. **Commands** → Synchronous processing (0.5s)
 4. **Navigation** → Route to page (0.3s)
 5. **Resource Creation** → Collect missing parameters → Create
 
-**NEW (2026-03-21):** Complex requests with subdivisions (locations, phases, etc.) now use `ItemGenerationService` to intelligently generate location/phase-specific items. See [ITEM_GENERATION.md](ITEM_GENERATION.md) for details.
+**Key Innovation (2026-03-21):** Subdivision detection and item generation are fully generic. The system uses LLM to determine the best way to organize ANY list, then generates appropriate items. See [ITEM_GENERATION.md](ITEM_GENERATION.md) for details.
 
 ---
 

@@ -36,12 +36,16 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 - Pundit policies: always `authorize @resource`
 - See: [AUTHENTICATION.md](docs/AUTHENTICATION.md)
 
-**AI Chat & List Creation**
+**AI Chat & List Creation** (Fully Domain-Agnostic)
 - Unified chat interface for natural language list creation and management
 - **Chat context system** for semantic state persistence across chat messages
 - LLM-powered intent detection, complexity analysis, and pre-creation planning
-- Domain-aware item generation: Automatically detects planning type (event, project, travel, learning, personal) and generates appropriate parent items and subdivision items
-- Generic `ItemGenerationService` replaces hardcoded methods: Generates items for ANY list type and ANY subdivision strategy
+- **Truly Generic & Domain-Agnostic**: Works with ANY list type (events, projects, reading lists, courses, recipes, travel, learning, personal, etc.)
+  - Does NOT hardcode specific domains: tests may use events/vacations repeatedly, but system works equally well for any domain
+  - `ParameterMapperService` uses LLM to intelligently detect subdivision strategies from user input
+  - `HierarchicalItemGenerator` creates subdivisions based on detected strategy (locations, books, modules, topics, phases, etc.)
+  - Parent items generated dynamically based on planning domain and request context
+  - `ItemGenerationService` generates context-appropriate items for any subdivision type
 - Real-time UI feedback: State indicator, progress tracking, list preview, success confirmation
 - Built-in security: Prompt injection detection, content moderation
 - **Documentation:** [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) (consolidated reference), [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
@@ -180,12 +184,15 @@ bundle exec brakeman         # Security
 
 ## Detailed Docs
 
+**Architecture & Design Principles** (START HERE)
+- [ARCHITECTURE_GENERIC_DESIGN.md](docs/ARCHITECTURE_GENERIC_DESIGN.md) - **Critical**: Explains how the system is domain-agnostic and works for ANY list type. Required reading for contributors.
+
 **Chat Context System** (Consolidated reference)
 - [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) - Complete system overview: architecture, services, integration, UI components, testing & migration
 
 **Chat System** (Integration with chat flow)
 - [CHAT_FLOW.md](docs/CHAT_FLOW.md) - Complete message flow & state machine
-- [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md) - Simple/complex/nested list handling
+- [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md) - Simple/complex/nested list handling (domain-agnostic)
 - [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md) - Model selection strategy
 - [CHAT_FEATURES.md](docs/CHAT_FEATURES.md) - How to add features
 

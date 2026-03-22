@@ -2,6 +2,8 @@
 
 Listopia's unified chat system automatically detects request complexity and routes to the appropriate flow.
 
+**Important:** All request types are **domain-agnostic**. The system handles ANY type of planning request (events, courses, recipes, projects, learning journeys, etc.) using the same intelligent detection and generation logic. Test examples may emphasize events/travel, but the architecture is fully generic.
+
 ---
 
 ## Quick Reference

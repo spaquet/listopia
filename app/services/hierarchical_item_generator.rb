@@ -51,104 +51,39 @@ class HierarchicalItemGenerator < ApplicationService
 
   def generate_subdivisions(subdivision_type)
     subdivisions = {}
+    return {} if subdivision_type == "none"
 
-    case subdivision_type
-    when "locations"
-      subdivisions = generate_location_subdivisions
-    when "phases"
-      subdivisions = generate_phase_subdivisions
-    when "teams"
-      subdivisions = generate_team_subdivisions
-    when "none"
-      subdivisions = {}
-    end
+    # Generic subdivision generation based on detected type and parameter key
+    subdivision_key = @parameters[:subdivision_key] || subdivision_type
+    subdivision_data = @parameters[subdivision_key.to_sym] || @parameters[subdivision_key]
 
-    subdivisions
-  end
+    return {} unless subdivision_data.present?
 
-  def generate_location_subdivisions
-    locations = @parameters[:locations] || []
-    subdivisions = {}
+    # Handle both array and non-array subdivision data
+    items_to_subdivide = subdivision_data.is_a?(Array) ? subdivision_data : [subdivision_data]
 
-    locations.each do |location|
-      subdivisions[location] = {
-        title: location,
-        items: generate_location_items(location),
-        type: "location_sublist"
+    items_to_subdivide.each do |item|
+      item_title = item.is_a?(Hash) ? (item[:title] || item["title"] || item.to_s) : item.to_s
+
+      subdivisions[item_title] = {
+        title: item_title,
+        items: generate_sublist_items(item_title, subdivision_type),
+        type: "#{subdivision_type}_sublist"
       }
     end
 
     subdivisions
-  end
+end
 
-  def generate_location_items(location)
-    # Use ItemGenerationService to generate location-specific items
+  def generate_sublist_items(subdivision_title, subdivision_type)
+    # Use ItemGenerationService to generate items specific to this subdivision
     service = ItemGenerationService.new(
       list_title: @planning_context.request_content,
-      description: build_item_context,
+      description: build_item_context(subdivision_type),
       category: @parameters[:category] || "professional",
       planning_context: @planning_context,
-      sublist_title: location
-    )
-
-    result = service.call
-    result.success? ? result.data[:items] : []
-  end
-
-  def generate_phase_subdivisions
-    timeline = @parameters[:timeline] || ""
-    phase_count = infer_phase_count(timeline)
-    subdivisions = {}
-
-    phase_names = generate_phase_names(phase_count)
-    phase_names.each_with_index do |phase_name, index|
-      subdivisions[phase_name] = {
-        title: phase_name,
-        items: generate_phase_items(phase_name, index + 1, phase_count),
-        type: "phase_sublist",
-        sequence: index + 1
-      }
-    end
-
-    subdivisions
-  end
-
-  def generate_phase_items(phase_name, phase_num, total_phases)
-    service = ItemGenerationService.new(
-      list_title: @planning_context.request_content,
-      description: "Phase #{phase_num} of #{total_phases}: #{build_item_context}",
-      category: @parameters[:category] || "professional",
-      planning_context: @planning_context,
-      sublist_title: phase_name
-    )
-
-    result = service.call
-    result.success? ? result.data[:items] : []
-  end
-
-  def generate_team_subdivisions
-    team_count = (@parameters[:team_size] || 2).to_i
-    subdivisions = {}
-
-    team_count.times do |i|
-      team_name = "Team #{i + 1}"
-      subdivisions[team_name] = {
-        title: team_name,
-        items: generate_team_items(team_name),
-        type: "team_sublist"
-      }
-    end
-
-    subdivisions
-  end
-
-  def generate_team_items(team_name)
-    service = ItemGenerationService.new(
-      list_title: @planning_context.request_content,
-      description: "#{team_name}: #{build_item_context}",
-      category: @parameters[:category] || "professional",
-      planning_context: @planning_context,
-      sublist_title: team_name
+      sublist_title: subdivision_title,
+      subdivision_type: subdivision_type
     )
 
     result = service.call
@@ -156,30 +91,17 @@ class HierarchicalItemGenerator < ApplicationService
   end
 
   def generate_relationships
-    # Track parent-child relationships for database storage
+    # Track parent-child relationships for database storage (generic for any subdivision type)
     relationships = []
+    subdivision_type = @parameters[:subdivision_type] || "none"
 
-    # Location relationships
-    if @parameters[:locations].present?
-      @parameters[:locations].each do |location|
+    if subdivision_type != "none" && @parameters[:subdivision_count].to_i > 0
+      @parameters[:subdivision_count].to_i.times do |i|
         relationships << {
           parent_type: "main_list",
-          child_type: "location_sublist",
+          child_type: "#{subdivision_type}_sublist",
           relationship_type: "subdivision",
-          metadata: { location: location }
-        }
-      end
-    end
-
-    # Phase relationships
-    if @parameters[:timeline].present?
-      phase_count = infer_phase_count(@parameters[:timeline])
-      phase_count.times do |i|
-        relationships << {
-          parent_type: "main_list",
-          child_type: "phase_sublist",
-          relationship_type: "subdivision",
-          metadata: { phase_num: i + 1, total_phases: phase_count }
+          metadata: { subdivision_index: i + 1, total_subdivisions: @parameters[:subdivision_count] }
         }
       end
     end
@@ -187,46 +109,12 @@ class HierarchicalItemGenerator < ApplicationService
     relationships
   end
 
-  def generate_phase_names(count)
-    case count
-    when 1
-      [ "Initial" ]
-    when 2
-      [ "Phase 1: Planning", "Phase 2: Execution" ]
-    when 3
-      [ "Phase 1: Planning", "Phase 2: Development", "Phase 3: Completion" ]
-    when 4
-      [ "Phase 1: Planning", "Phase 2: Development", "Phase 3: Testing", "Phase 4: Launch" ]
-    else
-      (1..count).map { |i| "Phase #{i}" }
-    end
-  end
-
-  def infer_phase_count(timeline)
-    timeline = timeline.to_s.downcase
-
-    case timeline
-    when /week/
-      1
-    when /month/
-      4
-    when /quarter|3.month/
-      3
-    when /year|6.month/
-      4
-    when /\d+\s*(?:week|month|day)/
-      match = timeline.match(/(\d+)\s*(?:week|month|day)/)
-      match[1].to_i if match
-    else
-      2
-    end
-  end
-
-  def build_item_context
+  def build_item_context(subdivision_type = nil)
     context_parts = []
     context_parts << "Budget: #{@parameters[:budget]}" if @parameters[:budget].present?
     context_parts << "Timeline: #{@parameters[:timeline]}" if @parameters[:timeline].present?
     context_parts << "Domain: #{@planning_context.planning_domain}" if @planning_context.planning_domain.present?
+    context_parts << "Subdivision: #{subdivision_type}" if subdivision_type.present?
 
     context_parts.join(" | ")
   end
