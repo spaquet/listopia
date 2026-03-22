@@ -61,7 +61,8 @@ class HierarchicalItemGenerator < ApplicationService
     ]
 
     subdivision_sources.each do |param_key, label_singular|
-      data = @parameters[param_key]
+      # Access with both symbol and string keys (parameters may come from JSON with string keys)
+      data = @parameters[param_key] || @parameters[param_key.to_s]
 
       if data.present? && data.is_a?(Array) && data.length > 0
         # Found array data - create subdivisions from it
@@ -89,7 +90,7 @@ class HierarchicalItemGenerator < ApplicationService
     service = ItemGenerationService.new(
       list_title: @planning_context.request_content,
       description: build_item_context(subdivision_type),
-      category: @parameters[:category] || "professional",
+      category: (@parameters[:category] || @parameters["category"] || "professional"),
       planning_context: @planning_context,
       sublist_title: subdivision_title,
       subdivision_type: subdivision_type
@@ -109,8 +110,11 @@ class HierarchicalItemGenerator < ApplicationService
 
   def build_item_context(subdivision_type = nil)
     context_parts = []
-    context_parts << "Budget: #{@parameters[:budget]}" if @parameters[:budget].present?
-    context_parts << "Timeline: #{@parameters[:timeline]}" if @parameters[:timeline].present?
+    budget = @parameters[:budget] || @parameters["budget"]
+    timeline = @parameters[:timeline] || @parameters["timeline"]
+
+    context_parts << "Budget: #{budget}" if budget.present?
+    context_parts << "Timeline: #{timeline}" if timeline.present?
     context_parts << "Domain: #{@planning_context.planning_domain}" if @planning_context.planning_domain.present?
     context_parts << "Subdivision: #{subdivision_type}" if subdivision_type.present?
 
