@@ -56,6 +56,7 @@ class ChatContext
     base_suggestions = [
       { command: "/search", description: "Find your lists" },
       { command: "/browse", description: "Browse available lists" },
+      { command: "/clear", description: "Clear planning context" },
       { command: "/help", description: "See all commands" }
     ]
 
