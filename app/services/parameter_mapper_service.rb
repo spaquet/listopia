@@ -180,7 +180,13 @@ class ParameterMapperService < ApplicationService
       when Hash
         response["content"] || response[:content] || response.to_s
       else
-        response&.content&.text || response.to_s
+        # Handle RubyLLM::Message object
+        content = response&.content
+        if content.is_a?(String)
+          content
+        else
+          content&.text || response.to_s
+        end
       end
     rescue StandardError => e
       Rails.logger.error("detect_via_llm error: #{e.class} - #{e.message}")

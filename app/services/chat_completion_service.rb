@@ -1980,8 +1980,11 @@ class ChatCompletionService < ApplicationService
       html = ApplicationController.render(
         partial: "message_templates/item_generation_progress",
         locals: {
-          subdivisions: subdivisions,
-          total: subdivisions.length
+          data: {
+            subdivisions: subdivisions,
+            current_index: 0,
+            total: subdivisions.length
+          }
         }
       )
 
