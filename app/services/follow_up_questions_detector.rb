@@ -34,8 +34,9 @@ class FollowUpQuestionsDetector < ApplicationService
     # "Tell me..." / "What's your..."
     # Bullet points with question marks
 
-    # Find "Next steps" or similar section
-    next_steps_match = text.match(/next steps.*?(?:\n\n|\Z)/im)
+    # Find "Next steps" or "Next step" or similar section (case-insensitive)
+    # Match from "Next steps" or "Next step" until double newline or end of string
+    next_steps_match = text.match(/next steps?.*?(?:\n\n|\Z)/im)
     return [] unless next_steps_match
 
     next_steps_section = next_steps_match[0]
@@ -45,14 +46,15 @@ class FollowUpQuestionsDetector < ApplicationService
 
     lines.each do |line|
       # Skip section headers and explanatory text
-      next if line.downcase.start_with?("next steps")
+      next if line.downcase.start_with?("next step")
       next if line.downcase.start_with?("tell me")
+      next if line.downcase.start_with?("here")
       next if line.length < 5
 
       # Look for lines that are questions (end with ?)
       if line.end_with?("?")
-        # Remove bullet points and parentheses
-        question_text = line.gsub(/^[-•*]\s*/, "").strip
+        # Remove bullet points and numbering (-, •, *, 1., 2., etc.)
+        question_text = line.gsub(/^[-•*\d+\.]\s*/, "").strip
 
         question_object = {
           question: question_text,
@@ -62,8 +64,12 @@ class FollowUpQuestionsDetector < ApplicationService
 
         # Add context if it's parenthetical
         if question_text.include?("(") && question_text.include?(")")
-          context = question_text.match(/\((.*?)\)/)[1]
-          question_object[:context] = context
+          begin
+            context = question_text.match(/\((.*?)\)/)[1]
+            question_object[:context] = context
+          rescue
+            # Ignore if regex fails
+          end
         end
 
         questions << question_object

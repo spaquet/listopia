@@ -933,6 +933,18 @@ class ChatCompletionService < ApplicationService
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
 
+      FORMATTING FOLLOW-UP QUESTIONS:
+      ============================
+      When you need to ask clarifying questions to better help the user, ALWAYS format them as:
+
+      Next steps (to refine my recommendation):
+      - Question 1?
+      - Question 2?
+      - Question 3?
+
+      This format ensures questions are automatically converted to an interactive form instead of plain text.
+      Never ask questions inline - always use the "Next steps" section format above.
+
       CREATING STRUCTURED PLANS - INTELLIGENT INSTRUCTION:
       ====================================================
       WHEN USER ASKS FOR A PLAN, LEARNING PATH, ITINERARY, ROADMAP, OR STRUCTURED APPROACH:
