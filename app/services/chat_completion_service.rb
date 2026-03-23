@@ -1111,18 +1111,17 @@ class ChatCompletionService < ApplicationService
       # For simple lists, mark as completed (after list is created)
       planning_context.update!(state: :completed)
 
-      # Create confirmation message
+      # Broadcast the same polished confirmation as complex lists
       list = list_result.data[:list]
-      confirmation_message = Message.create(
-        chat: @chat,
-        user: @context.user,
-        organization: @context.organization,
-        role: :assistant,
-        content: "✨ Perfect! I've created your list \"#{list.title}\" with #{list.list_items.count} items ready to go. You can start organizing and checking off items right away!"
-      )
+      broadcast_list_created_confirmation(list, planning_context)
 
-      Rails.logger.info("ChatCompletionService - Simple list created successfully")
-      success(data: confirmation_message)
+      Rails.logger.info("ChatCompletionService - Simple list created successfully: #{list.id} with #{list.list_items.count} items")
+
+      # Show context management buttons (keep or clear) for next task
+      show_context_management_buttons(planning_context)
+
+      # Return success with the list
+      success(data: { list: list, planning_context: planning_context })
     rescue StandardError => e
       Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
