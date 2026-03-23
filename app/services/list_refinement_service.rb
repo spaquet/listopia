@@ -136,6 +136,9 @@ class ListRefinementService < ApplicationService
 
       ⚠️ CRITICAL CONTEXT - READ THIS FIRST ⚠️
 
+      User's Original Message:
+      "#{extract_user_message}"
+
       User's Planning Request:
       - Category: #{category_value} ← THIS DETERMINES WHICH QUESTIONS TO ASK
       - Domain: #{domain_value}
@@ -144,7 +147,8 @@ class ListRefinementService < ApplicationService
 
       YOUR TASK: Generate EXACTLY 3 ESSENTIAL clarifying questions that match the category ABOVE.
 
-      ⚠️ IMPORTANT: This request is classified as #{category_value.downcase} in the #{domain_value} domain. ⚠️
+      ⚠️ IMPORTANT: DO NOT ask about information already provided in the user's message above. ⚠️
+      ⚠️ This request is classified as #{category_value.downcase} in the #{domain_value} domain. ⚠️
 
       ==========================================
       📊 PROFESSIONAL CATEGORY QUESTIONS:
@@ -245,6 +249,19 @@ class ListRefinementService < ApplicationService
       refinement_stage: "awaiting_answers",
       created_at: Time.current
     }
+  end
+
+  # Extract the original user message from the chat context
+  def extract_user_message
+    return "No context available" unless @context&.chat.present?
+
+    # Get the last user message from the chat
+    last_user_message = @context.chat.messages
+      .where(role: "user")
+      .order(created_at: :desc)
+      .first
+
+    return last_user_message&.content || "Unable to retrieve original message"
   end
 
   # Extract response content from LLM

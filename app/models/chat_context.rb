@@ -1,197 +1,239 @@
 # app/models/chat_context.rb
-#
-# ChatContext provides context-aware information for the unified chat system.
-# It adapts message rendering, suggestions, and behavior based on where the chat
-# appears (dashboard, floating, inline) and what the user is currently viewing.
+# Persistent conversation context that tracks planning journey and enables crash recovery
+# Replaces both the shallow chat.metadata states and the old PlanningContext model
+# Provides single source of truth for multi-step list creation workflows
 
-class ChatContext
-  attr_reader :user, :organization, :chat, :location, :focused_resource
+class ChatContext < ApplicationRecord
+  # Associations
+  belongs_to :user
+  belongs_to :chat
+  belongs_to :organization
+  has_many :planning_relationships, dependent: :destroy
+  has_one :created_list, class_name: "List", foreign_key: "chat_context_id", required: false
 
-  # Context locations where chat can appear
-  LOCATIONS = {
-    dashboard: "dashboard",        # Main dashboard view
-    floating: "floating",          # Floating chat button
-    list_detail: "list_detail",    # Viewing a specific list
-    team_view: "team_view"         # Viewing team details
-  }.freeze
+  # Validations
+  validates :user_id, :chat_id, :organization_id, presence: true
+  validates :chat_id, uniqueness: true
+  validates :state, presence: true, inclusion: { in: %w[initial pre_creation resource_creation completed] }
+  validates :status, presence: true, inclusion: { in: %w[pending analyzing awaiting_user_input processing complete error] }
 
-  def initialize(chat:, user:, organization:, location: :dashboard, focused_resource: nil)
-    @chat = chat
-    @user = user
-    @organization = organization
-    @location = location.to_sym
-    @focused_resource = focused_resource
+  # Enums
+  enum :state, {
+    initial: "initial",
+    pre_creation: "pre_creation",
+    resource_creation: "resource_creation",
+    completed: "completed"
+  }
 
-    validate_context!
+  enum :status, {
+    pending: "pending",
+    analyzing: "analyzing",
+    awaiting_user_input: "awaiting_user_input",
+    processing: "processing",
+    complete: "complete",
+    error: "error"
+  }
+
+  # Scopes
+  scope :by_user, ->(user) { where(user_id: user.id) }
+  scope :by_organization, ->(org) { where(organization_id: org.id) }
+  scope :active, -> { where.not(state: :completed) }
+  scope :in_post_creation_mode, -> { where(post_creation_mode: true) }
+  scope :recently_created, -> { order(created_at: :desc) }
+
+  # ===== Public Instance Methods =====
+
+  # State check helpers
+  def simple?
+    complexity_level == "simple"
   end
 
-  # String representation for templates
-  def to_s
-    "ChatContext(#{location}, #{focused_resource_name})"
+  def complex?
+    complexity_level == "complex"
   end
 
-  # Check if chat is in specific location
-  def in_location?(*locations)
-    locations.map(&:to_sym).include?(location)
+  def awaiting_answers?
+    state == "pre_creation" && pre_creation_answers.blank?
   end
 
-  # Get focused resource name for UI display
-  def focused_resource_name
-    return "Lists" unless focused_resource.present?
-
-    case focused_resource
-    when List
-      "List: #{focused_resource.title}"
-    when Team
-      "Team: #{focused_resource.name}"
-    when Organization
-      "Organization: #{focused_resource.name}"
-    else
-      focused_resource.class.name
-    end
+  def has_unanswered_questions?
+    pre_creation_questions.present? && pre_creation_answers.blank?
   end
 
-  # Get context-aware suggestions based on location and focused resource
-  def suggestions
-    base_suggestions = [
-      { command: "/search", description: "Find your lists" },
-      { command: "/browse", description: "Browse available lists" },
-      { command: "/clear", description: "Clear planning context" },
-      { command: "/help", description: "See all commands" }
-    ]
-
-    return base_suggestions unless focused_resource.present?
-
-    # Add resource-specific suggestions
-    case focused_resource
-    when List
-      base_suggestions.concat([
-        { command: "/items", description: "Show items in this list" },
-        { command: "/info", description: "Get list details" },
-        { command: "/share", description: "Share this list" }
-      ])
-    when Team
-      base_suggestions.concat([
-        { command: "/members", description: "Show team members" },
-        { command: "/lists", description: "Show team lists" }
-      ])
-    end
-
-    base_suggestions
+  def list_created?
+    list_created_id.present?
   end
 
-  # Get UI configuration based on location
-  def ui_config
-    case location
-    when :dashboard
-      {
-        show_sidebar: true,
-        sidebar_width: "lg:w-1/3",
-        chat_height: "h-[600px]",
-        position: "static",
-        show_new_chat_button: true,
-        show_history: true,
-        responsive: "grid-cols-1 lg:grid-cols-3"
-      }
-    when :floating
-      {
-        show_sidebar: false,
-        sidebar_width: nil,
-        chat_height: "h-96",
-        position: "static",
-        show_new_chat_button: false,
-        show_history: false,
-        responsive: "w-96 max-w-[90vw]"
-      }
-    when :list_detail
-      {
-        show_sidebar: false,
-        sidebar_width: nil,
-        chat_height: "h-[400px]",
-        position: "static",
-        show_new_chat_button: true,
-        show_history: false,
-        responsive: "w-full"
-      }
-    when :team_view
-      {
-        show_sidebar: false,
-        sidebar_width: nil,
-        chat_height: "h-[400px]",
-        position: "static",
-        show_new_chat_button: true,
-        show_history: false,
-        responsive: "w-full"
-      }
-    else
-      {
-        show_sidebar: true,
-        sidebar_width: "lg:w-1/3",
-        chat_height: "h-96",
-        position: "static",
-        show_new_chat_button: true,
-        show_history: true,
-        responsive: "w-full"
-      }
-    end
+  # State transitions
+  def mark_analyzing!
+    update!(status: :analyzing)
+    touch_activity!
   end
 
-  # Check if user has access to focused resource
-  def can_access_focused_resource?
-    return true unless focused_resource.present?
-
-    case focused_resource
-    when List
-      user.lists.include?(focused_resource) ||
-        focused_resource.list_collaborations.exists?(user: user)
-    when Team
-      user.teams.exists?(organization: organization) &&
-        organization.teams.include?(focused_resource)
-    when Organization
-      user.in_organization?(organization)
-    else
-      false
-    end
+  def mark_awaiting_answers!
+    transition_to(:pre_creation)
+    update!(status: :awaiting_user_input)
+    touch_activity!
   end
 
-  # Get RAG context if resource is List
-  def rag_context
-    return {} unless focused_resource.is_a?(List)
-
-    {
-      resource_type: "List",
-      resource_id: focused_resource.id,
-      resource_title: focused_resource.title,
-      item_count: focused_resource.list_items.count,
-      collaborator_count: focused_resource.collaborators.count
-    }
+  def mark_processing!
+    update!(status: :processing)
+    touch_activity!
   end
 
-  # Build system prompt based on context
-  def system_prompt
-    base_prompt = "You are an AI assistant for Listopia, a collaborative list management application. " \
-                  "You help users organize their tasks, collaborate with teams, and find information efficiently."
-
-    return base_prompt unless focused_resource.present?
-
-    case focused_resource
-    when List
-      base_prompt + " The user is currently viewing the list '#{focused_resource.title}'. " \
-                    "You can help them manage items, share the list, or search related content."
-    when Team
-      base_prompt + " The user is viewing the team '#{focused_resource.name}'. " \
-                    "You can help them find team members, list team resources, or manage team activities."
-    else
-      base_prompt
-    end
+  def mark_complete!
+    transition_to(:completed)
+    update!(status: :complete)
+    touch_activity!
   end
+
+  def mark_error!(message)
+    update!(status: :error, error_message: message)
+    touch_activity!
+  end
+
+  def transition_to(new_state)
+    update!(state: new_state)
+    touch_activity!
+  end
+
+  # Answer tracking
+  def record_answers(answers_hash)
+    update!(pre_creation_answers: answers_hash, state: :pre_creation)
+    touch_activity!
+  end
+
+  def get_answer(question_id)
+    pre_creation_answers[question_id.to_s] || pre_creation_answers[question_id.to_sym]
+  end
+
+  # Questions management
+  def has_questions?
+    pre_creation_questions.present? && pre_creation_questions.any?
+  end
+
+  def questions_count
+    pre_creation_questions&.length || 0
+  end
+
+  def questions_answered_count
+    return 0 if pre_creation_answers.blank?
+    pre_creation_answers.values.count { |v| v.present? }
+  end
+
+  def all_questions_answered?
+    return false if !has_questions?
+    questions_answered_count == questions_count
+  end
+
+  # Parameters
+  def get_parameter(key)
+    parameters[key.to_s] || parameters[key.to_sym]
+  end
+
+  def add_parameters(new_params)
+    merged = (parameters || {}).merge(new_params.stringify_keys)
+    update!(parameters: merged)
+    touch_activity!
+  end
+
+  def missing_parameter?(key)
+    missing_parameters.include?(key.to_s)
+  end
+
+  # Items
+  def has_generated_items?
+    generated_items.present? && generated_items.any?
+  end
+
+  def has_hierarchical_items?
+    hierarchical_items.present? && hierarchical_items.values.any?
+  end
+
+  def parent_items
+    hierarchical_items.dig("parent_items") || []
+  end
+
+  def child_items_by_subdivision
+    hierarchical_items.dig("subdivisions") || {}
+  end
+
+  def relationships_map
+    hierarchical_items.dig("relationships") || []
+  end
+
+  # Relationship tracking
+  def add_relationship(parent_type, child_type, relationship_type, metadata = {})
+    planning_relationships.create!(
+      parent_type: parent_type,
+      child_type: child_type,
+      relationship_type: relationship_type,
+      metadata: metadata
+    )
+    touch_activity!
+  end
+
+  def get_relationships_for_type(type, relationship_type = nil)
+    query = planning_relationships.where(parent_type: type)
+    query = query.where(relationship_type: relationship_type) if relationship_type.present?
+    query
+  end
+
+  # Metadata helpers
+  def set_metadata(key, value)
+    current_metadata = metadata || {}
+    current_metadata[key] = value
+    update!(metadata: current_metadata)
+    touch_activity!
+  end
+
+  def get_metadata(key)
+    metadata&.dig(key)
+  end
+
+  def thinking_tokens
+    metadata&.dig("thinking_tokens")
+  end
+
+  def generation_time_ms
+    metadata&.dig("generation_time_ms")
+  end
+
+  # Activity tracking for crash recovery
+  def touch_activity!
+    update_column(:last_activity_at, Time.current)
+  end
+
+  # Save checkpoint for crash recovery
+  def save_recovery_checkpoint!(state_data)
+    update!(recovery_checkpoint: state_data)
+    touch_activity!
+  end
+
+  # Get checkpoint for recovery after disconnect
+  def load_recovery_checkpoint
+    recovery_checkpoint || {}
+  end
+
+  # ===== Callbacks =====
+
+  before_validation :set_defaults
+
+  # ===== Private Methods =====
 
   private
 
-  def validate_context!
-    raise ArgumentError, "Invalid location: #{location}" unless LOCATIONS.values.include?(location.to_s)
-    raise ArgumentError, "User must be present" unless user.present?
-    raise ArgumentError, "Organization must be present" unless organization.present?
-    raise ArgumentError, "Chat must be present" unless chat.present?
+  def set_defaults
+    self.state ||= "initial"
+    self.status ||= "pending"
+    self.parameters ||= {}
+    self.metadata ||= {}
+    self.pre_creation_questions ||= []
+    self.pre_creation_answers ||= {}
+    self.generated_items ||= []
+    self.hierarchical_items ||= {}
+    self.missing_parameters ||= []
+    self.recovery_checkpoint ||= {}
+    self.last_activity_at ||= Time.current
   end
 end

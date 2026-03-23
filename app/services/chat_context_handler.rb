@@ -2,7 +2,7 @@
 # Orchestrates the complete planning context lifecycle
 # Coordinates detector, analyzer, and generator services
 
-class PlanningContextHandler < ApplicationService
+class ChatContextHandler < ApplicationService
   def initialize(user_message, chat, user, organization)
     @user_message = user_message
     @chat = chat
@@ -47,7 +47,7 @@ class PlanningContextHandler < ApplicationService
         next_step: "pre_creation_planning"
       })
     rescue StandardError => e
-      Rails.logger.error("PlanningContextHandler error: #{e.class} - #{e.message}")
+      Rails.logger.error("ChatContextHandler error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
   end
@@ -70,7 +70,7 @@ class PlanningContextHandler < ApplicationService
       # Step 3: Generate hierarchical items
       generate_items_for_context(planning_context)
     rescue StandardError => e
-      Rails.logger.error("PlanningContextHandler#process_answers error: #{e.class} - #{e.message}")
+      Rails.logger.error("ChatContextHandler#process_answers error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
   end
@@ -102,7 +102,7 @@ class PlanningContextHandler < ApplicationService
         ready_for_list_creation: analysis[:is_complete]
       })
     rescue StandardError => e
-      Rails.logger.error("PlanningContextHandler#generate_items_for_context error: #{e.class} - #{e.message}")
+      Rails.logger.error("ChatContextHandler#generate_items_for_context error: #{e.class} - #{e.message}")
       planning_context.mark_error!(e.message) if planning_context
       failure(errors: [ e.message ])
     end

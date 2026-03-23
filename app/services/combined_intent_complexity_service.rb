@@ -5,7 +5,7 @@
 #
 # Combines:
 # 1. AiIntentRouterService - determine intent
-# 2. ListComplexityDetectorService - detect if list is complex
+# 2. Complexity detection - check if list is complex (uses LLM criteria)
 # 3. ParameterExtractionService - extract parameters
 #
 # All in one efficient LLM call
@@ -92,8 +92,17 @@ class CombinedIntentComplexityService < ApplicationService
       NOT COMPLEX = sufficient or context-dependent:
       ✗ "grocery list" → user knows what to buy
       ✗ "mac update tasks" → can infer from system
-      ✗ "reading list to be better manager" → sufficient scope
+      ✗ "reading list to be better manager" → sufficient scope (even "5 books to become better manager" is clear)
       ✗ "daily todo" → clear scope
+      ✗ "I need 3 books about marketing" → quantity explicit, scope clear
+
+      MISSING FIELDS RULES:
+      Only mark as MISSING if the user did NOT provide it:
+      ✗ "I need 5 books" → NOT missing: quantity is "5"
+      ✗ "Give me 3 recipes" → NOT missing: quantity is "3"
+      ✗ "Plan 4 weekly meetings" → NOT missing: quantity is "4"
+      ✓ "Create a list" → MISSING: title/purpose not clear
+      ✓ "Plan a roadshow" → MISSING: cities, dates, budget (not explicitly stated)
 
       User: "#{@user_message.content}"
     PROMPT

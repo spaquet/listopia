@@ -62,7 +62,7 @@ class Chat < ApplicationRecord
   belongs_to :focused_resource, polymorphic: true, optional: true
 
   has_many :messages, dependent: :destroy
-  has_one :planning_context, dependent: :destroy
+  has_one :chat_context, dependent: :destroy
 
   store :metadata, accessors: [ :rag_enabled, :model, :system_prompt ], coder: JSON
 
@@ -125,9 +125,9 @@ class Chat < ApplicationRecord
     focused_resource.present?
   end
 
-  # Get chat context object
-  def build_context(location: :dashboard)
-    ChatContext.new(
+  # Get chat UI context object (location-specific configuration)
+  def build_ui_context(location: :dashboard)
+    ChatUIContext.new(
       chat: self,
       user: user,
       organization: organization,

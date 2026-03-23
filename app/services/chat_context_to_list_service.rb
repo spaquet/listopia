@@ -2,7 +2,7 @@
 # Converts a completed PlanningContext into an actual List with items and sublists
 # Final step of the planning journey: context → structure → actual resources
 
-class PlanningContextToListService < ApplicationService
+class ChatContextToListService < ApplicationService
   def initialize(planning_context, user, organization)
     @planning_context = planning_context
     @user = user
@@ -42,7 +42,7 @@ class PlanningContextToListService < ApplicationService
         sublists_count: list.sub_lists.count
       })
     rescue StandardError => e
-      Rails.logger.error("PlanningContextToListService error: #{e.class} - #{e.message}")
+      Rails.logger.error("ChatContextToListService error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
   end

@@ -373,7 +373,19 @@ class ChatsController < ApplicationController
   end
 
   def handle_clear_command
+    # Clear all messages
     @chat.messages.destroy_all
+
+    # Clear planning context (if any exists)
+    @chat.planning_context&.destroy
+
+    # Reset chat metadata to clear any pending states
+    @chat.update!(
+      metadata: {},
+      focused_resource_id: nil,
+      focused_resource_type: nil
+    )
+
     Message.create_system(chat: @chat, content: "Chat history cleared.")
   end
 
