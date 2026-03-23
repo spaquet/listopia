@@ -376,8 +376,8 @@ class ChatsController < ApplicationController
     # Clear all messages
     @chat.messages.destroy_all
 
-    # Clear planning context (if any exists)
-    @chat.planning_context&.destroy
+    # Clear chat context (if any exists)
+    @chat.chat_context&.destroy
 
     # Reset chat metadata to clear any pending states
     @chat.update!(
