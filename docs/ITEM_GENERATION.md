@@ -58,23 +58,19 @@ Sublists created with phase-appropriate tasks
 ### Call Flow
 
 ```ruby
-# In ChatCompletionService#enrich_list_structure_with_planning
+# In ChatCompletionService#handle_pre_creation_planning_response or ChatContextToListService
 result = ItemGenerationService.new(
   list_title: "roadshow for Listopia",
   description: "Budget: $500k | Timeline: June-Sept",
   category: "professional",
-  planning_context: {
-    locations: ["New York", "Los Angeles", ...],
-    budget: "$500000",
-    timeline: "June 2026 to September 2026",
-    ...
-  },
-  sublist_title: "New York"  # Optional
+  planning_context: chat_context.parameters,  # Extracted from user answers
+  sublist_title: "New York"  # For each subdivision
 ).call
 
 # Result is a service Result object
 if result.success?
   items = result.data  # Array of item hashes with title, description, type, priority
+  # Items stored in chat_context.generated_items for each subdivision
 end
 ```
 
@@ -248,13 +244,19 @@ The service catches and handles:
 ## Integration Points
 
 ### Called From
-`ChatCompletionService#enrich_list_structure_with_planning` when creating nested lists for:
+`ChatCompletionService` or `ChatContextToListService` when creating nested lists with subdivisions:
 - `:locations` - multi-city events, roadshows
 - `:phases` - phased projects, rollouts
-- `:other` - any custom subdivision
+- `:books` - reading lists, learning paths
+- `:modules`, `:sprints`, `:chapters` - any subdivision type
+
+Specifically called when:
+1. User answers pre-creation planning questions
+2. ChatContext contains hierarchical_items with subdivision_type
+3. For each subdivision, ItemGenerationService generates items
 
 ### Feeds Into
-`ListCreationService#create_list_with_structure` which uses generated items to populate sublists.
+`ListCreationService#create_list_with_structure` or direct List/ListItem creation, which uses generated items to populate sublists.
 
 ## Testing
 
