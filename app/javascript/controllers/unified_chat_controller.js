@@ -136,6 +136,9 @@ export default class extends Controller {
         <button class="block w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm" data-action="click->unified-chat#insertCommand" data-command="/browse">
           <span class="font-mono text-blue-600">/browse</span> - Browse lists
         </button>
+        <button class="block w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm" data-action="click->unified-chat#insertCommand" data-command="/clear">
+          <span class="font-mono text-blue-600">/clear</span> - Clear planning context
+        </button>
         <button class="block w-full text-left px-3 py-2 hover:bg-blue-50 rounded text-sm" data-action="click->unified-chat#insertCommand" data-command="/help">
           <span class="font-mono text-blue-600">/help</span> - Show help
         </button>
