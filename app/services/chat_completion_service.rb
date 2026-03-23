@@ -119,13 +119,17 @@ class ChatCompletionService < ApplicationService
       end
 
       # Create assistant message with the response
+      response_text = response.is_a?(String) ? response : response.to_s
       assistant_message = Message.create_assistant(
         chat: @chat,
-        content: response.is_a?(String) ? response : response.to_s
+        content: response_text
       )
 
       # Update chat with last message time
       @chat.update(last_message_at: Time.current)
+
+      # Check for follow-up questions in the response and display them as a form
+      detect_and_show_follow_up_questions(response_text, @chat)
 
       success(data: assistant_message)
     rescue StandardError => e
@@ -1760,6 +1764,30 @@ class ChatCompletionService < ApplicationService
     rescue StandardError => e
       Rails.logger.error("create_simple_list_from_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
+    end
+  end
+
+  # Detect and display follow-up questions from LLM responses
+  def detect_and_show_follow_up_questions(response_text, chat)
+    begin
+      detector_result = FollowUpQuestionsDetector.new(response_text: response_text).call
+
+      return unless detector_result.success? && detector_result.data[:has_followups]
+
+      questions = detector_result.data[:questions]
+      return if questions.blank?
+
+      Rails.logger.info("ChatCompletionService - Showing #{questions.length} follow-up questions as form")
+
+      # Display questions as interactive form
+      ClarifyingQuestionsService.new(
+        chat: chat,
+        questions: questions,
+        context_title: "Help me refine my recommendation"
+      ).call
+    rescue StandardError => e
+      Rails.logger.error("detect_and_show_follow_up_questions error: #{e.class} - #{e.message}")
+      # Non-blocking - if follow-up detection fails, just continue without it
     end
   end
 end
