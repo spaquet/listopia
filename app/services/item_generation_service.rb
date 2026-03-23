@@ -22,13 +22,15 @@ class ItemGenerationService < ApplicationService
     description: "",
     category: "professional",
     planning_context: {},
-    sublist_title: nil
+    sublist_title: nil,
+    generation_type: "planning"
   )
     @list_title = list_title
     @description = description
     @category = category
     @planning_context = planning_context
     @sublist_title = sublist_title
+    @generation_type = generation_type  # "items" or "planning"
   end
 
   def call
@@ -80,6 +82,75 @@ class ItemGenerationService < ApplicationService
   end
 
   def build_intelligent_prompt
+    case @generation_type
+    when "items"
+      build_items_prompt
+    else
+      build_planning_prompt
+    end
+  end
+
+  def build_items_prompt
+    <<~PROMPT
+      You are an expert item generator. The user is requesting specific items to add to their list.
+      Generate the ACTUAL ITEMS they requested (not steps, not planning, not how-to guides).
+
+      ==== REQUEST ====
+      "#{@list_title}"
+      Category: #{@category}
+      #{@description.present? ? "Context: #{@description}" : ""}
+
+      ==== YOUR TASK ====
+      Generate SPECIFIC, CONCRETE ITEMS that match what the user is asking for.
+
+      CRITICAL: User wants the ITEMS themselves, not steps on how to create/find them:
+      - If they ask for books → Generate actual book titles/ideas they could read
+      - If they ask for recipes → Generate actual recipe names/dishes
+      - If they ask for places → Generate actual location names/ideas
+      - If they ask for tasks → Generate actual tasks to complete
+      - If they ask for courses → Generate actual course names/ideas
+      - For ANYTHING: Generate what they explicitly asked for, not "how to find it"
+
+      #{if @sublist_title.present?
+        "- Focus specifically on items relevant to: #{@sublist_title}"
+        else
+        "- Items should match the purpose and context provided"
+        end}
+      - Each item should be concrete and actionable
+      - Avoid vague or generic items
+      - Consider the category (#{@category}) when generating
+
+      ==== PLANNING CONTEXT ====
+      #{format_planning_context}
+
+      ==== RESPONSE FORMAT (REQUIRED) ====
+      Respond with ONLY a valid JSON array. Each item MUST have:
+      - title: The actual item being requested (concrete, specific)
+      - description: Why this item is good/relevant (1-2 sentences)
+      - type: "task"
+      - priority: "high" | "medium" | "low"
+
+      Example (you will generate similar items for ANY domain):
+      [
+        {
+          "title": "The Effective Manager",
+          "description": "Practical framework for one-on-one meetings and team management fundamentals.",
+          "type": "task",
+          "priority": "high"
+        },
+        {
+          "title": "Radical Candor",
+          "description": "Essential guide to feedback and building trust with your team.",
+          "type": "task",
+          "priority": "high"
+        }
+      ]
+
+      CRITICAL: Return ONLY the JSON array. No markdown, no text before or after.
+    PROMPT
+  end
+
+  def build_planning_prompt
     <<~PROMPT
       You are an intelligent planning assistant with expertise in breaking down complex tasks.
       Analyze the planning request and generate 5-8 specific, actionable items.

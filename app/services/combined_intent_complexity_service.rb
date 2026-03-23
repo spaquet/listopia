@@ -71,6 +71,7 @@ class CombinedIntentComplexityService < ApplicationService
         "complexity_reasoning": "brief explanation",
         "planning_domain": "event|travel|learning|project|business|general",
         "parameters": {"title": "...", "category": "professional|personal"},
+        "generation_type": "items|planning",
         "missing": ["field1", "field2"],
         "confidence": 0.9
       }
@@ -106,11 +107,31 @@ class CombinedIntentComplexityService < ApplicationService
       ✓ "Create a list" → MISSING: title/purpose not clear
       ✓ "Plan a roadshow" → MISSING: cities, dates, budget (not explicitly stated)
 
+      GENERATION TYPE (for simple create_list only):
+      Detect whether user wants ITEMS or PLANNING STEPS:
+
+      ITEMS = user wants the actual things they requested (not steps to find them):
+      ✓ "5 books to become a better manager" → items (user wants 5 book titles)
+      ✓ "grocery list for pasta dinner" → items (user wants grocery items)
+      ✓ "3 recipes for weeknight dinners" → items (user wants recipe names/ideas)
+      ✓ "10 places to visit in Spain" → items (user wants place names)
+      ✓ "mac update tasks" → items (system maintenance tasks)
+
+      PLANNING = user wants steps/tasks on how to accomplish something:
+      ✓ "plan a roadshow across US cities" → planning (steps: choose cities, book venues, etc.)
+      ✓ "organize a product launch" → planning (steps: set timeline, coordinate teams, etc.)
+      ✓ "design an onboarding program" → planning (steps: create modules, schedule training, etc.)
+
+      KEY INDICATOR:
+      - If user explicitly names what they want (books, recipes, places, tasks) → ITEMS
+      - If user names an action/process (plan, organize, design, build, create) → PLANNING
+
       EXAMPLES:
-      - "I'm looking for 5 books to become a better manager" → create_list (learning/reading, not complex)
-      - "Give me a grocery list for pasta dinner" → create_list (personal, not complex)
-      - "What books should I read on AI?" → create_list (asking for a reading list to create)
-      - "How do I use tags?" → general_question (asking for help/explanation)
+      - "I'm looking for 5 books to become a better manager" → create_list, not complex, generation_type: "items"
+      - "Give me a grocery list for pasta dinner" → create_list, not complex, generation_type: "items"
+      - "Plan a roadshow across US cities in June" → create_list, complex, generation_type: "planning"
+      - "What books should I read on AI?" → create_list, not complex, generation_type: "items"
+      - "How do I use tags?" → general_question
       - "Create a user john@example.com" → create_resource
       - "Show me the teams page" → navigate_to_page
 
@@ -140,6 +161,9 @@ class CombinedIntentComplexityService < ApplicationService
         complexity_reasoning: data["complexity_reasoning"],
         planning_domain: data["planning_domain"] || "general",
 
+        # Generation type: whether to generate items or planning steps
+        generation_type: data["generation_type"] || "planning",
+
         # Parameter fields
         parameters: data["parameters"] || {},
         missing: data["missing"] || [],
@@ -163,6 +187,7 @@ class CombinedIntentComplexityService < ApplicationService
       complexity_confidence: "low",
       complexity_reasoning: "Unable to determine complexity",
       planning_domain: "general",
+      generation_type: "planning",
       parameters: {},
       missing: [],
       needs_clarification: false,

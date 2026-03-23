@@ -87,12 +87,15 @@ class HierarchicalItemGenerator < ApplicationService
 
   def generate_sublist_items(subdivision_title, subdivision_type)
     # Use ItemGenerationService to generate items specific to this subdivision
+    # For hierarchical (nested) lists, always use "planning" since these are generated
+    # from complex requests that break down into planning steps for each subdivision
     service = ItemGenerationService.new(
       list_title: @planning_context.request_content,
       description: build_item_context(subdivision_type),
       category: (@parameters[:category] || @parameters["category"] || "professional"),
       planning_context: @parameters,
-      sublist_title: subdivision_title
+      sublist_title: subdivision_title,
+      generation_type: "planning"
     )
 
     result = service.call

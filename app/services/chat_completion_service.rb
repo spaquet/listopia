@@ -1003,8 +1003,8 @@ class ChatCompletionService < ApplicationService
   def get_or_create_planning_context
     return @chat.chat_context if @chat.chat_context.present?
 
-    # Create new planning context using PlanningContextHandler
-    handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+    # Create new planning context using ChatContextHandler
+    handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
     result = handler.call
 
     return nil unless result.success?
@@ -1052,7 +1052,7 @@ class ChatCompletionService < ApplicationService
       # If simple request, generate items and create list immediately
       unless planning_context.is_complex
         Rails.logger.info("ChatCompletionService - Simple list request, generating items and creating list")
-        handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+        handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
         generation_result = handler.generate_items_for_context(planning_context)
         return generation_result unless generation_result.success?
 
@@ -1125,13 +1125,15 @@ class ChatCompletionService < ApplicationService
     list_title = @user_message.content
     category = parameters[:category] || "personal"
     planning_domain = combined_data[:planning_domain] || "personal"
+    generation_type = combined_data[:generation_type] || "planning"
 
     # Generate items using ItemGenerationService
     item_result = ItemGenerationService.new(
       list_title: list_title,
       description: list_title,
       category: category,
-      planning_context: parameters
+      planning_context: parameters,
+      generation_type: generation_type
     ).call
 
     generated_items = item_result.data || []
@@ -1164,7 +1166,7 @@ class ChatCompletionService < ApplicationService
       unless question_result.success?
         Rails.logger.warn("ChatCompletionService - Failed to generate questions, proceeding with immediate creation")
         # Graceful degradation: proceed with item generation
-        handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+        handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
         return handler.generate_items_for_context(planning_context)
       end
 
@@ -1238,23 +1240,18 @@ class ChatCompletionService < ApplicationService
       items_count = planning_context.generated_items&.length || 0
       sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
 
-      # Create assistant message with context summary
-      message_content = <<~TEXT
-        I already have a plan with:
-        • #{items_count} items
-        • #{sublists_count} sublists
-
-        Would you like to:
-        1. **Use this plan** - Create the list with the existing items
-        2. **Clear and start over** - Begin with a fresh planning context
-      TEXT
-
       # Set state to context_reuse so next user message is handled as a choice
       planning_context.update!(post_creation_mode: true)
 
-      assistant_message = Message.create_assistant(
+      # Create templated message with interactive buttons
+      assistant_message = Message.create_templated(
         chat: @chat,
-        content: message_content.strip
+        template_type: "context_reuse_options",
+        template_data: {
+          items_count: items_count,
+          sublists_count: sublists_count,
+          chat_id: @chat.id
+        }
       )
 
       @chat.update(last_message_at: Time.current)
@@ -1319,8 +1316,8 @@ class ChatCompletionService < ApplicationService
       # Store answers in ChatContext
       planning_context.record_answers(answers)
 
-      # Use PlanningContextHandler to process answers and generate items
-      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+      # Use ChatContextHandler to process answers and generate items
+      handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
       generation_result = handler.process_answers(planning_context, answers)
 
       unless generation_result.success?

@@ -18,6 +18,7 @@ class MessageTemplate
 
     # List planning
     "pre_creation_planning" => "PreCreationPlanningTemplate",
+    "context_reuse_options" => "ContextReuseOptionsTemplate",
 
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
@@ -194,6 +195,21 @@ class PreCreationPlanningTemplate < BaseTemplate
       questions: dig_data("questions"),
       chat_id: dig_data("chat_id"),
       list_title: dig_data("list_title")
+    }
+  end
+end
+
+# Template for context reuse options (use existing plan or clear)
+class ContextReuseOptionsTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["items_count"].is_a?(Integer) && data["sublists_count"].is_a?(Integer) && data["chat_id"].present?
+  end
+
+  def render_data
+    {
+      items_count: dig_data("items_count"),
+      sublists_count: dig_data("sublists_count"),
+      chat_id: dig_data("chat_id")
     }
   end
 end
