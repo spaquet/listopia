@@ -51,7 +51,7 @@ Sublists created with phase-appropriate tasks
 `app/services/item_generation_service.rb`
 
 ### Key Dependencies
-- **RubyLLM 1.11+** - LLM integration
+- **RubyLLM 1.14+** - LLM integration
 - **gpt-5.4-2026-03-05** - Reasoning model for sophisticated item generation
 - **ApplicationService** - Base service class
 
