@@ -30,10 +30,31 @@ class ClarifyingQuestionsService < ApplicationService
 
       Rails.logger.info("ClarifyingQuestionsService - Clarifying questions form shown")
 
+      # Broadcast the clarifying questions message to the chat via Turbo Stream
+      broadcast_clarifying_questions_message(message)
+
       success(data: message)
     rescue StandardError => e
       Rails.logger.error("ClarifyingQuestionsService error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
+    end
+  end
+
+  private
+
+  # Broadcast clarifying questions message via Turbo Stream
+  def broadcast_clarifying_questions_message(message)
+    begin
+      Turbo::StreamsChannel.broadcast_append_to(
+        "chat_#{@chat.id}",
+        target: "messages",
+        partial: "shared/chat_message",
+        locals: { message: message, chat_context: @chat.chat_context }
+      )
+      Rails.logger.info("ClarifyingQuestionsService - Message broadcasted via Turbo Stream")
+    rescue => e
+      Rails.logger.warn("ClarifyingQuestionsService - Failed to broadcast message: #{e.message}")
+      # Non-blocking - message still exists in DB
     end
   end
 end
