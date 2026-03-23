@@ -25,10 +25,10 @@ AI-powered intelligent chat context management for semantic list planning, **ful
 
 ### What is Chat Context?
 
-The chat context system uses a persistent `PlanningContext` database model to capture the complete semantic understanding of a user's list planning request:
+The chat context system uses a persistent `ChatContext` database model to capture the complete semantic understanding of a user's list planning request:
 
 ```ruby
-planning_context = PlanningContext.create!(
+chat_context = ChatContext.create!(
   user: current_user,
   chat: current_chat,
   organization: current_organization,
@@ -38,6 +38,7 @@ planning_context = PlanningContext.create!(
   is_complex: true,
   state: :pre_creation,
   status: :awaiting_user_input,
+  post_creation_mode: false,  # Set to true when showing "keep/clear" buttons after list creation
   parameters: { locations: [...], budget: "...", timeline: "..." },  # Varies by domain
   pre_creation_questions: [...],
   pre_creation_answers: {...},
@@ -58,43 +59,49 @@ planning_context = PlanningContext.create!(
 ```
 User Request
     ↓
-[Phase 1: Models & Database] - PlanningContext model + migrations
+[Phase 1: Models & Database] - ChatContext AR model + migrations
     ↓
-[Phase 2: Services] - Detector, Analyzer, Generator services
+[Phase 2: Intent Detection] - CombinedIntentComplexityService
     ↓
-[Phase 3: Integration] - ChatCompletionService integration
+[Phase 3: Complexity Check] - Simple (direct creation) or Complex (pre-creation planning)
     ↓
-[Phase 4: List Creation] - Automatic conversion to List
+[Phase 4: Question Generation] - ListRefinementService (async background job)
     ↓
-[Phase 5: Views] - UI state indicator, progress, preview, confirmation
+[Phase 5: List Creation] - ChatContextToListService (automatic conversion to List)
     ↓
-[Phase 6: Testing & Migration] - 40+ tests + safe migration
+[Phase 6: Context Reuse] - post_creation_mode handling (keep or clear planning context)
     ↓
 Fully Created List with Hierarchy
 ```
 
 ## Key Services
 
-### PlanningContextDetector
-Creates PlanningContext from initial request
+### CombinedIntentComplexityService
+Detects intent, complexity, and parameters in a single LLM call
 ```ruby
-detector = PlanningContextDetector.new(user_message, chat, user, organization)
-result = detector.call
+service = CombinedIntentComplexityService.new(
+  user_message: message,
+  chat: chat,
+  user: user,
+  organization: organization
+)
+result = service.call
+# Returns: intent, is_complex, complexity_indicators, parameters, planning_domain
 ```
 
-### ParentRequirementsAnalyzer
-Generates domain-specific parent items
+### ListRefinementService
+Generates clarifying questions for complex list requests
 ```ruby
-analyzer = ParentRequirementsAnalyzer.new(planning_context)
-result = analyzer.call
-# Returns: 4-5 parent items based on planning_domain
-```
-
-### HierarchicalItemGenerator
-Builds complete item hierarchy with subdivisions
-```ruby
-generator = HierarchicalItemGenerator.new(planning_context)
-result = generator.call
+service = ListRefinementService.new(
+  list_title: "Roadshow",
+  category: "professional",
+  items: [],
+  planning_domain: "event",
+  nested_lists: [],
+  context: chat_ui_context
+)
+result = service.call
+# Returns: questions array, refinement_context
 ```
 
 ### ItemGenerationService
@@ -106,12 +113,14 @@ service = ItemGenerationService.new(
   planning_context: context,
   sublist_title: "New York"
 )
+result = service.call
+# Returns: items specific to the sublist
 ```
 
-### PlanningContextToListService
-Converts completed context to actual List
+### ChatContextToListService
+Converts completed ChatContext to actual List
 ```ruby
-service = PlanningContextToListService.new(planning_context, user, organization)
+service = ChatContextToListService.new(chat_context, user, organization)
 result = service.call
 # Returns: created List with parent items + sublists + child items
 ```
@@ -119,95 +128,143 @@ result = service.call
 ## State Machine
 
 ```
-initial → [Complex?] → pre_creation (questions) → refinement (items)
-                  ↓                                        ↓
-              resource_creation (list creation)
-                                ↓
-                            completed
+initial → [Complex?] → pre_creation (questions) → resource_creation (list creation)
+               ↓                                            ↓
+           resource_creation                          post_creation_mode?
+           (simple list)                                    ↓
+               ↓                                      completed
+          completed
 ```
+
+**States:**
+- `initial`: New conversation, no planning started
+- `pre_creation`: Clarifying questions shown, awaiting user answers
+- `resource_creation`: List being created from parameters
+- `completed`: List created, context archived
+
+**Status** (tracks progress within a state):
+- `pending`: Initial state
+- `analyzing`: Running LLM calls
+- `awaiting_user_input`: Waiting for user answers
+- `processing`: Creating list/resources
+- `complete`: Done
+- `error`: Failure
+
+**Post-Creation Mode:**
+- After list creation, system may ask user: "Keep this planning context or clear it for a new plan?"
+- `post_creation_mode: true` when showing these buttons
+- `post_creation_mode: false` after user choice
 
 ## Implementation Details
 
 ### Phase 1: Models & Database
 
 **Models:**
-- `PlanningContext` (27 columns) - Tracks full semantic planning state with state machine
+- `ChatContext` (AR model, 27 columns) - Tracks full semantic planning state with state machine
 - `PlanningRelationship` - Tracks relationships between parent/child items in hierarchy
 
 **Database Schema:**
 ```ruby
-create_table :planning_contexts, id: :uuid do |t|
+create_table :chat_contexts, id: :uuid do |t|
   # State & status tracking
-  t.string :state          # initial, pre_creation, refinement, resource_creation, completed
+  t.string :state          # initial, pre_creation, resource_creation, completed
   t.string :status         # pending, analyzing, awaiting_user_input, processing, complete, error
+  t.boolean :post_creation_mode, default: false  # True when showing "keep/clear" buttons
 
   # Core planning information
   t.text :request_content  # Original user request
   t.string :detected_intent
   t.string :planning_domain  # event, project, travel, learning, personal
   t.boolean :is_complex
+  t.string :complexity_level  # low, medium, high
+  t.text :complexity_reasoning
 
   # Semantic data
   t.jsonb :parameters            # Extracted parameters
   t.jsonb :pre_creation_questions # Clarifying questions
   t.jsonb :pre_creation_answers   # User responses
   t.jsonb :hierarchical_items    # Generated item structure
+  t.jsonb :generated_items       # Final items to be created
+  t.jsonb :missing_parameters    # Parameters still needed
+  t.jsonb :metadata              # Arbitrary data storage
+  t.jsonb :recovery_checkpoint   # Snapshot for crash recovery
   t.uuid :list_created_id        # Reference to created list
+  t.datetime :last_activity_at   # Updated on every interaction
+
+  # Foreign keys
+  t.uuid :user_id,         null: false
+  t.uuid :chat_id,         null: false
+  t.uuid :organization_id, null: false
 
   t.timestamps
+
+  t.index [:state, :status]
+  t.index [:post_creation_mode]
+  t.index [:last_activity_at]
 end
 ```
 
 ### Phase 2: Core Services
 
 **Service Pipeline:**
-1. **PlanningContextDetector** - Analyzes user intent and creates initial PlanningContext
-2. **ParentRequirementsAnalyzer** - Generates 4-5 domain-specific parent items
-3. **ParameterMapperService** - Extracts structured parameters from user answers
-4. **HierarchicalItemGenerator** - Builds complete item hierarchy
-5. **PlanningContextAnalyzer** - Validates planning completeness
-6. **PlanningContextHandler** - Orchestrates all services
-7. **ItemGenerationService** - Generic service replacing 3 hardcoded generation methods
+1. **CombinedIntentComplexityService** - Single LLM call: intent detection + complexity analysis + parameter extraction
+2. **ListRefinementService** - Generates clarifying questions for complex requests
+3. **ChatContextHandler** - Orchestrates state transitions and service coordination
+4. **ItemGenerationService** - Generates context-appropriate items for each subdivision
 
-**Domain-Specific Parent Items:**
+**Flow:**
 ```
-Event    → Pre-Event Planning, Logistics & Operations, Marketing & Promotion, Post-Event Follow-up
-Project  → Project Initialization, Resource & Team Setup, Development & Execution, Review & Closure
-Travel   → Trip Planning, Accommodations & Transport, Itinerary & Activities, Pre-Departure Checklist
-Learning → Course Overview, Foundations, Advanced Topics, Practice & Projects
-Personal → Planning, Research, Procurement, Execution
+User Message
+    ↓
+CombinedIntentComplexityService
+  ├─ Intent: create_list, create_resource, navigate_to_page, general_question
+  ├─ Complexity: is_complex true/false
+  ├─ Parameters: extracted from message
+  └─ Planning Domain: event, project, travel, learning, personal, custom
+    ↓
+If is_complex:
+  → ListRefinementService generates questions
+  → User answers
+  → ChatContextHandler processes answers
+  → ItemGenerationService creates items for sublists
+Else:
+  → ChatResourceCreatorService creates list directly
+    ↓
+ChatContextToListService converts to List model
+    ↓
+Completed (post_creation_mode available)
 ```
 
 ### Phase 3: ChatCompletionService Integration
 
-**New Integration Methods:**
-1. **initialize_planning_with_new_context** - Entry point for new planning flow
-2. **show_pre_creation_planning_form** - Display clarifying questions
-3. **handle_pre_creation_planning_response_new** - Process answers and generate items
-4. **show_planning_state** - Broadcast state indicator
-5. **show_list_preview** - Preview before creation
-6. **show_item_generation_progress** - Progress tracking
-7. **broadcast_list_created_confirmation** - Success message
+**Integration Pattern:**
+1. **call()** - Entry point, routes by intent
+2. **handle_list_creation_intent()** - Routes simple vs complex lists
+3. **show_pre_creation_planning_form()** - Display clarifying questions
+4. **handle_pre_creation_planning_response()** - Process answers and generate items
+5. **handle_context_reuse_choice()** - Handle "keep or clear" buttons
 
 **State Management:**
-- Checks `chat.planning_context.state` for state transitions
-- Maintains backward compatibility with metadata-based flow
-- Handles both simple (immediate) and complex (questions-based) flows
+- Uses `chat.chat_context.state` for state transitions
+- All pending logic removed from metadata - now stored in ChatContext AR model
+- Clean separation: ChatContext tracks persistent state, ChatUIContext provides per-request config
 
 ### Phase 4: List Creation
 
-**PlanningContextToListService** converts completed contexts to actual List resources:
+**ChatContextToListService** converts completed ChatContext to actual List resources:
 ```ruby
-service = PlanningContextToListService.new(planning_context, user, organization)
+service = ChatContextToListService.new(chat_context, user, organization)
 result = service.call
 # Returns: List with parent items, subdivisions, and child items
 ```
 
 Creates full hierarchy:
-- List (title from request)
-- Parent items (domain-aware)
+- List (title from chat_context.request_content)
+- Parent items (domain-aware, from chat_context.hierarchical_items)
 - Sublists (location/phase/team based)
-- Child items (specific tasks/requirements)
+- Child items (specific tasks/requirements, from chat_context.generated_items)
+
+Sets state to `completed` and `post_creation_mode: true` for context reuse decision
 
 ### Phase 5: User Interface
 
@@ -269,27 +326,41 @@ User describes incomplete list → System detects complexity → Shows clarifyin
 
 ## Common Patterns
 
-**Accessing PlanningContext in services:**
+**Accessing ChatContext in services:**
 ```ruby
-context = chat.planning_context
-if context.present? && context.pre_creation?
+context = chat.chat_context
+if context.present? && context.state == "pre_creation"
   # Handle questions flow
-elsif context.present? && context.refinement?
-  # Handle item generation
+elsif context.present? && context.state == "resource_creation"
+  # Handle list creation
+elsif context.present? && context.state == "completed"
+  # Check post_creation_mode for context reuse
 end
 ```
 
 **Updating context state:**
 ```ruby
-context.update(state: :refinement, status: :processing)
-context.mark_completed!  # Helper for completed state
+context.update(state: :resource_creation, status: :processing)
+context.mark_complete!  # Helper for completed state
+context.mark_analyzing!  # Helper for analyzing status
+context.touch_activity!  # Update last_activity_at
 ```
 
-**Broadcasting updates:**
+**Saving recovery checkpoint:**
 ```ruby
-show_planning_state(context)           # Update state indicator
-show_item_generation_progress(context) # Show progress
-broadcast_list_created_confirmation(list, context) # Success
+context.save_recovery_checkpoint!(
+  state: "resource_creation",
+  extracted_params: context.parameters,
+  answers: context.pre_creation_answers
+)
+```
+
+**Handling post-creation mode:**
+```ruby
+if context.post_creation_mode?
+  # User is choosing to keep or clear planning context
+  # After choice, update: context.update(post_creation_mode: false)
+end
 ```
 
 ---

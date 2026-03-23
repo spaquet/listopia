@@ -54,10 +54,7 @@ Complete guide to how user messages flow through Listopia's unified chat system,
     │        ┌────────────▼─────────────────────┐
     │        │ ChatCompletionService#call       │
     │        ├─────────────────────────────────┤
-    │        │ 1. Check pending states:         │
-    │        │    - pre_creation_planning?      │
-    │        │    - list_refinement?            │
-    │        │    - resource_creation?          │
+    │        │ 1. Check ChatContext state       │
     │        │ 2. Detect intent & complexity    │
     │        │    (CombinedIntentComplexity)   │
     │        │ 3. Route by intent               │
@@ -179,31 +176,35 @@ The chat maintains state to handle multi-turn conversations:
                   └──────────────────┘
 ```
 
-### Pending States Stored in chat.metadata
+### State Management in ChatContext AR Model
+
+**ChatContext tracks conversation state persistently:**
 
 ```ruby
-# When waiting for answers to pre-creation questions
-pending_pre_creation_planning: {
-  extracted_params: { title: "...", category: "..." },
-  questions_asked: [...],
-  intent: "create_list",
-  status: "ready"  # Ready to create with answers
+# When in pre_creation state (waiting for answers)
+chat_context = {
+  state: "pre_creation",
+  status: "awaiting_user_input",
+  pre_creation_questions: [...],
+  pre_creation_answers: {},  # Populated as user answers
+  parameters: { title: "...", category: "..." }
 }
 
-# When waiting for answers to list refinement questions
-pending_list_refinement: {
-  list_id: "uuid",
-  context: {...},
-  questions_asked: [...],
-  status: "awaiting_answers"
+# When in resource_creation state (creating list)
+chat_context = {
+  state: "resource_creation",
+  status: "processing",
+  parameters: { title: "...", items: [...] },
+  hierarchical_items: { parent_items: [...], subdivisions: {...} },
+  generated_items: [...]
 }
 
-# When collecting missing parameters for resource creation
-pending_resource_creation: {
-  resource_type: "user|team|organization",
-  extracted_params: {...},
-  missing_params: ["field1", "field2"],
-  intent: "create_resource"
+# When completed (list created)
+chat_context = {
+  state: "completed",
+  status: "complete",
+  list_created_id: "uuid",
+  post_creation_mode: true  # Ask user: keep or clear context?
 }
 ```
 
@@ -297,19 +298,21 @@ Step 5: User Provides Answers
    New York, Los Angeles, Chicago, San Francisco, Seattle"
 
 Step 6: Process Answers
-  Service: extract_planning_parameters_from_answers (method in ChatCompletionService)
+  Service: ChatContextHandler#process_answers or ChatCompletionService
   Model: gpt-5-nano
-  Extracts:
+  Extracts from user answers:
     - locations: ["New York", "Los Angeles", "Chicago", "San Francisco", "Seattle"]
     - budget: "$500,000"
     - timeline: "June 2026 to September 2026"
     - planning_domain: "event"
+  Stores in: chat_context.pre_creation_answers and chat_context.parameters
 
-Step 7: Enrich List Structure
-  Service: enrich_list_structure_with_planning (method in ChatCompletionService)
+Step 7: Detect Subdivision Type
+  Service: ParameterMapperService or LLM-based detection
   Determines subdivision type based on extracted params:
     → Has locations array → Use :locations subdivision
-  For each location, calls ItemGenerationService:
+  Stores in: chat_context.hierarchical_items[:subdivision_type]
+  For each subdivision, calls ItemGenerationService:
 
 Step 8: Generate Location-Specific Items
   Service: ItemGenerationService (NEW - refactored 2026-03-21)
@@ -606,8 +609,6 @@ app/services/
 ├── combined_intent_parameter_service.rb
 │   └─ Combined intent + parameter extraction
 │
-├── list_complexity_detector_service.rb
-│   └─ Classify if list is complex
 │
 ├── list_refinement_processor_service.rb
 │   └─ Process user answers to refinement questions
@@ -627,10 +628,13 @@ app/services/
 ```
 app/models/
 ├── chat.rb
-│   └─ Stores conversation, metadata (state), focused_resource
+│   └─ Stores conversation, has_one :chat_context, focused_resource
 │
-├── chat_context.rb
-│   └─ Context object passed to services (user, org, location)
+├── chat_context.rb (AR Model)
+│   └─ Persistent planning state (state machine, parameters, questions, answers)
+│
+├── chat_ui_context.rb (Plain Ruby Object)
+│   └─ Per-request UI configuration (suggestions, system_prompt, ui_config)
 │
 ├── message.rb
 │   └─ Individual message in chat (role, content, metadata)
@@ -687,13 +691,16 @@ app/jobs/
 
 ## Debugging & Monitoring
 
-### Check Chat State
+### Check Chat Context State
 
 ```ruby
 # In Rails console
 chat = Chat.find("uuid")
-puts chat.metadata.inspect
-# Shows: pending_pre_creation_planning, pending_list_refinement, skip_post_creation_refinement
+context = chat.chat_context
+puts context.state  # initial, pre_creation, resource_creation, completed
+puts context.status  # pending, analyzing, awaiting_user_input, processing, complete, error
+puts context.post_creation_mode  # true if showing "keep/clear" buttons
+puts context.inspect
 ```
 
 ### Monitor Performance
@@ -754,18 +761,18 @@ puts result.data.inspect
 
 | Method | Purpose |
 |--------|---------|
-| `handle_pre_creation_planning` | Show clarifying questions for complex requests |
+| `call` | Main entry point, routes by intent |
+| `handle_list_creation_intent` | Routes simple vs complex list flows |
 | `handle_pre_creation_planning_response` | Process user answers and create enriched list |
-| `enrich_list_structure_with_planning` | Build list structure with location/phase subdivisions |
-| `extract_planning_parameters_from_answers` | Parse user answers to extract params |
-| `determine_subdivision_type` | Identify if subdivisions are locations, phases, etc. |
+| `handle_context_reuse_choice` | Handle user choice: keep or clear planning context |
+| `process_message` | Unified message processor for both sync and async |
 
-### Supporting Services (Legacy/Specific Use Cases)
+### State Management Services
 
-| Service | Purpose | Status | Location |
-|---------|---------|--------|----------|
-| **ParameterExtractionService** | Extract parameters from user messages for resource creation | In use (lines 136, 637) | `app/services/parameter_extraction_service.rb` |
-| **ListHierarchyService** | (Unused) Historical service for list hierarchy | Dead code - never called | `app/services/list_hierarchy_service.rb` |
+| Service | Purpose | Location |
+|---------|---------|----------|
+| **ChatContextHandler** | Orchestrates ChatContext state transitions and service calls | `app/services/chat_context_handler.rb` |
+| **ParameterExtractionService** | Extract parameters from user messages for resource creation | `app/services/parameter_extraction_service.rb` |
 
 For more details on ItemGenerationService, see: [ITEM_GENERATION.md](ITEM_GENERATION.md)
 
