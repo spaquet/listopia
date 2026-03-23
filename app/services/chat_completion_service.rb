@@ -39,8 +39,17 @@ class ChatCompletionService < ApplicationService
         return reuse_result if reuse_result
       end
 
-      # PHASE 3: Check if this chat has a PlanningContext in pre_creation state
-      if @chat.chat_context&.state == "pre_creation"
+      # PHASE 3: Check if context is completed - if so, show keep/clear options
+      # Only process as pre-creation answers if context is ACTIVELY awaiting them
+      if @chat.chat_context&.state == "completed"
+        # Context exists and is completed - offer to reuse or clear it
+        planning_context = @chat.chat_context
+        Rails.logger.info("ChatCompletionService - Completed context exists, offering to reuse or clear")
+        return show_context_reuse_options(planning_context)
+      end
+
+      # PHASE 3: Check if this chat has a PlanningContext in pre_creation state (awaiting answers)
+      if @chat.chat_context&.state == "pre_creation" && @chat.chat_context&.has_unanswered_questions?
         planning_result = handle_pre_creation_planning_response_new
         return planning_result if planning_result
       end
@@ -1723,26 +1732,23 @@ class ChatCompletionService < ApplicationService
       items_count = planning_context.generated_items&.length || 0
       sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
 
-      message_content = <<~TEXT
-        **Ready for the next task?**
-
-        Your current context has #{items_count} items in #{sublists_count} sublists.
-        Would you like to:
-        • **/keep** - Keep this context for building on it
-        • **/clear** - Clear and start fresh planning
-      TEXT
-
       # Set state to context_reuse so user can interact with buttons
       planning_context.update!(post_creation_mode: true)
 
-      assistant_message = Message.create_assistant(
+      # Create templated message with interactive buttons
+      assistant_message = Message.create_templated(
         chat: @chat,
-        content: message_content.strip
+        template_type: "context_reuse_options",
+        template_data: {
+          items_count: items_count,
+          sublists_count: sublists_count,
+          chat_id: @chat.id
+        }
       )
 
       @chat.update(last_message_at: Time.current)
 
-      Rails.logger.info("ChatCompletionService - Context management buttons shown")
+      Rails.logger.info("ChatCompletionService - Context management buttons shown (#{items_count} items, #{sublists_count} sublists)")
     rescue => e
       Rails.logger.error("ChatCompletionService - Failed to show context buttons: #{e.message}")
       # Non-blocking error
