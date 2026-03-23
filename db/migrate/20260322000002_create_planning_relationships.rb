@@ -12,7 +12,7 @@ class CreatePlanningRelationships < ActiveRecord::Migration[8.1]
 
     # Indexes
     add_index :planning_relationships, :chat_context_id
-    add_index :planning_relationships, [:chat_context_id, :relationship_type]
+    add_index :planning_relationships, [ :chat_context_id, :relationship_type ]
 
     # Foreign key
     add_foreign_key :planning_relationships, :chat_contexts, id: :id

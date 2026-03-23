@@ -113,13 +113,13 @@ class ParameterMapperService < ApplicationService
       response = detect_via_llm(prompt)
       Rails.logger.info("detect_subdivision_strategy - LLM response: #{response.inspect}")
 
-      return failure(errors: ["Failed to detect subdivision"]) if response.blank?
+      return failure(errors: [ "Failed to detect subdivision" ]) if response.blank?
 
       # Parse LLM response
       parsed = JSON.parse(response) rescue nil
       Rails.logger.info("detect_subdivision_strategy - Parsed response: #{parsed.inspect}")
 
-      return failure(errors: ["Invalid subdivision response"]) unless parsed.is_a?(Hash)
+      return failure(errors: [ "Invalid subdivision response" ]) unless parsed.is_a?(Hash)
 
       success(data: {
         type: parsed["type"] || "none",
@@ -128,7 +128,7 @@ class ParameterMapperService < ApplicationService
       })
     rescue StandardError => e
       Rails.logger.error("detect_subdivision_strategy error: #{e.class} - #{e.message}")
-      failure(errors: [e.message])
+      failure(errors: [ e.message ])
     end
   end
 

@@ -1062,7 +1062,7 @@ class ChatCompletionService < ApplicationService
 
       # For complex requests, generate and show pre-creation planning form
       Rails.logger.info("ChatCompletionService - Complex list request (confirmed), generating pre-creation questions")
-      return show_pre_creation_planning_form(planning_context)
+      show_pre_creation_planning_form(planning_context)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1093,8 +1093,8 @@ class ChatCompletionService < ApplicationService
 
       Rails.logger.info("ChatCompletionService - Created planning context: #{planning_context.id}")
 
-      # Use PlanningContextToListService to create the list
-      list_service = PlanningContextToListService.new(planning_context, @context.user, @context.organization)
+      # Use ChatContextToListService to create the list
+      list_service = ChatContextToListService.new(planning_context, @context.user, @context.organization)
       list_result = list_service.call
 
       return list_result unless list_result.success?
@@ -1102,8 +1102,18 @@ class ChatCompletionService < ApplicationService
       # For simple lists, mark as completed (after list is created)
       planning_context.update!(state: :completed)
 
+      # Create confirmation message
+      list = list_result.data[:list]
+      confirmation_message = Message.create(
+        chat: @chat,
+        user: @context.user,
+        organization: @context.organization,
+        role: :assistant,
+        content: "✨ Perfect! I've created your list \"#{list.title}\" with #{list.list_items.count} items ready to go. You can start organizing and checking off items right away!"
+      )
+
       Rails.logger.info("ChatCompletionService - Simple list created successfully")
-      success(data: list_result.data)
+      success(data: confirmation_message)
     rescue StandardError => e
       Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1112,12 +1122,22 @@ class ChatCompletionService < ApplicationService
 
   # Build hierarchical items structure for a simple list
   def build_simple_list_structure(combined_data, parameters)
-    # Extract parent requirements if available (fallback to generic structure)
-    parent_reqs = combined_data[:parent_requirements] || {}
-    parent_items = parent_reqs.is_a?(Hash) ? (parent_reqs["items"] || []) : []
+    list_title = @user_message.content
+    category = parameters[:category] || "personal"
+    planning_domain = combined_data[:planning_domain] || "personal"
+
+    # Generate items using ItemGenerationService
+    item_result = ItemGenerationService.new(
+      list_title: list_title,
+      description: list_title,
+      category: category,
+      planning_context: parameters
+    ).call
+
+    generated_items = item_result.data || []
 
     {
-      "parent_items" => parent_items.map { |item|
+      "parent_items" => generated_items.map { |item|
         {
           title: item[:title] || item["title"] || "Item",
           description: item[:description] || item["description"] || ""
@@ -1216,7 +1236,7 @@ class ChatCompletionService < ApplicationService
   def show_context_reuse_options(planning_context)
     begin
       items_count = planning_context.generated_items&.length || 0
-      sublists_count = planning_context.hierarchical_items&.dig('subdivisions')&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
 
       # Create assistant message with context summary
       message_content = <<~TEXT
@@ -1265,11 +1285,11 @@ class ChatCompletionService < ApplicationService
           state: :initial,
           status: :analyzing
         )
-        return show_pre_creation_planning_form(planning_context)
+        show_pre_creation_planning_form(planning_context)
       else
         # Use existing context and create list
         Rails.logger.info("ChatCompletionService - User chose to use existing context, creating list")
-        return auto_create_list_from_planning(planning_context)
+        auto_create_list_from_planning(planning_context)
       end
     rescue StandardError => e
       Rails.logger.error("handle_context_reuse_choice error: #{e.class} - #{e.message}")
@@ -1323,7 +1343,7 @@ class ChatCompletionService < ApplicationService
         Rails.logger.error("ChatCompletionService - Auto-create list failed: #{result.errors.inspect}")
       end
 
-      # Ensure context is marked as completed (PlanningContextToListService may change it)
+      # Ensure context is marked as completed (ChatContextToListService may change it)
       updated_context.update!(state: :completed) if result.success?
 
       result
@@ -1496,8 +1516,8 @@ class ChatCompletionService < ApplicationService
         return failure(errors: [ "Planning context not ready for list creation. Current state: #{planning_context.state}" ])
       end
 
-      # Use PlanningContextToListService to create the list
-      service = PlanningContextToListService.new(
+      # Use ChatContextToListService to create the list
+      service = ChatContextToListService.new(
         planning_context,
         @context.user,
         @context.organization
@@ -1704,7 +1724,7 @@ class ChatCompletionService < ApplicationService
   def show_context_management_buttons(planning_context)
     begin
       items_count = planning_context.generated_items&.length || 0
-      sublists_count = planning_context.hierarchical_items&.dig('subdivisions')&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
 
       message_content = <<~TEXT
         **Ready for the next task?**

@@ -1,5 +1,5 @@
 FactoryBot.define do
-  factory :planning_context do
+  factory :chat_context do
     user { association :user }
     chat { association :chat }
     organization { user.organizations.first || association(:organization, creator: user) }
@@ -15,9 +15,6 @@ FactoryBot.define do
     complexity_reasoning { "Basic request with clear scope" }
     is_complex { false }
 
-    parent_requirements { {} }
-    child_requirements { {} }
-    item_generation_strategy { {} }
 
     parameters { {} }
     missing_parameters { [] }
@@ -78,12 +75,13 @@ FactoryBot.define do
     end
 
     trait :with_parent_requirements do
-      parent_requirements do
+      hierarchical_items do
         {
-          "items" => [
+          "parent_items" => [
             { title: "Planning", description: "Planning phase", priority: "high" },
             { title: "Execution", description: "Execution phase", priority: "high" }
-          ]
+          ],
+          "subdivisions" => {}
         }
       end
     end
@@ -110,12 +108,13 @@ FactoryBot.define do
     trait :event_planning do
       planning_domain { "event" }
       request_content { "Plan a conference" }
-      parent_requirements do
+      hierarchical_items do
         {
-          "items" => [
+          "parent_items" => [
             { title: "Pre-Event Planning", description: "Planning before the event", priority: "high" },
             { title: "Logistics & Operations", description: "On-site operations", priority: "high" }
-          ]
+          ],
+          "subdivisions" => {}
         }
       end
     end
@@ -123,13 +122,14 @@ FactoryBot.define do
     trait :project_planning do
       planning_domain { "project" }
       request_content { "Plan a software project" }
-      parent_requirements do
+      hierarchical_items do
         {
-          "items" => [
+          "parent_items" => [
             { title: "Initiation", description: "Project initiation", priority: "high" },
             { title: "Execution", description: "Project execution", priority: "high" },
             { title: "Monitoring", description: "Project monitoring", priority: "medium" }
-          ]
+          ],
+          "subdivisions" => {}
         }
       end
     end
@@ -137,15 +137,19 @@ FactoryBot.define do
     trait :travel_planning do
       planning_domain { "travel" }
       request_content { "Plan a trip to Europe" }
-      parent_requirements do
+      hierarchical_items do
         {
-          "items" => [
+          "parent_items" => [
             { title: "Pre-Trip Preparation", description: "Preparation before travel", priority: "high" },
             { title: "During Trip", description: "Activities during trip", priority: "high" },
             { title: "Post-Trip", description: "Activities after trip", priority: "low" }
-          ]
+          ],
+          "subdivisions" => {}
         }
       end
     end
   end
+
+  # Backwards compatibility alias
+  factory :planning_context, parent: :chat_context
 end

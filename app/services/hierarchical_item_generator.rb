@@ -50,14 +50,14 @@ class HierarchicalItemGenerator < ApplicationService
 
     # Priority order: check for common subdivision sources
     subdivision_sources = [
-      [:locations, "location"],
-      [:phases, "phase"],
-      [:topics, "topic"],
-      [:modules, "module"],
-      [:books, "book"],
-      [:teams, "team"],
-      [:team_members, "team member"],
-      [:activities, "activity"]
+      [ :locations, "location" ],
+      [ :phases, "phase" ],
+      [ :topics, "topic" ],
+      [ :modules, "module" ],
+      [ :books, "book" ],
+      [ :teams, "team" ],
+      [ :team_members, "team member" ],
+      [ :activities, "activity" ]
     ]
 
     subdivision_sources.each do |param_key, label_singular|

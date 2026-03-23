@@ -261,7 +261,7 @@ class ListRefinementService < ApplicationService
       .order(created_at: :desc)
       .first
 
-    return last_user_message&.content || "Unable to retrieve original message"
+    last_user_message&.content || "Unable to retrieve original message"
   end
 
   # Extract response content from LLM

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe PlanningContextToListService, type: :service do
+RSpec.describe ChatContextToListService, type: :service do
   let(:user) { create(:user) }
   let(:organization) { create(:organization, creator: user) }
   let(:chat) { create(:chat, user: user, organization: organization) }
@@ -16,14 +16,11 @@ RSpec.describe PlanningContextToListService, type: :service do
           organization: organization,
           request_content: 'Plan US roadshow',
           state: 'completed',
-          parent_requirements: {
-            'items' => [
+          hierarchical_items: {
+            'parent_items' => [
               { title: 'Planning', description: 'Planning phase', priority: 'high' },
               { title: 'Execution', description: 'Execution phase', priority: 'high' }
-            ]
-          },
-          hierarchical_items: {
-            'parent_items' => [],
+            ],
             'subdivisions' => {
               'New York' => {
                 title: 'New York',
@@ -131,14 +128,11 @@ RSpec.describe PlanningContextToListService, type: :service do
           organization: organization,
           state: 'completed',
           request_content: 'Grocery list',
-          parent_requirements: {
-            'items' => [
+          hierarchical_items: {
+            'parent_items' => [
               { title: 'Produce', description: '', priority: 'medium' },
               { title: 'Dairy', description: '', priority: 'medium' }
-            ]
-          },
-          hierarchical_items: {
-            'parent_items' => [],
+            ],
             'subdivisions' => {},
             'subdivision_type' => 'none'
           }

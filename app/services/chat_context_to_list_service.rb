@@ -1,5 +1,5 @@
-# app/services/planning_context_to_list_service.rb
-# Converts a completed PlanningContext into an actual List with items and sublists
+# app/services/chat_context_to_list_service.rb
+# Converts a completed ChatContext into an actual List with items and sublists
 # Final step of the planning journey: context → structure → actual resources
 
 class ChatContextToListService < ApplicationService
@@ -90,9 +90,9 @@ class ChatContextToListService < ApplicationService
   end
 
   def build_parent_items
-    # Use parent items from requirements analysis
-    parent_reqs = @planning_context.parent_requirements || {}
-    parent_items = parent_reqs["items"] || []
+    # Use parent items from hierarchical_items
+    hierarchical = @planning_context.hierarchical_items || {}
+    parent_items = hierarchical["parent_items"] || []
 
     parent_items.map do |item|
       {
