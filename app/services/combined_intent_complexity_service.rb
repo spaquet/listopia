@@ -76,25 +76,27 @@ class CombinedIntentComplexityService < ApplicationService
       }
 
       INTENT:
-      - create_list: plans, trips, learning, projects, lists
-      - create_resource: adding users/teams
-      - navigate_to_page: show/list pages
-      - search_data: find/search
-      - manage_resource: update/delete
-      - general_question: casual chat
+      - create_list: plans, trips, learning, projects, lists, "I need X books/items/resources", "give me a list of"
+      - create_resource: adding users/teams/organizations
+      - navigate_to_page: show/list pages, "go to", "take me to"
+      - search_data: find/search, "find X", "search for"
+      - manage_resource: update/delete/archive existing lists
+      - general_question: casual chat, questions that don't fit above categories
 
       COMPLEXITY (for create_list only):
       COMPLEX = request is MISSING CRITICAL INFO:
       ✓ "roadshow across US in June" → missing: cities, dates, budget, activities, audience
       ✓ "vacation to spain this summer" → missing: dates, budget, companions, interests
       ✓ "sprint planning" → missing: team size, deliverables, timeline
+      ✓ "plan a product launch" → missing: timeline, phases, team, deliverables
 
-      NOT COMPLEX = sufficient or context-dependent:
-      ✗ "grocery list" → user knows what to buy
-      ✗ "mac update tasks" → can infer from system
-      ✗ "reading list to be better manager" → sufficient scope (even "5 books to become better manager" is clear)
-      ✗ "daily todo" → clear scope
-      ✗ "I need 3 books about marketing" → quantity explicit, scope clear
+      NOT COMPLEX = user intent is clear AND quantity/scope is defined:
+      ✗ "grocery list" → user knows what to buy, scope is clear
+      ✗ "5 books to become a better manager" → quantity explicit (5), purpose clear (becoming better manager)
+      ✗ "3 recipes for weeknight dinners" → quantity (3), purpose (weeknight dinners), scope clear
+      ✗ "mac update tasks" → context is sufficient, can infer items
+      ✗ "daily todo list" → scope is clear
+      ✗ "I need 3 books about marketing" → quantity (3), topic (marketing), scope clear
 
       MISSING FIELDS RULES:
       Only mark as MISSING if the user did NOT provide it:
@@ -103,6 +105,14 @@ class CombinedIntentComplexityService < ApplicationService
       ✗ "Plan 4 weekly meetings" → NOT missing: quantity is "4"
       ✓ "Create a list" → MISSING: title/purpose not clear
       ✓ "Plan a roadshow" → MISSING: cities, dates, budget (not explicitly stated)
+
+      EXAMPLES:
+      - "I'm looking for 5 books to become a better manager" → create_list (learning/reading, not complex)
+      - "Give me a grocery list for pasta dinner" → create_list (personal, not complex)
+      - "What books should I read on AI?" → create_list (asking for a reading list to create)
+      - "How do I use tags?" → general_question (asking for help/explanation)
+      - "Create a user john@example.com" → create_resource
+      - "Show me the teams page" → navigate_to_page
 
       User: "#{@user_message.content}"
     PROMPT
