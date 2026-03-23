@@ -118,18 +118,28 @@ class ChatCompletionService < ApplicationService
         return handle_tool_call(response)
       end
 
-      # Create assistant message with the response
+      # Try to parse structured response with questions
       response_text = response.is_a?(String) ? response : response.to_s
+      parsed_response = parse_response_with_questions(response_text)
+
+      # Create assistant message with the response
       assistant_message = Message.create_assistant(
         chat: @chat,
-        content: response_text
+        content: parsed_response[:response_text]
       )
 
       # Update chat with last message time
       @chat.update(last_message_at: Time.current)
 
-      # Check for follow-up questions in the response and display them as a form
-      detect_and_show_follow_up_questions(response_text, @chat)
+      # If response included structured questions, display them as a form
+      if parsed_response[:has_questions] && parsed_response[:questions].any?
+        Rails.logger.info("ChatCompletionService - Showing #{parsed_response[:questions].length} structured questions as form")
+        ClarifyingQuestionsService.new(
+          chat: @chat,
+          questions: parsed_response[:questions],
+          context_title: "Help me refine my recommendation"
+        ).call
+      end
 
       success(data: assistant_message)
     rescue StandardError => e
@@ -933,17 +943,39 @@ class ChatCompletionService < ApplicationService
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
 
-      FORMATTING FOLLOW-UP QUESTIONS:
-      ============================
-      When you need to ask clarifying questions to better help the user, ALWAYS format them as:
+      FORMATTING FOLLOW-UP QUESTIONS (REQUIRED JSON FORMAT):
+      =====================================================
+      When you need to ask clarifying questions, you MUST return JSON (not plain text).
 
-      Next steps (to refine my recommendation):
-      - Question 1?
-      - Question 2?
-      - Question 3?
+      Return ONLY this JSON structure - no markdown, no additional text:
+      {
+        "response": "Your conversational answer here (without questions)",
+        "has_questions": true,
+        "questions": [
+          {
+            "question": "What is your budget?",
+            "input_type": "text",
+            "options": [],
+            "context": "Optional helpful hint"
+          },
+          {
+            "question": "New or used?",
+            "input_type": "select",
+            "options": ["New", "Used"],
+            "context": null
+          }
+        ]
+      }
 
-      This format ensures questions are automatically converted to an interactive form instead of plain text.
-      Never ask questions inline - always use the "Next steps" section format above.
+      Rules:
+      - response: Your answer without any questions in it
+      - has_questions: true/false - MUST be boolean
+      - questions: Array of question objects (empty array if has_questions is false)
+      - input_type: "text" (single line), "textarea" (multi-line), or "select" (dropdown)
+      - options: Array of choices for "select" type, empty array otherwise
+      - context: Optional hint to help user answer (can be null)
+
+      CRITICAL: Return ONLY the JSON object, nothing else. No markdown code blocks, no explanations.
 
       CREATING STRUCTURED PLANS - INTELLIGENT INSTRUCTION:
       ====================================================
@@ -1777,6 +1809,42 @@ class ChatCompletionService < ApplicationService
       Rails.logger.error("create_simple_list_from_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
+  end
+
+  # Parse response that may contain structured questions in JSON format
+  # Falls back to plain text if not valid JSON
+  def parse_response_with_questions(response_text)
+    begin
+      # Try to parse as JSON
+      json_match = response_text.match(/\{[\s\S]*\}/m)
+      return fallback_response(response_text) unless json_match
+
+      data = JSON.parse(json_match[0])
+
+      # Validate required fields
+      return fallback_response(response_text) unless data.is_a?(Hash) && data["response"].present?
+
+      {
+        response_text: data["response"],
+        has_questions: data["has_questions"] == true,
+        questions: data["has_questions"] == true ? (data["questions"] || []) : []
+      }
+    rescue JSON::ParserError => e
+      Rails.logger.debug("Failed to parse response as JSON: #{e.message}, falling back to plain text")
+      fallback_response(response_text)
+    rescue StandardError => e
+      Rails.logger.error("parse_response_with_questions error: #{e.class} - #{e.message}")
+      fallback_response(response_text)
+    end
+  end
+
+  # Fallback when response is plain text (not structured JSON)
+  def fallback_response(response_text)
+    {
+      response_text: response_text,
+      has_questions: false,
+      questions: []
+    }
   end
 
   # Detect and display follow-up questions from LLM responses
