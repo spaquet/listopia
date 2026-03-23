@@ -1,13 +1,13 @@
 # app/models/chat_ui_context.rb
 #
-# ChatUIContext provides context-aware UI information for the chat system.
+# ChatUiContext provides context-aware UI information for the chat system.
 # It adapts message rendering, suggestions, and behavior based on where the chat
 # appears (dashboard, floating, inline) and what the user is currently viewing.
 #
 # This is a plain Ruby object (not AR model) for per-request UI configuration.
 # For persistent conversation state, see ChatContext AR model instead.
 
-class ChatUIContext
+class ChatUiContext
   attr_reader :user, :organization, :chat, :location, :focused_resource
 
   # Context locations where chat can appear
@@ -30,7 +30,7 @@ class ChatUIContext
 
   # String representation for templates
   def to_s
-    "ChatUIContext(#{location}, #{focused_resource_name})"
+    "ChatUiContext(#{location}, #{focused_resource_name})"
   end
 
   # Check if chat is in specific location

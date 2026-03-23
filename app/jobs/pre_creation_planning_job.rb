@@ -29,7 +29,7 @@ class PreCreationPlanningJob < ApplicationJob
       items: items,
       nested_sublists: nested_lists,
       planning_domain: planning_domain,
-      context: ChatUIContext.new(
+      context: ChatUiContext.new(
         chat: chat,
         user: chat.user,
         organization: chat.organization,

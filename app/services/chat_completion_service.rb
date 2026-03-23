@@ -14,7 +14,7 @@ class ChatCompletionService < ApplicationService
   def initialize(chat, user_message, context = nil)
     @chat = chat
     @user_message = user_message
-    @context = context || ChatUIContext.new(
+    @context = context || ChatUiContext.new(
       chat: chat,
       user: user_message.user,
       organization: chat.organization,

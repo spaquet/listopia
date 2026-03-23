@@ -3,6 +3,53 @@
 # Replaces both the shallow chat.metadata states and the old PlanningContext model
 # Provides single source of truth for multi-step list creation workflows
 
+# == Schema Information
+#
+# Table name: chat_contexts
+#
+#  id                                                                                                :uuid             not null, primary key
+#  complexity_level(simple, complex)                                                                 :string
+#  complexity_reasoning(Why the request was classified as simple or complex)                         :text
+#  detected_intent(Detected intent: create_list, navigate_to_page, etc.)                             :string
+#  error_message(Error message if status is error)                                                   :text
+#  generated_items(Generated items)                                                                  :jsonb
+#  hierarchical_items(Parent items, subdivisions, subdivision type for nested lists)                 :jsonb
+#  is_complex(Whether request is complex and needs clarifying questions)                             :boolean          default(FALSE)
+#  last_activity_at(Timestamp of last interaction; used for connection recovery)                     :datetime
+#  metadata(Additional metadata and performance metrics (thinking_tokens, generation_time_ms, etc.)) :jsonb
+#  missing_parameters(Parameters missing from request)                                               :string           default([]), is an Array
+#  parameters(Extracted parameters from request)                                                     :jsonb
+#  planning_domain(Domain: vacation, sprint, roadshow, etc.)                                         :string
+#  post_creation_mode(True when showing 'keep or clear context' buttons after list creation)         :boolean          default(FALSE)
+#  pre_creation_answers(User's answers to pre-creation questions)                                    :jsonb
+#  pre_creation_questions(Clarifying questions for complex lists)                                    :jsonb
+#  recovery_checkpoint(Last known good state snapshot for crash recovery)                            :jsonb
+#  request_content(Original user request)                                                            :text
+#  state(State: initial, pre_creation, resource_creation, completed)                                 :string           default("initial"), not null
+#  status(Status: pending, analyzing, awaiting_user_input, processing, complete, error)              :string           default("pending"), not null
+#  created_at                                                                                        :datetime         not null
+#  updated_at                                                                                        :datetime         not null
+#  chat_id                                                                                           :uuid             not null
+#  list_created_id(ID of the created list)                                                           :uuid
+#  organization_id                                                                                   :uuid             not null
+#  user_id                                                                                           :uuid             not null
+#
+# Indexes
+#
+#  index_chat_contexts_on_chat_id             (chat_id) UNIQUE
+#  index_chat_contexts_on_last_activity_at    (last_activity_at)
+#  index_chat_contexts_on_organization_id     (organization_id)
+#  index_chat_contexts_on_post_creation_mode  (post_creation_mode)
+#  index_chat_contexts_on_state               (state)
+#  index_chat_contexts_on_status              (status)
+#  index_chat_contexts_on_user_id             (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (chat_id => chats.id)
+#  fk_rails_...  (organization_id => organizations.id)
+#  fk_rails_...  (user_id => users.id)
+#
 class ChatContext < ApplicationRecord
   # Associations
   belongs_to :user

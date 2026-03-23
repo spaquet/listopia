@@ -5,25 +5,23 @@
 #
 # Table name: planning_relationships
 #
-#  id                  :uuid             not null, primary key
-#  child_type          :string           not null
-#  metadata            :jsonb
-#  parent_type         :string           not null
-#  position            :integer          default(0)
-#  relationship_type   :string           not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  planning_context_id :uuid             not null
+#  id                                                                    :uuid             not null, primary key
+#  child_type(Type of child item)                                        :string           not null
+#  metadata(Additional relationship metadata)                            :jsonb
+#  parent_type(Type of parent item)                                      :string           not null
+#  relationship_type(Type of relationship (hierarchy, dependency, etc.)) :string           not null
+#  created_at                                                            :datetime         not null
+#  updated_at                                                            :datetime         not null
+#  chat_context_id(Reference to the planning context)                    :uuid             not null
 #
 # Indexes
 #
-#  idx_on_relationship_type_planning_context_id_12f5db6f2c     (relationship_type,planning_context_id)
-#  index_planning_relationships_on_parent_type_and_child_type  (parent_type,child_type)
-#  index_planning_relationships_on_planning_context_id         (planning_context_id)
+#  idx_on_chat_context_id_relationship_type_0ce2ed37ab  (chat_context_id,relationship_type)
+#  index_planning_relationships_on_chat_context_id      (chat_context_id)
 #
 # Foreign Keys
 #
-#  fk_rails_...  (planning_context_id => planning_contexts.id)
+#  fk_rails_...  (chat_context_id => chat_contexts.id)
 #
 class PlanningRelationship < ApplicationRecord
   # Associations
