@@ -590,6 +590,7 @@ DEPENDENCIES
   rspec-retry
   rubocop-rails-omakase
   ruby_llm
+  ruby_llm-schema
   selenium-webdriver
   shoulda-matchers (~> 7.0)
   simplecov (~> 0.22.0)

@@ -57,28 +57,24 @@ class ItemGenerationService < ApplicationService
 
   def generate_items_with_llm
     prompt = build_intelligent_prompt
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5.4-2026-03-05")
 
-    llm_chat.add_message(role: "system", content: prompt)
-    llm_chat.add_message(
-      role: "user",
-      content: "Generate specific, actionable items for this planning context."
-    )
+    Rails.logger.info("ItemGenerationService - Calling LLM with ItemSchema for guaranteed structure")
 
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
+    # Use RubyLLM::Schema for guaranteed JSON structure with proper types
+    response = RubyLLM::Chat.new(provider: :openai, model: "gpt-5.4-2026-03-05")
+      .with_instructions(prompt)
+      .with_schema(ItemSchema)
+      .ask("Generate specific, actionable items for this planning context.")
 
-    # Extract JSON array from response
-    json_match = response_text.match(/\[[\s\S]*\]/m)
-    return [] unless json_match
+    Rails.logger.info("ItemGenerationService - LLM returned structured response with schema validation")
 
-    begin
-      JSON.parse(json_match[0])
-    rescue JSON::ParserError => e
-      Rails.logger.error("ItemGenerationService - JSON parse error: #{e.message}")
-      Rails.logger.error("Response was: #{response_text[0..500]}")
-      []
-    end
+    # response.content is automatically parsed and validated against ItemSchema
+    items = response.content["items"] || []
+    items
+  rescue StandardError => e
+    Rails.logger.error("ItemGenerationService - Schema validation or LLM error: #{e.message}")
+    Rails.logger.error(e.backtrace.take(5).join("\n"))
+    []
   end
 
   def build_intelligent_prompt

@@ -1424,28 +1424,19 @@ class ChatCompletionService < ApplicationService
 
   def call_llm_for_answer_extraction(prompt)
     begin
-      model = "gpt-5-nano"
+      Rails.logger.info("ChatCompletionService - Extracting answers with AnswerExtractionSchema")
 
-      # Create RubyLLM::Chat instance
-      llm_chat = RubyLLM::Chat.new(
-        provider: :openai,
-        model: model
-      )
+      # Use RubyLLM::Schema for guaranteed structured output
+      response = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
+        .with_instructions("You are a data extraction assistant. Extract structured data from user input and return valid JSON.")
+        .with_schema(AnswerExtractionSchema)
+        .ask(prompt)
 
-      # Add system prompt
-      llm_chat.add_message(
-        role: "system",
-        content: "You are a data extraction assistant. Extract structured data from user input and return valid JSON."
-      )
+      Rails.logger.info("ChatCompletionService - Answer extraction completed with schema validation")
 
-      # Add user prompt
-      llm_chat.add_message(role: "user", content: prompt)
-
-      # Get completion
-      response = llm_chat.complete
-
-      # Extract response content
-      extract_response_content(response)
+      # response.content is automatically parsed and validated against AnswerExtractionSchema
+      # Return JSON string for compatibility with existing code
+      response.content.to_json
     rescue StandardError => e
       Rails.logger.error("call_llm_for_answer_extraction error: #{e.class} - #{e.message}")
       nil

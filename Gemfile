@@ -58,6 +58,7 @@ gem "positioning"
 
 # AI/LLM Integration
 gem "ruby_llm"
+gem "ruby_llm-schema"  # Structured output with schemas
 gem "neighbor"
 
 # JWT for OAuth token handling

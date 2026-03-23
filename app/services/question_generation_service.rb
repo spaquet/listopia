@@ -33,34 +33,25 @@ class QuestionGenerationService < ApplicationService
   private
 
   def generate_questions
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4.1-nano")
-
     system_prompt = build_system_prompt
     user_message = "Generate clarifying questions for: #{@list_title}"
 
-    llm_chat.add_message(role: "system", content: system_prompt)
-    llm_chat.add_message(role: "user", content: user_message)
+    Rails.logger.info("QuestionGenerationService - Calling LLM with schema")
 
-    Rails.logger.info("QuestionGenerationService - Calling LLM")
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
+    # Use RubyLLM::Schema for guaranteed JSON structure
+    response = RubyLLM::Chat.new(provider: :openai, model: "gpt-4.1-nano")
+      .with_instructions(system_prompt)
+      .with_schema(QuestionSchema)
+      .ask(user_message)
 
-    Rails.logger.info("QuestionGenerationService - LLM returned, parsing JSON")
+    Rails.logger.info("QuestionGenerationService - LLM returned structured response")
 
-    # Parse the JSON response
-    json_match = response_text.match(/\{[\s\S]*\}/m)
-    return nil unless json_match
-
-    json_to_parse = json_match[0]
-
-    begin
-      data = JSON.parse(json_to_parse)
-      questions = data["questions"] || []
-      questions.take(3)  # Max 3 questions
-    rescue JSON::ParserError => e
-      Rails.logger.error("QuestionGenerationService - JSON parse error: #{e.message}")
-      nil
-    end
+    # response.content is automatically parsed and validated against schema
+    questions = response.content["questions"] || []
+    questions.take(3)  # Max 3 questions
+  rescue StandardError => e
+    Rails.logger.error("QuestionGenerationService - Schema validation or LLM error: #{e.message}")
+    nil
   end
 
   def build_system_prompt
