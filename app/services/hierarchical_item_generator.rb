@@ -10,8 +10,8 @@ class HierarchicalItemGenerator < ApplicationService
 
   def call
     begin
-      # Generate parent-level items first
-      parent_items = @planning_context.parent_requirements.dig("items") || []
+      # Get parent items from hierarchical_items (set by ParentRequirementsAnalyzer)
+      parent_items = @planning_context.hierarchical_items&.dig("parent_items") || []
 
       # Generate hierarchical structure with subdivisions (generic - uses whatever data is present)
       subdivisions = generate_subdivisions(nil)
