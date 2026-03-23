@@ -1528,15 +1528,26 @@ class ChatCompletionService < ApplicationService
     begin
       Rails.logger.info("ChatCompletionService - Auto-creating list from completed planning context")
 
+      # SAFETY: Verify we have the data we need
+      unless planning_context.hierarchical_items.present?
+        Rails.logger.error("ChatCompletionService - No hierarchical items to create list from")
+        return failure(errors: [ "List structure is incomplete. Please try again." ])
+      end
+
       # Show list preview first (PHASE 5 enhancement)
       show_list_preview(planning_context)
 
       # Create the list
       list_result = create_list_from_planning_context(planning_context)
-      return list_result unless list_result.success?
+      unless list_result.success?
+        Rails.logger.error("ChatCompletionService - Failed to create list: #{list_result.errors.inspect}")
+        return failure(errors: [ "Failed to create your list. Please try again or contact support." ])
+      end
 
       list = list_result.data[:list]
       updated_context = list_result.data[:planning_context]
+
+      Rails.logger.info("ChatCompletionService - List created successfully: #{list.id}")
 
       # Create brief text message
       brief_message = "✨ Creating your list..."
@@ -1556,7 +1567,9 @@ class ChatCompletionService < ApplicationService
       success(data: assistant_message)
     rescue StandardError => e
       Rails.logger.error("auto_create_list_from_planning error: #{e.class} - #{e.message}")
-      failure(errors: [ e.message ])
+      Rails.logger.error(e.backtrace.take(5).join("\n"))
+      # NEVER return raw JSON or internal structures to user
+      failure(errors: [ "An error occurred while creating your list. Please try again." ])
     end
   end
 
