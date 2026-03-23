@@ -15,12 +15,13 @@ class ParentRequirementsAnalyzer < ApplicationService
       # Build requirements based on domain
       parent_items = generate_parent_items
 
-      # Update planning context with parent requirements
-      @planning_context.update!(parent_requirements: {
-        items: parent_items,
-        reasoning: generate_reasoning,
-        generated_at: Time.current.iso8601
-      })
+      # Update planning context with parent requirements in hierarchical_items
+      hierarchical_items = @planning_context.hierarchical_items || {}
+      hierarchical_items["parent_items"] = parent_items
+      hierarchical_items["parent_reasoning"] = generate_reasoning
+      hierarchical_items["parent_generated_at"] = Time.current.iso8601
+
+      @planning_context.update!(hierarchical_items: hierarchical_items)
 
       success(data: {
         parent_items: parent_items,
