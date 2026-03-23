@@ -1284,9 +1284,17 @@ class ChatCompletionService < ApplicationService
 
     begin
       Rails.logger.info("ChatCompletionService - Processing pre-creation planning answers")
+      Rails.logger.info("ChatCompletionService - User answered: #{@user_message.content[0..100]}")
 
       # Extract answers from user message
       answers = extract_answers_from_user_input(@user_message.content, planning_context.pre_creation_questions)
+      Rails.logger.info("ChatCompletionService - Extracted answers: #{answers.inspect[0..200]}")
+
+      # SAFETY CHECK: If answers look like JSON/structure instead of parameters, skip this answer
+      if answers.to_s.include?("createlist") || answers.to_s.include?("nestedlists")
+        Rails.logger.warn("ChatCompletionService - Detected malformed answer extraction, using raw content")
+        answers = { "duration" => @user_message.content, "notes" => @user_message.content }
+      end
 
       # Store answers in ChatContext
       planning_context.record_answers(answers)
@@ -1295,12 +1303,15 @@ class ChatCompletionService < ApplicationService
       handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
       generation_result = handler.process_answers(planning_context, answers)
 
-      return generation_result unless generation_result.success?
+      unless generation_result.success?
+        Rails.logger.error("ChatCompletionService - Item generation failed: #{generation_result.errors.inspect}")
+        return generation_result
+      end
 
       gen_data = generation_result.data
       updated_context = gen_data[:planning_context]
 
-      Rails.logger.info("ChatCompletionService - Items generated, now creating list from planning context")
+      Rails.logger.info("ChatCompletionService - Items generated successfully, now creating list from planning context")
 
       # Mark context as completed before list creation
       updated_context.mark_complete!
@@ -1308,13 +1319,18 @@ class ChatCompletionService < ApplicationService
       # Items generated, create the actual list
       result = auto_create_list_from_planning(updated_context)
 
+      unless result.success?
+        Rails.logger.error("ChatCompletionService - Auto-create list failed: #{result.errors.inspect}")
+      end
+
       # Ensure context is marked as completed (PlanningContextToListService may change it)
       updated_context.update!(state: :completed) if result.success?
 
       result
     rescue StandardError => e
       Rails.logger.error("handle_pre_creation_planning_response_new error: #{e.class} - #{e.message}")
-      failure(errors: [ e.message ])
+      Rails.logger.error(e.backtrace.take(10).join("\n"))
+      failure(errors: [ "Failed to process your answers. Please try again." ])
     end
   end
 
