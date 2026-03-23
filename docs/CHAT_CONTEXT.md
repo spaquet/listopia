@@ -110,7 +110,7 @@ Generic service for generating subdivision-specific items
 service = ItemGenerationService.new(
   list_title: "Roadshow",
   description: "Budget: $500K",
-  planning_context: context,
+  planning_context: chat_context.parameters,  # From extracted answers
   sublist_title: "New York"
 )
 result = service.call
@@ -279,42 +279,37 @@ Sets state to `completed` and `post_creation_mode: true` for context reuse decis
 
 **Usage in views:**
 ```erb
-<%= render "message_templates/planning_state_indicator", planning_context: @context %>
+<%= render "message_templates/planning_state_indicator", chat_context: @chat.chat_context %>
 <%= render "message_templates/item_generation_progress", status: "processing" %>
-<%= render "message_templates/list_preview", planning_context: @context %>
+<%= render "message_templates/list_preview", chat_context: @chat.chat_context %>
 <%= render "message_templates/list_created_confirmation", list: @list %>
 ```
 
-### Phase 6: Testing & Migration
+### Phase 6: Testing & Running Tests
 
 **Test Coverage:** 40+ tests across all services
 
 **Run Tests:**
 ```bash
-bundle exec rspec spec/services/planning_context*_spec.rb
+# Test ChatContext AR model
+bundle exec rspec spec/models/chat_context_spec.rb
+
+# Test services
+bundle exec rspec spec/services/chat_context*_spec.rb
+bundle exec rspec spec/services/combined_intent_complexity_service_spec.rb
+bundle exec rspec spec/services/list_refinement_service_spec.rb
+
+# Test integration
+bundle exec rspec spec/jobs/pre_creation_planning_job_spec.rb
 ```
 
-**Data Migration (non-destructive):**
-```bash
-# Migrate existing chat.metadata to PlanningContext model
-rake planning_context:migrate
+**Database Setup:**
+ChatContext is an AR model that persists to database via migrations:
+- `db/migrate/20260322000001_create_chat_contexts.rb` - Main ChatContext table
+- `db/migrate/20260322000002_create_planning_relationships.rb` - Relationship tracking
+- `db/migrate/20260322000003_add_chat_context_id_to_chats.rb` - Association to Chat
 
-# Verify all pending data was migrated
-rake planning_context:verify
-
-# Check data integrity
-rake planning_context:audit
-
-# Rollback if needed
-rake planning_context:rollback
-```
-
-**Migration Safety:**
-- ✅ Non-destructive (metadata preserved)
-- ✅ Atomic operations with error handling
-- ✅ Rollback capability
-- ✅ Data integrity validation
-- ✅ Audit trail in metadata
+No data migration needed - fresh schema generated from migrations.
 
 ## Flows
 
