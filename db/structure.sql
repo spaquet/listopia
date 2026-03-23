@@ -963,7 +963,8 @@ CREATE TABLE public.chat_contexts (
     metadata jsonb DEFAULT '{}'::jsonb,
     error_message text,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    intent_confidence double precision DEFAULT 0.0
 );
 
 
@@ -1105,6 +1106,13 @@ COMMENT ON COLUMN public.chat_contexts.metadata IS 'Additional metadata and perf
 --
 
 COMMENT ON COLUMN public.chat_contexts.error_message IS 'Error message if status is error';
+
+
+--
+-- Name: COLUMN chat_contexts.intent_confidence; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.intent_confidence IS 'Confidence score for intent detection (0.0-1.0)';
 
 
 --
@@ -4363,6 +4371,7 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260323000001'),
 ('20260322000003'),
 ('20260322000002'),
 ('20260322000001'),
