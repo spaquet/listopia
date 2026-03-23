@@ -47,7 +47,7 @@ class ClarifyingQuestionsService < ApplicationService
     begin
       Turbo::StreamsChannel.broadcast_append_to(
         "chat_#{@chat.id}",
-        target: "messages",
+        target: "chat-messages-#{@chat.id}",
         partial: "shared/chat_message",
         locals: { message: message, chat_context: @chat.chat_context }
       )
