@@ -14,6 +14,7 @@
 #  error_message(Error message if status is error)                                                   :text
 #  generated_items(Generated items)                                                                  :jsonb
 #  hierarchical_items(Parent items, subdivisions, subdivision type for nested lists)                 :jsonb
+#  intent_confidence(Confidence score for intent detection (0.0-1.0))                                :float            default(0.0)
 #  is_complex(Whether request is complex and needs clarifying questions)                             :boolean          default(FALSE)
 #  last_activity_at(Timestamp of last interaction; used for connection recovery)                     :datetime
 #  metadata(Additional metadata and performance metrics (thinking_tokens, generation_time_ms, etc.)) :jsonb
