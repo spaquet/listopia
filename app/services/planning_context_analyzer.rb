@@ -31,7 +31,7 @@ class PlanningContextAnalyzer < ApplicationService
     return false if @planning_context.detected_intent.blank?
     return false if @planning_context.is_complex && @planning_context.pre_creation_answers.blank?
     return false if @planning_context.hierarchical_items.blank?
-    return false if @planning_context.parent_requirements.blank?
+    return false if @planning_context.hierarchical_items.dig("parent_items").blank?
 
     true
   end
@@ -51,7 +51,7 @@ class PlanningContextAnalyzer < ApplicationService
     end
 
     # Structure validations
-    errors << "Missing parent_requirements" if @planning_context.parent_requirements.blank?
+    errors << "Missing parent_items in hierarchical_items" if @planning_context.hierarchical_items.dig("parent_items").blank?
     errors << "Missing hierarchical_items" if @planning_context.hierarchical_items.blank?
 
     errors
@@ -107,7 +107,7 @@ class PlanningContextAnalyzer < ApplicationService
       status: @planning_context.status,
       domain: @planning_context.planning_domain,
       complexity: @planning_context.complexity_level,
-      has_parent_items: @planning_context.parent_requirements.dig("items").present?,
+      has_parent_items: @planning_context.hierarchical_items.dig("parent_items").present?,
       has_generated_items: @planning_context.generated_items.present?,
       has_hierarchical_structure: @planning_context.hierarchical_items.dig("subdivisions").present?,
       parameter_count: (@planning_context.parameters || {}).length,
