@@ -20,6 +20,9 @@ class MessageTemplate
     "pre_creation_planning" => "PreCreationPlanningTemplate",
     "context_reuse_options" => "ContextReuseOptionsTemplate",
 
+    # General conversation
+    "clarifying_questions" => "ClarifyingQuestionsTemplate",
+
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
     "error" => "ErrorTemplate",
@@ -210,6 +213,21 @@ class ContextReuseOptionsTemplate < BaseTemplate
       items_count: dig_data("items_count"),
       sublists_count: dig_data("sublists_count"),
       chat_id: dig_data("chat_id")
+    }
+  end
+end
+
+# Template for clarifying questions in general conversations
+class ClarifyingQuestionsTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["questions"].is_a?(Array) && data["chat_id"].present?
+  end
+
+  def render_data
+    {
+      questions: dig_data("questions"),
+      chat_id: dig_data("chat_id"),
+      context_title: dig_data("context_title") || "Please answer the following questions"
     }
   end
 end
