@@ -9,7 +9,7 @@ class ProcessChatMessageJob < ApplicationJob
     message = Message.find(message_id)
 
     # Set up context for the service
-    context = chat.build_context(location: :dashboard)
+    context = chat.build_ui_context(location: :dashboard)
 
     # Process the message through ChatCompletionService
     service = ChatCompletionService.new(chat, message, context)
@@ -56,7 +56,7 @@ class ProcessChatMessageJob < ApplicationJob
   private
 
   def broadcast_assistant_response(chat, assistant_message)
-    context = chat.build_context(location: :dashboard)
+    context = chat.build_ui_context(location: :dashboard)
 
     Rails.logger.info("ProcessChatMessageJob: Broadcasting response for chat #{chat.id}")
     Rails.logger.info("ProcessChatMessageJob: Assistant message ID: #{assistant_message.id}, class: #{assistant_message.class}")

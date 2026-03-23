@@ -337,7 +337,7 @@ class ApplicationController < ActionController::Base
     end
 
     # Build context for floating location
-    @floating_chat_context = @floating_chat.build_context(location: :floating)
+    @floating_chat_context = @floating_chat.build_ui_context(location: :floating)
   rescue StandardError => e
     Rails.logger.warn("Failed to initialize floating chat: #{e.message}")
     @floating_chat = nil

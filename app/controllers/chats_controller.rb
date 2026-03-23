@@ -16,7 +16,7 @@ class ChatsController < ApplicationController
   # View single chat
   def show
     @messages = @chat.recent_messages(50)
-    @chat_context = @chat.build_context(location: :dashboard)
+    @chat_context = @chat.build_ui_context(location: :dashboard)
 
     respond_to do |format|
       format.html
@@ -33,7 +33,7 @@ class ChatsController < ApplicationController
       focused_resource: focused_resource
     )
 
-    @chat_context = @chat.build_context(location: params[:location] || :dashboard)
+    @chat_context = @chat.build_ui_context(location: params[:location] || :dashboard)
     @messages = []
 
     respond_to do |format|
@@ -130,7 +130,7 @@ class ChatsController < ApplicationController
       return render_security_error("This message violates content policies and cannot be sent", 422)
     end
 
-    @chat_context = @chat.build_context(location: :dashboard)
+    @chat_context = @chat.build_ui_context(location: :dashboard)
 
     # Check if message is a command (instant processing)
     is_command = @user_message.content.start_with?("/")
@@ -202,7 +202,7 @@ class ChatsController < ApplicationController
       focused_resource: focused_resource
     )
 
-    @chat_context = @new_chat.build_context(location: params[:location] || :dashboard)
+    @chat_context = @new_chat.build_ui_context(location: params[:location] || :dashboard)
     @messages = []
     @chat = @new_chat  # Set @chat to the new one for the response
 
@@ -520,7 +520,7 @@ class ChatsController < ApplicationController
           partial: "shared/chat_message",
           locals: {
             message: create_error_message(error_message),
-            chat_context: @chat.build_context(location: :dashboard)
+            chat_context: @chat.build_ui_context(location: :dashboard)
           }
         ), status: status
       end
