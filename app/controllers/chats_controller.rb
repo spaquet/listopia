@@ -44,18 +44,36 @@ class ChatsController < ApplicationController
 
   # Submit message to chat
   def create_message
-    begin
-      message_params = params.require(:message).permit(:content, answers: {}, questions: [])
-    rescue ActionController::ParameterMissing
-      return render_security_error("Message content is required", 422)
+    # For JSON API, allow arrays and nested hashes
+    raw_message = params[:message]
+
+    # Handle both form-encoded and JSON submissions
+    if raw_message.is_a?(String)
+      raw_message = JSON.parse(raw_message) rescue {}
     end
 
+    # DEBUG: Log what we're receiving
+    Rails.logger.info("ChatsController#create_message - Raw params[:message]: #{raw_message.inspect[0..500]}")
+
+    # Extract parameters manually for better control over nested structures
+    content = raw_message[:content] || raw_message["content"]
+    answers = raw_message[:answers] || raw_message["answers"] || {}
+    questions = raw_message[:questions] || raw_message["questions"] || []
+
+    Rails.logger.info("ChatsController#create_message - Extracted:")
+    Rails.logger.info("  content: #{content.inspect}")
+    Rails.logger.info("  answers: #{answers.inspect[0..200]}")
+    Rails.logger.info("  questions count: #{questions.is_a?(Array) ? questions.length : 'not an array'}")
+
     # Handle clarifying questions answers by converting them to natural language
-    content = if message_params[:answers].present?
-      convert_answers_to_message(message_params[:answers], message_params[:questions])
+    if answers.present?
+      Rails.logger.info("ChatsController#create_message - Converting answers with #{questions.is_a?(Array) ? questions.length : 0} questions")
+      content = convert_answers_to_message(answers, questions)
     else
-      message_params[:content]&.strip
+      content = content&.to_s&.strip
     end
+
+    Rails.logger.info("ChatsController#create_message - Final content: #{content.inspect[0..200]}")
 
     return if content.blank?
 
@@ -243,26 +261,31 @@ class ChatsController < ApplicationController
   end
 
   def convert_answers_to_message(answers, questions = nil)
-    # Convert clarifying question answers into a natural language message
-    # Format: "Q: question text\nA: answer text\n\nQ: next question\nA: answer\n..."
+    # Convert clarifying question answers into a natural language message with questions for context
+    # Format: "**Q:** question text\n**A:** answer text\n\n**Q:** next question\n**A:** answer"
     return "" if answers.blank?
 
-    # Convert ActionController::Parameters to hash if needed
-    answers_hash = answers.is_a?(ActionController::Parameters) ? answers.to_h : answers
-    questions_array = questions.is_a?(ActionController::Parameters) ? questions.to_a : Array(questions)
+    answers_hash = answers.is_a?(Hash) ? answers : answers.to_h
+    questions_array = questions.is_a?(Array) ? questions : Array(questions)
+
+    Rails.logger.info("convert_answers_to_message - Formatting with #{answers_hash.length} answers and #{questions_array.length} questions")
 
     # Format with questions for context
     formatted_parts = answers_hash.sort.map do |idx, answer|
       idx_num = idx.to_i
-      question_text = questions_array[idx_num]&.dig("question") if questions_array.present?
       answer_text = answer.to_s.strip
-
       next "" if answer_text.blank?
+
+      # Get corresponding question
+      question_obj = questions_array[idx_num]
+      question_text = question_obj&.dig("question") rescue nil
 
       if question_text.present?
         "**Q:** #{question_text}\n**A:** #{answer_text}"
       else
-        "#{answer_text}"
+        # Fallback: just the answer if question not found
+        Rails.logger.warn("convert_answers_to_message - No question found for index #{idx_num}")
+        answer_text
       end
     end.select(&:present?)
 
