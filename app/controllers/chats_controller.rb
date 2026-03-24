@@ -245,11 +245,16 @@ class ChatsController < ApplicationController
   def convert_answers_to_message(answers)
     # Convert clarifying question answers into a natural language message
     # answers is a hash like { "0" => "value1", "1" => "value2", ... }
-    formatted_answers = answers.sort.map do |idx, value|
-      "#{value}"
-    end.join("\n")
+    return "" if answers.blank?
 
-    formatted_answers.strip
+    # Convert ActionController::Parameters to hash if needed
+    answers_hash = answers.is_a?(ActionController::Parameters) ? answers.to_h : answers
+
+    formatted_answers = answers_hash.sort.map do |idx, value|
+      value.to_s.strip
+    end.select(&:present?).join("\n")
+
+    formatted_answers
   end
 
   def process_message(user_message)
