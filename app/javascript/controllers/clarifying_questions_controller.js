@@ -11,13 +11,38 @@ export default class extends Controller {
     const formData = new FormData(form)
     const chatId = this.data.get("chatId")
 
+    console.log("ClarifyingQuestionsController - Form data:", {
+      chatId,
+      dataQuestionsRaw: this.data.get("questions"),
+      dataKeys: this.data.getAll ? this.data.getAll() : 'N/A'
+    })
+
     // Collect answers and questions
     const answers = {}
-    const questions = JSON.parse(this.data.get("questions"))
+    let questions = []
+
+    try {
+      const questionsRaw = this.data.get("questions")
+      console.log("Questions raw from data:", questionsRaw ? questionsRaw.substring(0, 100) : "MISSING")
+
+      if (questionsRaw) {
+        questions = JSON.parse(questionsRaw)
+        console.log("Parsed questions:", questions.length, questions)
+      } else {
+        console.error("NO questions data found on form!")
+      }
+    } catch (err) {
+      console.error("Failed to parse questions:", err)
+    }
 
     questions.forEach((q, idx) => {
       const value = formData.get(`message[answers][${idx}]`)
       answers[idx] = value
+    })
+
+    console.log("ClarifyingQuestionsController - Sending:", {
+      answersCount: Object.keys(answers).length,
+      questionsCount: questions.length
     })
 
     // Send answers as chat message with questions for context
