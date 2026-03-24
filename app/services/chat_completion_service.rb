@@ -947,9 +947,9 @@ class ChatCompletionService < ApplicationService
       =====================================================
       When you need to ask clarifying questions, you MUST return JSON (not plain text).
 
-      Return ONLY this JSON structure - no markdown, no additional text:
+      Return ONLY this JSON structure - no markdown code blocks, no additional text:
       {
-        "response": "Your conversational answer here (without questions)",
+        "response": "Your conversational answer here with proper markdown formatting (paragraphs separated by blank lines, lists with - or *, bold **text**, etc.)",
         "has_questions": true,
         "questions": [
           {
@@ -968,12 +968,15 @@ class ChatCompletionService < ApplicationService
       }
 
       Rules:
-      - response: Your answer without any questions in it
+      - response: Your answer WITH markdown formatting (paragraphs, bold, italics, lists, etc.) - NO questions in it
       - has_questions: true/false - MUST be boolean
       - questions: Array of question objects (empty array if has_questions is false)
       - input_type: "text" (single line), "textarea" (multi-line), or "select" (dropdown)
       - options: Array of choices for "select" type, empty array otherwise
       - context: Optional hint to help user answer (can be null)
+      - Format with clear paragraph breaks (blank lines between paragraphs)
+      - Use bullet points or numbered lists for multiple items
+      - Use **bold** and _italics_ for emphasis
 
       CRITICAL: Return ONLY the JSON object, nothing else. No markdown code blocks, no explanations.
 
