@@ -11,7 +11,7 @@ export default class extends Controller {
     const formData = new FormData(form)
     const chatId = this.data.get("chatId")
 
-    // Collect answers
+    // Collect answers and questions
     const answers = {}
     const questions = JSON.parse(this.data.get("questions"))
 
@@ -20,12 +20,13 @@ export default class extends Controller {
       answers[idx] = value
     })
 
-    // Send answers as chat message
+    // Send answers as chat message with questions for context
     post(`/chats/${chatId}/create_message`, {
       body: JSON.stringify({
         message: {
           content: JSON.stringify(answers),
-          answers: answers
+          answers: answers,
+          questions: questions
         }
       }),
       contentType: "application/json"

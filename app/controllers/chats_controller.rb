@@ -45,14 +45,14 @@ class ChatsController < ApplicationController
   # Submit message to chat
   def create_message
     begin
-      message_params = params.require(:message).permit(:content, answers: {})
+      message_params = params.require(:message).permit(:content, answers: {}, questions: [])
     rescue ActionController::ParameterMissing
       return render_security_error("Message content is required", 422)
     end
 
     # Handle clarifying questions answers by converting them to natural language
     content = if message_params[:answers].present?
-      convert_answers_to_message(message_params[:answers])
+      convert_answers_to_message(message_params[:answers], message_params[:questions])
     else
       message_params[:content]&.strip
     end
@@ -242,19 +242,31 @@ class ChatsController < ApplicationController
     end
   end
 
-  def convert_answers_to_message(answers)
+  def convert_answers_to_message(answers, questions = nil)
     # Convert clarifying question answers into a natural language message
-    # answers is a hash like { "0" => "value1", "1" => "value2", ... }
+    # Format: "Q: question text\nA: answer text\n\nQ: next question\nA: answer\n..."
     return "" if answers.blank?
 
     # Convert ActionController::Parameters to hash if needed
     answers_hash = answers.is_a?(ActionController::Parameters) ? answers.to_h : answers
+    questions_array = questions.is_a?(ActionController::Parameters) ? questions.to_a : Array(questions)
 
-    formatted_answers = answers_hash.sort.map do |idx, value|
-      value.to_s.strip
-    end.select(&:present?).join("\n")
+    # Format with questions for context
+    formatted_parts = answers_hash.sort.map do |idx, answer|
+      idx_num = idx.to_i
+      question_text = questions_array[idx_num]&.dig("question") if questions_array.present?
+      answer_text = answer.to_s.strip
 
-    formatted_answers
+      next "" if answer_text.blank?
+
+      if question_text.present?
+        "**Q:** #{question_text}\n**A:** #{answer_text}"
+      else
+        "#{answer_text}"
+      end
+    end.select(&:present?)
+
+    formatted_parts.join("\n\n")
   end
 
   def process_message(user_message)
