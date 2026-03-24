@@ -45,12 +45,17 @@ class ChatsController < ApplicationController
   # Submit message to chat
   def create_message
     begin
-      message_params = params.require(:message).permit(:content)
+      message_params = params.require(:message).permit(:content, answers: {})
     rescue ActionController::ParameterMissing
       return render_security_error("Message content is required", 422)
     end
 
-    content = message_params[:content].strip
+    # Handle clarifying questions answers by converting them to natural language
+    content = if message_params[:answers].present?
+      convert_answers_to_message(message_params[:answers])
+    else
+      message_params[:content]&.strip
+    end
 
     return if content.blank?
 
@@ -235,6 +240,16 @@ class ChatsController < ApplicationController
     else
       nil
     end
+  end
+
+  def convert_answers_to_message(answers)
+    # Convert clarifying question answers into a natural language message
+    # answers is a hash like { "0" => "value1", "1" => "value2", ... }
+    formatted_answers = answers.sort.map do |idx, value|
+      "#{value}"
+    end.join("\n")
+
+    formatted_answers.strip
   end
 
   def process_message(user_message)
