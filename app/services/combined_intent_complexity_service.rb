@@ -77,12 +77,12 @@ class CombinedIntentComplexityService < ApplicationService
       }
 
       INTENT:
-      - create_list: plans, trips, learning, projects, lists, "I need X books/items/resources", "give me a list of"
+      - create_list: "create/build/plan X", "I want X items/books/recipes", "give me a list of", "organize X", explicit creation requests
+      - general_question: "What X should I Y?", "How do I...?", "Tell me about...", advisory/recommendation questions
       - create_resource: adding users/teams/organizations
       - navigate_to_page: show/list pages, "go to", "take me to"
       - search_data: find/search, "find X", "search for"
       - manage_resource: update/delete/archive existing lists
-      - general_question: casual chat, questions that don't fit above categories
 
       COMPLEXITY (for create_list only):
       COMPLEX = request is MISSING CRITICAL INFO:
@@ -127,10 +127,12 @@ class CombinedIntentComplexityService < ApplicationService
       - If user names an action/process (plan, organize, design, build, create) → PLANNING
 
       EXAMPLES:
-      - "I'm looking for 5 books to become a better manager" → create_list, not complex, generation_type: "items"
-      - "Give me a grocery list for pasta dinner" → create_list, not complex, generation_type: "items"
-      - "Plan a roadshow across US cities in June" → create_list, complex, generation_type: "planning"
-      - "What books should I read on AI?" → create_list, not complex, generation_type: "items"
+      - "I'm looking for 5 books to become a better manager" → create_list (explicit: "looking for X")
+      - "Give me a grocery list for pasta dinner" → create_list (explicit: "give me a list")
+      - "Plan a roadshow across US cities in June" → create_list (explicit: "Plan")
+      - "What books should I read on AI?" → general_question (advisory: "What should I read?", not requesting a list)
+      - "What type of sailboat should I purchase?" → general_question (advisory: recommendation request)
+      - "Create a vacation itinerary to Spain" → create_list (explicit: "Create")
       - "How do I use tags?" → general_question
       - "Create a user john@example.com" → create_resource
       - "Show me the teams page" → navigate_to_page
