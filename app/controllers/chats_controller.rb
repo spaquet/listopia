@@ -53,7 +53,13 @@ class ChatsController < ApplicationController
     end
 
     # DEBUG: Log what we're receiving
-    Rails.logger.info("ChatsController#create_message - Raw params[:message]: #{raw_message.inspect[0..500]}")
+    Rails.logger.info("=" * 80)
+    Rails.logger.info("ChatsController#create_message - Raw params:")
+    Rails.logger.info("  params class: #{params.class}")
+    Rails.logger.info("  params keys: #{params.keys.inspect}")
+    Rails.logger.info("  raw_message class: #{raw_message.class}")
+    Rails.logger.info("  raw_message keys: #{raw_message.is_a?(Hash) ? raw_message.keys.inspect : 'N/A'}")
+    Rails.logger.info("  Full raw_message: #{raw_message.inspect[0..800]}")
 
     # Extract parameters manually for better control over nested structures
     content = raw_message[:content] || raw_message["content"]
@@ -61,14 +67,26 @@ class ChatsController < ApplicationController
     questions = raw_message[:questions] || raw_message["questions"] || []
 
     Rails.logger.info("ChatsController#create_message - Extracted:")
-    Rails.logger.info("  content: #{content.inspect}")
+    Rails.logger.info("  content: #{content.inspect[0..100]}")
+    Rails.logger.info("  answers keys: #{answers.is_a?(Hash) ? answers.keys.inspect : 'not a hash'}")
     Rails.logger.info("  answers: #{answers.inspect[0..200]}")
+    Rails.logger.info("  questions class: #{questions.class}")
     Rails.logger.info("  questions count: #{questions.is_a?(Array) ? questions.length : 'not an array'}")
+    Rails.logger.info("  questions[0]: #{questions.is_a?(Array) && questions[0] ? questions[0].inspect[0..100] : 'N/A'}")
+    Rails.logger.info("=" * 80)
 
     # Handle clarifying questions answers by converting them to natural language
     if answers.present?
       Rails.logger.info("ChatsController#create_message - Converting answers with #{questions.is_a?(Array) ? questions.length : 0} questions")
       content = convert_answers_to_message(answers, questions)
+
+      # CRITICAL: Include original request context if this is clarifying question answers
+      if @chat.chat_context&.request_content.present? && @chat.chat_context.detected_intent == "general_question"
+        original_request = @chat.chat_context.request_content
+        Rails.logger.info("ChatsController#create_message - Preserving original request: #{original_request[0..100]}")
+        # Prepend original request context
+        content = "**Original request:** #{original_request}\n\n**My answers to your clarifying questions:**\n\n#{content}"
+      end
     else
       content = content&.to_s&.strip
     end
