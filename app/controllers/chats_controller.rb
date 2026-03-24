@@ -265,7 +265,15 @@ class ChatsController < ApplicationController
     # Format: "**Q:** question text\n**A:** answer text\n\n**Q:** next question\n**A:** answer"
     return "" if answers.blank?
 
-    answers_hash = answers.is_a?(Hash) ? answers : answers.to_h
+    # Handle ActionController::Parameters safely
+    answers_hash = if answers.is_a?(Hash)
+      answers
+    elsif answers.is_a?(ActionController::Parameters)
+      answers.permit!.to_h
+    else
+      answers.to_h
+    end
+
     questions_array = questions.is_a?(Array) ? questions : Array(questions)
 
     Rails.logger.info("convert_answers_to_message - Formatting with #{answers_hash.length} answers and #{questions_array.length} questions")
