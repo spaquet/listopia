@@ -2,53 +2,53 @@
 #
 # Table name: ai_agent_runs
 #
-#  id                    :uuid             not null, primary key
-#  cancellation_reason   :text
-#  error_message         :text
-#  input_parameters      :jsonb            not null
-#  input_tokens          :integer          default(0)
-#  invocable_type        :string
-#  last_activity_at      :datetime
-#  metadata              :jsonb            not null
-#  output_tokens         :integer          default(0)
-#  processing_time_ms    :integer
-#  result_data           :jsonb            not null
-#  result_summary        :text
-#  status                :integer          not null, default: 0
-#  steps_completed       :integer          default(0)
-#  steps_total           :integer          default(0)
-#  thinking_tokens       :integer          default(0)
-#  total_tokens          :integer          default(0)
-#  user_input            :text
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
-#  ai_agent_id           :uuid             not null
-#  completed_at          :datetime
-#  invocable_id          :uuid
-#  organization_id       :uuid             not null
-#  paused_at             :datetime
-#  parent_run_id         :uuid
-#  started_at            :datetime
-#  user_id               :uuid             not null
+#  id                  :uuid             not null, primary key
+#  cancellation_reason :text
+#  completed_at        :datetime
+#  error_message       :text
+#  input_parameters    :jsonb            not null
+#  input_tokens        :integer          default(0)
+#  invocable_type      :string
+#  last_activity_at    :datetime
+#  metadata            :jsonb            not null
+#  output_tokens       :integer          default(0)
+#  paused_at           :datetime
+#  processing_time_ms  :integer
+#  result_data         :jsonb            not null
+#  result_summary      :text
+#  started_at          :datetime
+#  status              :integer          default("pending"), not null
+#  steps_completed     :integer          default(0)
+#  steps_total         :integer          default(0)
+#  thinking_tokens     :integer          default(0)
+#  total_tokens        :integer          default(0)
+#  user_input          :text
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  ai_agent_id         :uuid             not null
+#  invocable_id        :uuid
+#  organization_id     :uuid             not null
+#  parent_run_id       :uuid
+#  user_id             :uuid             not null
 #
 # Indexes
 #
-#  index_ai_agent_runs_on_ai_agent_id       (ai_agent_id)
-#  index_ai_agent_runs_on_completed_at      (completed_at)
-#  index_ai_agent_runs_on_invocable         (invocable_type,invocable_id)
-#  index_ai_agent_runs_on_last_activity_at  (last_activity_at)
-#  index_ai_agent_runs_on_organization_id   (organization_id)
-#  index_ai_agent_runs_on_parent_run_id     (parent_run_id)
-#  index_ai_agent_runs_on_started_at        (started_at)
-#  index_ai_agent_runs_on_status            (status)
-#  index_ai_agent_runs_on_user_id           (user_id)
+#  index_ai_agent_runs_on_ai_agent_id                      (ai_agent_id)
+#  index_ai_agent_runs_on_completed_at                     (completed_at)
+#  index_ai_agent_runs_on_invocable_type_and_invocable_id  (invocable_type,invocable_id)
+#  index_ai_agent_runs_on_last_activity_at                 (last_activity_at)
+#  index_ai_agent_runs_on_organization_id                  (organization_id)
+#  index_ai_agent_runs_on_parent_run_id                    (parent_run_id)
+#  index_ai_agent_runs_on_started_at                       (started_at)
+#  index_ai_agent_runs_on_status                           (status)
+#  index_ai_agent_runs_on_user_id                          (user_id)
 #
 # Foreign Keys
 #
-#  fk_rails_4d5e6f7g8h  (ai_agent_id => ai_agents.id)
-#  fk_rails_5e6f7g8h9i  (organization_id => organizations.id)
-#  fk_rails_6f7g8h9i0j  (parent_run_id => ai_agent_runs.id)
-#  fk_rails_7g8h9i0j1k  (user_id => users.id)
+#  fk_rails_...  (ai_agent_id => ai_agents.id)
+#  fk_rails_...  (organization_id => organizations.id)
+#  fk_rails_...  (parent_run_id => ai_agent_runs.id)
+#  fk_rails_...  (user_id => users.id)
 #
 
 class AiAgentRun < ApplicationRecord

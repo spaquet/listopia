@@ -2,38 +2,38 @@
 #
 # Table name: ai_agent_run_steps
 #
-#  id                  :uuid             not null, primary key
-#  description         :text
-#  error_message       :text
-#  input_tokens        :integer          default(0)
-#  metadata            :jsonb            not null
-#  output_tokens       :integer          default(0)
-#  processing_time_ms  :integer
-#  prompt_sent         :text
-#  response_received   :text
-#  status              :integer          not null, default: 0
-#  step_number         :integer          not null
-#  step_type           :string           not null
-#  title               :string
-#  tool_input          :jsonb            not null
-#  tool_name           :string
-#  tool_output         :jsonb            not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  ai_agent_run_id     :uuid             not null
-#  completed_at        :datetime
-#  started_at          :datetime
+#  id                 :uuid             not null, primary key
+#  completed_at       :datetime
+#  description        :text
+#  error_message      :text
+#  input_tokens       :integer          default(0)
+#  metadata           :jsonb            not null
+#  output_tokens      :integer          default(0)
+#  processing_time_ms :integer
+#  prompt_sent        :text
+#  response_received  :text
+#  started_at         :datetime
+#  status             :integer          default("pending"), not null
+#  step_number        :integer          not null
+#  step_type          :string           not null
+#  title              :string
+#  tool_input         :jsonb            not null
+#  tool_name          :string
+#  tool_output        :jsonb            not null
+#  created_at         :datetime         not null
+#  updated_at         :datetime         not null
+#  ai_agent_run_id    :uuid             not null
 #
 # Indexes
 #
-#  index_ai_agent_run_steps_on_ai_agent_run_id                (ai_agent_run_id)
-#  index_ai_agent_run_steps_on_status                         (status)
-#  index_ai_agent_run_steps_on_step_type                      (step_type)
-#  index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number (ai_agent_run_id,step_number) UNIQUE
+#  index_ai_agent_run_steps_on_ai_agent_run_id                  (ai_agent_run_id)
+#  index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number  (ai_agent_run_id,step_number) UNIQUE
+#  index_ai_agent_run_steps_on_status                           (status)
+#  index_ai_agent_run_steps_on_step_type                        (step_type)
 #
 # Foreign Keys
 #
-#  fk_rails_8h9i0j1k2l  (ai_agent_run_id => ai_agent_runs.id)
+#  fk_rails_...  (ai_agent_run_id => ai_agent_runs.id)
 #
 
 class AiAgentRunStep < ApplicationRecord

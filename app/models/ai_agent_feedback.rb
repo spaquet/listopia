@@ -2,30 +2,31 @@
 #
 # Table name: ai_agent_feedbacks
 #
-#  id                  :uuid             not null, primary key
-#  comment             :text
-#  feedback_type       :integer
-#  helpfulness_score   :integer
-#  rating              :integer          not null
-#  created_at          :datetime         not null
-#  updated_at          :datetime         not null
-#  ai_agent_id         :uuid             not null
-#  ai_agent_run_id     :uuid             not null
-#  user_id             :uuid             not null
+#  id                :uuid             not null, primary key
+#  comment           :text
+#  feedback_type     :integer
+#  helpfulness_score :integer
+#  rating            :integer          not null
+#  created_at        :datetime         not null
+#  updated_at        :datetime         not null
+#  ai_agent_id       :uuid             not null
+#  ai_agent_run_id   :uuid             not null
+#  user_id           :uuid             not null
 #
 # Indexes
 #
-#  index_ai_agent_feedbacks_on_ai_agent_id        (ai_agent_id)
-#  index_ai_agent_feedbacks_on_rating             (rating)
-#  index_ai_agent_feedbacks_on_user_id            (user_id,created_at)
-#  index_ai_agent_feedbacks_on_ai_agent_run_id    (ai_agent_run_id)
-#  index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id (ai_agent_run_id,user_id) UNIQUE
+#  index_ai_agent_feedbacks_on_ai_agent_id                  (ai_agent_id)
+#  index_ai_agent_feedbacks_on_ai_agent_run_id              (ai_agent_run_id)
+#  index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id  (ai_agent_run_id,user_id) UNIQUE
+#  index_ai_agent_feedbacks_on_rating                       (rating)
+#  index_ai_agent_feedbacks_on_user_id                      (user_id)
+#  index_ai_agent_feedbacks_on_user_id_and_created_at       (user_id,created_at)
 #
 # Foreign Keys
 #
-#  fk_rails_9i0j1k2l3m  (ai_agent_id => ai_agents.id)
-#  fk_rails_0j1k2l3m4n  (ai_agent_run_id => ai_agent_runs.id)
-#  fk_rails_1k2l3m4n5o  (user_id => users.id)
+#  fk_rails_...  (ai_agent_id => ai_agents.id)
+#  fk_rails_...  (ai_agent_run_id => ai_agent_runs.id)
+#  fk_rails_...  (user_id => users.id)
 #
 
 class AiAgentFeedback < ApplicationRecord

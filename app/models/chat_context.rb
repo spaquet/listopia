@@ -20,6 +20,7 @@
 #  metadata(Additional metadata and performance metrics (thinking_tokens, generation_time_ms, etc.)) :jsonb
 #  missing_parameters(Parameters missing from request)                                               :string           default([]), is an Array
 #  parameters(Extracted parameters from request)                                                     :jsonb
+#  parent_requirements(Parent item requirements extracted from planning domain)                      :jsonb
 #  planning_domain(Domain: vacation, sprint, roadshow, etc.)                                         :string
 #  post_creation_mode(True when showing 'keep or clear context' buttons after list creation)         :boolean          default(FALSE)
 #  pre_creation_answers(User's answers to pre-creation questions)                                    :jsonb
@@ -58,6 +59,9 @@ class ChatContext < ApplicationRecord
   belongs_to :organization
   has_many :planning_relationships, dependent: :destroy
   has_one :created_list, class_name: "List", foreign_key: "chat_context_id", required: false
+
+  # Attributes
+  attr_accessor :location
 
   # Validations
   validates :user_id, :chat_id, :organization_id, presence: true

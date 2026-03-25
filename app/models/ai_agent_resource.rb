@@ -2,26 +2,26 @@
 #
 # Table name: ai_agent_resources
 #
-#  id                    :uuid             not null, primary key
-#  config                :jsonb            not null
-#  description           :text
-#  enabled               :boolean          default(TRUE), not null
-#  permission            :integer          not null, default: 0
-#  resource_identifier   :string
-#  resource_type         :string           not null
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
-#  ai_agent_id           :uuid             not null
+#  id                  :uuid             not null, primary key
+#  config              :jsonb            not null
+#  description         :text
+#  enabled             :boolean          default(TRUE), not null
+#  permission          :integer          default("read_only"), not null
+#  resource_identifier :string
+#  resource_type       :string           not null
+#  created_at          :datetime         not null
+#  updated_at          :datetime         not null
+#  ai_agent_id         :uuid             not null
 #
 # Indexes
 #
-#  index_ai_agent_resources_on_ai_agent_id  (ai_agent_id)
-#  index_ai_agent_resources_on_enabled      (enabled)
-#  index_ai_agent_resources_on_resource_type (resource_type)
+#  index_ai_agent_resources_on_ai_agent_id    (ai_agent_id)
+#  index_ai_agent_resources_on_enabled        (enabled)
+#  index_ai_agent_resources_on_resource_type  (resource_type)
 #
 # Foreign Keys
 #
-#  fk_rails_3c4d5e6f7g  (ai_agent_id => ai_agents.id)
+#  fk_rails_...  (ai_agent_id => ai_agents.id)
 #
 
 class AiAgentResource < ApplicationRecord

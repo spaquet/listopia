@@ -1,41 +1,41 @@
 module Connectors
-  # == Schema Information
-  #
-  # Table name: connector_accounts
-  #
-  #  id                      :uuid             not null, primary key
-  #  access_token_encrypted  :text
-  #  display_name            :string
-  #  email                   :string
-  #  error_count             :integer          default(0), not null
-  #  last_error              :text
-  #  last_sync_at            :timestamptz
-  #  metadata                :jsonb            not null
-  #  provider                :string           not null
-  #  provider_uid            :string           not null
-  #  refresh_token_encrypted :text
-  #  status                  :string           default("active"), not null
-  #  token_expires_at        :timestamptz
-  #  token_scope             :string
-  #  created_at              :datetime         not null
-  #  updated_at              :datetime         not null
-  #  organization_id         :uuid             not null
-  #  user_id                 :uuid             not null
-  #
-  # Indexes
-  #
-  #  idx_on_user_id_provider_provider_uid_1cce2a45f8  (user_id,provider,provider_uid) UNIQUE
-  #  index_connector_accounts_on_created_at           (created_at)
-  #  index_connector_accounts_on_organization_id      (organization_id)
-  #  index_connector_accounts_on_provider             (provider)
-  #  index_connector_accounts_on_status               (status)
-  #  index_connector_accounts_on_user_id              (user_id)
-  #
-  # Foreign Keys
-  #
-  #  fk_rails_...  (organization_id => organizations.id)
-  #  fk_rails_...  (user_id => users.id)
-  #
+# == Schema Information
+#
+# Table name: connector_accounts
+#
+#  id                      :uuid             not null, primary key
+#  access_token_encrypted  :text
+#  display_name            :string
+#  email                   :string
+#  error_count             :integer          default(0), not null
+#  last_error              :text
+#  last_sync_at            :timestamptz
+#  metadata                :jsonb            not null
+#  provider                :string           not null
+#  provider_uid            :string           not null
+#  refresh_token_encrypted :text
+#  status                  :string           default("active"), not null
+#  token_expires_at        :timestamptz
+#  token_scope             :string
+#  created_at              :datetime         not null
+#  updated_at              :datetime         not null
+#  organization_id         :uuid             not null
+#  user_id                 :uuid             not null
+#
+# Indexes
+#
+#  idx_on_user_id_provider_provider_uid_1cce2a45f8  (user_id,provider,provider_uid) UNIQUE
+#  index_connector_accounts_on_created_at           (created_at)
+#  index_connector_accounts_on_organization_id      (organization_id)
+#  index_connector_accounts_on_provider             (provider)
+#  index_connector_accounts_on_status               (status)
+#  index_connector_accounts_on_user_id              (user_id)
+#
+# Foreign Keys
+#
+#  fk_rails_...  (organization_id => organizations.id)
+#  fk_rails_...  (user_id => users.id)
+#
   class Account < ApplicationRecord
     self.table_name = "connector_accounts"
 

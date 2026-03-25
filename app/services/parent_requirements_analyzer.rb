@@ -21,7 +21,17 @@ class ParentRequirementsAnalyzer < ApplicationService
       hierarchical_items["parent_reasoning"] = generate_reasoning
       hierarchical_items["parent_generated_at"] = Time.current.iso8601
 
-      @planning_context.update!(hierarchical_items: hierarchical_items)
+      # Also update parent_requirements field for direct access
+      parent_requirements = {
+        "items" => parent_items,
+        "reasoning" => generate_reasoning,
+        "generated_at" => Time.current.iso8601
+      }
+
+      @planning_context.update!(
+        hierarchical_items: hierarchical_items,
+        parent_requirements: parent_requirements
+      )
 
       success(data: {
         parent_items: parent_items,

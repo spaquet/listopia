@@ -2,50 +2,50 @@
 #
 # Table name: ai_agents
 #
-#  id                      :uuid             not null, primary key
-#  average_rating          :float
-#  description             :text
-#  max_steps               :integer          default(20)
-#  max_tokens_per_day      :integer          default(50000)
-#  max_tokens_per_month    :integer          default(500000)
-#  max_tokens_per_run      :integer          default(4000)
-#  metadata                :jsonb            not null
-#  model                   :string           default("gpt-4o-mini")
-#  name                    :string           not null
-#  parameters              :jsonb            not null
-#  prompt                  :text             not null
-#  rate_limit_per_hour     :integer          default(10)
-#  run_count               :integer          default(0)
-#  scope                   :integer          not null, default: 0
-#  slug                    :string           not null
-#  status                  :integer          not null, default: 0
-#  success_count           :integer          default(0)
-#  timeout_seconds         :integer          default(120)
-#  tokens_month_year       :integer
-#  tokens_today_date       :date
-#  tokens_used_this_month  :integer          default(0)
-#  tokens_used_today       :integer          default(0)
-#  created_at              :datetime         not null
-#  updated_at              :datetime         not null
-#  discarded_at            :datetime
-#  organization_id         :uuid
-#  user_id                 :uuid
+#  id                     :uuid             not null, primary key
+#  average_rating         :float
+#  description            :text
+#  discarded_at           :datetime
+#  max_steps              :integer          default(20)
+#  max_tokens_per_day     :integer          default(50000)
+#  max_tokens_per_month   :integer          default(500000)
+#  max_tokens_per_run     :integer          default(4000)
+#  metadata               :jsonb            not null
+#  model                  :string           default("gpt-4o-mini")
+#  name                   :string           not null
+#  parameters             :jsonb            not null
+#  prompt                 :text             not null
+#  rate_limit_per_hour    :integer          default(10)
+#  run_count              :integer          default(0)
+#  scope                  :integer          default("system_agent"), not null
+#  slug                   :string           not null
+#  status                 :integer          default("draft"), not null
+#  success_count          :integer          default(0)
+#  timeout_seconds        :integer          default(120)
+#  tokens_month_year      :integer
+#  tokens_today_date      :date
+#  tokens_used_this_month :integer          default(0)
+#  tokens_used_today      :integer          default(0)
+#  created_at             :datetime         not null
+#  updated_at             :datetime         not null
+#  organization_id        :uuid
+#  user_id                :uuid
 #
 # Indexes
 #
-#  index_ai_agents_on_discarded_at          (discarded_at)
-#  index_ai_agents_on_organization_id       (organization_id)
-#  index_ai_agents_on_run_count             (run_count)
-#  index_ai_agents_on_scope                 (scope)
-#  index_ai_agents_on_status                (status)
-#  index_ai_agents_on_user_id               (user_id)
-#  index_ai_agents_on_organization_id_slug  (organization_id,slug) UNIQUE
-#  index_ai_agents_on_user_id_slug          (user_id,slug) UNIQUE
+#  index_ai_agents_on_discarded_at              (discarded_at)
+#  index_ai_agents_on_organization_id           (organization_id)
+#  index_ai_agents_on_organization_id_and_slug  (organization_id,slug) UNIQUE
+#  index_ai_agents_on_run_count                 (run_count)
+#  index_ai_agents_on_scope                     (scope)
+#  index_ai_agents_on_status                    (status)
+#  index_ai_agents_on_user_id                   (user_id)
+#  index_ai_agents_on_user_id_and_slug          (user_id,slug) UNIQUE
 #
 # Foreign Keys
 #
-#  fk_rails_0f37b2a9c1  (organization_id => organizations.id)
-#  fk_rails_73c5ae3c9a  (user_id => users.id)
+#  fk_rails_...  (organization_id => organizations.id)
+#  fk_rails_...  (user_id => users.id)
 #
 
 class AiAgent < ApplicationRecord

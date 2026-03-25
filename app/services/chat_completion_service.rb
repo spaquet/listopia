@@ -1873,4 +1873,57 @@ class ChatCompletionService < ApplicationService
       # Non-blocking - if follow-up detection fails, just continue without it
     end
   end
+
+  # Check if list refinement is pending (awaiting clarifying questions)
+  def pending_list_refinement?
+    @chat.metadata&.dig("pending_list_refinement").present?
+  end
+
+  # Enrich list structure with planning details (locations, phases, timeline, budget)
+  def enrich_list_structure_with_planning(base_params:, planning_params:)
+    enriched = base_params.dup
+
+    # Extract planning keywords from planning_params
+    locations = planning_params.dig("locations") || []
+    phases = planning_params.dig("phases") || []
+    budget = planning_params.dig("budget")
+    start_date = planning_params.dig("start_date")
+    duration = planning_params.dig("duration")
+
+    # Create nested lists for locations or phases
+    nested_lists = []
+    if locations.any?
+      nested_lists = locations.map { |location|
+        {
+          "title" => location,
+          "items" => [],
+          "description" => "Tasks for #{location}"
+        }
+      }
+    elsif phases.any?
+      nested_lists = phases.map { |phase|
+        {
+          "title" => phase,
+          "items" => [],
+          "description" => "Activities for #{phase}"
+        }
+      }
+    end
+
+    # Add nested lists if any were created
+    enriched["nested_lists"] = nested_lists if nested_lists.any?
+
+    # Clear parent items since we're using nested structure
+    enriched["items"] = [] if nested_lists.any?
+
+    # Append planning details to description
+    description_parts = [ enriched["description"] || "" ]
+    description_parts << "Budget: #{budget}" if budget.present?
+    description_parts << "Start: #{start_date}" if start_date.present?
+    description_parts << "Duration: #{duration}" if duration.present?
+
+    enriched["description"] = description_parts.compact.join("\n") if description_parts.any?
+
+    enriched
+  end
 end

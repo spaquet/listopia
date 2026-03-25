@@ -12,11 +12,12 @@
 #
 #  index_ai_agent_team_memberships_on_ai_agent_id              (ai_agent_id)
 #  index_ai_agent_team_memberships_on_ai_agent_id_and_team_id  (ai_agent_id,team_id) UNIQUE
+#  index_ai_agent_team_memberships_on_team_id                  (team_id)
 #
 # Foreign Keys
 #
-#  fk_rails_1a2b3c4d5e  (ai_agent_id => ai_agents.id)
-#  fk_rails_2b3c4d5e6f  (team_id => teams.id)
+#  fk_rails_...  (ai_agent_id => ai_agents.id)
+#  fk_rails_...  (team_id => teams.id)
 #
 
 class AiAgentTeamMembership < ApplicationRecord

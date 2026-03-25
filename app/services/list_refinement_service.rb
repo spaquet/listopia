@@ -253,7 +253,7 @@ class ListRefinementService < ApplicationService
 
   # Extract the original user message from the chat context
   def extract_user_message
-    return "No context available" unless @context&.chat.present?
+    return "Create a #{@list_title} list" unless @context&.respond_to?(:chat) && @context.chat.present?
 
     # Get the last user message from the chat
     last_user_message = @context.chat.messages
@@ -261,7 +261,7 @@ class ListRefinementService < ApplicationService
       .order(created_at: :desc)
       .first
 
-    last_user_message&.content || "Unable to retrieve original message"
+    last_user_message&.content || "Create a #{@list_title} list"
   end
 
   # Extract response content from LLM

@@ -63,6 +63,7 @@ class Chat < ApplicationRecord
 
   has_many :messages, dependent: :destroy
   has_one :chat_context, dependent: :destroy
+  has_one :planning_context, class_name: "ChatContext", foreign_key: "chat_id", dependent: :destroy
 
   store :metadata, accessors: [ :rag_enabled, :model, :system_prompt ], coder: JSON
 
@@ -135,6 +136,16 @@ class Chat < ApplicationRecord
       location: location,
       focused_resource: focused_resource
     )
+  end
+
+  # Build or get chat context for planning flows
+  def build_context(location: nil)
+    ctx = chat_context || build_chat_context(
+      user: user,
+      organization: organization
+    )
+    ctx.location = location if location.present?
+    ctx
   end
 
   # Clone this chat (useful for "New Chat" based on current context)
