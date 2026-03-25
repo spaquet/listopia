@@ -1,0 +1,4 @@
+<%= turbo_stream.remove "resource_form" %>
+<%= turbo_stream.append "agent_resources_list" do %>
+  <%= render "resource", resource: @resource, agent: @agent %>
+<% end %>

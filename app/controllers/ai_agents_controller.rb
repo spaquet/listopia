@@ -93,14 +93,24 @@ class AiAgentsController < ApplicationController
   end
 
   def agent_params
-    params.require(:ai_agent).permit(
+    permitted = params.require(:ai_agent).permit(
       :name, :description, :prompt, :scope, :model,
       :max_tokens_per_run, :max_tokens_per_day, :max_tokens_per_month,
       :timeout_seconds, :max_steps, :rate_limit_per_hour,
-      :status, :tag_list,
-      parameters: {},
+      :status, :tag_list, :parameters,
       metadata: {}
     )
+
+    # Parse JSON string for parameters field
+    if permitted[:parameters].is_a?(String) && permitted[:parameters].present?
+      begin
+        permitted[:parameters] = JSON.parse(permitted[:parameters])
+      rescue JSON::ParserError
+        permitted[:parameters] = {}
+      end
+    end
+
+    permitted
   end
 
   def resolve_invocable

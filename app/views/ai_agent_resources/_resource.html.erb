@@ -1,0 +1,26 @@
+<div id="ai_agent_resource_<%= resource.id %>" class="flex items-center justify-between p-3 border border-gray-200 rounded">
+  <div class="flex-1">
+    <div class="flex items-center gap-2">
+      <span class="font-medium text-sm text-gray-900"><%= resource.resource_type.titleize %></span>
+      <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700"><%= resource.permission.titleize.gsub("_", " ") %></span>
+      <% if resource.enabled? %>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">Enabled</span>
+      <% else %>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-600">Disabled</span>
+      <% end %>
+    </div>
+    <% if resource.description.present? %>
+      <p class="text-xs text-gray-600 mt-1"><%= resource.description %></p>
+    <% end %>
+    <% tools = AgentToolBuilder.tool_for_resource(resource).map { |t| t[:name] } %>
+    <% if tools.any? %>
+      <p class="text-xs text-blue-600 mt-1">
+        <strong>Tools:</strong> <%= tools.join(", ") %>
+      </p>
+    <% end %>
+  </div>
+  <div class="flex gap-2 items-center">
+    <%= link_to "Edit", edit_ai_agent_ai_agent_resource_path(agent, resource), data: { turbo_frame: "resource_form" }, class: "text-blue-600 hover:text-blue-800 text-sm" %>
+    <%= link_to "Delete", ai_agent_ai_agent_resource_path(agent, resource), method: :delete, data: { confirm: "Are you sure?" }, local: false, class: "text-red-600 hover:text-red-800 text-sm" %>
+  </div>
+</div>

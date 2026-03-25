@@ -104,6 +104,7 @@ Rails.application.routes.draw do
 
   # AI Agents
   resources :ai_agents, path: "agents" do
+    resources :ai_agent_resources, path: "resources", except: [ :index, :show ]
     member do
       post :invoke
       get  :runs

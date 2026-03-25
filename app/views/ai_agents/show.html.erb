@@ -40,6 +40,46 @@
           <% end %>
         </div>
       <% end %>
+
+      <% if @agent.parameters.present? %>
+        <div class="mt-6">
+          <h3 class="font-semibold text-gray-900 mb-3">Input Parameters</h3>
+          <div class="space-y-2 text-sm">
+            <% @agent.parameters.each do |key, description| %>
+              <div class="p-2 bg-gray-50 border border-gray-200 rounded">
+                <span class="font-mono text-gray-900"><%= key %></span>
+                <% if description.is_a?(String) && description.present? %>
+                  <p class="text-gray-600"><%= description %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-semibold text-gray-900">Resources & Tools</h2>
+          <p class="text-xs text-gray-600 mt-1">Resources define what tools this agent can use at runtime</p>
+        </div>
+        <% if policy(@agent).edit? %>
+          <%= link_to "Add Resource", new_ai_agent_ai_agent_resource_path(@agent), data: { turbo_frame: "resource_form" }, class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded text-sm transition" %>
+        <% end %>
+      </div>
+
+      <%= turbo_frame_tag "resource_form" %>
+
+      <% if @agent.ai_agent_resources.any? %>
+        <div id="agent_resources_list" class="space-y-2">
+          <% @agent.ai_agent_resources.each do |resource| %>
+            <%= render "ai_agent_resources/resource", resource: resource, agent: @agent %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-600 text-center py-4">No resources configured. Add resources to enable tools.</p>
+      <% end %>
     </div>
 
     <div class="bg-white rounded-lg shadow p-6">
