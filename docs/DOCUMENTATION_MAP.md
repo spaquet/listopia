@@ -51,6 +51,14 @@ Quick reference for finding the right documentation for your task.
 ### I need API endpoint documentation
 → See [RAG_SEMANTIC_SEARCH.md - API Endpoints](RAG_SEMANTIC_SEARCH.md#api-endpoints)
 
+### I'm building or configuring AI Agents
+→ Read [AGENTS.md](AGENTS.md)
+- Agent scopes and access control (system, org, team, user)
+- Resources and tool management
+- Execution flow and orchestration
+- Authorization rules
+- Data models and controllers
+
 ### I'm integrating third-party services
 → Read [CONNECTORS_ARCHITECTURE.md](CONNECTORS_ARCHITECTURE.md)
 - Complete connector overview
@@ -94,6 +102,20 @@ CLAUDE.md (Master Reference)
 │   └── Chat UI Patterns ✅ (NEW)
 ├── Common Tasks
 └── Development Standards
+
+AGENTS.md (AI Agents System) ✅ NEW
+├── Overview & Architecture
+├── Agent Scopes & Access Control
+├── Agent Configuration
+├── Resources & Tools
+├── Execution Flow & Lifecycle
+├── Orchestration (Agent → Agent)
+├── Data Models
+├── Routes & Controllers
+├── Security & Authorization
+├── Performance Considerations
+├── Troubleshooting
+└── Future Enhancements
 
 CHAT_CONTEXT.md (Chat Context Management) ✅ NEW
 ├── Understanding Chat Context
@@ -274,6 +296,14 @@ docs/archived/README.md (Historical Reference)
 
 ## 🔍 By Topic
 
+### AI Agents
+- Architecture & Overview: [AGENTS.md](AGENTS.md)
+- Access Control: [AGENTS.md - Agent Scopes & Access Control](AGENTS.md#agent-scopes--access-control)
+- Resources & Tools: [AGENTS.md - Resources & Tools System](AGENTS.md#resources--tools-system)
+- Execution: [AGENTS.md - Execution Flow](AGENTS.md#execution-flow)
+- Data Models: [AGENTS.md - Data Models](AGENTS.md#data-models)
+- Security: [AGENTS.md - Security](AGENTS.md#security)
+
 ### Chat System
 - Architecture: [CLAUDE.md - Chat System Architecture](CLAUDE.md#chat-system-architecture)
 - Implementation: [CHAT_FEATURES.md](CHAT_FEATURES.md)
@@ -341,6 +371,12 @@ docs/archived/README.md (Historical Reference)
 | **CONNECTORS_ARCHITECTURE.md** | Third-party integrations | 500+ | Working with connectors (OAuth, sync, webhooks) |
 | **CONNECTORS_SECURITY_CHECKLIST.md** | Pre-testing security verification | 400+ | Before testing connector functionality |
 | **DOCUMENTATION_MAP.md** | This file | - | Finding the right doc |
+
+### In docs/ (AI Agents - Active)
+
+| File | Purpose | Lines | When to Use |
+|------|---------|-------|------------|
+| **AGENTS.md** | AI Agents system architecture | 400+ | Building or configuring agents, managing resources/tools |
 
 ### In docs/ (Chat Context - Active)
 
