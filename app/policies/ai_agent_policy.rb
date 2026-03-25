@@ -16,9 +16,12 @@ class AiAgentPolicy < ApplicationPolicy
   end
 
   def create?
+    # System agents can only be created by Listopia admin, never by regular users
+    return false if record.scope_system_agent?
+
     # For user_agent: any authenticated user can create
     # For org/team agents: only org admin/owner can create
-    return true if record.user_agent?
+    return true if record.scope_user_agent?
     return false unless Current.organization && user.in_organization?(Current.organization)
 
     membership = Current.organization.membership_for(user)

@@ -28,7 +28,8 @@
 
   <div>
     <%= f.label :scope, "Agent Scope", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.select :scope, AiAgent.scopes.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    <% available_scopes = ["user_agent", "org_agent", "team_agent"].map { |k| [k.titleize, k] } %>
+    <%= f.select :scope, available_scopes, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
     <p class="text-xs text-gray-500 mt-1">Scope determines who can access this agent</p>
   </div>
 
@@ -55,7 +56,13 @@
     </div>
     <div>
       <%= f.label :model, "Model", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.select :model, ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"], {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <% model_groups = {
+        "GPT-5 Series" => ["gpt-5-pro", "gpt-5", "gpt-5-mini", "gpt-5-nano"],
+        "Reasoning Models" => ["o3", "o3-mini", "o1", "o1-mini"],
+        "GPT-4 Series" => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"],
+        "GPT-3.5" => ["gpt-3.5-turbo"]
+      } %>
+      <%= f.select :model, model_groups, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
     </div>
   </div>
 

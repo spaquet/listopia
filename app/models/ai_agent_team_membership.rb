@@ -29,6 +29,6 @@ class AiAgentTeamMembership < ApplicationRecord
   private
 
   def agent_is_team_scoped
-    errors.add(:ai_agent, "must be a team-scoped agent") unless ai_agent&.team_agent?
+    errors.add(:ai_agent, "must be a team-scoped agent") unless ai_agent&.scope_team_agent?
   end
 end

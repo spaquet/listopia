@@ -30,7 +30,7 @@ class AiAgentsController < ApplicationController
   def create
     @agent = AiAgent.new(agent_params)
     @agent.user = current_user if params[:ai_agent][:scope] == "user_agent"
-    @agent.organization = Current.organization unless @agent.system_agent?
+    @agent.organization = Current.organization unless @agent.scope_system_agent?
     authorize @agent
 
     if @agent.save

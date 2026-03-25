@@ -88,6 +88,9 @@ class AiAgent < ApplicationRecord
 
   # Scopes
   scope :system_level,      -> { where(scope: :system_agent) }
+  scope :org_agent,         -> { where(scope: :org_agent) }
+  scope :team_agent,        -> { where(scope: :team_agent) }
+  scope :user_agent,        -> { where(scope: :user_agent) }
   scope :for_organization,  ->(org) { where(organization_id: org.id) }
   scope :for_team,          ->(team) { joins(:ai_agent_team_memberships).where(ai_agent_team_memberships: { team_id: team.id }).distinct }
   scope :for_user,          ->(user) { where(user_id: user.id) }

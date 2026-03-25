@@ -1,7 +1,12 @@
 <div class="container mx-auto px-4 py-8">
   <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">AI Agents</h1>
-    <p class="mt-2 text-gray-600">Discover and use AI agents to automate tasks</p>
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">AI Agents</h1>
+        <p class="mt-2 text-gray-600">Discover and use AI agents to automate tasks</p>
+      </div>
+      <%= link_to "Create New Agent", new_ai_agent_path, class: "inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded" %>
+    </div>
   </div>
 
   <div class="space-y-8">
@@ -28,6 +33,4 @@
       </div>
     <% end %>
   </div>
-
-  <%= link_to "Create New Agent", new_ai_agent_path, class: "mt-8 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded" %>
 </div>
