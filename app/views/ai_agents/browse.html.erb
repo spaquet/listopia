@@ -1,0 +1,33 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">AI Agents</h1>
+    <p class="mt-2 text-gray-600">Discover and use AI agents to automate tasks</p>
+  </div>
+
+  <div class="space-y-8">
+    <% @agents.each do |scope, agents| %>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+          <%= case scope
+              when "system_agent"
+                "Listopia System Agents"
+              when "org_agent"
+                "Organization Agents"
+              when "team_agent"
+                "Team Agents"
+              when "user_agent"
+                "Your Personal Agents"
+              end %>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% agents.each do |agent| %>
+            <%= render "ai_agents/agent_card", agent: agent %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%= link_to "Create New Agent", new_ai_agent_path, class: "mt-8 inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded" %>
+</div>

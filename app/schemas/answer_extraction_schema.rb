@@ -34,7 +34,7 @@ class AnswerExtractionSchema < RubyLLM::Schema
          description: "Target audience or participants"
 
   string :category,
-         enum: ["professional", "personal"],
+         enum: [ "professional", "personal" ],
          required: false,
          description: "Whether this is professional or personal"
 end

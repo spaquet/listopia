@@ -1,0 +1,17 @@
+<div id="agent-run-<%= run.id %>" class="bg-white rounded-lg shadow p-6">
+  <div id="agent-run-status-<%= run.id %>">
+    <%= render "ai_agents/run_status", run: run %>
+  </div>
+
+  <div id="agent-run-progress-<%= run.id %>" class="mt-4">
+    <%= render "ai_agents/run_progress", run: run %>
+  </div>
+
+  <div id="agent-run-steps-<%= run.id %>" class="mt-6 space-y-3">
+    <p class="text-sm text-gray-500">Waiting for execution to start...</p>
+  </div>
+
+  <div id="agent-run-result-<%= run.id %>" class="mt-6"></div>
+
+  <%= turbo_stream_from run %>
+</div>

@@ -11,7 +11,7 @@ class ClarifyingQuestionsService < ApplicationService
 
   def call
     begin
-      return failure(errors: ["No questions provided"]) if @questions.blank?
+      return failure(errors: [ "No questions provided" ]) if @questions.blank?
 
       Rails.logger.info("ClarifyingQuestionsService - Showing #{@questions.length} clarifying questions")
 

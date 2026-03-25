@@ -1,0 +1,10 @@
+<div id="agent-run-progress-<%= run.id %>" class="mb-4">
+  <div class="flex items-center justify-between mb-2">
+    <span class="text-sm font-semibold text-gray-700">Progress</span>
+    <span class="text-sm text-gray-600"><%= run.progress_percent %>%</span>
+  </div>
+  <div class="w-full bg-gray-200 rounded-full h-2">
+    <div class="bg-blue-600 h-2 rounded-full transition-all" style="width: <%= run.progress_percent %>%"></div>
+  </div>
+  <p class="text-xs text-gray-500 mt-1"><%= run.steps_completed %>/<%= run.steps_total %> steps completed</p>
+</div>

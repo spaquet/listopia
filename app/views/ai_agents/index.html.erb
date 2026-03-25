@@ -1,0 +1,22 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">My Agents</h1>
+      <p class="mt-2 text-gray-600">Agents you have access to</p>
+    </div>
+    <%= link_to "Browse All Agents", browse_ai_agents_path, class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition" %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% @agents.each do |agent| %>
+      <%= render "ai_agents/agent_card", agent: agent %>
+    <% end %>
+  </div>
+
+  <% if @agents.empty? %>
+    <div class="text-center py-12">
+      <p class="text-gray-600 mb-4">No agents yet</p>
+      <%= link_to "Browse available agents", browse_ai_agents_path, class: "text-blue-600 hover:text-blue-800 font-semibold" %>
+    </div>
+  <% end %>
+</div>

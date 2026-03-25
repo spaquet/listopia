@@ -1,0 +1,22 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Your Personal Agents</h1>
+      <p class="mt-2 text-gray-600">Create and manage custom AI agents</p>
+    </div>
+    <%= link_to "Create New Agent", new_ai_agent_path, class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition" %>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <% @agents.each do |agent| %>
+      <%= render "ai_agents/agent_card", agent: agent %>
+    <% end %>
+  </div>
+
+  <% if @agents.empty? %>
+    <div class="text-center py-12 bg-white rounded-lg">
+      <p class="text-gray-600 mb-4">You haven't created any personal agents yet</p>
+      <%= link_to "Create your first agent", new_ai_agent_path, class: "inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition" %>
+    </div>
+  <% end %>
+</div>

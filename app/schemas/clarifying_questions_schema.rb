@@ -13,7 +13,7 @@ class ClarifyingQuestionsSchema < RubyLLM::Schema
              description: "Helpful context or example"
 
       string :input_type,
-             enum: ["text", "textarea", "select"],
+             enum: [ "text", "textarea", "select" ],
              required: false,
              description: "Type of input field (text, textarea, or dropdown selection)"
 

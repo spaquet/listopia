@@ -1,0 +1,25 @@
+<div class="bg-white rounded-lg shadow hover:shadow-lg transition border border-gray-200 p-4">
+  <div class="flex items-start justify-between mb-2">
+    <div>
+      <h3 class="font-semibold text-gray-900"><%= agent.name %></h3>
+      <p class="text-xs text-gray-500"><%= agent.scope.titleize %></p>
+    </div>
+    <% if agent.average_rating.present? %>
+      <div class="text-sm font-semibold text-yellow-600">⭐ <%= number_with_precision(agent.average_rating, precision: 1) %></div>
+    <% end %>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-3 line-clamp-2"><%= agent.description %></p>
+
+  <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+    <span><%= agent.run_count %> runs</span>
+    <span><%= agent.tags.pluck(:name).join(", ") %></span>
+  </div>
+
+  <div class="flex gap-2">
+    <%= link_to "View", ai_agent_path(agent), class: "flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 rounded text-sm transition" %>
+    <% if policy(agent).invoke? %>
+      <%= link_to "Use", "#", data: { turbo_frame: "invoke_form" }, class: "flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white py-1 rounded text-sm transition" %>
+    <% end %>
+  </div>
+</div>

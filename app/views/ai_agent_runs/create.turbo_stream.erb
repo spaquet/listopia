@@ -1,0 +1,3 @@
+<%= turbo_stream.replace("agent-invoke-#{@run.ai_agent_id}") do %>
+  <%= render "ai_agents/run_placeholder", run: @run, agent: @run.ai_agent %>
+<% end %>

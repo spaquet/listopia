@@ -34,6 +34,8 @@ class Team < ApplicationRecord
   has_many :team_memberships, dependent: :destroy
   has_many :users, through: :team_memberships
   has_many :lists, dependent: :nullify
+  has_many :ai_agent_team_memberships, dependent: :destroy
+  has_many :ai_agents, through: :ai_agent_team_memberships
 
   # Validations
   validates :name, presence: true, length: { minimum: 1, maximum: 255 }

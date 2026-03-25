@@ -716,3 +716,84 @@ puts "2. Start server: bin/dev"
 puts "3. Log in as any user (password: password123)"
 puts "4. Try the search feature at /search"
 puts "5. Send a message in chat to see RAG in action with source attribution"
+
+# ============================================================================
+# AI AGENTS (System Agents)
+# ============================================================================
+puts "\n🤖 Creating AI Agents..."
+
+agent_list_researcher = AiAgent.create!(
+  scope: :system_agent,
+  name: "List Researcher",
+  slug: "list-researcher",
+  description: "Finds information about items in a list using web search and research capabilities",
+  prompt: "You are an AI research assistant. Your job is to find relevant information about items in a list. Use the read_list and read_list_items tools to see what's in the list, then provide comprehensive research information about each item.",
+  status: :active,
+  max_tokens_per_run: 8000,
+  max_tokens_per_day: 100_000,
+  max_tokens_per_month: 500_000
+)
+agent_list_researcher.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read list contents for research")
+agent_list_researcher.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read item details")
+agent_list_researcher.ai_agent_resources.create!(resource_type: "web_search", permission: :expect_response, description: "Search the web for information")
+agent_list_researcher.tag_list.add("research", "web-search", "information")
+agent_list_researcher.save!
+puts "✓ Created agent: List Researcher"
+
+agent_list_organizer = AiAgent.create!(
+  scope: :system_agent,
+  name: "List Organizer",
+  slug: "list-organizer",
+  description: "Re-prioritizes and categorizes items in a list based on context and importance",
+  prompt: "You are an AI list organization expert. Your job is to help users organize their lists by re-prioritizing items, categorizing them, and suggesting improvements. Read the list items, analyze them for patterns, and provide recommendations for better organization.",
+  status: :active,
+  max_tokens_per_run: 6000,
+  max_tokens_per_day: 80_000,
+  max_tokens_per_month: 400_000
+)
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list contents")
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items")
+agent_list_organizer.tag_list.add("organization", "prioritization", "categorization")
+agent_list_organizer.save!
+puts "✓ Created agent: List Organizer"
+
+agent_list_expander = AiAgent.create!(
+  scope: :system_agent,
+  name: "List Expander",
+  slug: "list-expander",
+  description: "Adds relevant sub-items or details to existing list items",
+  prompt: "You are an AI list expansion expert. Your job is to enhance lists by adding relevant sub-items and details. Read the main list items and suggest or create additional related items that would make the list more comprehensive and actionable.",
+  status: :active,
+  max_tokens_per_run: 7000,
+  max_tokens_per_day: 90_000,
+  max_tokens_per_month: 450_000
+)
+agent_list_expander.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
+agent_list_expander.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Create and update items")
+agent_list_expander.tag_list.add("expansion", "detail-generation", "enhancement")
+agent_list_expander.save!
+puts "✓ Created agent: List Expander"
+
+agent_list_summarizer = AiAgent.create!(
+  scope: :system_agent,
+  name: "List Summarizer",
+  slug: "list-summarizer",
+  description: "Generates a summary or status report of a list's progress",
+  prompt: "You are an AI summary expert. Your job is to analyze lists and generate comprehensive status reports. Read all items in a list, analyze their statuses, priorities, and completion progress, then provide a clear summary of the list's overall state and progress.",
+  status: :active,
+  max_tokens_per_run: 5000,
+  max_tokens_per_day: 70_000,
+  max_tokens_per_month: 350_000
+)
+agent_list_summarizer.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read list contents")
+agent_list_summarizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read item details")
+agent_list_summarizer.tag_list.add("summary", "reporting", "analysis")
+agent_list_summarizer.save!
+puts "✓ Created agent: List Summarizer"
+
+puts "\n✅ AI Agents seeded successfully!"
+puts "Available agents:"
+puts "  • List Researcher - Research items using web search"
+puts "  • List Organizer - Re-prioritize and categorize items"
+puts "  • List Expander - Add sub-items and details"
+puts "  • List Summarizer - Generate list progress reports"

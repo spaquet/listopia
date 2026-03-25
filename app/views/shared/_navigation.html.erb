@@ -30,6 +30,12 @@
             </svg>
             My Lists
           <% end %>
+          <%= link_to browse_ai_agents_path, class: nav_link_class(browse_ai_agents_path) do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13l3 3L22 4m0 0l-9-9-9 9"></path>
+            </svg>
+            Agents
+          <% end %>
           <!-- Search Icon (Spotlight) -->
           <button type="button"
                   data-action="click->spotlight-trigger#open"

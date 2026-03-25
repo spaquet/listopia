@@ -848,6 +848,156 @@ CREATE TABLE public.active_storage_variant_records (
 
 
 --
+-- Name: ai_agent_feedbacks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_feedbacks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_run_id uuid NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    rating integer NOT NULL,
+    feedback_type integer,
+    helpfulness_score integer,
+    comment text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_resources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_resources (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    resource_type character varying NOT NULL,
+    resource_identifier character varying,
+    permission integer DEFAULT 0 NOT NULL,
+    description text,
+    config jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_run_steps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_run_steps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_run_id uuid NOT NULL,
+    step_number integer NOT NULL,
+    step_type character varying NOT NULL,
+    title character varying,
+    description text,
+    status integer DEFAULT 0 NOT NULL,
+    prompt_sent text,
+    response_received text,
+    tool_name character varying,
+    tool_input jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    tool_output jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    input_tokens integer DEFAULT 0,
+    output_tokens integer DEFAULT 0,
+    processing_time_ms integer,
+    error_message text,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    invocable_type character varying,
+    invocable_id uuid,
+    parent_run_id uuid,
+    status integer DEFAULT 0 NOT NULL,
+    user_input text,
+    input_parameters jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    result_summary text,
+    result_data jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    input_tokens integer DEFAULT 0,
+    output_tokens integer DEFAULT 0,
+    thinking_tokens integer DEFAULT 0,
+    total_tokens integer DEFAULT 0,
+    processing_time_ms integer,
+    steps_completed integer DEFAULT 0,
+    steps_total integer DEFAULT 0,
+    error_message text,
+    cancellation_reason text,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    paused_at timestamp(6) without time zone,
+    last_activity_at timestamp(6) without time zone,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_team_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_team_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    team_id uuid NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying NOT NULL,
+    description text,
+    slug character varying NOT NULL,
+    scope integer DEFAULT 0 NOT NULL,
+    user_id uuid,
+    organization_id uuid,
+    prompt text NOT NULL,
+    parameters jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    max_tokens_per_run integer DEFAULT 4000,
+    max_tokens_per_day integer DEFAULT 50000,
+    max_tokens_per_month integer DEFAULT 500000,
+    timeout_seconds integer DEFAULT 120,
+    max_steps integer DEFAULT 20,
+    rate_limit_per_hour integer DEFAULT 10,
+    tokens_used_today integer DEFAULT 0,
+    tokens_used_this_month integer DEFAULT 0,
+    tokens_today_date date,
+    tokens_month_year integer,
+    model character varying DEFAULT 'gpt-4o-mini'::character varying,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    run_count integer DEFAULT 0,
+    success_count integer DEFAULT 0,
+    average_rating double precision,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    discarded_at timestamp(6) without time zone
+);
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1981,6 +2131,54 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: ai_agent_feedbacks ai_agent_feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT ai_agent_feedbacks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_resources ai_agent_resources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_resources
+    ADD CONSTRAINT ai_agent_resources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_run_steps ai_agent_run_steps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_run_steps
+    ADD CONSTRAINT ai_agent_run_steps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_runs ai_agent_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT ai_agent_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_team_memberships ai_agent_team_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT ai_agent_team_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agents ai_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT ai_agents_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2369,6 +2567,237 @@ CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_b
 --
 
 CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_ai_agent_id ON public.ai_agent_feedbacks USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_ai_agent_run_id ON public.ai_agent_feedbacks USING btree (ai_agent_run_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id ON public.ai_agent_feedbacks USING btree (ai_agent_run_id, user_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_rating; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_rating ON public.ai_agent_feedbacks USING btree (rating);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_user_id ON public.ai_agent_feedbacks USING btree (user_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_user_id_and_created_at ON public.ai_agent_feedbacks USING btree (user_id, created_at);
+
+
+--
+-- Name: index_ai_agent_resources_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_ai_agent_id ON public.ai_agent_resources USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_resources_on_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_enabled ON public.ai_agent_resources USING btree (enabled);
+
+
+--
+-- Name: index_ai_agent_resources_on_resource_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_resource_type ON public.ai_agent_resources USING btree (resource_type);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_ai_agent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_ai_agent_run_id ON public.ai_agent_run_steps USING btree (ai_agent_run_id);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number ON public.ai_agent_run_steps USING btree (ai_agent_run_id, step_number);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_status ON public.ai_agent_run_steps USING btree (status);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_step_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_step_type ON public.ai_agent_run_steps USING btree (step_type);
+
+
+--
+-- Name: index_ai_agent_runs_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_ai_agent_id ON public.ai_agent_runs USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_completed_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_completed_at ON public.ai_agent_runs USING btree (completed_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_invocable_type_and_invocable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_invocable_type_and_invocable_id ON public.ai_agent_runs USING btree (invocable_type, invocable_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_last_activity_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_last_activity_at ON public.ai_agent_runs USING btree (last_activity_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_organization_id ON public.ai_agent_runs USING btree (organization_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_parent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_parent_run_id ON public.ai_agent_runs USING btree (parent_run_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_started_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_started_at ON public.ai_agent_runs USING btree (started_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_status ON public.ai_agent_runs USING btree (status);
+
+
+--
+-- Name: index_ai_agent_runs_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_user_id ON public.ai_agent_runs USING btree (user_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_team_memberships_on_ai_agent_id ON public.ai_agent_team_memberships USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_ai_agent_id_and_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_team_memberships_on_ai_agent_id_and_team_id ON public.ai_agent_team_memberships USING btree (ai_agent_id, team_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_team_memberships_on_team_id ON public.ai_agent_team_memberships USING btree (team_id);
+
+
+--
+-- Name: index_ai_agents_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_discarded_at ON public.ai_agents USING btree (discarded_at);
+
+
+--
+-- Name: index_ai_agents_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_organization_id ON public.ai_agents USING btree (organization_id);
+
+
+--
+-- Name: index_ai_agents_on_organization_id_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agents_on_organization_id_and_slug ON public.ai_agents USING btree (organization_id, slug);
+
+
+--
+-- Name: index_ai_agents_on_run_count; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_run_count ON public.ai_agents USING btree (run_count);
+
+
+--
+-- Name: index_ai_agents_on_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_scope ON public.ai_agents USING btree (scope);
+
+
+--
+-- Name: index_ai_agents_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_status ON public.ai_agents USING btree (status);
+
+
+--
+-- Name: index_ai_agents_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_user_id ON public.ai_agents USING btree (user_id);
+
+
+--
+-- Name: index_ai_agents_on_user_id_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agents_on_user_id_and_slug ON public.ai_agents USING btree (user_id, slug);
 
 
 --
@@ -3901,6 +4330,14 @@ ALTER TABLE ONLY public.notification_settings
 
 
 --
+-- Name: ai_agent_runs fk_rails_0d9588fc2e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_0d9588fc2e FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
+
+
+--
 -- Name: moderation_logs fk_rails_0f166e8887; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3949,6 +4386,22 @@ ALTER TABLE ONLY public.chats
 
 
 --
+-- Name: ai_agents fk_rails_1b5d51740c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT fk_rails_1b5d51740c FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_agents fk_rails_1fa8066c07; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT fk_rails_1fa8066c07 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: messages fk_rails_273a25a7a6; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3994,6 +4447,14 @@ ALTER TABLE ONLY public.collaborators
 
 ALTER TABLE ONLY public.messages
     ADD CONSTRAINT fk_rails_41c70a97c6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: ai_agent_team_memberships fk_rails_4b41739a47; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT fk_rails_4b41739a47 FOREIGN KEY (team_id) REFERENCES public.teams(id);
 
 
 --
@@ -4061,6 +4522,14 @@ ALTER TABLE ONLY public.moderation_logs
 
 
 --
+-- Name: ai_agent_feedbacks fk_rails_61a9fca31d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_61a9fca31d FOREIGN KEY (ai_agent_run_id) REFERENCES public.ai_agent_runs(id);
+
+
+--
 -- Name: team_memberships fk_rails_61c29b529e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4074,6 +4543,14 @@ ALTER TABLE ONLY public.team_memberships
 
 ALTER TABLE ONLY public.list_items
     ADD CONSTRAINT fk_rails_671dc678fa FOREIGN KEY (board_column_id) REFERENCES public.board_columns(id);
+
+
+--
+-- Name: ai_agent_run_steps fk_rails_6a2d3d54b8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_run_steps
+    ADD CONSTRAINT fk_rails_6a2d3d54b8 FOREIGN KEY (ai_agent_run_id) REFERENCES public.ai_agent_runs(id);
 
 
 --
@@ -4165,6 +4642,14 @@ ALTER TABLE ONLY public.calendar_events
 
 
 --
+-- Name: ai_agent_resources fk_rails_98ab80f011; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_resources
+    ADD CONSTRAINT fk_rails_98ab80f011 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4229,11 +4714,27 @@ ALTER TABLE ONLY public.attendee_contacts
 
 
 --
+-- Name: ai_agent_feedbacks fk_rails_b8e5ae114f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_b8e5ae114f FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: chat_contexts fk_rails_bc0ea8d29b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.chat_contexts
     ADD CONSTRAINT fk_rails_bc0ea8d29b FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
+-- Name: ai_agent_feedbacks fk_rails_bd44f18125; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_bd44f18125 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
 
 
 --
@@ -4250,6 +4751,14 @@ ALTER TABLE ONLY public.lists
 
 ALTER TABLE ONLY public.messages
     ADD CONSTRAINT fk_rails_c02b47ad97 FOREIGN KEY (model_id) REFERENCES public.models(id);
+
+
+--
+-- Name: ai_agent_runs fk_rails_c29504744a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_c29504744a FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -4301,6 +4810,14 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: ai_agent_runs fk_rails_dd6e51e8ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_dd6e51e8ac FOREIGN KEY (parent_run_id) REFERENCES public.ai_agent_runs(id);
+
+
+--
 -- Name: chat_contexts fk_rails_de81198315; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4309,11 +4826,27 @@ ALTER TABLE ONLY public.chat_contexts
 
 
 --
+-- Name: ai_agent_runs fk_rails_e0a7859fc6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_e0a7859fc6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: chats fk_rails_e555f43151; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.chats
     ADD CONSTRAINT fk_rails_e555f43151 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_agent_team_memberships fk_rails_e7c38eac12; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT fk_rails_e7c38eac12 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
 
 
 --
@@ -4371,6 +4904,12 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260325000006'),
+('20260325000005'),
+('20260325000004'),
+('20260325000003'),
+('20260325000002'),
+('20260325000001'),
 ('20260323000001'),
 ('20260322000003'),
 ('20260322000002'),

@@ -1,0 +1,72 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900"><%= @agent.name %></h1>
+          <p class="text-gray-600 mt-1"><%= @agent.scope.titleize %> Agent</p>
+        </div>
+        <% if policy(@agent).edit? %>
+          <div class="flex gap-2">
+            <%= link_to "Edit", edit_ai_agent_path(@agent), class: "bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded transition" %>
+            <%= link_to "Delete", ai_agent_path(@agent), method: :delete, data: { confirm: "Are you sure?" }, class: "bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded transition" %>
+          </div>
+        <% end %>
+      </div>
+
+      <p class="text-gray-700 mb-4"><%= @agent.description %></p>
+
+      <div class="grid grid-cols-3 gap-4 py-4 border-t border-b border-gray-200">
+        <div>
+          <p class="text-xs text-gray-600">Runs</p>
+          <p class="text-2xl font-bold text-gray-900"><%= @agent.run_count %></p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Success Rate</p>
+          <p class="text-2xl font-bold text-green-600"><%= @agent.run_count > 0 ? number_with_precision(@agent.success_count * 100.0 / @agent.run_count, precision: 0) : 0 %>%</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Rating</p>
+          <p class="text-2xl font-bold text-yellow-600"><%= @agent.average_rating.present? ? number_with_precision(@agent.average_rating, precision: 1) : "—" %></p>
+        </div>
+      </div>
+
+      <% if policy(@agent).invoke? %>
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h3 class="font-semibold text-gray-900 mb-3">Run Agent</h3>
+          <%= form_with url: invoke_ai_agent_path(@agent), method: :post, local: true, class: "space-y-3" do |f| %>
+            <%= f.text_area :user_input, placeholder: "What would you like this agent to do?", class: "w-full border border-gray-300 rounded p-2 text-sm", rows: 3 %>
+            <%= f.submit "Invoke Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-full transition" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Runs</h2>
+      <% if @recent_runs.any? %>
+        <div class="space-y-2">
+          <% @recent_runs.each do |run| %>
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50">
+              <div class="flex-1">
+                <p class="font-medium text-gray-900"><%= run.user_input.truncate(50) %></p>
+                <p class="text-xs text-gray-500"><%= time_ago_in_words(run.created_at) %> ago</p>
+              </div>
+              <div class="text-right">
+                <span class="px-2 py-1 text-xs font-semibold rounded <%= case run.status
+                  when "running" then "bg-yellow-100 text-yellow-800"
+                  when "completed" then "bg-green-100 text-green-800"
+                  when "failed" then "bg-red-100 text-red-800"
+                  else "bg-gray-100 text-gray-800"
+                  end %>"><%= run.status.titleize %></span>
+                <%= link_to "View", ai_agent_run_path(run), class: "ml-2 text-blue-600 hover:text-blue-800 text-sm" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-600 text-center py-4">No runs yet</p>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -27,7 +27,7 @@ class ResponseWithQuestionsSchema
             },
             input_type: {
               type: "string",
-              enum: ["text", "textarea", "select"],
+              enum: [ "text", "textarea", "select" ],
               description: "How the user should answer: text (single line), textarea (multi-line), or select (dropdown)"
             },
             options: {
@@ -40,11 +40,11 @@ class ResponseWithQuestionsSchema
               description: "Optional hint or context to help the user answer"
             }
           },
-          required: ["question", "input_type"]
+          required: [ "question", "input_type" ]
         }
       }
     },
-    required: ["response", "has_questions"]
+    required: [ "response", "has_questions" ]
   }.freeze
 
   def self.json_schema

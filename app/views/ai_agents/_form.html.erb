@@ -1,0 +1,71 @@
+<%= form_with model: agent, local: true, class: "space-y-6" do |f| %>
+  <% if agent.errors.any? %>
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h2 class="font-semibold text-red-900 mb-2"><%= pluralize(agent.errors.count, "error") %> prohibited this agent:</h2>
+      <ul class="text-sm text-red-700 list-disc list-inside">
+        <% agent.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, "Agent Name", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.text_field :name, placeholder: "e.g., Research Assistant", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+  </div>
+
+  <div>
+    <%= f.label :description, "Description", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.text_area :description, placeholder: "What does this agent do?", class: "w-full border border-gray-300 rounded-lg p-2 text-sm", rows: 3 %>
+  </div>
+
+  <div>
+    <%= f.label :prompt, "System Prompt", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.text_area :prompt, placeholder: "Instructions for the agent...", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 5 %>
+    <p class="text-xs text-gray-500 mt-1">This is the system instruction that guides the agent's behavior</p>
+  </div>
+
+  <div>
+    <%= f.label :scope, "Agent Scope", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.select :scope, AiAgent.scopes.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    <p class="text-xs text-gray-500 mt-1">Scope determines who can access this agent</p>
+  </div>
+
+  <div>
+    <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.select :status, AiAgent.statuses.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :max_tokens_per_run, "Max Tokens per Run", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.number_field :max_tokens_per_run, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    </div>
+    <div>
+      <%= f.label :timeout_seconds, "Timeout (seconds)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.number_field :timeout_seconds, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :max_steps, "Max Steps", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.number_field :max_steps, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    </div>
+    <div>
+      <%= f.label :model, "Model", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.select :model, ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"], {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :tag_list, "Tags", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.text_field :tag_list, placeholder: "Separate tags with commas", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+  </div>
+
+  <div class="flex gap-2">
+    <%= f.submit agent.new_record? ? "Create Agent" : "Update Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition" %>
+    <%= link_to "Cancel", agent.new_record? ? browse_ai_agents_path : ai_agent_path(agent), class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition" %>
+  </div>
+<% end %>

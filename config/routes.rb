@@ -102,6 +102,37 @@ Rails.application.routes.draw do
   # Message feedback routes
   resources :message_feedbacks, only: [ :create ], path: "chats/:chat_id/messages/:message_id/feedbacks"
 
+  # AI Agents
+  resources :ai_agents, path: "agents" do
+    member do
+      post :invoke
+      get  :runs
+    end
+    collection do
+      get :browse
+      get :my_agents
+    end
+  end
+
+  # AI Agent Runs
+  resources :ai_agent_runs, path: "agent_runs", only: [ :show, :index, :create ] do
+    member do
+      patch :pause
+      patch :resume
+      delete :cancel
+    end
+    resources :ai_agent_feedbacks, path: "feedback", only: [ :create ]
+  end
+
+  # AI Agent Runs nested under lists and list items (contextual invocation)
+  resources :lists do
+    resources :ai_agent_runs, path: "agent_runs", only: [ :create ]
+  end
+
+  resources :list_items, path: "items", only: [] do
+    resources :ai_agent_runs, path: "agent_runs", only: [ :create ]
+  end
+
   # Lists
   resources :lists do
     member do
@@ -360,6 +391,14 @@ Rails.application.routes.draw do
     end
 
     resources :lists, only: [ :index, :show, :destroy ]
+
+    # Admin AI Agents management
+    resources :ai_agents, path: "agents" do
+      member do
+        patch :activate
+        patch :archive
+      end
+    end
 
     # Audit and compliance tracking
     resources :audit, only: [ :index ] do

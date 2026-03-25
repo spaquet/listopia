@@ -107,6 +107,11 @@ class User < ApplicationRecord
   has_many :messages, dependent: :destroy
   has_many :message_feedbacks, dependent: :destroy
 
+  # AI Agent associations
+  has_many :ai_agents, dependent: :destroy
+  has_many :ai_agent_runs, dependent: :destroy
+  has_many :ai_agent_feedbacks, dependent: :destroy
+
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true

@@ -1,0 +1,97 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900"><%= @run.ai_agent.name %> Run</h1>
+          <p class="text-gray-600 mt-1"><%= @run.user_input %></p>
+        </div>
+        <span class="px-3 py-1 text-sm font-semibold rounded <%= case @run.status
+          when "running" then "bg-yellow-100 text-yellow-800"
+          when "completed" then "bg-green-100 text-green-800"
+          when "failed" then "bg-red-100 text-red-800"
+          when "paused" then "bg-blue-100 text-blue-800"
+          when "cancelled" then "bg-gray-100 text-gray-800"
+          else "bg-gray-100 text-gray-800"
+          end %>"><%= @run.status.titleize %></span>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4 py-4 border-t border-b border-gray-200">
+        <div>
+          <p class="text-xs text-gray-600">Status</p>
+          <p class="text-sm font-semibold text-gray-900"><%= @run.status.titleize %></p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Progress</p>
+          <p class="text-sm font-semibold text-gray-900"><%= @run.steps_completed %>/<%= @run.steps_total %></p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Tokens</p>
+          <p class="text-sm font-semibold text-gray-900"><%= @run.total_tokens %></p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-600">Duration</p>
+          <p class="text-sm font-semibold text-gray-900"><%= @run.duration_seconds || "—" %><% if @run.duration_seconds %>s<% end %></p>
+        </div>
+      </div>
+
+      <% if @run.running? || @run.paused? %>
+        <div class="mt-4 flex gap-2">
+          <% if @run.running? %>
+            <%= button_to "Pause", pause_ai_agent_run_path(@run), method: :patch, class: "bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded transition" %>
+            <%= button_to "Cancel", cancel_ai_agent_run_path(@run), method: :delete, data: { confirm: "Are you sure?" }, class: "bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition" %>
+          <% elsif @run.paused? %>
+            <%= button_to "Resume", resume_ai_agent_run_path(@run), method: :patch, class: "bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition" %>
+            <%= button_to "Cancel", cancel_ai_agent_run_path(@run), method: :delete, data: { confirm: "Are you sure?" }, class: "bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @run.error_message.present? %>
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <h3 class="font-semibold text-red-900 mb-2">Error</h3>
+        <p class="text-red-700"><%= @run.error_message %></p>
+      </div>
+    <% end %>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-4">Execution Steps</h2>
+      <div class="space-y-2" id="agent-run-steps-<%= @run.id %>">
+        <% @steps.each do |step| %>
+          <%= render "ai_agents/run_step", step: step %>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @run.result_summary.present? %>
+      <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-green-900 mb-2">Result</h2>
+        <p class="text-green-700"><%= simple_format(@run.result_summary) %></p>
+      </div>
+    <% end %>
+
+    <% if @run.completed? && !@run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Feedback</h2>
+        <p class="text-gray-600 mb-4">How helpful was this agent run?</p>
+        <%= form_with model: [@run, AiAgentFeedback.new], local: true, class: "space-y-3" do |f| %>
+          <div>
+            <%= f.select :rating, AiAgentFeedback.ratings.keys.map { |k| [k.titleize, k] }, { include_blank: "Select rating..." }, class: "w-full border border-gray-300 rounded p-2" %>
+          </div>
+          <div>
+            <%= f.select :feedback_type, AiAgentFeedback.feedback_types.keys.map { |k| [k.titleize, k] }, { include_blank: "Optional: feedback type..." }, class: "w-full border border-gray-300 rounded p-2" %>
+          </div>
+          <div>
+            <%= f.text_area :comment, placeholder: "Optional comments...", class: "w-full border border-gray-300 rounded p-2 text-sm", rows: 3 %>
+          </div>
+          <%= f.submit "Submit Feedback", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded w-full transition" %>
+        <% end %>
+      </div>
+    <% elsif @run.completed? %>
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <p class="text-green-700">✓ You've already submitted feedback for this run</p>
+      </div>
+    <% end %>
+  </div>
+</div>
