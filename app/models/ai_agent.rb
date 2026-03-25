@@ -85,6 +85,7 @@ class AiAgent < ApplicationRecord
 
   # Callbacks
   before_validation :generate_slug
+  before_save :normalize_parameters
 
   # Scopes
   scope :system_level,      -> { where(scope: :system_agent) }
@@ -153,6 +154,18 @@ class AiAgent < ApplicationRecord
   def generate_slug
     return if slug.present?
     self.slug = name.parameterize
+  end
+
+  def normalize_parameters
+    if parameters.is_a?(String) && parameters.present?
+      begin
+        self.parameters = JSON.parse(parameters)
+      rescue JSON::ParserError
+        self.parameters = {}
+      end
+    elsif parameters.nil?
+      self.parameters = {}
+    end
   end
 
   def scope_consistency

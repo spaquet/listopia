@@ -73,8 +73,9 @@
 
   <div>
     <%= f.label :parameters, "Input Parameters (JSON)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <% params_value = agent.parameters.present? ? (agent.parameters.is_a?(String) ? agent.parameters : JSON.pretty_generate(agent.parameters)) : '' %>
     <%= f.text_area :parameters,
-        value: agent.parameters.present? ? JSON.pretty_generate(agent.parameters) : '',
+        value: params_value,
         placeholder: '{"param_name": "description of what this parameter does"}',
         class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono",
         rows: 4 %>
