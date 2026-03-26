@@ -27,31 +27,10 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
-      # Check for /clear command to reset planning context
+      # Check for /clear command to reset chat
       if @user_message.content.strip.downcase.start_with?("/clear")
         clear_result = handle_clear_context_command
         return clear_result if clear_result
-      end
-
-      # PHASE 3: Check if this chat is in post-creation mode (showing "keep or clear" options)
-      if @chat.chat_context&.post_creation_mode?
-        reuse_result = handle_context_reuse_choice(@chat.chat_context, @user_message.content)
-        return reuse_result if reuse_result
-      end
-
-      # PHASE 3: Check if context is completed - if so, show keep/clear options
-      # Only process as pre-creation answers if context is ACTIVELY awaiting them
-      if @chat.chat_context&.state == "completed"
-        # Context exists and is completed - offer to reuse or clear it
-        planning_context = @chat.chat_context
-        Rails.logger.info("ChatCompletionService - Completed context exists, offering to reuse or clear")
-        return show_context_reuse_options(planning_context)
-      end
-
-      # PHASE 3: Check if this chat has a PlanningContext in pre_creation state (awaiting answers)
-      if @chat.chat_context&.state == "pre_creation" && @chat.chat_context&.has_unanswered_questions?
-        planning_result = handle_pre_creation_planning_response_new
-        return planning_result if planning_result
       end
 
       # Check if we're continuing a pending resource creation FIRST
@@ -1075,54 +1054,17 @@ class ChatCompletionService < ApplicationService
   # Initialize planning context for list creation (new Phase 3 flow)
   def initialize_planning_with_new_context(combined_data)
     begin
-      Rails.logger.info("ChatCompletionService - Initializing planning context for list creation")
-      Rails.logger.info("ChatCompletionService - Using combined_data: is_complex=#{combined_data[:is_complex]}, domain=#{combined_data[:planning_domain]}")
+      Rails.logger.info("ChatCompletionService - Complex list detected: #{combined_data[:planning_domain]} (confidence: #{combined_data[:complexity_confidence]})")
 
-      # Check if planning context already exists for this chat
-      if @chat.chat_context.present?
-        planning_context = @chat.chat_context
+      # Phase 3: Agent-based orchestration
+      # For now, create list directly with generated items
+      parameters = combined_data[:parameters] || {}
+      parameters[:title] ||= @user_message.content.truncate(100)
+      parameters[:category] ||= combined_data[:planning_domain] || "personal"
+      parameters[:description] ||= ""
 
-        # If context is complete (has hierarchical items), offer to use it or clear it
-        if planning_context.hierarchical_items.present?
-          Rails.logger.info("ChatCompletionService - Context is complete with items/sublists, offering to reuse or clear")
-          return show_context_reuse_options(planning_context)
-        else
-          Rails.logger.info("ChatCompletionService - Context exists but incomplete, continuing")
-        end
-      else
-        # Create planning context directly using the data from CombinedIntentComplexityService
-        # This avoids re-analyzing the request and ensures consistency
-        planning_context = ChatContext.create!(
-          user: @context.user,
-          chat: @chat,
-          organization: @context.organization,
-          request_content: @user_message.content,
-          detected_intent: combined_data[:intent],
-          intent_confidence: combined_data[:confidence] || 0.0,
-          planning_domain: combined_data[:planning_domain] || "general",
-          complexity_level: combined_data[:is_complex] ? "complex" : "simple",
-          is_complex: combined_data[:is_complex],
-          complexity_reasoning: combined_data[:complexity_reasoning],
-          parameters: combined_data[:parameters] || {},
-          state: :initial,
-          status: combined_data[:is_complex] ? :analyzing : :processing
-        )
-      end
-
-      # If simple request, generate items and create list immediately
-      unless planning_context.is_complex
-        Rails.logger.info("ChatCompletionService - Simple list request, generating items and creating list")
-        handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
-        generation_result = handler.generate_items_for_context(planning_context)
-        return generation_result unless generation_result.success?
-
-        # Items generated, now create the actual list
-        return auto_create_list_from_planning(planning_context)
-      end
-
-      # For complex requests, generate and show pre-creation planning form
-      Rails.logger.info("ChatCompletionService - Complex list request (confirmed), generating pre-creation questions")
-      show_pre_creation_planning_form(planning_context)
+      Rails.logger.info("ChatCompletionService - Creating list directly for complex request")
+      return handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1132,47 +1074,15 @@ class ChatCompletionService < ApplicationService
   # Create and process a simple list (goes directly to completed state)
   def create_and_process_simple_list(combined_data, parameters)
     begin
-      Rails.logger.info("ChatCompletionService - Creating planning context for simple list")
+      Rails.logger.info("ChatCompletionService - Creating simple list directly")
 
-      # Create planning context for this chat
-      planning_context = ChatContext.create!(
-        chat: @chat,
-        user: @context.user,
-        organization: @context.organization,
-        request_content: @user_message.content,
-        state: "completed",
-        status: "complete",
-        detected_intent: combined_data[:intent],
-        intent_confidence: combined_data[:intent_confidence] || 0.95,
-        planning_domain: combined_data[:planning_domain] || "personal",
-        complexity_level: "simple",
-        parameters: parameters,
-        complexity_reasoning: combined_data[:complexity_reasoning] || "Simple, straightforward request",
-        hierarchical_items: build_simple_list_structure(combined_data, parameters)
-      )
+      # Prepare list parameters
+      parameters[:title] ||= @user_message.content.truncate(100)
+      parameters[:category] ||= combined_data[:planning_domain] || "personal"
+      parameters[:description] ||= ""
 
-      Rails.logger.info("ChatCompletionService - Created planning context: #{planning_context.id}")
-
-      # Use ChatContextToListService to create the list
-      list_service = ChatContextToListService.new(planning_context, @context.user, @context.organization)
-      list_result = list_service.call
-
-      return list_result unless list_result.success?
-
-      # For simple lists, mark as completed (after list is created)
-      planning_context.update!(state: :completed)
-
-      # Broadcast the same polished confirmation as complex lists
-      list = list_result.data[:list]
-      broadcast_list_created_confirmation(list, planning_context)
-
-      Rails.logger.info("ChatCompletionService - Simple list created successfully: #{list.id} with #{list.list_items.count} items")
-
-      # Show context management buttons (keep or clear) for next task
-      show_context_management_buttons(planning_context)
-
-      # Return success with the list
-      success(data: { list: list, planning_context: planning_context })
+      # Phase 3: Direct list creation without planning context ceremony
+      return handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])

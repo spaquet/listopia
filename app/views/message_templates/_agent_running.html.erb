@@ -1,0 +1,13 @@
+<div class="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg animate-pulse">
+  <div class="flex items-center gap-2">
+    <div class="flex gap-1">
+      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+      <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+    </div>
+  </div>
+  <div class="flex-1">
+    <p class="text-sm font-medium text-blue-900"><%= data[:agent_name] || "Agent" %> is working...</p>
+    <p class="text-xs text-blue-700 mt-1"><%= data[:message] || "Processing your request..." %></p>
+  </div>
+</div>

@@ -308,5 +308,57 @@ class AgentExecutionService < ApplicationService
         locals: { run: @run }
       )
     )
+
+    # Broadcast back to originating chat if this was a chat-triggered agent
+    if @run.invocable.is_a?(Chat)
+      broadcast_list_created_to_chat(@run.invocable)
+    end
+  end
+
+  private
+
+  def broadcast_list_created_to_chat(chat)
+    # Extract list_id from the last create_list tool result
+    list_tool_step = @run.ai_agent_run_steps
+      .where(step_type: "tool_call", tool_name: "create_list")
+      .order(created_at: :desc).first
+
+    tool_output = list_tool_step&.tool_output || {}
+    list_id = tool_output["list_id"]
+
+    if list_id.present? && (list = List.find_by(id: list_id))
+      # Create list_created message
+      msg = Message.create_templated(
+        chat: chat,
+        template_type: "list_created",
+        template_data: {
+          list_id: list.id,
+          list_title: list.title,
+          items_count: list.list_items.count,
+          run_id: @run.id
+        }
+      )
+    else
+      # Fallback: create text message if list not found
+      msg = Message.create_assistant(
+        chat: chat,
+        content: @run.summary.presence || "List created successfully."
+      )
+    end
+
+    # Replace the agent_running message (stored in run.input_parameters)
+    chat_message_id = @run.input_parameters&.dig("chat_message_id")
+    target = chat_message_id ? "message-#{chat_message_id}" : "chat-loading-#{chat.id}"
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "chat_#{chat.id}",
+      target: target,
+      html: ApplicationController.render(
+        partial: "chats/assistant_message_replacement",
+        locals: { message: msg, chat_context: chat.build_ui_context }
+      )
+    )
+  rescue => e
+    Rails.logger.error("broadcast_list_created_to_chat failed: #{e.class} - #{e.message}")
   end
 end

@@ -1,0 +1,13 @@
+<div class="p-4 bg-green-50 border border-green-300 rounded-lg">
+  <div class="flex items-start gap-3">
+    <div class="text-2xl">✓</div>
+    <div class="flex-1">
+      <p class="font-bold text-green-900">
+        <%= link_to data[:list_title], list_path(data[:list_id]), class: "text-green-700 hover:text-green-900 underline" %>
+      </p>
+      <p class="text-sm text-green-700 mt-1">
+        <%= pluralize(data[:items_count], "item") %> created
+      </p>
+    </div>
+  </div>
+</div>

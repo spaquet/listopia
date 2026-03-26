@@ -23,6 +23,10 @@ class MessageTemplate
     # General conversation
     "clarifying_questions" => "ClarifyingQuestionsTemplate",
 
+    # Agent execution (Phase 3)
+    "agent_running" => "AgentRunningTemplate",
+    "list_created"  => "ListCreatedTemplate",
+
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
     "error" => "ErrorTemplate",
@@ -228,6 +232,38 @@ class ClarifyingQuestionsTemplate < BaseTemplate
       questions: dig_data("questions"),
       chat_id: dig_data("chat_id"),
       context_title: dig_data("context_title") || "Please answer the following questions"
+    }
+  end
+end
+
+# Template for agent execution in progress
+class AgentRunningTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["run_id"].present? && data["agent_name"].present?
+  end
+
+  def render_data
+    {
+      run_id: dig_data("run_id"),
+      agent_name: dig_data("agent_name"),
+      status: dig_data("status") || "running",
+      message: dig_data("message") || "Agent is processing your request..."
+    }
+  end
+end
+
+# Template for list creation confirmation
+class ListCreatedTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["list_id"].present? && data["list_title"].present?
+  end
+
+  def render_data
+    {
+      list_id: dig_data("list_id"),
+      list_title: dig_data("list_title"),
+      items_count: dig_data("items_count") || 0,
+      run_id: dig_data("run_id")
     }
   end
 end

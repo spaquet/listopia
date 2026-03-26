@@ -6,7 +6,7 @@ class AgentRunJob < ApplicationJob
   def perform(agent_run_id)
     run = AiAgentRun.find(agent_run_id)
 
-    if run.completed? || run.failed? || run.cancelled?
+    if run.status.to_sym.in?([:completed, :failed, :cancelled])
       Rails.logger.warn("AgentRunJob: Run #{agent_run_id} is already in terminal state #{run.status}")
       return
     end

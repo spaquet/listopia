@@ -828,6 +828,38 @@ agent_research.tag_list.add("research", "web-search", "enrichment")
 agent_research.save!
 puts "✓ Created agent: Research Agent"
 
+# 5. List Creator Agent (for Phase 3 chat integration)
+agent_list_creator = AiAgent.find_or_initialize_by(slug: "list-creator", scope: :system_agent)
+agent_list_creator.assign_attributes(
+  name: "List Creator Agent",
+  description: "Creates lists with specific items from natural language requests via chat",
+  prompt: "You are a skilled list curator. You create focused, relevant lists for users.",
+  instructions: <<~INSTRUCTIONS,
+    1. Read the user's full request (it may include original request + clarifying answers).
+    2. Identify: list title, category (personal/professional), and what items are needed.
+    3. Generate 8-15 specific, relevant, actionable items for the list.
+    4. Call create_list with title, category, description (optional), and the items array.
+    5. Do NOT call ask_user — all context is already provided in the input.
+  INSTRUCTIONS
+  body_context_config: { "load" => "none" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "manual" },
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 4000,
+  max_tokens_per_day: 100_000,
+  max_tokens_per_month: 500_000
+)
+agent_list_creator.save!
+agent_list_creator.ai_agent_resources.find_or_create_by!(resource_type: "list") do |r|
+  r.permission = :read_write
+  r.description = "Create and read lists"
+  r.enabled = true
+end
+agent_list_creator.tag_list.add("list-creation", "chat", "core")
+agent_list_creator.save!
+puts "✓ Created agent: List Creator Agent"
+
 puts "\n🔮 Generating agent embeddings..."
 AiAgent.all.each do |agent|
   result = EmbeddingGenerationService.call(agent)
@@ -844,3 +876,4 @@ puts "  • Task Breakdown Agent - Manual trigger, asks for goal/deadline"
 puts "  • Status Report Agent - Scheduled every Monday 9am"
 puts "  • List Organizer Agent - Event-triggered when items are completed"
 puts "  • Research Agent - Manual trigger, enriches items with research"
+puts "  • List Creator Agent - Chat integration, creates lists from requests"

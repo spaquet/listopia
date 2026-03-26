@@ -3,6 +3,7 @@ class AgentToolExecutorService < ApplicationService
     "ask_user"           => :handle_ask_user,
     "confirm_action"     => :handle_confirm_action,
     "read_list_items"    => :handle_read_list_items,
+    "create_list"        => :handle_create_list,
     "create_list_item"   => :handle_create_list_item,
     "update_list_item"   => :handle_update_list_item,
     "complete_list_item" => :handle_complete_list_item,
@@ -111,6 +112,60 @@ class AgentToolExecutorService < ApplicationService
       description: list.description,
       item_count: list.list_items.count,
       status: list.status
+    })
+  end
+
+  def handle_create_list
+    title       = @arguments["title"]
+    description = @arguments["description"] || ""
+    category    = @arguments["category"] || "personal"
+    items       = @arguments["items"] || []
+
+    return failure(message: "Title is required") unless title.present?
+    return failure(message: "At least one item is required") if items.empty?
+
+    # Determine organization context
+    org = @organization || (@invocable.is_a?(Chat) ? @invocable.organization : nil)
+    return failure(message: "No organization context for list creation") unless org
+
+    # Create list using ChatResourceCreatorService
+    creator = ChatResourceCreatorService.new(
+      resource_type: "list",
+      parameters: {
+        "title"       => title,
+        "description" => description,
+        "category"    => category
+      },
+      created_by_user: @user,
+      created_in_organization: org
+    )
+    result = creator.call
+
+    return failure(message: result.errors.join(", ")) if result.failure?
+
+    list = result.data[:resource]
+    items_created = 0
+
+    # Add items to the list
+    items.each do |item|
+      title_str = item["title"].to_s.truncate(500)
+      next if title_str.blank?
+
+      list.list_items.create!(
+        title: title_str,
+        description: (item["description"] || "").to_s,
+        priority: item["priority"] || "medium",
+        organization: org,
+        user: @user
+      )
+      items_created += 1
+    end
+
+    success(data: {
+      list_id: list.id,
+      list_title: list.title,
+      items_created: items_created,
+      message: "Created list '#{list.title}' with #{items_created} item(s)"
     })
   end
 
@@ -271,6 +326,7 @@ class AgentToolExecutorService < ApplicationService
   def tool_to_resource_type(tool_name)
     {
       "read_list_items"    => "list",
+      "create_list"        => "list",
       "create_list_item"   => "list",
       "read_list"          => "list",
       "update_list_item"   => "list_item",

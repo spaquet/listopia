@@ -49,7 +49,7 @@ class ClarifyingQuestionsService < ApplicationService
         "chat_#{@chat.id}",
         target: "chat-messages-#{@chat.id}",
         partial: "shared/chat_message",
-        locals: { message: message, chat_context: @chat.chat_context }
+        locals: { message: message, chat_context: @chat.build_ui_context }
       )
       Rails.logger.info("ClarifyingQuestionsService - Message broadcasted via Turbo Stream")
     rescue => e

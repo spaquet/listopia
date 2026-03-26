@@ -193,6 +193,56 @@ module AgentToolBuilder
         },
         required: [ "query" ]
       }
+    },
+    create_list: {
+      name: "create_list",
+      description: "Create a new list with specific items. Call this once you have all the context needed.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: {
+            type: "string",
+            description: "The title of the list",
+            minLength: 1,
+            maxLength: 255
+          },
+          description: {
+            type: "string",
+            description: "Optional description or purpose of the list"
+          },
+          category: {
+            type: "string",
+            enum: [ "personal", "professional" ],
+            description: "Category of the list"
+          },
+          items: {
+            type: "array",
+            description: "Array of items to add to the list (8-15 recommended)",
+            items: {
+              type: "object",
+              properties: {
+                title: {
+                  type: "string",
+                  description: "Item title",
+                  minLength: 1
+                },
+                description: {
+                  type: "string",
+                  description: "Optional item description"
+                },
+                priority: {
+                  type: "string",
+                  enum: [ "low", "medium", "high", "urgent" ],
+                  description: "Item priority"
+                }
+              },
+              required: [ "title" ]
+            },
+            minItems: 1
+          }
+        },
+        required: [ "title", "items" ]
+      }
     }
   }.freeze
 
@@ -212,7 +262,9 @@ module AgentToolBuilder
     case resource.resource_type
     when "list"
       if resource.permission_read_only? || resource.permission_read_write?
-        [ TOOL_SPECS[:read_list], TOOL_SPECS[:read_list_items] ]
+        tools = [ TOOL_SPECS[:read_list], TOOL_SPECS[:read_list_items] ]
+        tools << TOOL_SPECS[:create_list] if resource.permission_read_write?
+        tools
       elsif resource.permission_write_only?
         [ TOOL_SPECS[:create_list_item] ]
       else
@@ -243,6 +295,7 @@ module AgentToolBuilder
       TOOL_SPECS[:confirm_action],
       TOOL_SPECS[:read_list],
       TOOL_SPECS[:read_list_items],
+      TOOL_SPECS[:create_list],
       TOOL_SPECS[:create_list_item],
       TOOL_SPECS[:update_list_item],
       TOOL_SPECS[:complete_list_item],
