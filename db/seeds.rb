@@ -12,6 +12,14 @@ List.destroy_all
 Message.destroy_all
 ModerationLog.destroy_all
 Chat.destroy_all
+# AI Agent cleanup (new)
+AiAgentFeedback.destroy_all
+AiAgentRunStep.destroy_all
+AiAgentInteraction.destroy_all
+AiAgentRun.destroy_all
+AiAgentResource.destroy_all
+AiAgentTeamMembership.destroy_all
+AiAgent.destroy_all
 User.destroy_all
 
 # Re-enable foreign key checks
@@ -718,82 +726,121 @@ puts "4. Try the search feature at /search"
 puts "5. Send a message in chat to see RAG in action with source attribution"
 
 # ============================================================================
-# AI AGENTS (System Agents)
+# AI AGENTS (System Agents - Redesigned with new architecture)
 # ============================================================================
 puts "\n🤖 Creating AI Agents..."
 
-agent_list_researcher = AiAgent.create!(
+# 1. Task Breakdown Agent
+agent_task_breakdown = AiAgent.create!(
   scope: :system_agent,
-  name: "List Researcher",
-  slug: "list-researcher",
-  description: "Finds information about items in a list using web search and research capabilities",
-  prompt: "You are an AI research assistant. Your job is to find relevant information about items in a list. Use the read_list and read_list_items tools to see what's in the list, then provide comprehensive research information about each item.",
+  name: "Task Breakdown Agent",
+  slug: "task-breakdown",
+  description: "Breaks down complex goals into actionable tasks with priorities and estimates",
+  prompt: "You are a senior project manager expert at decomposing complex goals into clear, achievable tasks. Your role is to understand the user's goal, identify major phases, create specific tasks, assign realistic priorities and time estimates, and confirm the plan with the user.",
+  instructions: "1. Understand the goal: Ask clarifying questions if needed\n2. Identify major phases and milestones\n3. Break into specific, actionable tasks\n4. Assign priority (low/medium/high/urgent) and effort estimate to each\n5. Ask the user to confirm or adjust before creating items",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [
+    { "key" => "goal", "question" => "What is the main goal you want to accomplish?", "required" => true },
+    { "key" => "deadline", "question" => "Do you have a deadline? (optional)", "required" => false }
+  ],
+  trigger_config: { "type" => "manual" },
   status: :active,
-  max_tokens_per_run: 8000,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 6000,
   max_tokens_per_day: 100_000,
   max_tokens_per_month: 500_000
 )
-agent_list_researcher.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read list contents for research")
-agent_list_researcher.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read item details")
-agent_list_researcher.ai_agent_resources.create!(resource_type: "web_search", permission: :expect_response, description: "Search the web for information")
-agent_list_researcher.tag_list.add("research", "web-search", "information")
-agent_list_researcher.save!
-puts "✓ Created agent: List Researcher"
+agent_task_breakdown.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and create tasks")
+agent_task_breakdown.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Create and update task items")
+agent_task_breakdown.tag_list.add("breakdown", "planning", "decomposition")
+agent_task_breakdown.save!
+puts "✓ Created agent: Task Breakdown Agent"
 
-agent_list_organizer = AiAgent.create!(
+# 2. Status Report Agent
+agent_status_report = AiAgent.create!(
   scope: :system_agent,
-  name: "List Organizer",
-  slug: "list-organizer",
-  description: "Re-prioritizes and categorizes items in a list based on context and importance",
-  prompt: "You are an AI list organization expert. Your job is to help users organize their lists by re-prioritizing items, categorizing them, and suggesting improvements. Read the list items, analyze them for patterns, and provide recommendations for better organization.",
+  name: "Status Report Agent",
+  slug: "status-report",
+  description: "Generates comprehensive status reports across all lists and identifies blockers",
+  prompt: "You are an executive assistant skilled at synthesizing work status. Your role is to analyze all lists, count progress, identify blockers, and create clear, executive-friendly status summaries.",
+  instructions: "1. Load all lists in the organization\n2. For each list: count total items, completed items, overdue items, and blocked items\n3. Identify critical blockers or at-risk deliverables\n4. Generate a formatted status report with: overall progress, at-risk items, blocked items, and action items",
+  body_context_config: { "load" => "all_lists" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "schedule", "cron" => "0 9 * * 1" },  # Monday 9am
   status: :active,
-  max_tokens_per_run: 6000,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 5000,
   max_tokens_per_day: 80_000,
   max_tokens_per_month: 400_000
 )
-agent_list_organizer.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list contents")
-agent_list_organizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items")
-agent_list_organizer.tag_list.add("organization", "prioritization", "categorization")
-agent_list_organizer.save!
-puts "✓ Created agent: List Organizer"
+agent_status_report.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read all lists")
+agent_status_report.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read all items")
+agent_status_report.tag_list.add("reporting", "status", "summary")
+agent_status_report.save!
+puts "✓ Created agent: Status Report Agent"
 
-agent_list_expander = AiAgent.create!(
+# 3. List Organizer Agent
+agent_list_organizer = AiAgent.create!(
   scope: :system_agent,
-  name: "List Expander",
-  slug: "list-expander",
-  description: "Adds relevant sub-items or details to existing list items",
-  prompt: "You are an AI list expansion expert. Your job is to enhance lists by adding relevant sub-items and details. Read the main list items and suggest or create additional related items that would make the list more comprehensive and actionable.",
+  name: "List Organizer Agent",
+  slug: "list-organizer",
+  description: "Optimizes list structure by detecting duplicates, suggesting reorganization, and applying changes after user approval",
+  prompt: "You are a Getting Things Done (GTD) expert who helps users organize their lists for maximum clarity and actionability. You identify duplicates, suggest better prioritization, and group related items logically.",
+  instructions: "1. Load the target list and all items\n2. Scan for potential duplicates or similar items (ask user if unsure)\n3. Analyze priority distribution and suggest rebalancing\n4. Suggest grouping or categorization improvements\n5. Ask user to confirm changes before applying\n6. Update items according to user feedback",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "event", "event_type" => "list_item.completed" },
   status: :active,
-  max_tokens_per_run: 7000,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 6000,
   max_tokens_per_day: 90_000,
   max_tokens_per_month: 450_000
 )
-agent_list_expander.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
-agent_list_expander.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Create and update items")
-agent_list_expander.tag_list.add("expansion", "detail-generation", "enhancement")
-agent_list_expander.save!
-puts "✓ Created agent: List Expander"
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items")
+agent_list_organizer.tag_list.add("organization", "gtd", "optimization")
+agent_list_organizer.save!
+puts "✓ Created agent: List Organizer Agent"
 
-agent_list_summarizer = AiAgent.create!(
+# 4. Research Agent
+agent_research = AiAgent.create!(
   scope: :system_agent,
-  name: "List Summarizer",
-  slug: "list-summarizer",
-  description: "Generates a summary or status report of a list's progress",
-  prompt: "You are an AI summary expert. Your job is to analyze lists and generate comprehensive status reports. Read all items in a list, analyze their statuses, priorities, and completion progress, then provide a clear summary of the list's overall state and progress.",
+  name: "Research Agent",
+  slug: "research-agent",
+  description: "Enriches list items with relevant research findings and external information",
+  prompt: "You are a thorough researcher who finds and synthesizes relevant information. Your role is to enhance list items with context, links, and useful details from web search.",
+  instructions: "1. Load the target list and items\n2. For each item, search for relevant information based on the depth setting\n3. Add descriptions, links, and key findings to items\n4. Provide a summary of research results\n5. Flag any items where no relevant information was found",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [
+    { "key" => "depth", "question" => "How deep should research be?", "options" => [ "quick overview", "detailed research" ], "required" => true }
+  ],
+  trigger_config: { "type" => "manual" },
   status: :active,
-  max_tokens_per_run: 5000,
-  max_tokens_per_day: 70_000,
-  max_tokens_per_month: 350_000
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 8000,
+  max_tokens_per_day: 120_000,
+  max_tokens_per_month: 600_000
 )
-agent_list_summarizer.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read list contents")
-agent_list_summarizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read item details")
-agent_list_summarizer.tag_list.add("summary", "reporting", "analysis")
-agent_list_summarizer.save!
-puts "✓ Created agent: List Summarizer"
+agent_research.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
+agent_research.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items with research")
+agent_research.ai_agent_resources.create!(resource_type: "web_search", permission: :expect_response, description: "Search the web for information")
+agent_research.tag_list.add("research", "web-search", "enrichment")
+agent_research.save!
+puts "✓ Created agent: Research Agent"
+
+puts "\n🔮 Generating agent embeddings..."
+AiAgent.all.each do |agent|
+  result = EmbeddingGenerationService.call(agent)
+  if result.success?
+    puts "  ✓ #{agent.name}"
+  else
+    puts "  ⚠ #{agent.name}: #{result.message} (skipped)"
+  end
+end
 
 puts "\n✅ AI Agents seeded successfully!"
 puts "Available agents:"
-puts "  • List Researcher - Research items using web search"
-puts "  • List Organizer - Re-prioritize and categorize items"
-puts "  • List Expander - Add sub-items and details"
-puts "  • List Summarizer - Generate list progress reports"
+puts "  • Task Breakdown Agent - Manual trigger, asks for goal/deadline"
+puts "  • Status Report Agent - Scheduled every Monday 9am"
+puts "  • List Organizer Agent - Event-triggered when items are completed"
+puts "  • Research Agent - Manual trigger, enriches items with research"

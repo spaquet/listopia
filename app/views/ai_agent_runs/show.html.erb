@@ -48,6 +48,72 @@
       <% end %>
     </div>
 
+    <!-- Pre-Run Question Form -->
+    <% if @run.awaiting_input? %>
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <h3 class="font-semibold text-blue-900 mb-4">Answer Pre-Run Questions</h3>
+        <%= form_with url: submit_pre_run_answers_ai_agent_run_path(@run), method: :post, local: true, class: "space-y-4" do |f| %>
+          <% @run.ai_agent.pre_run_questions.each do |question| %>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">
+                <%= question["question"] %>
+                <% if question["required"] %>
+                  <span class="text-red-600">*</span>
+                <% end %>
+              </label>
+
+              <% if question["options"] && question["options"].any? %>
+                <!-- Multiple choice -->
+                <div class="space-y-2">
+                  <% question["options"].each do |option| %>
+                    <label class="flex items-center">
+                      <input type="radio" name="answers[<%= question['key'] %>]" value="<%= option %>" class="h-4 w-4 rounded border-gray-300" <% if question["required"] %>required<% end %>>
+                      <span class="ml-2 text-sm text-gray-700"><%= option %></span>
+                    </label>
+                  <% end %>
+                </div>
+              <% else %>
+                <!-- Free text -->
+                <%= f.text_area "answers[#{question['key']}]", placeholder: "Your answer...", class: "w-full border border-gray-300 rounded p-2 text-sm", rows: 2, required: question["required"] %>
+              <% end %>
+            </div>
+          <% end %>
+
+          <%= f.submit "Start Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded w-full transition" %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <!-- HITL Interactions -->
+    <% pending_interactions = @run.ai_agent_interactions.pending %>
+    <% if pending_interactions.any? %>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6" id="hitl-interactions">
+        <h3 class="font-semibold text-purple-900 mb-4">Agent Needs Your Input</h3>
+        <% pending_interactions.each do |interaction| %>
+          <div class="p-4 bg-white border border-purple-200 rounded mb-3" id="interaction-<%= interaction.id %>">
+            <p class="font-semibold text-gray-900 mb-3"><%= interaction.question %></p>
+
+            <%= form_with url: answer_interaction_ai_agent_run_path(@run), method: :post, local: true, class: "flex gap-2" do |f| %>
+              <%= f.hidden_field :interaction_id, value: interaction.id %>
+
+              <% if interaction.options.any? %>
+                <!-- Multiple choice options -->
+                <div class="flex gap-2 flex-wrap flex-1">
+                  <% interaction.options.each do |option| %>
+                    <%= f.submit option, name: "answer", value: option, class: "px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm font-semibold transition" %>
+                  <% end %>
+                </div>
+              <% else %>
+                <!-- Free text input -->
+                <%= f.text_field :answer, placeholder: "Enter your response...", class: "flex-1 border border-gray-300 rounded p-2 text-sm", required: true %>
+                <%= f.submit "Submit", class: "bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition" %>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <% if @run.error_message.present? %>
       <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
         <h3 class="font-semibold text-red-900 mb-2">Error</h3>

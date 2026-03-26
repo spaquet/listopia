@@ -18,12 +18,13 @@ class AgentExecutionService < ApplicationService
 
     messages = build_initial_messages
     iteration = 0
+    max_iterations = [ @agent.max_steps, MAX_ITERATIONS ].min
 
     begin
       Timeout.timeout(@agent.timeout_seconds) do
         loop do
           iteration += 1
-          break if iteration > [ @agent.max_steps, MAX_ITERATIONS ].min
+          break if iteration > max_iterations
 
           @run.reload
           break if @run.paused? || @run.cancelled?
@@ -40,9 +41,17 @@ class AgentExecutionService < ApplicationService
           record_step_tokens(step, response_data)
 
           if response_data[:tool_calls].present?
-            tool_results = execute_tool_calls(response_data[:tool_calls], iteration)
-            messages << { role: "assistant", content: nil, tool_calls: response_data[:tool_calls] }
-            messages.concat(tool_results)
+            tool_result = execute_tool_calls(response_data[:tool_calls], iteration)
+
+            # Check if any tool called for HITL (ask_user or confirm_action)
+            if tool_result[:hitl_paused]
+              @run.pause!
+              broadcast_status_update
+              return success(data: { run: @run, paused_for_interaction: true })
+            end
+
+            messages << { role: "assistant", content: response_data[:content], tool_calls: response_data[:tool_calls] }
+            messages.concat(tool_result[:messages])
           else
             @run.complete!(summary: response_data[:content], data: { final_message: response_data[:content] })
             broadcast_completion
@@ -69,8 +78,9 @@ class AgentExecutionService < ApplicationService
   private
 
   def build_initial_messages
-    system_content = @agent.prompt
-    system_content += "\n\nCurrent context: #{context_summary}" if @run.invocable.present?
+    # Build context from instructions, body context, and pre-run answers
+    context_result = AgentContextBuilder.call(run: @run)
+    system_content = context_result.success? ? context_result.data[:context] : @agent.persona
 
     [
       { role: "system", content: system_content },
@@ -78,57 +88,119 @@ class AgentExecutionService < ApplicationService
     ]
   end
 
-  def context_summary
-    case @run.invocable_type
-    when "List"
-      list = @run.invocable
-      "Working on list '#{list.title}' with #{list.list_items.count} items."
-    when "ListItem"
-      item = @run.invocable
-      "Working on list item '#{item.title}' in list '#{item.list.title}'."
-    when "Chat"
-      "Invoked from chat context."
-    else
-      ""
-    end
-  end
-
   def call_llm(messages)
     tools = AgentToolBuilder.tools_for_agent(@agent)
 
     begin
-      # Using RubyLLM - simulated as the exact API depends on the library version
-      # This assumes a standard OpenAI-compatible interface
       Timeout.timeout(@agent.timeout_seconds) do
         response = make_llm_request(messages, tools)
         success(data: {
           content: response[:content],
           tool_calls: response[:tool_calls],
           input_tokens: response[:input_tokens].to_i,
-          output_tokens: response[:output_tokens].to_i
+          output_tokens: response[:output_tokens].to_i,
+          thinking_tokens: response[:thinking_tokens].to_i
         })
       end
     rescue => e
+      Rails.logger.error("LLM call failed: #{e.message}")
       failure(message: "LLM call failed: #{e.message}")
     end
   end
 
   def make_llm_request(messages, tools)
-    # Placeholder: actual RubyLLM integration
-    # In production, this would call: RubyLLM::Chat.new(...).complete(messages, tools)
-    # For now, return a stub response
+    # Use RubyLLM to call the specified model with tools
+    llm_chat = RubyLLM::Chat.new(provider: :openai, model: @agent.model)
+
+    # Add messages to the chat
+    messages.each do |msg|
+      llm_chat.add_message(role: msg[:role], content: msg[:content])
+    end
+
+    # Set tools if available
+    llm_chat.tools = tools if tools.present?
+
+    # Call the LLM
+    response = llm_chat.complete
+
+    # Extract response content (defensive duck-typing for various response formats)
+    content = extract_content(response)
+    tool_calls = extract_tool_calls(response)
+    input_tokens = extract_input_tokens(response)
+    output_tokens = extract_output_tokens(response)
+    thinking_tokens = extract_thinking_tokens(response)
+
     {
-      content: "I would help with this task, but the LLM integration needs configuration.",
-      tool_calls: [],
-      input_tokens: 0,
-      output_tokens: 0
+      content: content,
+      tool_calls: tool_calls,
+      input_tokens: input_tokens,
+      output_tokens: output_tokens,
+      thinking_tokens: thinking_tokens
     }
   end
 
+  def extract_content(response)
+    if response.respond_to?(:content)
+      content = response.content
+      content.respond_to?(:text) ? content.text : content.to_s
+    elsif response.respond_to?(:text)
+      response.text
+    elsif response.respond_to?(:message)
+      response.message
+    elsif response.is_a?(Hash)
+      response["content"] || response[:content] || response.to_s
+    else
+      response.to_s
+    end
+  end
+
+  def extract_tool_calls(response)
+    if response.respond_to?(:tool_calls)
+      response.tool_calls || []
+    elsif response.is_a?(Hash) && response["tool_calls"]
+      response["tool_calls"]
+    else
+      []
+    end
+  end
+
+  def extract_input_tokens(response)
+    if response.respond_to?(:usage)
+      response.usage.input_tokens rescue 0
+    elsif response.is_a?(Hash)
+      response["usage"]&.dig("prompt_tokens") || response["input_tokens"] || 0
+    else
+      0
+    end
+  end
+
+  def extract_output_tokens(response)
+    if response.respond_to?(:usage)
+      response.usage.output_tokens rescue 0
+    elsif response.is_a?(Hash)
+      response["usage"]&.dig("completion_tokens") || response["output_tokens"] || 0
+    else
+      0
+    end
+  end
+
+  def extract_thinking_tokens(response)
+    if response.is_a?(Hash)
+      response["usage"]&.dig("thinking_tokens") || 0
+    else
+      0
+    end
+  end
+
   def execute_tool_calls(tool_calls, iteration_base)
-    tool_calls.map.with_index do |tool_call, i|
+    hitl_paused = false
+    messages = []
+
+    tool_calls.each.with_index do |tool_call, i|
       step_num = "#{iteration_base}.#{i + 1}"
-      step = create_step(step_num, "tool_call", "Calling #{tool_call['function']['name']}...")
+      tool_name = tool_call["function"]["name"] rescue tool_call["name"]
+
+      step = create_step(step_num, "tool_call", "Calling #{tool_name}...")
       step.start!
       broadcast_step_update(step)
 
@@ -137,17 +209,35 @@ class AgentExecutionService < ApplicationService
         agent: @agent,
         user: @user,
         organization: @organization,
-        invocable: @run.invocable
+        invocable: @run.invocable,
+        run: @run
       )
 
       if result.success?
         step.complete!(output: result.data)
-        { role: "tool", tool_call_id: tool_call["id"], content: result.data.to_json }
+
+        # Check if HITL was triggered (ask_user or confirm_action)
+        if result.data[:hitl_interaction_id]
+          hitl_paused = true
+          break  # Don't process more tool calls if HITL is paused
+        end
+
+        messages << {
+          role: "tool",
+          tool_call_id: tool_call["id"],
+          content: result.data.to_json
+        }
       else
         step.fail!(result.message)
-        { role: "tool", tool_call_id: tool_call["id"], content: "Error: #{result.message}" }
+        messages << {
+          role: "tool",
+          tool_call_id: tool_call["id"],
+          content: "Error: #{result.message}"
+        }
       end
     end
+
+    { messages: messages, hitl_paused: hitl_paused }
   end
 
   def create_step(number, type, title)
@@ -162,10 +252,19 @@ class AgentExecutionService < ApplicationService
   def record_step_tokens(step, response_data)
     input_t = response_data[:input_tokens].to_i
     output_t = response_data[:output_tokens].to_i
-    step.update_columns(input_tokens: input_t, output_tokens: output_t)
+    thinking_t = response_data[:thinking_tokens].to_i
+
+    step.update_columns(
+      input_tokens: input_t,
+      output_tokens: output_t,
+      thinking_tokens: thinking_t
+    )
+
     @run.increment!(:input_tokens, input_t)
     @run.increment!(:output_tokens, output_t)
+    @run.increment!(:thinking_tokens, thinking_t)
     @run.increment!(:total_tokens, input_t + output_t)
+
     @agent.increment_token_usage!(input_t + output_t)
   end
 

@@ -10,80 +10,250 @@
     </div>
   <% end %>
 
-  <div>
-    <%= f.label :name, "Agent Name", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.text_field :name, placeholder: "e.g., Research Assistant", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-  </div>
-
-  <div>
-    <%= f.label :description, "Description", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.text_area :description, placeholder: "What does this agent do?", class: "w-full border border-gray-300 rounded-lg p-2 text-sm", rows: 3 %>
-  </div>
-
-  <div>
-    <%= f.label :prompt, "System Prompt", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.text_area :prompt, placeholder: "Instructions for the agent...", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 5 %>
-    <p class="text-xs text-gray-500 mt-1">This is the system instruction that guides the agent's behavior</p>
-  </div>
-
-  <div>
-    <%= f.label :scope, "Agent Scope", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <% available_scopes = ["user_agent", "org_agent", "team_agent"].map { |k| [k.titleize, k] } %>
-    <%= f.select :scope, available_scopes, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-    <p class="text-xs text-gray-500 mt-1">Scope determines who can access this agent</p>
-  </div>
-
-  <div>
-    <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.select :status, AiAgent.statuses.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-  </div>
-
-  <div class="grid grid-cols-2 gap-4">
-    <div>
-      <%= f.label :max_tokens_per_run, "Max Tokens per Run", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.number_field :max_tokens_per_run, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-    </div>
-    <div>
-      <%= f.label :timeout_seconds, "Timeout (seconds)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.number_field :timeout_seconds, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+  <!-- Tabs Navigation -->
+  <div class="border-b border-gray-200">
+    <div class="flex space-x-8">
+      <button type="button" data-tab="identity" class="tab-button active px-1 py-4 border-b-2 border-blue-600 font-semibold text-sm text-gray-700 hover:text-gray-900">Identity</button>
+      <button type="button" data-tab="instructions" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Instructions</button>
+      <button type="button" data-tab="context" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Context</button>
+      <button type="button" data-tab="questions" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Pre-Run Questions</button>
+      <button type="button" data-tab="triggers" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Triggers</button>
+      <button type="button" data-tab="execution" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Execution</button>
     </div>
   </div>
 
-  <div class="grid grid-cols-2 gap-4">
+  <!-- Tab 1: Identity -->
+  <div id="identity" class="tab-content space-y-4">
     <div>
-      <%= f.label :max_steps, "Max Steps", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.number_field :max_steps, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <%= f.label :name, "Agent Name", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.text_field :name, placeholder: "e.g., Task Breakdown Agent", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
     </div>
+
     <div>
-      <%= f.label :model, "Model", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <% model_groups = {
-        "GPT-5 Series" => ["gpt-5-pro", "gpt-5", "gpt-5-mini", "gpt-5-nano"],
-        "Reasoning Models" => ["o3", "o3-mini", "o1", "o1-mini"],
-        "GPT-4 Series" => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"],
-        "GPT-3.5" => ["gpt-3.5-turbo"]
-      } %>
-      <%= f.select :model, model_groups, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <%= f.label :description, "Description", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.text_area :description, placeholder: "What does this agent do? Used for embeddings and discovery.", class: "w-full border border-gray-300 rounded-lg p-2 text-sm", rows: 3 %>
+    </div>
+
+    <div>
+      <%= f.label :scope, "Agent Scope", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <% available_scopes = ["user_agent", "org_agent", "team_agent"].map { |k| [k.titleize, k] } %>
+      <%= f.select :scope, available_scopes, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <p class="text-xs text-gray-500 mt-1">Determines who can access this agent</p>
+    </div>
+
+    <div>
+      <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.select :status, AiAgent.statuses.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
     </div>
   </div>
 
-  <div>
-    <%= f.label :tag_list, "Tags", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <%= f.text_field :tag_list, placeholder: "Separate tags with commas", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+  <!-- Tab 2: Instructions -->
+  <div id="instructions" class="tab-content space-y-4 hidden">
+    <div>
+      <%= f.label :persona, "Persona (Role & Tone)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.text_area :prompt, placeholder: "Who is this agent? Example: 'You are a senior project manager expert at decomposing complex goals...'", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 4 %>
+      <p class="text-xs text-gray-500 mt-1">Define the agent's role, tone, and constraints</p>
+    </div>
+
+    <div>
+      <%= f.label :instructions, "Instructions (Step-by-Step SOP)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.text_area :instructions, placeholder: "1. Understand the goal\n2. Identify phases\n3. Break into tasks\n4. Assign priorities\n5. Confirm with user", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 6 %>
+      <p class="text-xs text-gray-500 mt-1">What the agent does, step by step. Separate from persona.</p>
+    </div>
   </div>
 
-  <div>
-    <%= f.label :parameters, "Input Parameters (JSON)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-    <% params_value = agent.parameters.present? ? (agent.parameters.is_a?(String) ? agent.parameters : JSON.pretty_generate(agent.parameters)) : '' %>
-    <%= f.text_area :parameters,
-        value: params_value,
-        placeholder: '{"param_name": "description of what this parameter does"}',
+  <!-- Tab 3: Body Context -->
+  <div id="context" class="tab-content space-y-4 hidden">
+    <p class="text-sm text-gray-600">What context does the agent automatically load before running?</p>
+    <% context_config = agent.body_context_config || {} %>
+
+    <div class="space-y-3 border rounded-lg p-4 bg-gray-50">
+      <label class="flex items-center">
+        <input type="checkbox" name="ai_agent[body_context_config][load_invocable]" value="invocable" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "invocable" %>>
+        <span class="ml-3 text-sm text-gray-700"><strong>Invocable Resource</strong> — Load the target list/item the agent is working on</span>
+      </label>
+
+      <label class="flex items-center">
+        <input type="checkbox" name="ai_agent[body_context_config][load_all_lists]" value="all_lists" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "all_lists" %>>
+        <span class="ml-3 text-sm text-gray-700"><strong>All Lists</strong> — Load all lists in the organization (for status reports, summaries)</span>
+      </label>
+
+      <label class="flex items-center">
+        <input type="checkbox" name="ai_agent[body_context_config][load_recent_runs]" value="recent_runs" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "recent_runs" %>>
+        <span class="ml-3 text-sm text-gray-700"><strong>Recent Runs</strong> — Load summaries of the last 5 completed runs (cross-run memory)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Tab 4: Pre-Run Questions -->
+  <div id="questions" class="tab-content space-y-4 hidden">
+    <p class="text-sm text-gray-600">Ask the user these questions BEFORE the agent executes. Answers are injected as parameters.</p>
+
+    <%= f.label :pre_run_questions, "Questions (JSON Array)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <% questions_value = agent.pre_run_questions.present? ? (agent.pre_run_questions.is_a?(String) ? agent.pre_run_questions : JSON.pretty_generate(agent.pre_run_questions)) : '[]' %>
+    <%= f.text_area :pre_run_questions,
+        value: questions_value,
+        placeholder: '[{"key":"goal","question":"What is the main goal?","required":true},{"key":"deadline","question":"Deadline?","required":false}]',
         class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono",
-        rows: 4 %>
-    <p class="text-xs text-gray-500 mt-1">Define what input parameters this agent accepts. Format as JSON object with parameter names as keys and descriptions as values.</p>
+        rows: 6 %>
+    <p class="text-xs text-gray-500 mt-1">Each question object needs: key, question, required. Optional: options (array for multiple choice).</p>
   </div>
 
-  <div class="flex gap-2">
-    <%= f.submit agent.new_record? ? "Create Agent" : "Update Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition" %>
-    <%= link_to "Cancel", agent.new_record? ? browse_ai_agents_path : ai_agent_path(agent), class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition" %>
+  <!-- Tab 5: Triggers -->
+  <div id="triggers" class="tab-content space-y-4 hidden">
+    <% trigger_config = agent.trigger_config || { "type" => "manual" } %>
+    <% trigger_type = trigger_config["type"] || "manual" %>
+
+    <div>
+      <%= f.label :trigger_config, "Trigger Type", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <select name="ai_agent[trigger_type]" onchange="updateTriggerFields(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+        <option value="manual" <%= "selected" if trigger_type == "manual" %>>Manual (Click Run in UI)</option>
+        <option value="event" <%= "selected" if trigger_type == "event" %>>Event-Driven (Trigger on app events)</option>
+        <option value="schedule" <%= "selected" if trigger_type == "schedule" %>>Scheduled (Cron-based)</option>
+      </select>
+    </div>
+
+    <div id="event-config" class="space-y-3 <%= "hidden" unless trigger_type == "event" %>">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Event Type</label>
+        <input type="text" name="ai_agent[trigger_config][event_type]" value="<%= trigger_config['event_type'] %>" placeholder="e.g., list_item.completed" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+        <p class="text-xs text-gray-500 mt-1">Available: list_item.completed, list_item.created, list_item.updated</p>
+      </div>
+    </div>
+
+    <div id="schedule-config" class="space-y-3 <%= "hidden" unless trigger_type == "schedule" %>">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Cron Expression</label>
+        <input type="text" name="ai_agent[trigger_config][cron]" value="<%= trigger_config['cron'] %>" placeholder="e.g., 0 9 * * 1 (Monday 9am)" class="w-full border border-gray-300 rounded-lg p-2 text-sm font-mono">
+        <p class="text-xs text-gray-500 mt-1">Standard cron syntax: minute hour day-of-month month day-of-week</p>
+        <p class="text-xs text-gray-500">Examples: <code>0 9 * * 1</code> (Mon 9am), <code>0 17 * * *</code> (daily 5pm), <code>*/15 * * * *</code> (every 15 min)</p>
+      </div>
+    </div>
+
+    <!-- Hidden input for manual trigger config -->
+    <input type="hidden" id="trigger-config-json" name="ai_agent[trigger_config]" value='<%= trigger_config.to_json %>'>
+  </div>
+
+  <!-- Tab 6: Execution -->
+  <div id="execution" class="tab-content space-y-4 hidden">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :model, "LLM Model", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <% model_groups = {
+          "GPT-5 Series" => ["gpt-5-pro", "gpt-5", "gpt-5-mini", "gpt-5-nano"],
+          "Reasoning Models" => ["o3", "o3-mini", "o1", "o1-mini"],
+          "GPT-4 Series" => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"],
+          "GPT-3.5" => ["gpt-3.5-turbo"]
+        } %>
+        <%= f.select :model, model_groups, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+
+      <div>
+        <%= f.label :timeout_seconds, "Timeout (seconds)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.number_field :timeout_seconds, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :max_steps, "Max Steps", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.number_field :max_steps, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+
+      <div>
+        <%= f.label :max_tokens_per_run, "Max Tokens per Run", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.number_field :max_tokens_per_run, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :max_tokens_per_day, "Max Tokens per Day", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.number_field :max_tokens_per_day, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+
+      <div>
+        <%= f.label :max_tokens_per_month, "Max Tokens per Month", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.number_field :max_tokens_per_month, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      </div>
+    </div>
+
+    <div>
+      <%= f.label :tag_list, "Tags", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.text_field :tag_list, placeholder: "Separate with commas", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+    </div>
+  </div>
+
+  <div class="flex gap-2 pt-4 border-t">
+    <%= f.submit agent.new_record? ? "Create Agent" : "Update Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition" %>
+    <%= link_to "Cancel", agent.new_record? ? browse_ai_agents_path : ai_agent_path(agent), class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded transition" %>
   </div>
 <% end %>
+
+<script>
+// Tab switching logic
+document.querySelectorAll('.tab-button').forEach(button => {
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tabName = button.dataset.tab;
+
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.classList.add('hidden');
+    });
+
+    // Remove active border from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.remove('border-blue-600', 'text-gray-700');
+      btn.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    // Show selected tab
+    document.getElementById(tabName).classList.remove('hidden');
+
+    // Add active border to clicked button
+    button.classList.remove('border-transparent', 'text-gray-500');
+    button.classList.add('border-blue-600', 'text-gray-700');
+  });
+});
+
+// Trigger config UI updates
+function updateTriggerFields(triggerType) {
+  const eventConfig = document.getElementById('event-config');
+  const scheduleConfig = document.getElementById('schedule-config');
+
+  if (triggerType === 'event') {
+    eventConfig.classList.remove('hidden');
+    scheduleConfig.classList.add('hidden');
+  } else if (triggerType === 'schedule') {
+    eventConfig.classList.add('hidden');
+    scheduleConfig.classList.remove('hidden');
+  } else {
+    eventConfig.classList.add('hidden');
+    scheduleConfig.classList.add('hidden');
+  }
+
+  updateTriggerConfigJSON(triggerType);
+}
+
+function updateTriggerConfigJSON(triggerType) {
+  const configInput = document.getElementById('trigger-config-json');
+  if (triggerType === 'manual') {
+    configInput.value = JSON.stringify({ type: 'manual' });
+  } else if (triggerType === 'event') {
+    const eventType = document.querySelector('input[name="ai_agent[trigger_config][event_type]"]')?.value || '';
+    configInput.value = JSON.stringify({ type: 'event', event_type: eventType });
+  } else if (triggerType === 'schedule') {
+    const cron = document.querySelector('input[name="ai_agent[trigger_config][cron]"]')?.value || '';
+    configInput.value = JSON.stringify({ type: 'schedule', cron: cron });
+  }
+}
+
+// Update trigger config JSON when event/cron inputs change
+document.addEventListener('change', (e) => {
+  if (e.target.name === 'ai_agent[trigger_config][event_type]' || e.target.name === 'ai_agent[trigger_config][cron]') {
+    const triggerType = document.querySelector('select[name="ai_agent[trigger_type]"]')?.value || 'manual';
+    updateTriggerConfigJSON(triggerType);
+  }
+});
+</script>

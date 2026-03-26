@@ -1,5 +1,42 @@
 module AgentToolBuilder
   TOOL_SPECS = {
+    ask_user: {
+      name: "ask_user",
+      description: "Ask the user a question and pause execution until they respond. Use this when you need clarification or approval from the user.",
+      parameters: {
+        type: "object",
+        properties: {
+          question: {
+            type: "string",
+            description: "The question to ask the user"
+          },
+          options: {
+            type: "array",
+            items: { type: "string" },
+            description: "Optional list of multiple-choice options for the user to select from"
+          }
+        },
+        required: [ "question" ]
+      }
+    },
+    confirm_action: {
+      name: "confirm_action",
+      description: "Ask the user to confirm before taking a significant action. Execution pauses until the user confirms or rejects.",
+      parameters: {
+        type: "object",
+        properties: {
+          description: {
+            type: "string",
+            description: "What action you want to perform"
+          },
+          expected_outcome: {
+            type: "string",
+            description: "What the user should expect if they approve"
+          }
+        },
+        required: [ "description" ]
+      }
+    },
     read_list: {
       name: "read_list",
       description: "Get details about a list including its title, description, status, and item count",
@@ -160,9 +197,15 @@ module AgentToolBuilder
   }.freeze
 
   def self.tools_for_agent(agent)
-    agent.ai_agent_resources.enabled.map do |resource|
+    # HITL tools are always available
+    hitl_tools = [ TOOL_SPECS[:ask_user], TOOL_SPECS[:confirm_action] ]
+
+    # Add tools for each resource
+    resource_tools = agent.ai_agent_resources.enabled.map do |resource|
       tool_for_resource(resource)
-    end.compact
+    end.compact.flatten.uniq { |t| t[:name] }
+
+    (hitl_tools + resource_tools).uniq { |t| t[:name] }
   end
 
   def self.tool_for_resource(resource)
@@ -196,6 +239,8 @@ module AgentToolBuilder
 
   def self.all_available_tools
     [
+      TOOL_SPECS[:ask_user],
+      TOOL_SPECS[:confirm_action],
       TOOL_SPECS[:read_list],
       TOOL_SPECS[:read_list_items],
       TOOL_SPECS[:create_list_item],

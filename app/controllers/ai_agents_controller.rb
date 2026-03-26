@@ -97,7 +97,9 @@ class AiAgentsController < ApplicationController
       :name, :description, :prompt, :scope, :model,
       :max_tokens_per_run, :max_tokens_per_day, :max_tokens_per_month,
       :timeout_seconds, :max_steps, :rate_limit_per_hour,
-      :status, :tag_list, :parameters,
+      :status, :tag_list, :parameters, :instructions,
+      :body_context_config, :trigger_config,
+      :pre_run_questions,
       metadata: {}
     )
 
@@ -107,6 +109,33 @@ class AiAgentsController < ApplicationController
         permitted[:parameters] = JSON.parse(permitted[:parameters])
       rescue JSON::ParserError
         permitted[:parameters] = {}
+      end
+    end
+
+    # Parse body_context_config if string
+    if permitted[:body_context_config].is_a?(String) && permitted[:body_context_config].present?
+      begin
+        permitted[:body_context_config] = JSON.parse(permitted[:body_context_config])
+      rescue JSON::ParserError
+        permitted[:body_context_config] = {}
+      end
+    end
+
+    # Parse trigger_config if string
+    if permitted[:trigger_config].is_a?(String) && permitted[:trigger_config].present?
+      begin
+        permitted[:trigger_config] = JSON.parse(permitted[:trigger_config])
+      rescue JSON::ParserError
+        permitted[:trigger_config] = { type: "manual" }
+      end
+    end
+
+    # Parse pre_run_questions if string
+    if permitted[:pre_run_questions].is_a?(String) && permitted[:pre_run_questions].present?
+      begin
+        permitted[:pre_run_questions] = JSON.parse(permitted[:pre_run_questions])
+      rescue JSON::ParserError
+        permitted[:pre_run_questions] = []
       end
     end
 

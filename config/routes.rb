@@ -121,6 +121,8 @@ Rails.application.routes.draw do
       patch :pause
       patch :resume
       delete :cancel
+      post :submit_pre_run_answers
+      post :answer_interaction
     end
     resources :ai_agent_feedbacks, path: "feedback", only: [ :create ]
   end

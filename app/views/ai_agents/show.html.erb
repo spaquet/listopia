@@ -83,6 +83,105 @@
       <% end %>
     </div>
 
+    <!-- Instructions Section -->
+    <% if @agent.instructions.present? %>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">Instructions (Step-by-Step SOP)</h2>
+        <div class="text-gray-700 whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded border border-gray-200"><%= @agent.instructions %></div>
+      </div>
+    <% end %>
+
+    <!-- Trigger Configuration -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-3">Trigger Configuration</h2>
+      <% trigger_config = @agent.trigger_config || { "type" => "manual" } %>
+      <% trigger_type = trigger_config["type"] || "manual" %>
+
+      <div class="space-y-3">
+        <div class="flex items-center">
+          <span class="text-sm font-semibold text-gray-700 min-w-24">Type:</span>
+          <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold <%= case trigger_type
+            when "event" then "bg-purple-100 text-purple-800"
+            when "schedule" then "bg-blue-100 text-blue-800"
+            else "bg-gray-100 text-gray-800"
+            end %>"><%= trigger_type.titleize %></span>
+        </div>
+
+        <% if trigger_type == "event" %>
+          <div class="flex items-center">
+            <span class="text-sm font-semibold text-gray-700 min-w-24">Event:</span>
+            <span class="text-sm text-gray-600"><code class="bg-gray-100 px-2 py-1 rounded"><%= trigger_config['event_type'] %></code></span>
+          </div>
+        <% elsif trigger_type == "schedule" %>
+          <div class="flex items-center">
+            <span class="text-sm font-semibold text-gray-700 min-w-24">Cron:</span>
+            <span class="text-sm text-gray-600"><code class="bg-gray-100 px-2 py-1 rounded"><%= trigger_config['cron'] %></code></span>
+          </div>
+        <% end %>
+
+        <% if @agent.pre_run_questions.present? && @agent.pre_run_questions.any? %>
+          <div class="mt-3 pt-3 border-t border-gray-200">
+            <p class="text-sm font-semibold text-gray-700 mb-2">Pre-Run Questions:</p>
+            <div class="space-y-2">
+              <% @agent.pre_run_questions.each do |q| %>
+                <div class="p-2 bg-gray-50 rounded text-sm">
+                  <p class="font-semibold text-gray-900"><%= q["question"] %></p>
+                  <p class="text-xs text-gray-600 mt-1">Required: <%= q["required"] ? "Yes" : "No" %></p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Body Context Configuration -->
+    <% if @agent.body_context_config.present? && @agent.body_context_config.any? %>
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-3">Auto-Loaded Context</h2>
+        <div class="space-y-2 text-sm">
+          <% if @agent.body_context_config["load"] == "invocable" %>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span class="text-gray-700"><strong>Invocable Resource</strong> — Loads the target list/item</span>
+            </div>
+          <% elsif @agent.body_context_config["load"] == "all_lists" %>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span class="text-gray-700"><strong>All Lists</strong> — Loads all organization lists</span>
+            </div>
+          <% elsif @agent.body_context_config["load"] == "recent_runs" %>
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span class="text-gray-700"><strong>Recent Runs</strong> — Loads summaries of last <%= @agent.body_context_config["limit"] || 5 %> runs</span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Similar Agents (via embeddings) -->
+    <% if @agent.embedding.present? %>
+      <% similar_agents = @agent.similar_to(limit: 3) %>
+      <% if similar_agents.any? %>
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-3">Similar Agents (by embedding)</h2>
+          <div class="space-y-2">
+            <% similar_agents.each do |similar_agent| %>
+              <div class="p-3 border border-gray-200 rounded hover:bg-gray-50 flex items-center justify-between">
+                <div>
+                  <p class="font-semibold text-gray-900"><%= link_to similar_agent.name, ai_agent_path(similar_agent), class: "text-blue-600 hover:text-blue-800" %></p>
+                  <p class="text-sm text-gray-600"><%= similar_agent.description.truncate(80) %></p>
+                </div>
+                <span class="text-xs text-gray-500"><%= similar_agent.scope.titleize %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <!-- Recent Runs -->
     <div class="bg-white rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Runs</h2>
       <% if @recent_runs.any? %>

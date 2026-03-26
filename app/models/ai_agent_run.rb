@@ -3,6 +3,7 @@
 # Table name: ai_agent_runs
 #
 #  id                  :uuid             not null, primary key
+#  awaiting_at         :datetime
 #  cancellation_reason :text
 #  completed_at        :datetime
 #  error_message       :text
@@ -13,6 +14,7 @@
 #  metadata            :jsonb            not null
 #  output_tokens       :integer          default(0)
 #  paused_at           :datetime
+#  pre_run_answers     :jsonb            not null
 #  processing_time_ms  :integer
 #  result_data         :jsonb            not null
 #  result_summary      :text
@@ -22,6 +24,7 @@
 #  steps_total         :integer          default(0)
 #  thinking_tokens     :integer          default(0)
 #  total_tokens        :integer          default(0)
+#  trigger_source      :string           default("manual"), not null
 #  user_input          :text
 #  created_at          :datetime         not null
 #  updated_at          :datetime         not null
@@ -59,16 +62,18 @@ class AiAgentRun < ApplicationRecord
   belongs_to :parent_run, class_name: "AiAgentRun", optional: true
   has_many   :ai_agent_run_steps, -> { order(step_number: :asc) }, dependent: :destroy
   has_many   :ai_agent_feedbacks, dependent: :destroy
+  has_many   :ai_agent_interactions, dependent: :destroy
   has_many   :child_runs, class_name: "AiAgentRun", foreign_key: :parent_run_id, dependent: :destroy
   has_one    :feedback_by_user, ->(run) { where(user_id: run.user_id) }, class_name: "AiAgentFeedback"
 
   enum :status, {
-    pending:   0,
-    running:   1,
-    paused:    2,
-    completed: 3,
-    failed:    4,
-    cancelled: 5
+    pending:        0,
+    running:        1,
+    paused:         2,
+    completed:      3,
+    failed:         4,
+    cancelled:      5,
+    awaiting_input: 6
   }, prefix: true
 
   validates :ai_agent_id, :user_id, :organization_id, presence: true
@@ -82,6 +87,11 @@ class AiAgentRun < ApplicationRecord
   # State transition helpers
   def start!
     update!(status: :running, started_at: Time.current, last_activity_at: Time.current)
+    Event.emit("agent_run.started", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id,
+      trigger_source: trigger_source
+    })
   end
 
   def complete!(summary: nil, data: {})
@@ -94,6 +104,13 @@ class AiAgentRun < ApplicationRecord
     )
     ai_agent.increment!(:success_count)
     ai_agent.increment!(:run_count)
+
+    Event.emit("agent_run.completed", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id,
+      summary: summary,
+      trigger_source: trigger_source
+    })
   end
 
   def fail!(error_message)
@@ -104,10 +121,29 @@ class AiAgentRun < ApplicationRecord
       last_activity_at: Time.current
     )
     ai_agent.increment!(:run_count)
+
+    Event.emit("agent_run.failed", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id,
+      error: error_message,
+      trigger_source: trigger_source
+    })
+  end
+
+  def mark_awaiting_input!
+    update!(status: :awaiting_input, awaiting_at: Time.current, last_activity_at: Time.current)
+    Event.emit("agent_run.awaiting_input", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id
+    })
   end
 
   def pause!
     update!(status: :paused, paused_at: Time.current, last_activity_at: Time.current)
+    Event.emit("agent_run.paused", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id
+    })
   end
 
   def cancel!(reason: nil)
@@ -118,15 +154,25 @@ class AiAgentRun < ApplicationRecord
       last_activity_at: Time.current
     )
     ai_agent.increment!(:run_count)
+
+    Event.emit("agent_run.cancelled", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id,
+      reason: reason
+    })
   end
 
   def resume!
     update!(status: :running, paused_at: nil, last_activity_at: Time.current)
+    Event.emit("agent_run.resumed", organization_id, user_id, {
+      agent_id: ai_agent_id,
+      run_id: id
+    })
   end
 
   def touch_activity!
     update_column(:last_activity_at, Time.current)
-  end
+end
 
   def turbo_channel
     "agent_run_#{id}"

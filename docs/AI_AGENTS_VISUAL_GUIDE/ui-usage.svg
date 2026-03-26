@@ -1,0 +1,210 @@
+<svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Title -->
+  <text x="700" y="35" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
+    UI Usage: How to Access & Use Agents
+  </text>
+
+  <!-- Left side: Agent Library -->
+  <g id="agentLibrary">
+    <text x="300" y="80" font-size="14" font-weight="bold" fill="#333">Agent Library (/agents)</text>
+
+    <!-- Browser window -->
+    <rect x="30" y="120" width="540" height="840" fill="#fff" stroke="#e5e7eb" stroke-width="2" rx="8"/>
+
+    <!-- Header -->
+    <rect x="30" y="120" width="540" height="50" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1"/>
+    <text x="300" y="150" font-size="13" font-weight="bold" text-anchor="middle" fill="#333">Agents</text>
+    <text x="50" y="155" font-size="10" fill="#999">Browse & manage all agents</text>
+
+    <!-- Filter/Search area -->
+    <rect x="50" y="190" width="480" height="35" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1" rx="4"/>
+    <text x="60" y="212" font-size="11" fill="#999">🔍 Search agents...</text>
+
+    <!-- Filter tabs -->
+    <text x="60" y="250" font-size="11" font-weight="bold" fill="#333">Filter:</text>
+    <rect x="120" y="235" width="100" height="25" fill="#3b82f6" rx="4"/>
+    <text x="170" y="252" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">All Agents</text>
+
+    <rect x="235" y="235" width="100" height="25" fill="#e5e7eb" rx="4"/>
+    <text x="285" y="252" font-size="10" fill="#666" text-anchor="middle">My Agents</text>
+
+    <rect x="350" y="235" width="110" height="25" fill="#e5e7eb" rx="4"/>
+    <text x="405" y="252" font-size="10" fill="#666" text-anchor="middle">System Agents</text>
+
+    <!-- Agent cards -->
+    <!-- Card 1 -->
+    <rect x="50" y="280" width="480" height="110" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="70" y="305" font-size="12" font-weight="bold" fill="#333">Task Breakdown Agent</text>
+    <text x="70" y="323" font-size="10" fill="#666">Decomposes complex goals into actionable tasks with priorities and timelines</text>
+
+    <text x="70" y="345" font-size="10" fill="#999">📌 Trigger: Manual</text>
+    <text x="70" y="360" font-size="10" fill="#999">📊 Runs: 12 | Last: 2 hours ago</text>
+    <text x="70" y="375" font-size="10" fill="#999">⭐ Rating: 4.8/5</text>
+
+    <rect x="400" y="290" width="110" height="30" fill="#3b82f6" rx="4"/>
+    <text x="455" y="311" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+
+    <!-- Card 2 -->
+    <rect x="50" y="410" width="480" height="110" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="70" y="435" font-size="12" font-weight="bold" fill="#333">Status Report Agent</text>
+    <text x="70" y="453" font-size="10" fill="#666">Generates weekly executive summaries across all organization lists</text>
+
+    <text x="70" y="475" font-size="10" fill="#999">📌 Trigger: Scheduled (Mon 9am)</text>
+    <text x="70" y="490" font-size="10" fill="#999">📊 Runs: 52 | Next: Mon 9:00 AM</text>
+    <text x="70" y="505" font-size="10" fill="#999">⭐ Rating: 4.9/5</text>
+
+    <rect x="400" y="420" width="110" height="30" fill="#3b82f6" rx="4"/>
+    <text x="455" y="441" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+
+    <!-- Card 3 -->
+    <rect x="50" y="540" width="480" height="110" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="70" y="565" font-size="12" font-weight="bold" fill="#333">List Organizer Agent</text>
+    <text x="70" y="583" font-size="10" fill="#666">Reoptimizes lists when items complete, suggests reorganization</text>
+
+    <text x="70" y="605" font-size="10" fill="#999">📌 Trigger: Event (item completed)</text>
+    <text x="70" y="620" font-size="10" fill="#999">📊 Runs: 87 | Last: 15 min ago</text>
+    <text x="70" y="635" font-size="10" fill="#999">⭐ Rating: 4.7/5</text>
+
+    <rect x="400" y="550" width="110" height="30" fill="#3b82f6" rx="4"/>
+    <text x="455" y="571" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+
+    <!-- Card 4 -->
+    <rect x="50" y="670" width="480" height="110" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="70" y="695" font-size="12" font-weight="bold" fill="#333">Research Agent</text>
+    <text x="70" y="713" font-size="10" fill="#666">Enriches items with external information using web search</text>
+
+    <text x="70" y="735" font-size="10" fill="#999">📌 Trigger: Manual</text>
+    <text x="70" y="750" font-size="10" fill="#999">📊 Runs: 34 | Last: 5 days ago</text>
+    <text x="70" y="765" font-size="10" fill="#999">⭐ Rating: 4.6/5</text>
+
+    <rect x="400" y="680" width="110" height="30" fill="#3b82f6" rx="4"/>
+    <text x="455" y="701" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+
+    <!-- Create new agent button -->
+    <rect x="50" y="800" width="480" height="40" fill="#10b981" stroke="#059669" stroke-width="2" rx="6"/>
+    <text x="300" y="827" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">+ Create New Agent</text>
+  </g>
+
+  <!-- Right side: Agent Details Page -->
+  <g id="agentDetail">
+    <text x="1050" y="80" font-size="14" font-weight="bold" fill="#333">Agent Details & Execution</text>
+
+    <!-- Browser window -->
+    <rect x="630" y="120" width="740" height="840" fill="#fff" stroke="#e5e7eb" stroke-width="2" rx="8"/>
+
+    <!-- Header -->
+    <rect x="630" y="120" width="740" height="60" fill="#3b82f6" rx="8"/>
+    <text x="1000" y="155" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle">Task Breakdown Agent</text>
+
+    <!-- Tabs -->
+    <rect x="650" y="195" width="100" height="30" fill="#fff" stroke="#3b82f6" stroke-width="1" rx="4"/>
+    <text x="700" y="216" font-size="10" fill="#3b82f6" text-anchor="middle" font-weight="bold">Overview</text>
+
+    <rect x="770" y="195" width="100" height="30" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1" rx="4"/>
+    <text x="820" y="216" font-size="10" fill="#666" text-anchor="middle">History</text>
+
+    <rect x="890" y="195" width="100" height="30" fill="#f3f4f6" stroke="#e5e7eb" stroke-width="1" rx="4"/>
+    <text x="940" y="216" font-size="10" fill="#666" text-anchor="middle">Settings</text>
+
+    <!-- Run section -->
+    <rect x="650" y="250" width="710" height="120" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" rx="6"/>
+    <text x="670" y="275" font-size="12" font-weight="bold" fill="#1e40af">Ready to Run</text>
+
+    <text x="670" y="300" font-size="11" fill="#1e3a8a">Persona:</text>
+    <text x="670" y="318" font-size="10" fill="#666">Senior project manager expert at decomposing complex goals into clear tasks</text>
+
+    <text x="670" y="340" font-size="11" fill="#1e3a8a">Trigger: Manual</text>
+    <text x="670" y="355" font-size="11" fill="#1e3a8a">Status: Active</text>
+
+    <rect x="620" y="385" width="150" height="40" fill="#3b82f6" rx="4"/>
+    <text x="695" y="411" font-size="12" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+
+    <rect x="800" y="385" width="150" height="40" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1" rx="4"/>
+    <text x="875" y="411" font-size="12" fill="#666" text-anchor="middle" font-weight="bold">[Edit Agent]</text>
+
+    <rect x="980" y="385" width="150" height="40" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1" rx="4"/>
+    <text x="1055" y="411" font-size="12" fill="#666" text-anchor="middle" font-weight="bold">[More ▼]</text>
+
+    <!-- Configuration -->
+    <rect x="650" y="450" width="710" height="280" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="670" y="475" font-size="12" font-weight="bold" fill="#333">Configuration</text>
+
+    <!-- Config items -->
+    <text x="670" y="505" font-size="11" font-weight="bold" fill="#333">Pre-Run Questions:</text>
+    <rect x="670" y="515" width="680" height="50" fill="#fff" stroke="#e5e7eb" stroke-width="1" rx="4"/>
+    <text x="685" y="535" font-size="10" fill="#666">1. "What is your main goal?" (required)</text>
+    <text x="685" y="550" font-size="10" fill="#666">2. "Do you have a deadline?" (optional)</text>
+
+    <text x="670" y="580" font-size="11" font-weight="bold" fill="#333">Body Context:</text>
+    <text x="685" y="598" font-size="10" fill="#666">Load current list (invocable)</text>
+
+    <text x="670" y="620" font-size="11" font-weight="bold" fill="#333">Resources:</text>
+    <text x="685" y="638" font-size="10" fill="#666">✓ Lists (read/write)  ✓ Items (read/write)  ✓ User interaction</text>
+
+    <text x="670" y="660" font-size="11" font-weight="bold" fill="#333">Token Budget:</text>
+    <text x="685" y="678" font-size="10" fill="#666">Per run: 4,000  | Daily: 50,000  | Monthly: 500,000</text>
+
+    <!-- Execution Status -->
+    <rect x="650" y="750" width="710" height="150" fill="#f0fdf4" stroke="#10b981" stroke-width="1" rx="6"/>
+    <text x="670" y="775" font-size="12" font-weight="bold" fill="#166534">Last Execution</text>
+
+    <text x="670" y="805" font-size="11" fill="#059669">Status: ✓ Completed</text>
+    <text x="670" y="825" font-size="11" fill="#059669">Time: 2 hours ago | Duration: 12.5s</text>
+    <text x="670" y="845" font-size="11" fill="#059669">Items created: 12 | Tokens used: 2,180 / 4,000</text>
+    <text x="670" y="865" font-size="11" fill="#059669">User rating: 5/5 ⭐</text>
+
+    <rect x="670" y="885" width="100" height="30" fill="#10b981" rx="4"/>
+    <text x="720" y="906" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[View Run]</text>
+  </g>
+
+  <!-- Bottom: Quick Access from List -->
+  <g id="quickAccess">
+    <rect x="30" y="990" width="1340" height="1" fill="#d1d5db"/>
+  </g>
+
+  <!-- Alternative: Quick Run from List View -->
+  <g id="listQuickAccess">
+    <text x="300" y="1020" font-size="13" font-weight="bold" fill="#333">Quick Agent Access from List View</text>
+
+    <!-- List header with agents menu -->
+    <rect x="30" y="1050" width="350" height="100" fill="#fff" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="50" y="1075" font-size="12" font-weight="bold" fill="#333">📋 Q1 Roadshow Planning</text>
+
+    <rect x="250" y="1070" width="120" height="25" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1" rx="4"/>
+    <text x="310" y="1089" font-size="10" fill="#666" text-anchor="middle">[More ▼]</text>
+
+    <!-- Dropdown menu -->
+    <rect x="250" y="1100" width="140" height="100" fill="#fff" stroke="#d1d5db" stroke-width="1" rx="4"/>
+    <text x="260" y="1125" font-size="10" font-weight="bold" fill="#333">Run Agent</text>
+
+    <line x1="260" y1="1135" x2="380" y2="1135" stroke="#e5e7eb" stroke-width="1"/>
+
+    <text x="268" y="1152" font-size="10" fill="#666">Task Breakdown</text>
+    <text x="268" y="1168" font-size="10" fill="#666">List Organizer</text>
+    <text x="268" y="1184" font-size="10" fill="#666">Research Agent</text>
+
+    <!-- Arrow pointing from menu -->
+    <path d="M 390,1120 L 450,1120" stroke="#999" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
+    <text x="420" y="1110" font-size="10" fill="#666">Click any agent</text>
+    <text x="420" y="1125" font-size="10" fill="#666">to run on this list</text>
+
+    <!-- Run confirmation -->
+    <rect x="500" y="1050" width="350" height="100" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" rx="6"/>
+    <text x="520" y="1075" font-size="12" font-weight="bold" fill="#1e40af">Running: Task Breakdown</text>
+
+    <text x="520" y="1100" font-size="10" fill="#1e3a8a">List: Q1 Roadshow Planning</text>
+    <text x="520" y="1118" font-size="10" fill="#1e3a8a">Status: Awaiting pre-run answers...</text>
+
+    <rect x="520" y="1135" width="100" height="25" fill="#3b82f6" rx="4"/>
+    <text x="570" y="1153" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Answer]</text>
+
+    <!-- Settings access -->
+    <rect x="900" y="1050" width="370" height="100" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1" rx="6"/>
+    <text x="920" y="1075" font-size="12" font-weight="bold" fill="#333">Manage Agents</text>
+
+    <text x="920" y="1100" font-size="10" fill="#666">Go to Settings → Agents to:</text>
+    <text x="920" y="1118" font-size="10" fill="#666">• Create custom agents</text>
+    <text x="920" y="1136" font-size="10" fill="#666">• Configure permissions</text>
+    <text x="920" y="1154" font-size="10" fill="#666">• View execution history</text>
+  </g>
+</svg>
