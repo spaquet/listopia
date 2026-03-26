@@ -342,7 +342,7 @@ class AgentExecutionService < ApplicationService
       # Fallback: create text message if list not found
       msg = Message.create_assistant(
         chat: chat,
-        content: @run.summary.presence || "List created successfully."
+        content: @run.result_summary.presence || "List created successfully."
       )
     end
 
