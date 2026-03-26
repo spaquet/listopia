@@ -117,11 +117,12 @@ class AgentExecutionService < ApplicationService
       llm_chat.add_message(role: msg[:role], content: msg[:content])
     end
 
-    # Convert tool hashes to RubyLLM tool objects and inject into tools dict
+    # Convert tool hashes to RubyLLM::Tool subclasses and inject into tools dict
     if tools.present?
       tools.each do |tool_hash|
-        tool_wrapper = AgentToolWrapper.new(tool_hash)
-        llm_chat.instance_variable_get(:@tools)[tool_wrapper.name.to_sym] = tool_wrapper
+        tool_class = AgentToolWrapper.create_tool_class(tool_hash)
+        tool_instance = tool_class.new
+        llm_chat.instance_variable_get(:@tools)[tool_hash[:name].to_sym] = tool_instance
       end
     end
 
