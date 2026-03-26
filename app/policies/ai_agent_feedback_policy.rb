@@ -2,7 +2,7 @@ class AiAgentFeedbackPolicy < ApplicationPolicy
   def create?
     # User must be the runner of the associated run
     run = record.ai_agent_run
-    run.user == user && run.completed?
+    run.user == user && run.status_completed?
   end
 
   class Scope < Scope

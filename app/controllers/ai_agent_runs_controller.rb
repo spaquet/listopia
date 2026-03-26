@@ -54,7 +54,7 @@ class AiAgentRunsController < ApplicationController
 
   def submit_pre_run_answers
     authorize @run, :submit_pre_run_answers?
-    return render json: { error: "Run not awaiting input" }, status: :unprocessable_entity unless @run.awaiting_input?
+    return render json: { error: "Run not awaiting input" }, status: :unprocessable_entity unless @run.status_awaiting_input?
 
     @run.update!(pre_run_answers: params[:answers]&.to_unsafe_h || {})
     AgentRunJob.perform_later(@run.id)

@@ -27,7 +27,7 @@ class AgentExecutionService < ApplicationService
           break if iteration > max_iterations
 
           @run.reload
-          break if @run.paused? || @run.cancelled?
+          break if @run.status_paused? || @run.status_cancelled?
 
           step = create_step(iteration, "llm_call", "Thinking...")
           step.start!

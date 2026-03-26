@@ -294,10 +294,10 @@ class AgentToolExecutorService < ApplicationService
       progress_percent: run.progress_percent
     }
 
-    if run.completed?
+    if run.status_completed?
       result[:result_summary] = run.result_summary
       result[:result_data] = run.result_data
-    elsif run.failed?
+    elsif run.status_failed?
       result[:error_message] = run.error_message
     end
 
