@@ -19,8 +19,8 @@ class AgentContextBuilder < ApplicationService
   def build_context_parts
     parts = []
 
-    # 1. Persona (core instruction)
-    parts << @agent.persona if @agent.persona.present?
+    # 1. Prompt (core instruction)
+    parts << @agent.prompt if @agent.prompt.present?
 
     # 2. Instructions (step-by-step SOP)
     if @agent.instructions.present?
