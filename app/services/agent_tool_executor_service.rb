@@ -121,6 +121,8 @@ class AgentToolExecutorService < ApplicationService
     category    = @arguments["category"] || "personal"
     items       = @arguments["items"] || []
 
+    Rails.logger.debug("handle_create_list: title=#{title}, items=#{items.inspect}")
+
     return failure(message: "Title is required") unless title.present?
     return failure(message: "At least one item is required") if items.empty?
 
@@ -147,19 +149,33 @@ class AgentToolExecutorService < ApplicationService
     items_created = 0
 
     # Add items to the list
-    items.each do |item|
-      title_str = item["title"].to_s.truncate(500)
+    Rails.logger.debug("handle_create_list: About to add #{items.length} items to list #{list.id}")
+    items.each_with_index do |item, index|
+      # Handle both string items and object items
+      if item.is_a?(String)
+        title_str = item.to_s.truncate(500)
+        description = ""
+        priority = "medium"
+      elsif item.is_a?(Hash)
+        title_str = (item["title"] || item[:title]).to_s.truncate(500)
+        description = (item["description"] || item[:description] || "").to_s
+        priority = item["priority"] || item[:priority] || "medium"
+      else
+        next
+      end
+
       next if title_str.blank?
 
+      Rails.logger.debug("handle_create_list: Creating item '#{title_str}' at position #{index}")
       list.list_items.create!(
         title: title_str,
-        description: (item["description"] || "").to_s,
-        priority: item["priority"] || "medium",
-        organization: org,
-        user: @user
+        description: description,
+        priority: priority,
+        position: index
       )
       items_created += 1
     end
+    Rails.logger.debug("handle_create_list: Created #{items_created} items")
 
     success(data: {
       list_id: list.id,

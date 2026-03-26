@@ -40,6 +40,9 @@ class AgentExecutionService < ApplicationService
           step.complete!(output: { response: response_data[:content] })
           record_step_tokens(step, response_data)
 
+          Rails.logger.debug("Iteration #{iteration}: Tool calls present? #{response_data[:tool_calls].present?}")
+          Rails.logger.debug("Iteration #{iteration}: Tool calls count: #{response_data[:tool_calls]&.length || 0}")
+
           if response_data[:tool_calls].present?
             tool_result = execute_tool_calls(response_data[:tool_calls], iteration)
 
@@ -117,24 +120,36 @@ class AgentExecutionService < ApplicationService
       llm_chat.add_message(role: msg[:role], content: msg[:content])
     end
 
-    # Convert tool hashes to RubyLLM::Tool subclasses and inject into tools dict
+    # Register tools using RubyLLM's proper API (with_tool)
+    # Note: Store agent context so tools can execute properly
     if tools.present?
       tools.each do |tool_hash|
-        tool_class = AgentToolWrapper.create_tool_class(tool_hash)
-        tool_instance = tool_class.new
-        llm_chat.instance_variable_get(:@tools)[tool_hash[:name].to_sym] = tool_instance
+        tool_class = AgentToolWrapper.create_tool_class(
+          tool_hash,
+          agent: @agent,
+          user: @user,
+          organization: @organization,
+          invocable: @run.invocable,
+          run: @run
+        )
+        Rails.logger.debug("Registering tool: #{tool_hash[:name]}")
+        llm_chat.with_tool(tool_class)
       end
     end
 
     # Call the LLM
     response = llm_chat.complete
 
+    Rails.logger.debug("LLM Response content: #{response.respond_to?(:content) ? response.content.inspect : 'N/A'}")
+
     # Extract response content (defensive duck-typing for various response formats)
     content = extract_content(response)
-    tool_calls = extract_tool_calls(response)
+    tool_calls = extract_tool_calls(llm_chat)
     input_tokens = extract_input_tokens(response)
     output_tokens = extract_output_tokens(response)
     thinking_tokens = extract_thinking_tokens(response)
+
+    Rails.logger.debug("Extracted Tool Calls: #{tool_calls.inspect}")
 
     {
       content: content,
@@ -160,14 +175,55 @@ class AgentExecutionService < ApplicationService
     end
   end
 
-  def extract_tool_calls(response)
-    if response.respond_to?(:tool_calls)
-      response.tool_calls || []
-    elsif response.is_a?(Hash) && response["tool_calls"]
-      response["tool_calls"]
-    else
-      []
+  def extract_tool_calls(llm_chat)
+    # Extract tool calls from RubyLLM chat messages
+    # Tool calls are stored on the messages themselves
+    tool_calls = []
+
+    begin
+      if llm_chat.respond_to?(:messages) && llm_chat.messages.present?
+        last_message = llm_chat.messages.last
+        if last_message && last_message.respond_to?(:tool_calls)
+          raw_tool_calls = last_message.tool_calls
+          if raw_tool_calls.is_a?(Array)
+            # Convert RubyLLM::ToolCall objects to the format expected by our system
+            tool_calls = raw_tool_calls.map do |tc|
+              tc_name = if tc.respond_to?(:name)
+                         name_val = tc.name
+                         name_val.is_a?(Array) ? name_val.first : name_val
+                       elsif tc.respond_to?(:tool_name)
+                         tc.tool_name
+                       elsif tc.is_a?(Hash)
+                         tc["name"] || tc[:name]
+                       else
+                         nil
+                       end
+
+              tc_args = if tc.respond_to?(:arguments)
+                         args_val = tc.arguments
+                         args_val.is_a?(String) ? args_val : (args_val&.to_json || "{}")
+                       elsif tc.is_a?(Hash)
+                         (tc["arguments"] || tc[:arguments] || {}).to_json
+                       else
+                         "{}"
+                       end
+
+              {
+                id: (tc.respond_to?(:id) ? tc.id : nil) || SecureRandom.uuid,
+                function: {
+                  name: tc_name,
+                  arguments: tc_args
+                }
+              }
+            end.select { |tc| tc.dig(:function, :name).present? }
+          end
+        end
+      end
+    rescue => e
+      Rails.logger.warn("Error extracting tool calls: #{e.message}")
     end
+
+    tool_calls
   end
 
   def extract_input_tokens(response)

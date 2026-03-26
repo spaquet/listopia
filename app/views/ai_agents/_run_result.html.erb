@@ -11,7 +11,7 @@
     </div>
   <% end %>
 
-  <% if run.status_completed? && !run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
+  <% if current_user && run.status_completed? && !run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
       <p class="text-blue-700 text-sm">Please share feedback to help improve this agent.</p>
     </div>
