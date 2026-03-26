@@ -283,23 +283,6 @@ RSpec.describe Chat, type: :model do
       end
     end
 
-    describe "#build_context" do
-      it "returns ChatContext object" do
-        context = chat.build_context
-        expect(context).to be_a(ChatContext)
-      end
-
-      it "passes location to context" do
-        context = chat.build_context(location: :floating)
-        expect(context.location).to eq(:floating)
-      end
-
-      it "includes chat and user in context" do
-        context = chat.build_context
-        expect(context.chat).to eq(chat)
-        expect(context.user).to eq(user)
-      end
-    end
 
     describe "#clone_with_context" do
       it "creates a new chat with same user and organization" do

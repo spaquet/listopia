@@ -14,9 +14,6 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 
 require 'rspec/rails'
 
-# Alias for backward compatibility - PlanningContext is ChatContext
-PlanningContext = ChatContext
-
 # Add additional requires below this line. Rails is not loaded until this point!
 require 'factory_bot_rails'
 require 'capybara/rails'
