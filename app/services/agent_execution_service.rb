@@ -117,9 +117,12 @@ class AgentExecutionService < ApplicationService
       llm_chat.add_message(role: msg[:role], content: msg[:content])
     end
 
-    # Set tools if available and supported by the LLM
-    if llm_chat.respond_to?(:tools=) && tools.present?
-      llm_chat.tools = tools
+    # Convert tool hashes to RubyLLM tool objects and inject into tools dict
+    if tools.present?
+      tools.each do |tool_hash|
+        tool_wrapper = AgentToolWrapper.new(tool_hash)
+        llm_chat.instance_variable_get(:@tools)[tool_wrapper.name.to_sym] = tool_wrapper
+      end
     end
 
     # Call the LLM
