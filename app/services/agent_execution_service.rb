@@ -117,8 +117,10 @@ class AgentExecutionService < ApplicationService
       llm_chat.add_message(role: msg[:role], content: msg[:content])
     end
 
-    # Set tools if available
-    llm_chat.tools = tools if tools.present?
+    # Set tools if available and supported by the LLM
+    if llm_chat.respond_to?(:tools=) && tools.present?
+      llm_chat.tools = tools
+    end
 
     # Call the LLM
     response = llm_chat.complete
@@ -254,12 +256,13 @@ class AgentExecutionService < ApplicationService
     output_t = response_data[:output_tokens].to_i
     thinking_t = response_data[:thinking_tokens].to_i
 
+    # Update step tokens (AiAgentRunStep only has input/output, not thinking)
     step.update_columns(
       input_tokens: input_t,
-      output_tokens: output_t,
-      thinking_tokens: thinking_t
+      output_tokens: output_t
     )
 
+    # Update run tokens (AiAgentRun has all three)
     @run.increment!(:input_tokens, input_t)
     @run.increment!(:output_tokens, output_t)
     @run.increment!(:thinking_tokens, thinking_t)
