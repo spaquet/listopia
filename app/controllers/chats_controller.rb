@@ -79,14 +79,6 @@ class ChatsController < ApplicationController
     if answers.present?
       Rails.logger.info("ChatsController#create_message - Converting answers with #{questions.is_a?(Array) ? questions.length : 0} questions")
       content = convert_answers_to_message(answers, questions)
-
-      # CRITICAL: Include original request context if this is clarifying question answers
-      if @chat.chat_context&.request_content.present? && @chat.chat_context.detected_intent == "general_question"
-        original_request = @chat.chat_context.request_content
-        Rails.logger.info("ChatsController#create_message - Preserving original request: #{original_request[0..100]}")
-        # Prepend original request context
-        content = "**Original request:** #{original_request}\n\n**My answers to your clarifying questions:**\n\n#{content}"
-      end
     else
       content = content&.to_s&.strip
     end
@@ -319,16 +311,10 @@ class ChatsController < ApplicationController
   end
 
   def process_message(user_message)
-    # Check if message is a command
-    if user_message.content.start_with?("/")
-      handle_command(user_message)
-      # Return the last created message (the command response)
-      @chat.messages.order(:created_at).last
-    else
-      # For now, just acknowledge the message
-      # In full implementation, this would call RubyLLM to generate a response
-      add_placeholder_response(user_message)
-    end
+    # Process command - only called for messages starting with "/"
+    handle_command(user_message)
+    # Return the last created message (the command response)
+    @chat.messages.order(:created_at).last
   end
 
   def handle_command(user_message)
@@ -457,9 +443,6 @@ class ChatsController < ApplicationController
     # Clear all messages
     @chat.messages.destroy_all
 
-    # Clear chat context (if any exists)
-    @chat.chat_context&.destroy
-
     # Reset chat metadata to clear any pending states
     @chat.update!(
       metadata: {},
@@ -484,28 +467,6 @@ class ChatsController < ApplicationController
       template_type: "new_chat_confirmation",
       template_data: template_data
     )
-  end
-
-  def add_placeholder_response(user_message)
-    # Use ChatCompletionService to generate AI response with RubyLLM
-    service = ChatCompletionService.new(@chat, user_message, @chat_context)
-    result = service.call
-
-    if result.success?
-      result.data  # Returns the assistant message
-    else
-      # Fallback response if LLM fails
-      Rails.logger.warn("Chat completion failed: #{result.errors.join(', ')}")
-      Message.create_templated(
-        chat: @chat,
-        template_type: "error",
-        template_data: {
-          message: "I encountered an issue processing your message. Please try again.",
-          error_code: "CHAT_ERROR",
-          details: result.errors.join(", ")
-        }
-      )
-    end
   end
 
   def format_search_result(record)

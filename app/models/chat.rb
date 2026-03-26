@@ -62,8 +62,7 @@ class Chat < ApplicationRecord
   belongs_to :focused_resource, polymorphic: true, optional: true
 
   has_many :messages, dependent: :destroy
-  has_one :chat_context, dependent: :destroy
-  has_one :planning_context, class_name: "ChatContext", foreign_key: "chat_id", dependent: :destroy
+  has_many :ai_agent_runs, dependent: :destroy
 
   store :metadata, accessors: [ :rag_enabled, :model, :system_prompt ], coder: JSON
 

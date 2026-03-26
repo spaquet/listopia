@@ -1,22 +1,28 @@
 # Chat Request Types: Simple, Complex, Nested Lists, and More
 
-Listopia's unified chat system automatically detects request complexity and routes to the appropriate flow.
+Listopia's unified chat system automatically detects request complexity and routes to the appropriate **AI Agent**.
 
 **Important:** All request types are **domain-agnostic**. The system handles ANY type of planning request (events, courses, recipes, projects, learning journeys, etc.) using the same intelligent detection and generation logic. Test examples may emphasize events/travel, but the architecture is fully generic.
+
+**Agent-Centric Architecture:**
+- Intent detection is **fast** (CombinedIntentComplexityService, <2s)
+- Execution is **agent-based** (specialized agents for each intent type)
+- State is **agent runs** (no separate ChatContext model)
+- Audit trail is **automatic** (every agent run is recorded)
 
 ---
 
 ## Quick Reference
 
-| Request Type | Detection | Processing | Time to Response | Example |
-|--------------|-----------|------------|------------------|---------|
-| **Simple List** | Low complexity | Direct creation | 1-2s | "Buy groceries" |
-| **Complex List** | High complexity | Ask clarifying Q's | 2-3s to show form | "Plan US roadshow" |
-| **Nested List** | Hierarchical pattern | Create sub-lists | 3-4s | "Roadshow with cities" |
-| **Command** | Starts with `/` | Sync execution | <1s | "/search budget" |
-| **Navigation** | Page route pattern | Route to page | <1s | "Show users list" |
-| **Resource Create** | User/Team/Org pattern | Collect params | 2-3s | "Create user john@..." |
-| **General Question** | No intent match | LLM + tools | 2-3s | "How do I...?" |
+| Request Type | Intent | Agent | Time to Response | Example |
+|--------------|--------|-------|------------------|---------|
+| **Simple List** | create_list | ListCreationAgent | 1-2s | "Buy groceries" |
+| **Complex List** | create_list | ListCreationAgent + HITL | 2-3s to show form | "Plan US roadshow" |
+| **Nested List** | create_list | ListCreationAgent + ItemGen | 15-20s | "Roadshow with cities" |
+| **Command** | search_data | SearchAgent | <1s | "/search budget" |
+| **Navigation** | navigate_to_page | NavigationAgent | <1s | "Show users list" |
+| **Resource Create** | create_resource | ResourceCreationAgent | 2-3s + user input | "Create user john@..." |
+| **General Question** | general_question | GeneralQAAgent | 2-3s | "How do I...?" |
 
 ---
 
@@ -60,30 +66,36 @@ Response: "Created workout list. You can add exercises now!"
 Total Time: ~1-2 seconds
 ```
 
-### Service Chain
+### Agent Flow
 
 ```
-CombinedIntentComplexityService (2s)
-  ↓
-Check: is_complex? = false
-  ↓
-Skip QuestionGenerationService
-  ↓
-ChatResourceCreatorService (0.2s)
-  ↓
-Response
+1. CombinedIntentComplexityService (2s)
+   └─ Detects: intent=create_list, is_complex=false
+
+2. Route to ListCreationAgent
+   └─ No pre_run_questions configured
+
+3. Agent Executes
+   ├─ Checks: is_complex?
+   ├─ Result: NO
+   └─ Skips pre-run questions
+
+4. Create List Immediately
+   ├─ Calls tool: create_list
+   └─ Returns output
+
+5. Broadcast Response
+   └─ Message type: list_created
 ```
 
-### When Pre-Creation Planning is Skipped
+### When Pre-Run Questions Are Skipped
 
 ```ruby
-# In ChatCompletionService
-combined_data = CombinedIntentComplexityService.call
-
-if combined_data[:is_complex] == false
-  # SKIP pre-creation planning
-  # Go straight to list creation
-  handle_list_creation(combined_data)
+# In ListCreationAgent execution
+if complexity == false
+  # SKIP pre-run questions
+  # Create list immediately
+  create_list(parameters)
 end
 ```
 
@@ -155,57 +167,60 @@ Response: "Created structured roadshow plan with 4 cities!"
 Total Time: 2-3 seconds perceived (+ user answer time)
 ```
 
-### Service Chain
+### Agent Flow
 
 ```
-CombinedIntentComplexityService (2s)
-  ↓
-Check: is_complex? = true
-  ↓
-QuestionGenerationService (1-2s)
-  ↓
-Show Form → User Answers
-  ↓
-ListHierarchyService (0.2s)
-  ↓
-Create List + Sub-lists
-  ↓
-Response
+1. CombinedIntentComplexityService (2s)
+   └─ Detects: intent=create_list, is_complex=true
+
+2. Route to ListCreationAgent
+   ├─ Config has pre_run_questions
+   └─ Status: pending → awaiting_input
+
+3. Show Pre-Run Questions (HITL)
+   ├─ Message type: planning_form
+   └─ Broadcast via Turbo Stream
+
+4. User Submits Answers
+   ├─ Answers stored in AiAgentRun#pre_run_answers
+   └─ AgentRunJob enqueued
+
+5. Agent Executes (Background)
+   ├─ Extract parameters
+   ├─ Detect subdivision type (locations, phases, etc.)
+   ├─ Call ItemGenerationService for each subdivision
+   ├─ Create list structure
+   └─ Message type: progress_indicator (real-time updates)
+
+6. Completion & Response
+   ├─ Message type: list_created
+   └─ Status: completed
 ```
 
-### Detection Logic
+### Complexity Detection
 
-**File:** `app/services/list_complexity_detector_service.rb`
+**Handled by:** `CombinedIntentComplexityService`
+
+Complexity is detected through a single LLM call (gpt-4.1-nano) that evaluates:
 
 ```ruby
-def detect_complexity(message)
-  indicators = []
-
-  # Multi-location check
-  indicators << :multi_location if multi_location?(message)
-
-  # Time-bound check
-  indicators << :time_bound if time_bound?(message)
-
-  # Hierarchical check
-  indicators << :hierarchical if hierarchical?(message)
-
-  # Large scope check
-  indicators << :large_scope if large_scope?(message)
-
-  # Coordination check
-  indicators << :coordination if coordination?(message)
-
-  # Complex if 2+ indicators
-  is_complex = indicators.count >= 2
-
-  {
-    is_complex: is_complex,
-    indicators: indicators,
-    confidence: confidence_level(indicators)
-  }
-end
+# Result from CombinedIntentComplexityService
+{
+  intent: "create_list",
+  is_complex: true,
+  complexity_indicators: [
+    :multi_location,      # Has locations/places
+    :time_bound,          # Has dates/timeline
+    :hierarchical,        # Has phases/structure
+    :large_scope,         # Ambitious or multi-part
+    :coordination         # Involves multiple people
+  ],
+  planning_domain: "event",     # event, project, travel, learning, personal
+  confidence: 0.92              # Confidence level
+}
 ```
+
+**Decision:** If `is_complex >= 2 indicators` → Show pre-run questions
 
 ### Complexity Confidence Levels
 
@@ -312,31 +327,32 @@ Result Structure:
       └─ Items: [venue, marketing, ...]
 ```
 
-### Service: ListHierarchyService
+### Agent Flow for Nested Lists
 
-**File:** `app/services/list_hierarchy_service.rb`
+**Handled by:** ListCreationAgent
 
-**Purpose:** Create parent list with multiple sub-lists
+The agent automatically detects nested patterns and:
 
-```ruby
-result = ListHierarchyService.new(
-  parent_list: list,
-  nested_structures: [
-    { title: "NYC", items: [...] },
-    { title: "Chicago", items: [...] }
-  ],
-  created_by_user: user,
-  created_in_organization: org
-).call
+1. **Detects subdivision type** from user parameters
+   - `:locations` - geographic divisions (cities, regions)
+   - `:phases` - project phases (pre, during, post)
+   - `:books` - books in a reading list
+   - `:modules`, `:chapters`, `:weeks` - course/learning divisions
+   - `:teams` - team-specific work
+   - Custom subdivisions
 
-# Returns:
-{
-  parent_list: <List>,
-  sublists: [<List>, <List>, ...],
-  sublists_count: 3,
-  errors: []
-}
-```
+2. **Calls ItemGenerationService** for each subdivision
+   - Generates 5-8 location-specific items
+   - NOT generic duplicates
+   - Considers context and constraints
+
+3. **Creates hierarchical structure**
+   ```
+   List: "US Roadshow"
+   ├─ Sublist: "NYC" [6 items]
+   ├─ Sublist: "Chicago" [5 items]
+   └─ Sublist: "Seattle" [4 items]
+   ```
 
 ### Nested List Best Practices
 
@@ -380,35 +396,39 @@ Immediate Response
 Total Time: <1 second ✅
 ```
 
-### Service Chain
+### Agent Flow
 
 ```
-ChatsController#create_message
-  ↓
-Detect: message.start_with?("/")
-  ↓
-ChatCompletionService#execute_command
-  ↓
-Case command_name
-  when "search" → SearchService
-  when "help" → help_response
-  when "browse" → list_browsing
-  ↓
-Immediate response (no background job)
+1. ChatsController#create_message
+   └─ Detects: message starts with "/"
+
+2. Route to SearchAgent (or CommandAgent variant)
+   ├─ Synchronous execution (no background job)
+   ├─ Parse command: /search budget
+   └─ Query: "budget"
+
+3. Agent Executes (Immediate)
+   ├─ Call tool: search(query)
+   ├─ Find matching lists/items
+   └─ Format results
+
+4. Broadcast Response
+   ├─ Message type: search_results or command_response
+   └─ Turbo Stream update
 ```
 
-### Command Processing Code
+### Synchronous vs Asynchronous
 
 ```ruby
 # In ChatsController#create_message
 if message.content.start_with?("/")
-  # SYNCHRONOUS processing
-  command_result = ChatCompletionService.new(...).execute_command(...)
-  # Return immediately
-  respond_with_turbo_stream(command_result)
+  # SYNCHRONOUS: SearchAgent executes immediately
+  result = SearchAgent.trigger_manual(input: message, ...)
+  # Response returned to user within 1 second
 else
-  # ASYNC processing via background job
-  ProcessChatMessageJob.perform_later(...)
+  # ASYNCHRONOUS: ProcessChatMessageJob queued
+  # Runs in background, updates via Turbo Stream
+  ProcessChatMessageJob.perform_later(chat, message)
 end
 ```
 
@@ -430,42 +450,32 @@ User asks to go to a specific page → System navigates instead of responding
 "Browse archive"           → Navigate to /lists?status=archived
 ```
 
-### Detection
-
-```ruby
-# In ChatRoutingService
-def detect_navigation_intent(message)
-  case message.downcase
-  when /show.*users|list.*users|users.*page/i
-    { action: :navigate, path: :admin_users }
-  when /show.*teams|go.*teams|teams.*page/i
-    { action: :navigate, path: :admin_teams }
-  when /show.*lists|my.*lists|all.*lists/i
-    { action: :navigate, path: :lists }
-  # ... more routes
-  end
-end
-```
-
-### Flow
+### Agent Flow
 
 ```
 User: "Show me the users list"
   ↓
-CombinedIntentComplexityService
-  intent: "navigate_to_page" ← KEY
-  path: "admin_users"
+CombinedIntentComplexityService (2s)
+  ├─ Intent: "navigate_to_page"
+  └─ Path: "/admin/users"
   ↓
-handle_navigation_intent
-  Create message type: "navigation"
+Route to NavigationAgent
+  ├─ Synchronous execution
+  └─ Status: in_progress → completed
   ↓
-Turbo Stream broadcasts navigation message
+Agent Executes
+  ├─ Call tool: navigate_to_page(path: "/admin/users")
+  └─ Output: { path: "/admin/users" }
   ↓
-Frontend (JavaScript) detects type
-  ├─ Turbo.visit("/admin/users")  OR
-  └─ window.location.href = "/admin/users"
+Broadcast Navigation Message
+  ├─ Message type: "navigation"
+  └─ Data: { path: "/admin/users", target: "_self" }
   ↓
-Page navigates
+Frontend Detects Type
+  ├─ JavaScript listener triggers
+  └─ Turbo.visit("/admin/users")
+  ↓
+Page Navigates
 Total Time: <1 second ✅
 ```
 
@@ -474,11 +484,11 @@ Total Time: <1 second ✅
 ```javascript
 // app/javascript/controllers/chat_navigation_controller.js
 document.addEventListener('turbo:load', () => {
-  const navMessages = document.querySelectorAll('[data-navigation]');
-  navMessages.forEach(msg => {
-    const path = msg.dataset.navigationPath;
+  const navMsg = document.querySelector('[data-message-type="navigation"]');
+  if (navMsg) {
+    const path = navMsg.dataset.navigationPath;
     Turbo.visit(path);
-  });
+  }
 });
 ```
 
@@ -522,22 +532,37 @@ Response:
   "Created user john@example.com. Invitation sent."
 ```
 
-### Parameter Collection
+### Agent Flow
 
-```ruby
-# In ChatCompletionService#check_parameters_for_intent_optimized
-missing_params = combined_data[:missing] || []
-
-if missing_params.any?
-  # Ask for each missing parameter
-  # Store in pending_resource_creation state
-  # Wait for user response
-  state[:pending_resource_creation] = {
-    resource_type: resource_type,
-    extracted_params: extracted_params,
-    missing_params: missing_params
-  }
-end
+```
+User: "Create user john@example.com"
+  ↓
+CombinedIntentComplexityService (2s)
+  ├─ Intent: "create_resource"
+  ├─ Resource type: "user"
+  └─ Missing params: ["name"]
+  ↓
+Route to ResourceCreationAgent
+  ├─ Has pre_run_questions
+  └─ Status: pending → awaiting_input
+  ↓
+Show Pre-Run Questions (HITL)
+  ├─ Message type: "planning_form"
+  └─ Question: "What's the user's full name?"
+  ↓
+User Submits: "John Smith"
+  ├─ Answers stored in AiAgentRun
+  └─ AgentRunJob enqueued
+  ↓
+Agent Executes
+  ├─ Collect all parameters
+  ├─ Call tool: create_user(email, name, role)
+  ├─ Send magic link invitation
+  └─ Output: { user_id, email, name }
+  ↓
+Broadcast Result
+  ├─ Message type: "resource_created"
+  └─ "Created user John Smith. Invitation sent."
 ```
 
 ---
@@ -558,40 +583,40 @@ Requests that don't match other intents — use LLM with access to tools
 "What formats do you support?"
 ```
 
-### Flow
+### Agent Flow
 
 ```
 User: "How do I add people to my team?"
   ↓
-CombinedIntentComplexityService
-  intent: "general_question" ← No specific match
+CombinedIntentComplexityService (2s)
+  ├─ Intent: "general_question"
+  └─ No specific match
   ↓
-ChatCompletionService#call_llm_with_tools
-  Model: gpt-5-mini (default)
-  Available tools: list_teams, navigate, etc.
+Route to GeneralQAAgent
+  ├─ Model: gpt-5-mini
+  ├─ No pre_run_questions
+  └─ Status: pending → in_progress
   ↓
-LLM thinks: "User is asking how to add people"
-  → Might suggest: navigate to team page
-  → Or: explain the process
-  → Or: list teams to show examples
+Agent Executes (Background)
+  ├─ Load tools: list_teams, navigate, search, etc.
+  ├─ Build system prompt + message history
+  ├─ LLM decides: "Should I call list_teams to show examples?"
+  ├─ If yes: call tool, get results
+  ├─ LLM synthesizes answer + results
+  └─ Status: completed
   ↓
-If LLM calls tool:
-  LLMToolExecutorService
-  Execute tool, return results
+Broadcast Response
+  ├─ Message type: "text"
+  └─ "You can add people to your team by:
+      1. Open your team
+      2. Click 'Invite member'
+      3. Enter their email
+      4. They'll receive an invitation..."
   ↓
-LLM synthesizes response
-  ↓
-Response with context:
-  "You can add people to your team by:
-   1. Open your team
-   2. Click 'Invite member'
-   3. Enter their email
-   4. They'll receive an invitation..."
+Total Time: ~2-3 seconds ✅
 ```
 
-### Tool Availability
-
-Tools available to LLM for general questions:
+### Available Tools for GeneralQAAgent
 
 ```
 Navigation:
@@ -611,41 +636,55 @@ Updating:
 
 ---
 
-## Decision Tree: Request Type Classification
+## Decision Tree: Intent → Agent Routing
 
 ```
-╔═══════════════════════════════════════════╗
-║ User Message in Chat                      ║
-╚═════════════┬─────────────────────────────╝
-              │
-    ┌─────────┴─────────┐
-    │                   │
-    ▼                   ▼
-Starts with   No prefix
-"/"?           /intent?
-│              │
-│ YES          ▼
-▼          CombinedIntent
-COMMAND     ComplexityService
-│
-│          ┌──────┬────────┬──────────┬──────────────┬────────┐
-│          │      │        │          │              │        │
-│          ▼      ▼        ▼          ▼              ▼        ▼
-│      create_ navigate_ create_  manage_  search_  general_
-│      list    to_page  resource resource  data    question
-│          │      │        │          │              │        │
-│          ▼      ▼        ▼          ▼              ▼        ▼
-│      Complex? Route    Collect  Execute  Search  LLM +
-│       │       Page     Params   Op       DB      Tools
-│    ┌──┴──┐
-│  YES NO
-│   │  │
-│   ▼  ▼
-└──→ Questions or Direct
-     Create List
-     │
-     └──→ Final Response
+╔════════════════════════════════════════════════════╗
+║ User Message in Chat                               ║
+╚════════════┬──────────────────────────────────────┘
+             │
+    ┌────────┴────────┐
+    │                 │
+    ▼ COMMAND         ▼ MESSAGE
+Starts with "/" DetectIntent
+    │           (CombinedIntentComplexityService)
+    ▼                 │
+SearchAgent      ┌────┴──────┬─────────┬──────────┬─────────┐
+    │            │           │         │          │         │
+    │         create_     navigate_ create_   search_   general_
+    │         list        to_page  resource   data     question
+    │            │           │         │          │         │
+    │            ▼           ▼         ▼          ▼         ▼
+    │        ListCreation  Navigation ResourceCreation Search  GeneralQA
+    │        Agent         Agent      Agent           Agent    Agent
+    │            │           │         │          │         │
+    │       ┌────┴────┐      │         │          │         │
+    │    Complex?     │      │         │          │         │
+    │     │           │      │         │          │         │
+    │   YES NO        │      │         │          │         │
+    │    │  │         │      │         │          │         │
+    │    ▼  ▼         ▼      ▼         ▼          ▼         ▼
+    │  Show Ask    Create  Navigate Collect  Execute  Call
+    │  Form Params List    Page     Params    Search   LLM
+    │    │   │       │      │         │          │      with
+    │    │   │       │      │         │          │      Tools
+    └────┼───┼───────┼──────┼─────────┼──────────┼──────────┐
+         │   │       │      │         │          │          │
+         └───┴───────┴──────┴─────────┴──────────┴──────────┘
+                         │
+                         ▼
+                 Broadcast Response
+                 (message type: list_created,
+                  navigation, resource_created,
+                  search_results, text, etc.)
 ```
+
+**Flow:**
+1. Detect command `/` or LLM message
+2. Route to intent-specific agent (or SearchAgent for commands)
+3. Agent executes (may show HITL form)
+4. Broadcast appropriate message type
+5. Frontend renders based on type
 
 ---
 
@@ -665,52 +704,103 @@ COMMAND     ComplexityService
 
 ## Testing Each Request Type
 
-### Simple List Test
+### Simple List Agent Test
 ```ruby
+# Trigger ListCreationAgent for simple request
 message = "Create a grocery list"
-# Expected: List created immediately, no questions
+
+# Expected:
+# 1. CombinedIntentComplexityService: is_complex=false
+# 2. ListCreationAgent triggered
+# 3. No pre-run questions shown
+# 4. List created in <3 seconds
+# 5. Message type: list_created
 ```
 
-### Complex List Test
+### Complex List Agent Test
 ```ruby
+# Trigger ListCreationAgent with pre-run questions
 message = "Plan a roadshow across US cities"
-# Expected: Questions form shown, awaiting user answers
+
+# Expected:
+# 1. CombinedIntentComplexityService: is_complex=true
+# 2. ListCreationAgent triggered with pre_run_questions
+# 3. Message type: planning_form displayed in <1 second
+# 4. User submits answers
+# 5. Agent generates items (15-20s total)
+# 6. Message type: list_created with summary
 ```
 
-### Nested List Test
+### Nested List Agent Test
 ```ruby
+# Trigger ListCreationAgent with subdivisions
 message = "Organize roadshow: NYC, Chicago, Boston"
-# Expected: Main list created with 3 sub-lists
+
+# Expected:
+# 1. Agent detects nested pattern
+# 2. Creates main list + 3 sublists
+# 3. Calls ItemGenerationService for each location
+# 4. Message type: progress_indicator (real-time updates)
+# 5. Message type: list_created (final summary)
 ```
 
-### Command Test
+### Command Agent Test
 ```ruby
+# Trigger SearchAgent synchronously
 message = "/search budget"
-# Expected: Results returned in <1 second
+
+# Expected:
+# 1. SearchAgent executes immediately (no async)
+# 2. Results returned in <1 second
+# 3. Message type: search_results or command_response
 ```
 
-### Navigation Test
+### Navigation Agent Test
 ```ruby
+# Trigger NavigationAgent
 message = "Show users"
-# Expected: Page navigates to /admin/users
+
+# Expected:
+# 1. CombinedIntentComplexityService: intent=navigate_to_page
+# 2. NavigationAgent executes immediately
+# 3. Message type: navigation
+# 4. Frontend auto-navigates to /admin/users
 ```
 
-### Resource Create Test
+### Resource Creation Agent Test
 ```ruby
+# Trigger ResourceCreationAgent
 message = "Create user alice@example.com"
-# Expected: Ask for missing parameters
+
+# Expected:
+# 1. Intent: create_resource
+# 2. ResourceCreationAgent triggered
+# 3. Message type: planning_form (ask for missing name)
+# 4. User submits name
+# 5. Agent creates user, sends invitation
+# 6. Message type: resource_created
 ```
 
-### General Question Test
+### General QA Agent Test
 ```ruby
+# Trigger GeneralQAAgent with tools
 message = "How do I add team members?"
-# Expected: LLM responds with helpful answer
+
+# Expected:
+# 1. Intent: general_question
+# 2. GeneralQAAgent executes (background)
+# 3. LLM may call tools (list_teams, navigate, etc.)
+# 4. Tools results fed back to LLM
+# 5. Message type: text (full markdown response)
+# 6. Response in ~2-3 seconds
 ```
 
 ---
 
 ## Related Documentation
 
-- [CHAT_FLOW.md](./CHAT_FLOW.md) - Complete message flow
-- [CHAT_MODEL_SELECTION.md](./CHAT_MODEL_SELECTION.md) - Why gpt-4.1-nano
-- [CHAT_FEATURES.md](./CHAT_FEATURES.md) - Feature implementation guide
+- [MESSAGE_TYPES.md](./MESSAGE_TYPES.md) - All message types (planning_form, list_created, navigation, etc.)
+- [CHAT_FLOW.md](./CHAT_FLOW.md) - Complete agent-based message flow
+- [AGENTS.md](./AGENTS.md) - AI Agent system reference
+- [CHAT_MODEL_SELECTION.md](./CHAT_MODEL_SELECTION.md) - Why gpt-4.1-nano for intent detection
+- [ITEM_GENERATION.md](./ITEM_GENERATION.md) - How items are generated for sublists

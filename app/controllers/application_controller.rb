@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   # Helper methods available in views
-  helper_method :current_user, :user_signed_in?, :chat_context, :current_organization, :current_organization=
+  helper_method :current_user, :user_signed_in?, :current_organization, :current_organization=
 
   # Before actions
   before_action :set_current_user
@@ -217,32 +217,6 @@ class ApplicationController < ActionController::Base
   end
 
   # Build chat context for AI interactions
-  def build_chat_context
-    context = {
-      page: "#{controller_name}##{action_name}",
-      current_page: "#{controller_name}##{action_name}"
-    }
-
-    # Add list-specific context if we're on a list page
-    if defined?(@list) && @list.present?
-      context.merge!(
-        list_id: @list.id,
-        list_title: @list.title,
-        items_count: @list.list_items.count,
-        completed_count: @list.list_items.where(status: :completed).count,
-        is_owner: @list.user_id == current_user&.id,
-        can_collaborate: @list.user_id == current_user&.id || @list.can_collaborate?(current_user)
-      )
-    end
-
-    # Add user's total lists count
-    if current_user.present?
-      context[:total_lists] = current_user.accessible_lists.count
-    end
-
-    context
-  end
-
   # Store location for redirect after authentication
   def store_location
     session[:stored_location] = request.fullpath if request.get? && !request.xhr?
@@ -288,10 +262,6 @@ class ApplicationController < ActionController::Base
   private
 
   # Chat context for AI interactions - callable as helper
-  def chat_context
-    @chat_context ||= build_chat_context
-  end
-
   # Handle unauthorized access from Pundit
   # This method is called by Pundit when a user tries to access a resource they
   # are not authorized to access.
