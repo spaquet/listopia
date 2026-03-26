@@ -1,149 +1,112 @@
 <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .window-bg { fill: #111827; }
-        .window-header { fill: #1f2937; }
-        .box-header-blue { fill: #1e40af; }
-        .box-header-green { fill: #047857; }
-        .box-bg-light { fill: #1f2937; }
-        .border { stroke: #4b5563; }
-        .card-bg { fill: #374151; }
-        .text-label { fill: #d1d5db; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .window-bg { fill: #f9fafb; }
-        .window-header { fill: #f3f4f6; }
-        .box-header-blue { fill: #3b82f6; }
-        .box-header-green { fill: #10b981; }
-        .box-bg-light { fill: #ffffff; }
-        .border { stroke: #e5e7eb; }
-        .card-bg { fill: #f9fafb; }
-        .text-label { fill: #374151; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="900" class="bg"/>
+  <!-- White Background -->
+  <rect width="1200" height="900" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     UI Usage: How to Access & Use Agents
   </text>
 
   <!-- Left: Agent Library -->
-  <g id="library">
-    <text x="250" y="90" font-size="13" font-weight="bold" class="text-main">Agent Library (/agents)</text>
+  <text x="250" y="90" font-size="13" font-weight="bold" fill="#374151">Agent Library (/agents)</text>
 
-    <rect x="30" y="110" width="460" height="750" class="window-bg" rx="8" class="border" stroke-width="1"/>
+  <rect x="30" y="110" width="460" height="750" fill="#f9fafb" stroke="#d1d5db" stroke-width="2" rx="8"/>
 
-    <!-- Header -->
-    <rect x="30" y="110" width="460" height="50" class="window-header" rx="8"/>
-    <text x="260" y="145" font-size="12" font-weight="bold" class="text-main" text-anchor="middle">Agents</text>
+  <!-- Header -->
+  <rect x="30" y="110" width="460" height="50" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <text x="260" y="145" font-size="12" font-weight="bold" fill="#1f2937" text-anchor="middle">Agents</text>
 
-    <!-- Search -->
-    <rect x="50" y="175" width="420" height="30" class="box-bg-light" rx="4" class="border" stroke-width="1"/>
-    <text x="70" y="195" font-size="10" class="text-secondary">🔍 Search agents...</text>
+  <!-- Search -->
+  <rect x="50" y="175" width="420" height="30" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="70" y="195" font-size="10" fill="#9ca3af">🔍 Search agents...</text>
 
-    <!-- Filter tabs -->
-    <rect x="50" y="220" width="90" height="25" class="box-header-blue" rx="4"/>
-    <text x="95" y="238" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">All Agents</text>
+  <!-- Filter tabs -->
+  <rect x="50" y="220" width="90" height="25" fill="#3b82f6" rx="4"/>
+  <text x="95" y="238" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">All Agents</text>
 
-    <rect x="155" y="220" width="90" height="25" class="card-bg" rx="4" class="border" stroke-width="1"/>
-    <text x="200" y="238" font-size="9" class="text-secondary" text-anchor="middle">My Agents</text>
+  <rect x="155" y="220" width="90" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="200" y="238" font-size="9" fill="#666666" text-anchor="middle">My Agents</text>
 
-    <!-- Agent Card 1 -->
-    <rect x="50" y="265" width="420" height="95" class="card-bg" rx="6"/>
-    <text x="70" y="285" font-size="11" font-weight="bold" class="text-label">Task Breakdown Agent</text>
-    <text x="70" y="302" font-size="9" class="text-secondary">Decomposes goals into actionable tasks with priorities</text>
-    <text x="70" y="320" font-size="9" class="text-secondary">📌 Manual | 📊 12 runs | ⭐ 4.8/5</text>
-    <rect x="370" y="275" width="90" height="28" class="box-header-blue" rx="4"/>
-    <text x="415" y="294" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">[Run]</text>
+  <!-- Agent Card 1 -->
+  <rect x="50" y="265" width="420" height="95" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="70" y="285" font-size="11" font-weight="bold" fill="#1f2937">Task Breakdown Agent</text>
+  <text x="70" y="302" font-size="9" fill="#666666">Decomposes goals into actionable tasks with priorities</text>
+  <text x="70" y="320" font-size="9" fill="#999999">📌 Manual | 📊 12 runs | ⭐ 4.8/5</text>
+  <rect x="370" y="275" width="90" height="28" fill="#3b82f6" rx="4"/>
+  <text x="415" y="294" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">[Run]</text>
 
-    <!-- Agent Card 2 -->
-    <rect x="50" y="375" width="420" height="95" class="card-bg" rx="6"/>
-    <text x="70" y="395" font-size="11" font-weight="bold" class="text-label">Status Report Agent</text>
-    <text x="70" y="412" font-size="9" class="text-secondary">Generates weekly summaries across all lists</text>
-    <text x="70" y="430" font-size="9" class="text-secondary">📌 Scheduled (Mon 9am) | 📊 52 runs | ⭐ 4.9/5</text>
-    <rect x="370" y="385" width="90" height="28" class="box-header-blue" rx="4"/>
-    <text x="415" y="404" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">[Run]</text>
+  <!-- Agent Card 2 -->
+  <rect x="50" y="375" width="420" height="95" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="70" y="395" font-size="11" font-weight="bold" fill="#1f2937">Status Report Agent</text>
+  <text x="70" y="412" font-size="9" fill="#666666">Generates weekly summaries across all lists</text>
+  <text x="70" y="430" font-size="9" fill="#999999">📌 Scheduled (Mon 9am) | 📊 52 runs | ⭐ 4.9/5</text>
+  <rect x="370" y="385" width="90" height="28" fill="#3b82f6" rx="4"/>
+  <text x="415" y="404" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">[Run]</text>
 
-    <!-- Agent Card 3 -->
-    <rect x="50" y="485" width="420" height="95" class="card-bg" rx="6"/>
-    <text x="70" y="505" font-size="11" font-weight="bold" class="text-label">List Organizer Agent</text>
-    <text x="70" y="522" font-size="9" class="text-secondary">Reoptimizes lists when items complete</text>
-    <text x="70" y="540" font-size="9" class="text-secondary">📌 Event (item completed) | 📊 87 runs | ⭐ 4.7/5</text>
-    <rect x="370" y="495" width="90" height="28" class="box-header-blue" rx="4"/>
-    <text x="415" y="514" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">[Run]</text>
+  <!-- Agent Card 3 -->
+  <rect x="50" y="485" width="420" height="95" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="70" y="505" font-size="11" font-weight="bold" fill="#1f2937">List Organizer Agent</text>
+  <text x="70" y="522" font-size="9" fill="#666666">Reoptimizes lists when items complete</text>
+  <text x="70" y="540" font-size="9" fill="#999999">📌 Event (item completed) | 📊 87 runs | ⭐ 4.7/5</text>
+  <rect x="370" y="495" width="90" height="28" fill="#3b82f6" rx="4"/>
+  <text x="415" y="514" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">[Run]</text>
 
-    <!-- Create button -->
-    <rect x="50" y="710" width="420" height="40" class="box-header-green" rx="6"/>
-    <text x="260" y="737" font-size="11" fill="#fff" text-anchor="middle" font-weight="bold">+ Create New Agent</text>
-  </g>
+  <!-- Create button -->
+  <rect x="50" y="710" width="420" height="40" fill="#10b981" stroke="#047857" stroke-width="2" rx="6"/>
+  <text x="260" y="737" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="bold">+ Create New Agent</text>
 
   <!-- Right: Agent Details -->
-  <g id="details">
-    <text x="950" y="90" font-size="13" font-weight="bold" class="text-main">Agent Details & Execution</text>
+  <text x="950" y="90" font-size="13" font-weight="bold" fill="#374151">Agent Details & Execution</text>
 
-    <rect x="540" y="110" width="630" height="750" class="window-bg" rx="8" class="border" stroke-width="1"/>
+  <rect x="540" y="110" width="630" height="750" fill="#f9fafb" stroke="#d1d5db" stroke-width="2" rx="8"/>
 
-    <!-- Header -->
-    <rect x="540" y="110" width="630" height="50" class="box-header-blue" rx="8"/>
-    <text x="855" y="145" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Task Breakdown Agent</text>
+  <!-- Header -->
+  <rect x="540" y="110" width="630" height="50" fill="#3b82f6" rx="8"/>
+  <text x="855" y="145" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Task Breakdown Agent</text>
 
-    <!-- Tabs -->
-    <rect x="560" y="175" width="90" height="25" class="box-header-blue" rx="4"/>
-    <text x="605" y="193" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Overview</text>
+  <!-- Tabs -->
+  <rect x="560" y="175" width="90" height="25" fill="#3b82f6" rx="4"/>
+  <text x="605" y="193" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">Overview</text>
 
-    <rect x="670" y="175" width="90" height="25" class="card-bg" rx="4" class="border" stroke-width="1"/>
-    <text x="715" y="193" font-size="9" class="text-secondary" text-anchor="middle">History</text>
+  <rect x="670" y="175" width="90" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="715" y="193" font-size="9" fill="#666666" text-anchor="middle">History</text>
 
-    <!-- Ready to Run -->
-    <rect x="560" y="220" width="600" height="100" class="card-bg" rx="6"/>
-    <text x="580" y="240" font-size="11" font-weight="bold" class="text-label">Ready to Run</text>
-    <text x="580" y="258" font-size="9" class="text-secondary">Decomposes complex goals into clear tasks</text>
-    <text x="580" y="275" font-size="9" class="text-secondary">Trigger: Manual | Status: Active</text>
+  <!-- Ready to Run -->
+  <rect x="560" y="220" width="600" height="100" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="580" y="240" font-size="11" font-weight="bold" fill="#1f2937">Ready to Run</text>
+  <text x="580" y="258" font-size="9" fill="#666666">Decomposes complex goals into clear tasks</text>
+  <text x="580" y="275" font-size="9" fill="#666666">Trigger: Manual | Status: Active</text>
 
-    <rect x="560" y="335" width="130" height="35" class="box-header-blue" rx="4"/>
-    <text x="625" y="357" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
+  <rect x="560" y="335" width="130" height="35" fill="#3b82f6" rx="4"/>
+  <text x="625" y="357" font-size="10" fill="#ffffff" text-anchor="middle" font-weight="bold">[Run Agent]</text>
 
-    <rect x="710" y="335" width="130" height="35" class="card-bg" rx="4" class="border" stroke-width="1"/>
-    <text x="775" y="357" font-size="10" class="text-main" text-anchor="middle" font-weight="bold">[Edit]</text>
+  <rect x="710" y="335" width="130" height="35" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="775" y="357" font-size="10" fill="#1f2937" text-anchor="middle" font-weight="bold">[Edit]</text>
 
-    <!-- Configuration -->
-    <rect x="560" y="390" width="600" height="230" class="card-bg" rx="6"/>
-    <text x="580" y="410" font-size="11" font-weight="bold" class="text-label">Configuration</text>
+  <!-- Configuration -->
+  <rect x="560" y="390" width="600" height="230" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="580" y="410" font-size="11" font-weight="bold" fill="#1f2937">Configuration</text>
 
-    <!-- Pre-run questions -->
-    <text x="580" y="435" font-size="10" font-weight="bold" class="text-label">Pre-Run Questions:</text>
-    <rect x="580" y="445" width="570" height="45" class="box-bg-light" rx="4" class="border" stroke-width="1"/>
-    <text x="595" y="462" font-size="9" class="text-secondary">1. "What is your main goal?" (required)</text>
-    <text x="595" y="480" font-size="9" class="text-secondary">2. "Do you have a deadline?" (optional)</text>
+  <!-- Pre-run questions -->
+  <text x="580" y="435" font-size="10" font-weight="bold" fill="#374151">Pre-Run Questions:</text>
+  <rect x="580" y="445" width="570" height="45" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="595" y="462" font-size="9" fill="#666666">1. "What is your main goal?" (required)</text>
+  <text x="595" y="480" font-size="9" fill="#666666">2. "Do you have a deadline?" (optional)</text>
 
-    <!-- Body context -->
-    <text x="580" y="505" font-size="10" font-weight="bold" class="text-label">Body Context:</text>
-    <text x="595" y="522" font-size="9" class="text-secondary">Load current list (invocable)</text>
+  <!-- Body context -->
+  <text x="580" y="505" font-size="10" font-weight="bold" fill="#374151">Body Context:</text>
+  <text x="595" y="522" font-size="9" fill="#666666">Load current list (invocable)</text>
 
-    <!-- Resources -->
-    <text x="580" y="545" font-size="10" font-weight="bold" class="text-label">Resources:</text>
-    <text x="595" y="562" font-size="9" class="text-secondary">✓ Lists (read/write)  ✓ Items (read/write)  ✓ User interaction</text>
+  <!-- Resources -->
+  <text x="580" y="545" font-size="10" font-weight="bold" fill="#374151">Resources:</text>
+  <text x="595" y="562" font-size="9" fill="#666666">✓ Lists (read/write)  ✓ Items (read/write)  ✓ User interaction</text>
 
-    <!-- Last execution -->
-    <rect x="560" y="645" width="600" height="140" class="card-bg" rx="6"/>
-    <text x="580" y="665" font-size="11" font-weight="bold" class="text-label">Last Execution</text>
-    <text x="580" y="685" font-size="9" class="text-secondary">Status: ✓ Completed</text>
-    <text x="580" y="702" font-size="9" class="text-secondary">Time: 2 hours ago | Duration: 12.5s | Items: 12 | Rating: 5/5 ⭐</text>
+  <!-- Last execution -->
+  <rect x="560" y="645" width="600" height="140" fill="#d1fae5" stroke="#10b981" stroke-width="1" rx="6"/>
+  <text x="580" y="665" font-size="11" font-weight="bold" fill="#047857">Last Execution</text>
+  <text x="580" y="685" font-size="9" fill="#059669">Status: ✓ Completed</text>
+  <text x="580" y="702" font-size="9" fill="#059669">Time: 2 hours ago | Duration: 12.5s | Items: 12 | Rating: 5/5 ⭐</text>
 
-    <rect x="580" y="720" width="100" height="28" class="box-header-green" rx="4"/>
-    <text x="630" y="738" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">[View Run]</text>
-  </g>
+  <rect x="580" y="720" width="100" height="28" fill="#10b981" rx="4"/>
+  <text x="630" y="738" font-size="9" fill="#ffffff" text-anchor="middle" font-weight="bold">[View Run]</text>
 </svg>

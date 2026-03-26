@@ -1,175 +1,114 @@
 <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .circle-bg { fill: #374151; }
-        .circle-1 { fill: #1e40af; }
-        .circle-2 { fill: #f59e0b; }
-        .circle-3 { fill: #8b5cf6; }
-        .circle-4 { fill: #ec4899; }
-        .circle-5 { fill: #10b981; }
-        .circle-6 { fill: #06b6d4; }
-        .box-bg { fill: #374151; }
-        .border { stroke: #4b5563; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .circle-bg { fill: #f9fafb; }
-        .circle-1 { fill: #3b82f6; }
-        .circle-2 { fill: #f59e0b; }
-        .circle-3 { fill: #8b5cf6; }
-        .circle-4 { fill: #ec4899; }
-        .circle-5 { fill: #10b981; }
-        .circle-6 { fill: #06b6d4; }
-        .box-bg { fill: #f9fafb; }
-        .border { stroke: #e5e7eb; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="900" class="bg"/>
+  <!-- White Background -->
+  <rect width="1200" height="900" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     Human-in-the-Loop (HITL) Flow
   </text>
 
   <defs>
     <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <polygon points="0,0 10,5 0,10" fill="#6b7280" />
+      <polygon points="0,0 10,5 0,10" fill="#666666" />
     </marker>
   </defs>
 
   <!-- Main flow -->
-  <g id="mainFlow">
-    <!-- Step 1 -->
-    <circle cx="150" cy="110" r="28" class="circle-1" stroke="#1e40af" stroke-width="2"/>
-    <text x="150" y="118" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">1</text>
-    <text x="150" y="160" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Agent</text>
-    <text x="150" y="173" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Running</text>
+  <!-- Step 1 -->
+  <circle cx="150" cy="110" r="28" fill="#3b82f6"/>
+  <text x="150" y="118" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+  <text x="150" y="160" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Agent</text>
+  <text x="150" y="173" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Running</text>
 
-    <path d="M 150,180 L 150,220" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 150,180 L 150,220" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 2 -->
-    <circle cx="150" cy="250" r="28" class="circle-2" stroke="#f59e0b" stroke-width="2"/>
-    <text x="150" y="258" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">2</text>
-    <text x="150" y="300" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">HITL Tool</text>
-    <text x="150" y="313" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Called</text>
+  <!-- Step 2 -->
+  <circle cx="150" cy="250" r="28" fill="#f59e0b"/>
+  <text x="150" y="258" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+  <text x="150" y="300" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">HITL Tool</text>
+  <text x="150" y="313" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Called</text>
 
-    <path d="M 150,320 L 150,360" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 150,320 L 150,360" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 3 -->
-    <circle cx="150" cy="390" r="28" class="circle-3" stroke="#8b5cf6" stroke-width="2"/>
-    <text x="150" y="398" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">3</text>
-    <text x="150" y="440" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Create</text>
-    <text x="150" y="453" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Interaction</text>
+  <!-- Step 3 -->
+  <circle cx="150" cy="390" r="28" fill="#8b5cf6"/>
+  <text x="150" y="398" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+  <text x="150" y="440" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Create</text>
+  <text x="150" y="453" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Interaction</text>
 
-    <path d="M 150,460 L 150,500" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 150,460 L 150,500" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 4 -->
-    <circle cx="150" cy="530" r="28" class="circle-4" stroke="#ec4899" stroke-width="2"/>
-    <text x="150" y="538" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">4</text>
-    <text x="150" y="580" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Pause</text>
-    <text x="150" y="593" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Execution</text>
+  <!-- Step 4 -->
+  <circle cx="150" cy="530" r="28" fill="#ec4899"/>
+  <text x="150" y="538" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+  <text x="150" y="580" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Pause</text>
+  <text x="150" y="593" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Execution</text>
 
-    <path d="M 150,600 L 150,640" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 150,600 L 150,640" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 5 -->
-    <circle cx="150" cy="670" r="28" class="circle-5" stroke="#10b981" stroke-width="2"/>
-    <text x="150" y="678" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">5</text>
-    <text x="150" y="720" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">User</text>
-    <text x="150" y="733" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Responds</text>
+  <!-- Step 5 -->
+  <circle cx="150" cy="670" r="28" fill="#10b981"/>
+  <text x="150" y="678" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">5</text>
+  <text x="150" y="720" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">User</text>
+  <text x="150" y="733" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Responds</text>
 
-    <path d="M 150,740 L 150,780" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 150,740 L 150,780" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 6 -->
-    <circle cx="150" cy="810" r="28" class="circle-6" stroke="#0891b2" stroke-width="2"/>
-    <text x="150" y="818" font-size="18" font-weight="bold" fill="#fff" text-anchor="middle">6</text>
-    <text x="150" y="860" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Resume</text>
-  </g>
+  <!-- Step 6 -->
+  <circle cx="150" cy="810" r="28" fill="#06b6d4"/>
+  <text x="150" y="818" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">6</text>
+  <text x="150" y="860" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Resume</text>
 
-  <!-- Details columns -->
   <!-- Step 2 Details -->
-  <g id="step2Details">
-    <rect x="300" y="220" width="400" height="110" class="box-bg" rx="6" class="border" stroke-width="1"/>
-    <text x="320" y="240" font-size="11" font-weight="bold" class="text-main">HITL Tools Available</text>
+  <rect x="300" y="220" width="400" height="110" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="320" y="240" font-size="11" font-weight="bold" fill="#1f2937">HITL Tools Available</text>
 
-    <text x="320" y="262" font-size="10" class="text-main">ask_user(question, options[])</text>
-    <text x="330" y="280" font-size="9" class="text-secondary">Free-form or multiple-choice question</text>
-    <text x="330" y="295" font-size="9" class="text-secondary">Agent waits for response</text>
+  <text x="320" y="262" font-size="10" fill="#1f2937">ask_user(question, options[])</text>
+  <text x="330" y="280" font-size="9" fill="#666666">Free-form or multiple-choice question</text>
+  <text x="330" y="295" font-size="9" fill="#666666">Agent waits for response</text>
 
-    <text x="320" y="313" font-size="10" class="text-main">confirm_action(description)</text>
-    <text x="330" y="331" font-size="9" class="text-secondary">Request approval before action</text>
-  </g>
+  <text x="320" y="313" font-size="10" fill="#1f2937">confirm_action(description)</text>
+  <text x="330" y="331" font-size="9" fill="#666666">Request approval before action</text>
 
   <!-- Step 4 Details -->
-  <g id="step4Details">
-    <rect x="300" y="480" width="400" height="130" class="box-bg" rx="6" class="border" stroke-width="1"/>
-    <text x="320" y="500" font-size="11" font-weight="bold" class="text-main">What Happens</text>
+  <rect x="300" y="480" width="400" height="130" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="320" y="500" font-size="11" font-weight="bold" fill="#1f2937">What Happens</text>
 
-    <text x="320" y="522" font-size="9" class="text-secondary">• Run status → paused</text>
-    <text x="320" y="538" font-size="9" class="text-secondary">• LLM thread stopped</text>
-    <text x="320" y="554" font-size="9" class="text-secondary">• Question stored</text>
-    <text x="320" y="570" font-size="9" class="text-secondary">• User notified immediately</text>
-    <text x="320" y="586" font-size="9" class="text-secondary">• Agent can pause multiple times</text>
-  </g>
+  <text x="320" y="522" font-size="9" fill="#666666">• Run status → paused</text>
+  <text x="320" y="538" font-size="9" fill="#666666">• LLM thread stopped</text>
+  <text x="320" y="554" font-size="9" fill="#666666">• Question stored</text>
+  <text x="320" y="570" font-size="9" fill="#666666">• User notified immediately</text>
+  <text x="320" y="586" font-size="9" fill="#666666">• Agent can pause multiple times</text>
 
   <!-- Step 5 Details -->
-  <g id="step5Details">
-    <rect x="750" y="640" width="380" height="130" class="box-bg" rx="6" class="border" stroke-width="1"/>
-    <text x="770" y="660" font-size="11" font-weight="bold" class="text-main">User Sees Modal</text>
+  <rect x="750" y="640" width="380" height="130" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="770" y="660" font-size="11" font-weight="bold" fill="#1f2937">User Sees Modal</text>
 
-    <text x="770" y="682" font-size="9" class="text-secondary">❓ Agent Question:</text>
-    <text x="775" y="697" font-size="8" class="text-secondary" font-style="italic">"Found 5 duplicates.</text>
-    <text x="775" y="710" font-size="8" class="text-secondary" font-style="italic">Should I delete them?"</text>
+  <text x="770" y="682" font-size="9" fill="#666666">❓ Agent Question:</text>
+  <text x="775" y="697" font-size="8" fill="#666666" font-style="italic">"Found 5 duplicates.</text>
+  <text x="775" y="710" font-size="8" fill="#666666" font-style="italic">Should I delete them?"</text>
 
-    <text x="770" y="728" font-size="9" class="text-secondary">Options:</text>
-    <text x="775" y="743" font-size="8" class="text-secondary">[Yes]  [No]  [Review]</text>
-  </g>
+  <text x="770" y="728" font-size="9" fill="#666666">Options:</text>
+  <text x="775" y="743" font-size="8" fill="#666666">[Yes]  [No]  [Review]</text>
 
   <!-- Step 3 Details -->
-  <g id="step3Details">
-    <rect x="750" y="340" width="380" height="140" class="box-bg" rx="6" class="border" stroke-width="1"/>
-    <text x="770" y="360" font-size="11" font-weight="bold" class="text-main">AiAgentInteraction</text>
+  <rect x="750" y="340" width="380" height="140" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="770" y="360" font-size="11" font-weight="bold" fill="#1f2937">AiAgentInteraction</text>
 
-    <text x="770" y="382" font-size="9" class="text-secondary">Stores:</text>
-    <text x="770" y="398" font-size="9" class="text-secondary">• question (what agent asked)</text>
-    <text x="770" y="413" font-size="9" class="text-secondary">• options[] (multiple choice)</text>
-    <text x="770" y="428" font-size="9" class="text-secondary">• user_response (answer)</text>
-    <text x="770" y="443" font-size="9" class="text-secondary">• status (pending/answered)</text>
-    <text x="770" y="458" font-size="9" class="text-secondary">• timestamps</text>
-  </g>
+  <text x="770" y="382" font-size="9" fill="#666666">Stores:</text>
+  <text x="770" y="398" font-size="9" fill="#666666">• question (what agent asked)</text>
+  <text x="770" y="413" font-size="9" fill="#666666">• options[] (multiple choice)</text>
+  <text x="770" y="428" font-size="9" fill="#666666">• user_response (answer)</text>
+  <text x="770" y="443" font-size="9" fill="#666666">• status (pending/answered)</text>
+  <text x="770" y="458" font-size="9" fill="#666666">• timestamps</text>
 
   <!-- Example scenario -->
-  <g id="example">
-    <rect x="50" y="780" width="1100" height="100" class="box-bg" rx="6" class="border" stroke-width="1"/>
-    <text x="70" y="805" font-size="12" font-weight="bold" class="text-main">Real Example: Shopping List Organizer</text>
+  <rect x="50" y="780" width="1100" height="100" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="70" y="805" font-size="12" font-weight="bold" fill="#1f2937">Real Example: Shopping List Organizer</text>
 
-    <!-- Timeline -->
-    <g>
-      <text x="70" y="830" font-size="9" fill="#3b82f6" font-weight="bold">Step 1:</text>
-      <text x="140" y="830" font-size="9" class="text-secondary">Agent analyzing shopping list...</text>
+  <text x="70" y="830" font-size="9" fill="#1f2937"><tspan font-weight="bold" fill="#3b82f6">Step 1:</tspan><tspan fill="#666666"> Agent analyzing shopping list...</tspan></text>
 
-      <text x="70" y="850" font-size="9" fill="#f59e0b" font-weight="bold">Step 2:</text>
-      <text x="140" y="850" font-size="9" class="text-secondary">Agent calls: ask_user("Group by category?", ["Yes", "No"])</text>
+  <text x="70" y="850" font-size="9" fill="#1f2937"><tspan font-weight="bold" fill="#f59e0b">Step 2:</tspan><tspan fill="#666666"> Agent calls: ask_user("Group by category?", ["Yes", "No"])</tspan></text>
 
-      <text x="70" y="870" font-size="9" fill="#8b5cf6" font-weight="bold">Step 3:</text>
-      <text x="140" y="870" font-size="9" class="text-secondary">Run paused, user sees modal with options</text>
-    </g>
-  </g>
-
-  <!-- Key insight -->
-  <g id="insight">
-    <rect x="50" y="900" width="1100" height="1" class="border" stroke-width="1"/>
-    <text x="70" y="915" font-size="10" font-weight="bold" class="text-main">Key Insight:</text>
-    <text x="70" y="932" font-size="9" class="text-secondary">HITL allows agents to pause and ask questions, creating interactive workflows. Users can guide agent reasoning in real-time.</text>
-  </g>
+  <text x="70" y="870" font-size="9" fill="#1f2937"><tspan font-weight="bold" fill="#8b5cf6">Step 3:</tspan><tspan fill="#666666"> Run paused, user sees modal with options</tspan></text>
 </svg>

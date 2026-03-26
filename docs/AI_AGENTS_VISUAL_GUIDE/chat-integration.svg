@@ -1,169 +1,111 @@
-<svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .chat-user { fill: #1e3a8a; }
-        .chat-system { fill: #064e3b; }
-        .step-box { fill: #374151; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .step1 { fill: #1e40af; }
-        .step2 { fill: #047857; }
-        .step3 { fill: #92400e; }
-        .step4 { fill: #6d28d9; }
-        .step5 { fill: #047857; }
-        .step6 { fill: #0891b2; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .chat-user { fill: #dbeafe; }
-        .chat-system { fill: #f0fdf4; }
-        .step-box { fill: #f9fafb; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .step1 { fill: #3b82f6; }
-        .step2 { fill: #10b981; }
-        .step3 { fill: #f59e0b; }
-        .step4 { fill: #8b5cf6; }
-        .step5 { fill: #10b981; }
-        .step6 { fill: #06b6d4; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="900" class="bg"/>
+<svg viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
+  <!-- White Background -->
+  <rect width="1200" height="850" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     Chat Integration & Agent Invocation
   </text>
 
   <defs>
-    <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <polygon points="0,0 10,5 0,10" fill="#6b7280" />
+    <marker id="arrowRight" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666666" />
     </marker>
   </defs>
 
   <!-- Left: Chat Interface -->
-  <g id="chat">
-    <text x="250" y="90" font-size="13" font-weight="bold" class="text-main">Chat Interface</text>
+  <text x="250" y="90" font-size="13" font-weight="bold" fill="#374151">Chat Interface</text>
 
-    <rect x="50" y="110" width="400" height="700" class="step-box" rx="8"/>
+  <rect x="50" y="110" width="400" height="700" fill="#f9fafb" stroke="#d1d5db" stroke-width="2" rx="8"/>
 
-    <!-- Chat header -->
-    <rect x="50" y="110" width="400" height="40" class="step1" rx="8"/>
-    <text x="250" y="138" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">List Chat</text>
+  <!-- Chat header -->
+  <rect x="50" y="110" width="400" height="40" fill="#3b82f6" rx="8"/>
+  <text x="250" y="138" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">List Chat</text>
 
-    <!-- User message 1 -->
-    <rect x="70" y="170" width="360" height="60" class="chat-user" rx="6"/>
-    <text x="430" y="188" font-size="10" font-weight="bold" class="text-main" text-anchor="end">You</text>
-    <text x="80" y="190" font-size="10" class="text-main">Break down roadshow planning</text>
-    <text x="80" y="208" font-size="10" class="text-main">Need phases, timelines, responsibilities</text>
+  <!-- User message 1 -->
+  <rect x="70" y="170" width="360" height="60" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" rx="6"/>
+  <text x="430" y="188" font-size="10" font-weight="bold" fill="#1e40af" text-anchor="end">You</text>
+  <text x="80" y="190" font-size="10" fill="#1f2937">Break down roadshow planning</text>
+  <text x="80" y="208" font-size="10" fill="#1f2937">Need phases, timelines, responsibilities</text>
 
-    <!-- Typing indicator -->
-    <circle cx="70" cy="260" r="3" class="step1" opacity="0.7"/>
-    <circle cx="85" cy="260" r="3" class="step1" opacity="0.5"/>
-    <circle cx="100" cy="260" r="3" class="step1" opacity="0.3"/>
+  <!-- Typing indicator -->
+  <circle cx="70" cy="260" r="3" fill="#3b82f6" opacity="0.7"/>
+  <circle cx="85" cy="260" r="3" fill="#3b82f6" opacity="0.5"/>
+  <circle cx="100" cy="260" r="3" fill="#3b82f6" opacity="0.3"/>
 
-    <!-- System message -->
-    <rect x="70" y="280" width="360" height="70" class="chat-system" rx="6"/>
-    <text x="430" y="298" font-size="10" font-weight="bold" class="text-secondary" text-anchor="end">System</text>
-    <text x="80" y="300" font-size="10" font-weight="bold" class="text-main">🤖 Agent Match: Task Breakdown</text>
-    <text x="80" y="318" font-size="9" class="text-secondary">This looks like task decomposition.</text>
-    <text x="80" y="333" font-size="9" class="text-secondary">Use Task Breakdown Agent?</text>
+  <!-- System message -->
+  <rect x="70" y="280" width="360" height="70" fill="#f0fdf4" stroke="#10b981" stroke-width="1" rx="6"/>
+  <text x="430" y="298" font-size="10" font-weight="bold" fill="#065f46" text-anchor="end">System</text>
+  <text x="80" y="300" font-size="10" font-weight="bold" fill="#1f2937">🤖 Agent Match: Task Breakdown</text>
+  <text x="80" y="318" font-size="9" fill="#666666">This looks like task decomposition.</text>
+  <text x="80" y="333" font-size="9" fill="#666666">Use Task Breakdown Agent?</text>
 
-    <!-- User accepts -->
-    <rect x="70" y="370" width="360" height="50" class="chat-user" rx="6"/>
-    <text x="430" y="388" font-size="10" font-weight="bold" class="text-main" text-anchor="end">You</text>
-    <text x="80" y="403" font-size="10" class="text-main">Yes, run it</text>
+  <!-- User accepts -->
+  <rect x="70" y="370" width="360" height="50" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" rx="6"/>
+  <text x="430" y="388" font-size="10" font-weight="bold" fill="#1e40af" text-anchor="end">You</text>
+  <text x="80" y="403" font-size="10" fill="#1f2937">Yes, run it</text>
 
-    <!-- Pre-run questions -->
-    <rect x="70" y="440" width="360" height="110" class="step3" rx="6"/>
-    <text x="80" y="460" font-size="10" font-weight="bold" fill="#fff">❓ Pre-Run Questions</text>
-    <rect x="80" y="475" width="340" height="30" fill="#fff" rx="4"/>
-    <text x="90" y="495" font-size="9" class="text-main">What is your main goal?</text>
-    <rect x="80" y="515" width="340" height="25" fill="#fff" rx="4"/>
-    <text x="90" y="532" font-size="9" class="text-secondary">Deadline? (optional)</text>
+  <!-- Pre-run questions -->
+  <rect x="70" y="440" width="360" height="110" fill="#fef3c7" stroke="#f59e0b" stroke-width="1" rx="6"/>
+  <text x="80" y="460" font-size="10" font-weight="bold" fill="#92400e">❓ Pre-Run Questions</text>
+  <rect x="80" y="475" width="340" height="30" fill="#ffffff" stroke="#f59e0b" stroke-width="1" rx="4"/>
+  <text x="90" y="495" font-size="9" fill="#1f2937">What is your main goal?</text>
+  <rect x="80" y="515" width="340" height="25" fill="#ffffff" stroke="#f59e0b" stroke-width="1" rx="4"/>
+  <text x="90" y="532" font-size="9" fill="#666666">Deadline? (optional)</text>
 
-    <!-- Agent running -->
-    <rect x="70" y="570" width="360" height="120" class="step4" rx="6"/>
-    <text x="80" y="590" font-size="10" font-weight="bold" fill="#fff">🔄 Running...</text>
-    <rect x="80" y="605" width="340" height="6" fill="#ddd" rx="3"/>
-    <rect x="80" y="605" width="200" height="6" class="step4" rx="3"/>
-    <text x="80" y="625" font-size="8" fill="#fff">Step 1: Analyzing... ✓</text>
-    <text x="80" y="637" font-size="8" fill="#fff">Step 2: Identifying... ✓</text>
-    <text x="80" y="649" font-size="8" fill="#fff">Step 3: Creating... ⏳</text>
-    <text x="80" y="665" font-size="8" fill="#ccc">Tokens: 520/4000 | 2.3s</text>
-  </g>
+  <!-- Agent running -->
+  <rect x="70" y="570" width="360" height="120" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="1" rx="6"/>
+  <text x="80" y="590" font-size="10" font-weight="bold" fill="#6d28d9">🔄 Running...</text>
+  <rect x="80" y="605" width="340" height="6" fill="#e5e7eb" stroke="#8b5cf6" stroke-width="1" rx="3"/>
+  <rect x="80" y="605" width="200" height="6" fill="#8b5cf6" rx="3"/>
+  <text x="80" y="625" font-size="8" fill="#6d28d9">Step 1: Analyzing... ✓</text>
+  <text x="80" y="637" font-size="8" fill="#6d28d9">Step 2: Identifying... ✓</text>
+  <text x="80" y="649" font-size="8" fill="#6d28d9">Step 3: Creating... ⏳</text>
+  <text x="80" y="665" font-size="8" fill="#9ca3af">Tokens: 520/4000 | 2.3s</text>
 
   <!-- Right: Backend Processing -->
-  <g id="backend">
-    <text x="950" y="90" font-size="13" font-weight="bold" class="text-main">Backend Processing</text>
+  <text x="950" y="90" font-size="13" font-weight="bold" fill="#374151">Backend Processing</text>
 
-    <!-- Step 1 -->
-    <rect x="700" y="120" width="450" height="100" class="step-box" rx="8" stroke="#3b82f6" stroke-width="2"/>
-    <rect x="700" y="120" width="450" height="30" class="step1" rx="8"/>
-    <text x="925" y="148" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">Step 1: Intent Detection</text>
-    <text x="720" y="170" font-size="10" class="text-secondary">• User message analyzed by LLM</text>
-    <text x="720" y="188" font-size="10" class="text-secondary">• Determines if agent-like work</text>
-    <text x="720" y="206" font-size="10" class="text-secondary">• Returns: agent_type + confidence</text>
+  <!-- Step 1 -->
+  <rect x="700" y="120" width="450" height="100" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="8"/>
+  <rect x="700" y="120" width="450" height="30" fill="#3b82f6" rx="8"/>
+  <text x="925" y="148" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Step 1: Intent Detection</text>
+  <text x="720" y="170" font-size="10" fill="#1f2937">• User message analyzed by LLM</text>
+  <text x="720" y="188" font-size="10" fill="#1f2937">• Determines if agent-like work</text>
+  <text x="720" y="206" font-size="10" fill="#1f2937">• Returns: agent_type + confidence</text>
 
-    <path d="M 925,220 L 925,260" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 925,220 L 925,260" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
 
-    <!-- Step 2 -->
-    <rect x="700" y="260" width="450" height="100" class="step-box" rx="8" stroke="#10b981" stroke-width="2"/>
-    <rect x="700" y="260" width="450" height="30" class="step2" rx="8"/>
-    <text x="925" y="288" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">Step 2: Find Agent</text>
-    <text x="720" y="310" font-size="10" class="text-secondary">• Query available agents by type</text>
-    <text x="720" y="328" font-size="10" class="text-secondary">• Check user permissions</text>
-    <text x="720" y="346" font-size="10" class="text-secondary">• Return best match</text>
+  <!-- Step 2 -->
+  <rect x="700" y="260" width="450" height="100" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="8"/>
+  <rect x="700" y="260" width="450" height="30" fill="#10b981" rx="8"/>
+  <text x="925" y="288" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Step 2: Find Agent</text>
+  <text x="720" y="310" font-size="10" fill="#1f2937">• Query available agents by type</text>
+  <text x="720" y="328" font-size="10" fill="#1f2937">• Check user permissions</text>
+  <text x="720" y="346" font-size="10" fill="#1f2937">• Return best match</text>
 
-    <path d="M 925,360 L 925,400" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 925,360 L 925,400" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
 
-    <!-- Step 3 -->
-    <rect x="700" y="400" width="450" height="100" class="step-box" rx="8" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="700" y="400" width="450" height="30" class="step3" rx="8"/>
-    <text x="925" y="428" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">Step 3: Pre-Run Questions</text>
-    <text x="720" y="450" font-size="10" class="text-secondary">• Fetch questions from agent</text>
-    <text x="720" y="468" font-size="10" class="text-secondary">• Display form in chat</text>
-    <text x="720" y="486" font-size="10" class="text-secondary">• Wait for user input</text>
+  <!-- Step 3 -->
+  <rect x="700" y="400" width="450" height="100" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="8"/>
+  <rect x="700" y="400" width="450" height="30" fill="#f59e0b" rx="8"/>
+  <text x="925" y="428" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Step 3: Pre-Run Questions</text>
+  <text x="720" y="450" font-size="10" fill="#1f2937">• Fetch questions from agent</text>
+  <text x="720" y="468" font-size="10" fill="#1f2937">• Display form in chat</text>
+  <text x="720" y="486" font-size="10" fill="#1f2937">• Wait for user input</text>
 
-    <path d="M 925,500 L 925,540" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 925,500 L 925,540" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
 
-    <!-- Step 4 -->
-    <rect x="700" y="540" width="450" height="100" class="step-box" rx="8" stroke="#8b5cf6" stroke-width="2"/>
-    <rect x="700" y="540" width="450" height="30" class="step4" rx="8"/>
-    <text x="925" y="568" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">Step 4: Trigger Execution</text>
-    <text x="720" y="590" font-size="10" class="text-secondary">• Create AiAgentRun record</text>
-    <text x="720" y="608" font-size="10" class="text-secondary">• Enqueue AgentRunJob</text>
-    <text x="720" y="626" font-size="10" class="text-secondary">• Return run_id to chat</text>
-
-    <path d="M 925,640 L 925,680" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
-
-    <!-- Step 5 -->
-    <rect x="700" y="680" width="450" height="110" class="step-box" rx="8" stroke="#ec4899" stroke-width="2"/>
-    <rect x="700" y="680" width="450" height="30" class="step5" rx="8"/>
-    <text x="925" y="708" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">Step 5: Execute (Background)</text>
-    <text x="720" y="730" font-size="10" class="text-secondary">• Build context with answers</text>
-    <text x="720" y="748" font-size="10" class="text-secondary">• Run LLM with tools</text>
-    <text x="720" y="766" font-size="10" class="text-secondary">• Stream progress to chat</text>
-
-    <!-- Interaction arrows -->
-    <path d="M 700,300 L 450,300" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
-    <text x="550" y="290" font-size="10" class="text-secondary" text-anchor="middle">User Input</text>
-
-    <path d="M 700,700 L 450,650" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
-    <text x="550" y="680" font-size="10" class="text-secondary" text-anchor="middle">Progress</text>
-  </g>
+  <!-- Step 4 -->
+  <rect x="700" y="540" width="450" height="100" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2" rx="8"/>
+  <rect x="700" y="540" width="450" height="30" fill="#8b5cf6" rx="8"/>
+  <text x="925" y="568" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">Step 4: Trigger Execution</text>
+  <text x="720" y="590" font-size="10" fill="#1f2937">• Create AiAgentRun record</text>
+  <text x="720" y="608" font-size="10" fill="#1f2937">• Enqueue AgentRunJob</text>
+  <text x="720" y="626" font-size="10" fill="#1f2937">• Return run_id to chat</text>
 
   <!-- Bottom insights -->
-  <g id="insights">
-    <rect x="50" y="830" width="1100" height="50" class="step-box" rx="6"/>
-    <text x="70" y="852" font-size="11" font-weight="bold" class="text-main">Key Insight:</text>
-    <text x="70" y="872" font-size="10" class="text-secondary">Chat analyzes user intent and finds matching agents automatically. Agents run in the background while chat stays responsive.</text>
-  </g>
+  <rect x="50" y="750" width="1100" height="80" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="70" y="775" font-size="11" font-weight="bold" fill="#374151">Key Insight:</text>
+  <text x="70" y="797" font-size="10" fill="#666666">Chat analyzes user intent and automatically finds matching agents. Agents run asynchronously in the background while chat remains responsive.</text>
 </svg>

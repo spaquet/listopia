@@ -1,156 +1,102 @@
 <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .box-header-blue { fill: #1e40af; }
-        .box-header-green { fill: #047857; }
-        .box-header-yellow { fill: #92400e; }
-        .box-header-purple { fill: #6d28d9; }
-        .box-header-pink { fill: #be185d; }
-        .box-header-cyan { fill: #0891b2; }
-        .box-bg { fill: #374151; }
-        .success-box { fill: #064e3b; }
-        .warning-box { fill: #78350f; }
-        .error-box { fill: #7f1d1d; }
-        .border { stroke: #4b5563; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .box-header-blue { fill: #3b82f6; }
-        .box-header-green { fill: #10b981; }
-        .box-header-yellow { fill: #f59e0b; }
-        .box-header-purple { fill: #8b5cf6; }
-        .box-header-pink { fill: #ec4899; }
-        .box-header-cyan { fill: #06b6d4; }
-        .box-bg { fill: #f9fafb; }
-        .success-box { fill: #d1fae5; }
-        .warning-box { fill: #fef3c7; }
-        .error-box { fill: #fee2e2; }
-        .border { stroke: #e5e7eb; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="900" class="bg"/>
+  <!-- White Background -->
+  <rect width="1200" height="900" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     Agent Lifecycle & Execution
   </text>
 
   <defs>
     <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <polygon points="0,0 10,5 0,10" fill="#6b7280" />
+      <polygon points="0,0 10,5 0,10" fill="#666666" />
     </marker>
   </defs>
 
   <!-- Main flow (left column) -->
-  <g id="mainFlow">
-    <!-- 1. Trigger -->
-    <rect x="80" y="80" width="240" height="80" class="box-bg" rx="8"/>
-    <rect x="80" y="80" width="240" height="30" class="box-header-blue" rx="8"/>
-    <text x="200" y="108" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">1. TRIGGER</text>
-    <text x="200" y="135" font-size="11" class="text-main" text-anchor="middle">Manual / Event / Scheduled</text>
+  <!-- 1. Trigger -->
+  <rect x="80" y="80" width="240" height="80" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <rect x="80" y="80" width="240" height="30" fill="#3b82f6" rx="8"/>
+  <text x="200" y="108" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1. TRIGGER</text>
+  <text x="200" y="135" font-size="11" fill="#1f2937" text-anchor="middle">Manual / Event / Scheduled</text>
 
-    <path d="M 200,160 L 200,200" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 200,160 L 200,200" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- 2. Create Run -->
-    <rect x="80" y="200" width="240" height="100" class="box-bg" rx="8"/>
-    <rect x="80" y="200" width="240" height="30" class="box-header-green" rx="8"/>
-    <text x="200" y="228" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">2. CREATE RUN</text>
-    <text x="200" y="250" font-size="10" class="text-secondary" text-anchor="middle">Status: pending</text>
-    <text x="200" y="268" font-size="10" class="text-secondary" text-anchor="middle">Store agent, user, input</text>
+  <!-- 2. Create Run -->
+  <rect x="80" y="200" width="240" height="100" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <rect x="80" y="200" width="240" height="30" fill="#10b981" rx="8"/>
+  <text x="200" y="228" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2. CREATE RUN</text>
+  <text x="200" y="250" font-size="10" fill="#666666" text-anchor="middle">Status: pending</text>
+  <text x="200" y="268" font-size="10" fill="#666666" text-anchor="middle">Store agent, user, input</text>
 
-    <path d="M 200,300 L 200,340" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 200,300 L 200,340" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- 3. Check Questions -->
-    <rect x="80" y="340" width="240" height="100" class="box-bg" rx="8"/>
-    <rect x="80" y="340" width="240" height="30" class="box-header-yellow" rx="8"/>
-    <text x="200" y="368" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">3. PRE-RUN QUESTIONS?</text>
-    <text x="200" y="390" font-size="10" class="text-secondary" text-anchor="middle">awaiting_input (if yes)</text>
-    <text x="200" y="408" font-size="10" class="text-secondary" text-anchor="middle">Display form, collect answers</text>
+  <!-- 3. Check Questions -->
+  <rect x="80" y="340" width="240" height="100" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <rect x="80" y="340" width="240" height="30" fill="#f59e0b" rx="8"/>
+  <text x="200" y="368" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3. PRE-RUN QUESTIONS?</text>
+  <text x="200" y="390" font-size="10" fill="#666666" text-anchor="middle">awaiting_input (if yes)</text>
+  <text x="200" y="408" font-size="10" fill="#666666" text-anchor="middle">Display form, collect answers</text>
 
-    <path d="M 200,440 L 200,480" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 200,440 L 200,480" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- 4. Build Context -->
-    <rect x="80" y="480" width="240" height="100" class="box-bg" rx="8"/>
-    <rect x="80" y="480" width="240" height="30" class="box-header-purple" rx="8"/>
-    <text x="200" y="508" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">4. BUILD CONTEXT</text>
-    <text x="200" y="530" font-size="10" class="text-secondary" text-anchor="middle">Compose system prompt:</text>
-    <text x="200" y="548" font-size="10" class="text-secondary" text-anchor="middle">Persona + Instructions + Context</text>
+  <!-- 4. Build Context -->
+  <rect x="80" y="480" width="240" height="100" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <rect x="80" y="480" width="240" height="30" fill="#8b5cf6" rx="8"/>
+  <text x="200" y="508" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">4. BUILD CONTEXT</text>
+  <text x="200" y="530" font-size="10" fill="#666666" text-anchor="middle">Compose system prompt:</text>
+  <text x="200" y="548" font-size="10" fill="#666666" text-anchor="middle">Persona + Instructions + Context</text>
 
-    <path d="M 200,580 L 200,620" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 200,580 L 200,620" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- 5. Execute Loop -->
-    <rect x="80" y="620" width="240" height="120" class="box-bg" rx="8"/>
-    <rect x="80" y="620" width="240" height="30" class="box-header-pink" rx="8"/>
-    <text x="200" y="648" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">5. EXECUTE LOOP</text>
-    <text x="200" y="670" font-size="10" class="text-secondary" text-anchor="middle">• LLM reasoning</text>
-    <text x="200" y="686" font-size="10" class="text-secondary" text-anchor="middle">• Tool calls</text>
-    <text x="200" y="702" font-size="10" class="text-secondary" text-anchor="middle">• Tool execution</text>
-    <text x="200" y="718" font-size="10" class="text-secondary" text-anchor="middle">• Results fed back</text>
+  <!-- 5. Execute Loop -->
+  <rect x="80" y="620" width="240" height="120" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="8"/>
+  <rect x="80" y="620" width="240" height="30" fill="#ec4899" rx="8"/>
+  <text x="200" y="648" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">5. EXECUTE LOOP</text>
+  <text x="200" y="670" font-size="10" fill="#666666" text-anchor="middle">• LLM reasoning</text>
+  <text x="200" y="686" font-size="10" fill="#666666" text-anchor="middle">• Tool calls</text>
+  <text x="200" y="702" font-size="10" fill="#666666" text-anchor="middle">• Tool execution</text>
+  <text x="200" y="718" font-size="10" fill="#666666" text-anchor="middle">• Results fed back</text>
 
-    <path d="M 200,740 L 200,780" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
-  </g>
+  <!-- Success outcome -->
+  <rect x="400" y="80" width="240" height="180" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="8"/>
+  <rect x="400" y="80" width="240" height="30" fill="#10b981" rx="8"/>
+  <text x="520" y="108" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">✓ SUCCESS</text>
+  <text x="420" y="130" font-size="10" fill="#1f2937" text-anchor="start">Status: completed</text>
+  <text x="420" y="148" font-size="9" fill="#666666" text-anchor="start">• No more tool calls</text>
+  <text x="420" y="163" font-size="9" fill="#666666" text-anchor="start">• Event emitted</text>
+  <text x="420" y="178" font-size="9" fill="#666666" text-anchor="start">• User notified</text>
+  <text x="420" y="193" font-size="9" fill="#666666" text-anchor="start">• Tokens tracked</text>
+  <text x="520" y="242" font-size="10" font-weight="bold" fill="#047857" text-anchor="middle">Run time: saved</text>
 
-  <!-- Success outcome (right column) -->
-  <g id="success">
-    <rect x="400" y="80" width="240" height="180" class="success-box" rx="8"/>
-    <rect x="400" y="80" width="240" height="30" class="box-header-green" rx="8"/>
-    <text x="520" y="108" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">✓ SUCCESS</text>
+  <!-- Paused outcome -->
+  <rect x="700" y="80" width="240" height="180" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="8"/>
+  <rect x="700" y="80" width="240" height="30" fill="#f59e0b" rx="8"/>
+  <text x="820" y="108" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">⏸ PAUSED</text>
+  <text x="720" y="130" font-size="10" fill="#1f2937" text-anchor="start">Status: paused</text>
+  <text x="720" y="148" font-size="9" fill="#666666" text-anchor="start">• Ask_user() called</text>
+  <text x="720" y="163" font-size="9" fill="#666666" text-anchor="start">• Confirm_action() called</text>
+  <text x="720" y="178" font-size="9" fill="#666666" text-anchor="start">• Interaction created</text>
+  <text x="720" y="193" font-size="9" fill="#666666" text-anchor="start">• User sees question</text>
+  <text x="820" y="242" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">→ Resume with answer</text>
 
-    <text x="420" y="130" font-size="10" class="text-main" text-anchor="start">Status: completed</text>
-    <text x="420" y="148" font-size="9" class="text-secondary" text-anchor="start">• No more tool calls</text>
-    <text x="420" y="163" font-size="9" class="text-secondary" text-anchor="start">• Event emitted</text>
-    <text x="420" y="178" font-size="9" class="text-secondary" text-anchor="start">• User notified</text>
-    <text x="420" y="193" font-size="9" class="text-secondary" text-anchor="start">• Tokens tracked</text>
-    <text x="520" y="242" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Run time: saved</text>
-  </g>
+  <!-- Failed outcome -->
+  <rect x="1000" y="80" width="140" height="180" fill="#fee2e2" stroke="#ef4444" stroke-width="2" rx="8"/>
+  <rect x="1000" y="80" width="140" height="30" fill="#ef4444" rx="8"/>
+  <text x="1070" y="108" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">✗ FAILED</text>
+  <text x="1020" y="130" font-size="9" fill="#1f2937" text-anchor="start">Status: failed</text>
+  <text x="1020" y="145" font-size="8" fill="#666666" text-anchor="start">• Exception</text>
+  <text x="1020" y="159" font-size="8" fill="#666666" text-anchor="start">• Token budget</text>
+  <text x="1020" y="173" font-size="8" fill="#666666" text-anchor="start">• Timeout</text>
+  <text x="1020" y="187" font-size="8" fill="#666666" text-anchor="start">• Tool denied</text>
+  <text x="1070" y="242" font-size="9" font-weight="bold" fill="#7f1d1d" text-anchor="middle">Retry available</text>
 
-  <!-- Paused outcome (middle column) -->
-  <g id="paused">
-    <rect x="700" y="80" width="240" height="180" class="warning-box" rx="8"/>
-    <rect x="700" y="80" width="240" height="30" class="box-header-yellow" rx="8"/>
-    <text x="820" y="108" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">⏸ PAUSED</text>
-
-    <text x="720" y="130" font-size="10" class="text-main" text-anchor="start">Status: paused</text>
-    <text x="720" y="148" font-size="9" class="text-secondary" text-anchor="start">• Ask_user() called</text>
-    <text x="720" y="163" font-size="9" class="text-secondary" text-anchor="start">• Confirm_action() called</text>
-    <text x="720" y="178" font-size="9" class="text-secondary" text-anchor="start">• Interaction created</text>
-    <text x="720" y="193" font-size="9" class="text-secondary" text-anchor="start">• User sees question</text>
-    <text x="820" y="242" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">→ Resume with answer</text>
-  </g>
-
-  <!-- Failed outcome (right column) -->
-  <g id="failed">
-    <rect x="1000" y="80" width="140" height="180" class="error-box" rx="8"/>
-    <rect x="1000" y="80" width="140" height="30" class="box-header-pink" rx="8"/>
-    <text x="1070" y="108" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">✗ FAILED</text>
-
-    <text x="1020" y="130" font-size="9" class="text-main" text-anchor="start">Status: failed</text>
-    <text x="1020" y="145" font-size="8" class="text-secondary" text-anchor="start">• Exception</text>
-    <text x="1020" y="159" font-size="8" class="text-secondary" text-anchor="start">• Token budget</text>
-    <text x="1020" y="173" font-size="8" class="text-secondary" text-anchor="start">• Timeout</text>
-    <text x="1020" y="187" font-size="8" class="text-secondary" text-anchor="start">• Tool denied</text>
-    <text x="1070" y="242" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle">Retry available</text>
-  </g>
-
-  <!-- Connection arrows from main flow -->
+  <!-- Connection arrows -->
   <path d="M 320,160 L 400,160" stroke="#10b981" stroke-width="2" fill="none" stroke-dasharray="5,5" marker-end="url(#arrowDown)"/>
   <path d="M 320,200 L 700,160" stroke="#f59e0b" stroke-width="2" fill="none" stroke-dasharray="5,5" marker-end="url(#arrowDown)"/>
-  <path d="M 320,280 L 1000,160" stroke="#ec4899" stroke-width="2" fill="none" stroke-dasharray="5,5" marker-end="url(#arrowDown)"/>
+  <path d="M 320,280 L 1000,160" stroke="#ef4444" stroke-width="2" fill="none" stroke-dasharray="5,5" marker-end="url(#arrowDown)"/>
 
-  <!-- Bottom section: Status transitions -->
-  <g id="transitions">
-    <text x="80" y="840" font-size="12" font-weight="bold" class="text-main">Status Transitions:</text>
-    <text x="80" y="862" font-size="11" class="text-secondary">pending → awaiting_input → running → paused (if HITL) → completed / failed / cancelled</text>
-  </g>
+  <!-- Bottom section -->
+  <text x="80" y="840" font-size="12" font-weight="bold" fill="#374151">Status Transitions:</text>
+  <text x="80" y="862" font-size="11" fill="#666666">pending → awaiting_input → running → paused (if HITL) → completed / failed / cancelled</text>
 </svg>

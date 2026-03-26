@@ -1,201 +1,176 @@
 <svg viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .section-title { fill: #d1d5db; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .box-bg { fill: #374151; }
-        .box-header { fill: #4b5563; }
-        .border { stroke: #6b7280; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .section-title { fill: #374151; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .box-bg { fill: #f9fafb; }
-        .box-header { fill: #e5e7eb; }
-        .border { stroke: #d1d5db; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="850" class="bg"/>
+  <!-- White Background -->
+  <rect width="1200" height="850" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     AI Agent Architecture
   </text>
 
   <!-- Main container background -->
-  <rect x="50" y="80" width="1100" height="750" class="box-bg" rx="8"/>
+  <rect x="50" y="80" width="1100" height="750" fill="#f9fafb" stroke="#d1d5db" stroke-width="2" rx="8"/>
 
   <!-- Section header -->
-  <text x="70" y="120" font-size="14" font-weight="bold" class="section-title">System Components</text>
-  <line x1="50" y1="130" x2="1150" y2="130" class="border" stroke-width="1"/>
+  <text x="70" y="120" font-size="14" font-weight="bold" fill="#374151">System Components</text>
+  <line x1="50" y1="130" x2="1150" y2="130" stroke="#d1d5db" stroke-width="1"/>
 
   <!-- Component 1: Trigger System -->
   <g>
-    <rect x="70" y="160" width="160" height="180" class="box-bg" rx="6" class="border" stroke-width="2"/>
+    <rect x="70" y="160" width="160" height="180" fill="#ffffff" stroke="#3b82f6" stroke-width="2" rx="6"/>
     <rect x="70" y="160" width="160" height="40" fill="#3b82f6" rx="6"/>
-    <text x="150" y="188" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Trigger</text>
-    <text x="150" y="208" font-size="10" fill="#fff" text-anchor="middle">System</text>
+    <text x="150" y="188" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Trigger</text>
+    <text x="150" y="208" font-size="10" fill="#ffffff" text-anchor="middle">System</text>
 
-    <text x="82" y="230" font-size="10" font-weight="bold" class="text-main">Manual</text>
-    <text x="82" y="248" font-size="9" class="text-secondary">User clicks</text>
+    <text x="82" y="230" font-size="10" font-weight="bold" fill="#1f2937">Manual</text>
+    <text x="82" y="248" font-size="9" fill="#666666">User clicks</text>
 
-    <text x="82" y="270" font-size="10" font-weight="bold" class="text-main">Event</text>
-    <text x="82" y="288" font-size="9" class="text-secondary">Item done</text>
+    <text x="82" y="270" font-size="10" font-weight="bold" fill="#1f2937">Event</text>
+    <text x="82" y="288" font-size="9" fill="#666666">Item done</text>
 
-    <text x="82" y="310" font-size="10" font-weight="bold" class="text-main">Scheduled</text>
-    <text x="82" y="328" font-size="9" class="text-secondary">Cron job</text>
+    <text x="82" y="310" font-size="10" font-weight="bold" fill="#1f2937">Scheduled</text>
+    <text x="82" y="328" font-size="9" fill="#666666">Cron job</text>
   </g>
 
   <!-- Component 2: Configuration -->
   <g>
-    <rect x="270" y="160" width="160" height="180" class="box-bg" rx="6" class="border" stroke-width="2"/>
+    <rect x="270" y="160" width="160" height="180" fill="#ffffff" stroke="#10b981" stroke-width="2" rx="6"/>
     <rect x="270" y="160" width="160" height="40" fill="#10b981" rx="6"/>
-    <text x="350" y="188" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Config</text>
+    <text x="350" y="188" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Config</text>
 
-    <text x="282" y="230" font-size="10" font-weight="bold" class="text-main">Persona</text>
-    <text x="282" y="248" font-size="9" class="text-secondary">Role, tone</text>
+    <text x="282" y="230" font-size="10" font-weight="bold" fill="#1f2937">Persona</text>
+    <text x="282" y="248" font-size="9" fill="#666666">Role, tone</text>
 
-    <text x="282" y="270" font-size="10" font-weight="bold" class="text-main">Instructions</text>
-    <text x="282" y="288" font-size="9" class="text-secondary">Steps</text>
+    <text x="282" y="270" font-size="10" font-weight="bold" fill="#1f2937">Instructions</text>
+    <text x="282" y="288" font-size="9" fill="#666666">Steps</text>
 
-    <text x="282" y="310" font-size="10" font-weight="bold" class="text-main">Context</text>
-    <text x="282" y="328" font-size="9" class="text-secondary">What to load</text>
+    <text x="282" y="310" font-size="10" font-weight="bold" fill="#1f2937">Context</text>
+    <text x="282" y="328" font-size="9" fill="#666666">What to load</text>
   </g>
 
   <!-- Component 3: Execution Engine -->
   <g>
-    <rect x="470" y="160" width="160" height="180" class="box-bg" rx="6" class="border" stroke-width="2"/>
+    <rect x="470" y="160" width="160" height="180" fill="#ffffff" stroke="#f59e0b" stroke-width="2" rx="6"/>
     <rect x="470" y="160" width="160" height="40" fill="#f59e0b" rx="6"/>
-    <text x="550" y="188" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Execute</text>
-    <text x="550" y="208" font-size="10" fill="#fff" text-anchor="middle">Engine</text>
+    <text x="550" y="188" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Execute</text>
+    <text x="550" y="208" font-size="10" fill="#ffffff" text-anchor="middle">Engine</text>
 
-    <text x="482" y="230" font-size="10" font-weight="bold" class="text-main">Context</text>
-    <text x="482" y="248" font-size="9" class="text-secondary">Build prompt</text>
+    <text x="482" y="230" font-size="10" font-weight="bold" fill="#1f2937">Context</text>
+    <text x="482" y="248" font-size="9" fill="#666666">Build prompt</text>
 
-    <text x="482" y="270" font-size="10" font-weight="bold" class="text-main">LLM Loop</text>
-    <text x="482" y="288" font-size="9" class="text-secondary">Reasoning</text>
+    <text x="482" y="270" font-size="10" font-weight="bold" fill="#1f2937">LLM Loop</text>
+    <text x="482" y="288" font-size="9" fill="#666666">Reasoning</text>
 
-    <text x="482" y="310" font-size="10" font-weight="bold" class="text-main">Tools</text>
-    <text x="482" y="328" font-size="9" class="text-secondary">Execute</text>
+    <text x="482" y="310" font-size="10" font-weight="bold" fill="#1f2937">Tools</text>
+    <text x="482" y="328" font-size="9" fill="#666666">Execute</text>
   </g>
 
   <!-- Component 4: Tool Builder -->
   <g>
-    <rect x="670" y="160" width="160" height="180" class="box-bg" rx="6" class="border" stroke-width="2"/>
+    <rect x="670" y="160" width="160" height="180" fill="#ffffff" stroke="#8b5cf6" stroke-width="2" rx="6"/>
     <rect x="670" y="160" width="160" height="40" fill="#8b5cf6" rx="6"/>
-    <text x="750" y="188" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Tools</text>
+    <text x="750" y="188" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Tools</text>
 
-    <text x="682" y="230" font-size="10" font-weight="bold" class="text-main">List/Item</text>
-    <text x="682" y="248" font-size="9" class="text-secondary">CRUD</text>
+    <text x="682" y="230" font-size="10" font-weight="bold" fill="#1f2937">List/Item</text>
+    <text x="682" y="248" font-size="9" fill="#666666">CRUD</text>
 
-    <text x="682" y="270" font-size="10" font-weight="bold" class="text-main">Web Search</text>
-    <text x="682" y="288" font-size="9" class="text-secondary">Research</text>
+    <text x="682" y="270" font-size="10" font-weight="bold" fill="#1f2937">Web Search</text>
+    <text x="682" y="288" font-size="9" fill="#666666">Research</text>
 
-    <text x="682" y="310" font-size="10" font-weight="bold" class="text-main">HITL</text>
-    <text x="682" y="328" font-size="9" class="text-secondary">Ask user</text>
+    <text x="682" y="310" font-size="10" font-weight="bold" fill="#1f2937">HITL</text>
+    <text x="682" y="328" font-size="9" fill="#666666">Ask user</text>
   </g>
 
   <!-- Component 5: Memory -->
   <g>
-    <rect x="870" y="160" width="150" height="180" class="box-bg" rx="6" class="border" stroke-width="2"/>
+    <rect x="870" y="160" width="150" height="180" fill="#ffffff" stroke="#ec4899" stroke-width="2" rx="6"/>
     <rect x="870" y="160" width="150" height="40" fill="#ec4899" rx="6"/>
-    <text x="945" y="188" font-size="13" font-weight="bold" fill="#fff" text-anchor="middle">Memory</text>
+    <text x="945" y="188" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">Memory</text>
 
-    <text x="882" y="230" font-size="10" font-weight="bold" class="text-main">Current</text>
-    <text x="882" y="248" font-size="9" class="text-secondary">Messages</text>
+    <text x="882" y="230" font-size="10" font-weight="bold" fill="#1f2937">Current</text>
+    <text x="882" y="248" font-size="9" fill="#666666">Messages</text>
 
-    <text x="882" y="270" font-size="10" font-weight="bold" class="text-main">Recent</text>
-    <text x="882" y="288" font-size="9" class="text-secondary">Prior runs</text>
+    <text x="882" y="270" font-size="10" font-weight="bold" fill="#1f2937">Recent</text>
+    <text x="882" y="288" font-size="9" fill="#666666">Prior runs</text>
 
-    <text x="882" y="310" font-size="10" font-weight="bold" class="text-main">Embeddings</text>
-    <text x="882" y="328" font-size="9" class="text-secondary">Search</text>
+    <text x="882" y="310" font-size="10" font-weight="bold" fill="#1f2937">Embeddings</text>
+    <text x="882" y="328" font-size="9" fill="#666666">Search</text>
   </g>
 
   <!-- Connection arrows -->
   <defs>
     <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-      <polygon points="0 0, 10 3, 0 6" fill="#6b7280" />
+      <polygon points="0 0, 10 3, 0 6" fill="#999999" />
     </marker>
   </defs>
 
-  <path d="M 230,250 L 270,250" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-  <path d="M 430,250 L 470,250" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-  <path d="M 630,250 L 670,250" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-  <path d="M 830,250 L 870,250" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 230,250 L 270,250" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 430,250 L 470,250" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 630,250 L 670,250" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+  <path d="M 830,250 L 870,250" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
   <!-- Execution Flow Section -->
-  <text x="70" y="380" font-size="14" font-weight="bold" class="section-title">Execution Flow</text>
-  <line x1="50" y1="390" x2="1150" y2="390" class="border" stroke-width="1"/>
+  <text x="70" y="380" font-size="14" font-weight="bold" fill="#374151">Execution Flow</text>
+  <line x1="50" y1="390" x2="1150" y2="390" stroke="#d1d5db" stroke-width="1"/>
 
   <!-- Flow steps -->
   <g>
     <!-- Step 1 -->
     <circle cx="120" cy="450" r="32" fill="#3b82f6"/>
-    <text x="120" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">1</text>
-    <text x="120" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Trigger</text>
-    <text x="120" y="528" font-size="9" class="text-secondary" text-anchor="middle">Manual/Event/</text>
-    <text x="120" y="543" font-size="9" class="text-secondary" text-anchor="middle">Scheduled</text>
+    <text x="120" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+    <text x="120" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Trigger</text>
+    <text x="120" y="528" font-size="9" fill="#666666" text-anchor="middle">Manual/Event/</text>
+    <text x="120" y="543" font-size="9" fill="#666666" text-anchor="middle">Scheduled</text>
 
-    <path d="M 152,450 L 208,450" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+    <path d="M 152,450 L 208,450" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
     <!-- Step 2 -->
     <circle cx="260" cy="450" r="32" fill="#10b981"/>
-    <text x="260" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">2</text>
-    <text x="260" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Load Config</text>
-    <text x="260" y="528" font-size="9" class="text-secondary" text-anchor="middle">Persona,</text>
-    <text x="260" y="543" font-size="9" class="text-secondary" text-anchor="middle">instructions</text>
+    <text x="260" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+    <text x="260" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Load Config</text>
+    <text x="260" y="528" font-size="9" fill="#666666" text-anchor="middle">Persona,</text>
+    <text x="260" y="543" font-size="9" fill="#666666" text-anchor="middle">instructions</text>
 
-    <path d="M 292,450 L 348,450" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+    <path d="M 292,450 L 348,450" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
     <!-- Step 3 -->
     <circle cx="400" cy="450" r="32" fill="#f59e0b"/>
-    <text x="400" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">3</text>
-    <text x="400" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Build Context</text>
-    <text x="400" y="528" font-size="9" class="text-secondary" text-anchor="middle">System prompt</text>
-    <text x="400" y="543" font-size="9" class="text-secondary" text-anchor="middle">with lists</text>
+    <text x="400" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+    <text x="400" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Build Context</text>
+    <text x="400" y="528" font-size="9" fill="#666666" text-anchor="middle">System prompt</text>
+    <text x="400" y="543" font-size="9" fill="#666666" text-anchor="middle">with lists</text>
 
-    <path d="M 432,450 L 488,450" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+    <path d="M 432,450 L 488,450" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
     <!-- Step 4 -->
     <circle cx="540" cy="450" r="32" fill="#8b5cf6"/>
-    <text x="540" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">4</text>
-    <text x="540" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Execute Loop</text>
-    <text x="540" y="528" font-size="9" class="text-secondary" text-anchor="middle">LLM generates</text>
-    <text x="540" y="543" font-size="9" class="text-secondary" text-anchor="middle">& executes</text>
+    <text x="540" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+    <text x="540" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Execute Loop</text>
+    <text x="540" y="528" font-size="9" fill="#666666" text-anchor="middle">LLM generates</text>
+    <text x="540" y="543" font-size="9" fill="#666666" text-anchor="middle">& executes</text>
 
-    <path d="M 572,450 L 628,450" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+    <path d="M 572,450 L 628,450" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
     <!-- Step 5 -->
     <circle cx="680" cy="450" r="32" fill="#ec4899"/>
-    <text x="680" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">5</text>
-    <text x="680" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Store Results</text>
-    <text x="680" y="528" font-size="9" class="text-secondary" text-anchor="middle">Save items,</text>
-    <text x="680" y="543" font-size="9" class="text-secondary" text-anchor="middle">emit events</text>
+    <text x="680" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">5</text>
+    <text x="680" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Store Results</text>
+    <text x="680" y="528" font-size="9" fill="#666666" text-anchor="middle">Save items,</text>
+    <text x="680" y="543" font-size="9" fill="#666666" text-anchor="middle">emit events</text>
 
-    <path d="M 712,450 L 768,450" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+    <path d="M 712,450 L 768,450" stroke="#999999" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
 
     <!-- Step 6 -->
     <circle cx="820" cy="450" r="32" fill="#06b6d4"/>
-    <text x="820" y="458" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">6</text>
-    <text x="820" y="510" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Complete</text>
-    <text x="820" y="528" font-size="9" class="text-secondary" text-anchor="middle">Run finished,</text>
-    <text x="820" y="543" font-size="9" class="text-secondary" text-anchor="middle">feedback</text>
+    <text x="820" y="458" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">6</text>
+    <text x="820" y="510" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Complete</text>
+    <text x="820" y="528" font-size="9" fill="#666666" text-anchor="middle">Run finished,</text>
+    <text x="820" y="543" font-size="9" fill="#666666" text-anchor="middle">feedback</text>
   </g>
 
   <!-- Bottom explanation -->
   <g>
-    <text x="70" y="620" font-size="12" font-weight="bold" class="section-title">Key Insight</text>
-    <text x="70" y="645" font-size="11" class="text-secondary">Agents combine persona, instructions, and context into a system prompt that the LLM interprets.</text>
-    <text x="70" y="662" font-size="11" class="text-secondary">The LLM decides what tools to call, and the executor runs them. Results feed back to the LLM in a loop.</text>
+    <text x="70" y="620" font-size="12" font-weight="bold" fill="#374151">Key Insight</text>
+    <text x="70" y="645" font-size="11" fill="#666666">Agents combine persona, instructions, and context into a system prompt that the LLM interprets.</text>
+    <text x="70" y="662" font-size="11" fill="#666666">The LLM decides what tools to call, and the executor runs them. Results feed back to the LLM in a loop.</text>
   </g>
 </svg>

@@ -1,249 +1,191 @@
 <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      @media (prefers-color-scheme: dark) {
-        .bg { fill: #1f2937; }
-        .title { fill: #f3f4f6; }
-        .text-main { fill: #f3f4f6; }
-        .text-secondary { fill: #9ca3af; }
-        .header { fill: #374151; }
-        .box-manual { fill: #1e3a8a; }
-        .box-event { fill: #064e3b; }
-        .box-schedule { fill: #78350f; }
-        .header-manual { fill: #1e40af; }
-        .header-event { fill: #10b981; }
-        .header-schedule { fill: #f59e0b; }
-        .comparison-row { fill: #1f2937; }
-        .border { stroke: #4b5563; }
-      }
-      @media (prefers-color-scheme: light) {
-        .bg { fill: #ffffff; }
-        .title { fill: #1a1a1a; }
-        .text-main { fill: #1f2937; }
-        .text-secondary { fill: #666666; }
-        .header { fill: #f9fafb; }
-        .box-manual { fill: #dbeafe; }
-        .box-event { fill: #d1fae5; }
-        .box-schedule { fill: #fef3c7; }
-        .header-manual { fill: #3b82f6; }
-        .header-event { fill: #10b981; }
-        .header-schedule { fill: #f59e0b; }
-        .comparison-row { fill: #f9fafb; }
-        .border { stroke: #e5e7eb; }
-      }
-    </style>
-  </defs>
-
-  <!-- Background -->
-  <rect width="1200" height="900" class="bg"/>
+  <!-- White Background -->
+  <rect width="1200" height="900" fill="#ffffff"/>
 
   <!-- Title -->
-  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" class="title">
+  <text x="600" y="40" font-size="32" font-weight="bold" text-anchor="middle" fill="#1a1a1a">
     Three Ways to Trigger Agents
   </text>
 
   <defs>
     <marker id="arrowDown" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
-      <polygon points="0,0 10,5 0,10" fill="#6b7280" />
+      <polygon points="0,0 10,5 0,10" fill="#666666" />
     </marker>
   </defs>
 
   <!-- Column 1: MANUAL -->
-  <g id="manual">
-    <text x="200" y="90" font-size="13" font-weight="bold" class="text-main">1. MANUAL</text>
+  <text x="200" y="90" font-size="13" font-weight="bold" fill="#374151">1. MANUAL</text>
 
-    <rect x="30" y="110" width="310" height="520" class="box-manual" rx="8"/>
+  <rect x="30" y="110" width="310" height="520" fill="#dbeafe" stroke="#3b82f6" stroke-width="2" rx="8"/>
 
-    <!-- Step 1 -->
-    <rect x="45" y="125" width="280" height="70" class="header" rx="6"/>
-    <text x="185" y="150" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">User clicks [Run]</text>
-    <text x="185" y="170" font-size="9" class="text-secondary" text-anchor="middle">In chat, library, or list view</text>
+  <!-- Step 1 -->
+  <rect x="45" y="125" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="185" y="150" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">User clicks [Run]</text>
+  <text x="185" y="170" font-size="9" fill="#666666" text-anchor="middle">In chat, library, or list view</text>
 
-    <path d="M 185,195 L 185,225" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 185,195 L 185,225" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 2 -->
-    <rect x="45" y="225" width="280" height="70" class="header" rx="6"/>
-    <text x="185" y="250" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">AgentTriggerService</text>
-    <text x="185" y="270" font-size="9" class="text-secondary" text-anchor="middle">.trigger_manual()</text>
+  <!-- Step 2 -->
+  <rect x="45" y="225" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="185" y="250" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">AgentTriggerService</text>
+  <text x="185" y="270" font-size="9" fill="#666666" text-anchor="middle">.trigger_manual()</text>
 
-    <path d="M 185,295 L 185,325" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 185,295 L 185,325" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 3 -->
-    <rect x="45" y="325" width="280" height="70" class="header" rx="6"/>
-    <text x="185" y="350" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Create AiAgentRun</text>
-    <text x="185" y="370" font-size="9" class="text-secondary" text-anchor="middle">status: pending</text>
+  <!-- Step 3 -->
+  <rect x="45" y="325" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="185" y="350" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Create AiAgentRun</text>
+  <text x="185" y="370" font-size="9" fill="#666666" text-anchor="middle">status: pending</text>
 
-    <path d="M 185,395 L 185,425" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 185,395 L 185,425" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 4 -->
-    <rect x="45" y="425" width="280" height="70" class="header" rx="6"/>
-    <text x="185" y="450" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">AgentRunJob</text>
-    <text x="185" y="470" font-size="9" class="text-secondary" text-anchor="middle">Executes (async)</text>
+  <!-- Step 4 -->
+  <rect x="45" y="425" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="185" y="450" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">AgentRunJob</text>
+  <text x="185" y="470" font-size="9" fill="#666666" text-anchor="middle">Executes (async)</text>
 
-    <path d="M 185,495 L 185,525" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 185,495 L 185,525" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Result -->
-    <rect x="45" y="525" width="280" height="80" fill="#d1fae5" rx="6"/>
-    <text x="185" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Complete</text>
-    <text x="185" y="570" font-size="9" fill="#065f46" text-anchor="middle">Items created/modified</text>
-    <text x="185" y="585" font-size="9" fill="#065f46" text-anchor="middle">User notified</text>
+  <!-- Result -->
+  <rect x="45" y="525" width="280" height="80" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="6"/>
+  <text x="185" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Complete</text>
+  <text x="185" y="570" font-size="9" fill="#065f46" text-anchor="middle">Items created/modified</text>
+  <text x="185" y="585" font-size="9" fill="#065f46" text-anchor="middle">User notified</text>
 
-    <!-- Key feature -->
-    <rect x="45" y="620" width="280" height="25" fill="#f59e0b" rx="4"/>
-    <text x="185" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Immediately responsive</text>
-  </g>
+  <!-- Key feature -->
+  <rect x="45" y="620" width="280" height="25" fill="#f59e0b" stroke="#d97706" stroke-width="1" rx="4"/>
+  <text x="185" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Immediately responsive</text>
 
   <!-- Column 2: EVENT-TRIGGERED -->
-  <g id="event">
-    <text x="645" y="90" font-size="13" font-weight="bold" class="text-main">2. EVENT-TRIGGERED</text>
+  <text x="645" y="90" font-size="13" font-weight="bold" fill="#374151">2. EVENT-TRIGGERED</text>
 
-    <rect x="475" y="110" width="310" height="520" class="box-event" rx="8"/>
+  <rect x="475" y="110" width="310" height="520" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="8"/>
 
-    <!-- Step 1 -->
-    <rect x="490" y="125" width="280" height="70" class="header" rx="6"/>
-    <text x="630" y="145" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Event Fires</text>
-    <text x="630" y="162" font-size="9" class="text-secondary" text-anchor="middle">list_item.completed</text>
-    <text x="630" y="177" font-size="9" class="text-secondary" text-anchor="middle">list_item.created</text>
+  <!-- Step 1 -->
+  <rect x="490" y="125" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="630" y="145" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Event Fires</text>
+  <text x="630" y="162" font-size="9" fill="#666666" text-anchor="middle">list_item.completed</text>
+  <text x="630" y="177" font-size="9" fill="#666666" text-anchor="middle">list_item.created</text>
 
-    <path d="M 630,195 L 630,225" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 630,195 L 630,225" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 2 -->
-    <rect x="490" y="225" width="280" height="70" class="header" rx="6"/>
-    <text x="630" y="250" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Notification Published</text>
-    <text x="630" y="270" font-size="9" class="text-secondary" text-anchor="middle">ActiveSupport Pub/Sub</text>
+  <!-- Step 2 -->
+  <rect x="490" y="225" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="630" y="250" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Notification Published</text>
+  <text x="630" y="270" font-size="9" fill="#666666" text-anchor="middle">ActiveSupport Pub/Sub</text>
 
-    <path d="M 630,295 L 630,325" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 630,295 L 630,325" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 3 -->
-    <rect x="490" y="325" width="280" height="70" class="header" rx="6"/>
-    <text x="630" y="350" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Find Matching Agents</text>
-    <text x="630" y="370" font-size="9" class="text-secondary" text-anchor="middle">Query by event type</text>
+  <!-- Step 3 -->
+  <rect x="490" y="325" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="630" y="350" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Find Matching Agents</text>
+  <text x="630" y="370" font-size="9" fill="#666666" text-anchor="middle">Query by event type</text>
 
-    <path d="M 630,395 L 630,425" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 630,395 L 630,425" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 4 -->
-    <rect x="490" y="425" width="280" height="70" class="header" rx="6"/>
-    <text x="630" y="450" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">AgentEventDispatchJob</text>
-    <text x="630" y="470" font-size="9" class="text-secondary" text-anchor="middle">Run matched agents</text>
+  <!-- Step 4 -->
+  <rect x="490" y="425" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="630" y="450" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">AgentEventDispatchJob</text>
+  <text x="630" y="470" font-size="9" fill="#666666" text-anchor="middle">Run matched agents</text>
 
-    <path d="M 630,495 L 630,525" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 630,495 L 630,525" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Result -->
-    <rect x="490" y="525" width="280" height="80" fill="#d1fae5" rx="6"/>
-    <text x="630" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Auto-Execute</text>
-    <text x="630" y="570" font-size="9" fill="#065f46" text-anchor="middle">Runs in background</text>
-    <text x="630" y="585" font-size="9" fill="#065f46" text-anchor="middle">No user action needed</text>
+  <!-- Result -->
+  <rect x="490" y="525" width="280" height="80" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="6"/>
+  <text x="630" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Auto-Execute</text>
+  <text x="630" y="570" font-size="9" fill="#065f46" text-anchor="middle">Runs in background</text>
+  <text x="630" y="585" font-size="9" fill="#065f46" text-anchor="middle">No user action needed</text>
 
-    <!-- Key feature -->
-    <rect x="490" y="620" width="280" height="25" fill="#f59e0b" rx="4"/>
-    <text x="630" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Responds to app events</text>
-  </g>
+  <!-- Key feature -->
+  <rect x="490" y="620" width="280" height="25" fill="#f59e0b" stroke="#d97706" stroke-width="1" rx="4"/>
+  <text x="630" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Responds to app events</text>
 
   <!-- Column 3: SCHEDULED -->
-  <g id="scheduled">
-    <text x="1100" y="90" font-size="13" font-weight="bold" class="text-main">3. SCHEDULED</text>
+  <text x="1100" y="90" font-size="13" font-weight="bold" fill="#374151">3. SCHEDULED</text>
 
-    <rect x="920" y="110" width="310" height="520" class="box-schedule" rx="8"/>
+  <rect x="920" y="110" width="310" height="520" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="8"/>
 
-    <!-- Step 1 -->
-    <rect x="935" y="125" width="280" height="70" class="header" rx="6"/>
-    <text x="1075" y="150" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Cron Expression</text>
-    <text x="1075" y="170" font-size="9" class="text-secondary" text-anchor="middle">Example: "0 9 * * 1"</text>
+  <!-- Step 1 -->
+  <rect x="935" y="125" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="1075" y="150" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Cron Expression</text>
+  <text x="1075" y="170" font-size="9" fill="#666666" text-anchor="middle">Example: "0 9 * * 1"</text>
 
-    <path d="M 1075,195 L 1075,225" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 1075,195 L 1075,225" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 2 -->
-    <rect x="935" y="225" width="280" height="70" class="header" rx="6"/>
-    <text x="1075" y="250" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">AgentScheduleJob</text>
-    <text x="1075" y="270" font-size="9" class="text-secondary" text-anchor="middle">Evaluates every minute</text>
+  <!-- Step 2 -->
+  <rect x="935" y="225" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="1075" y="250" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">AgentScheduleJob</text>
+  <text x="1075" y="270" font-size="9" fill="#666666" text-anchor="middle">Evaluates every minute</text>
 
-    <path d="M 1075,295 L 1075,325" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 1075,295 L 1075,325" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 3 -->
-    <rect x="935" y="325" width="280" height="70" class="header" rx="6"/>
-    <text x="1075" y="350" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Check Cron Matches</text>
-    <text x="1075" y="370" font-size="9" class="text-secondary" text-anchor="middle">Is it time to run?</text>
+  <!-- Step 3 -->
+  <rect x="935" y="325" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="1075" y="350" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Check Cron Matches</text>
+  <text x="1075" y="370" font-size="9" fill="#666666" text-anchor="middle">Is it time to run?</text>
 
-    <path d="M 1075,395 L 1075,425" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 1075,395 L 1075,425" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Step 4 -->
-    <rect x="935" y="425" width="280" height="70" class="header" rx="6"/>
-    <text x="1075" y="450" font-size="11" font-weight="bold" class="text-main" text-anchor="middle">Create & Run</text>
-    <text x="1075" y="470" font-size="9" class="text-secondary" text-anchor="middle">If schedule matches</text>
+  <!-- Step 4 -->
+  <rect x="935" y="425" width="280" height="70" fill="#ffffff" stroke="#d1d5db" stroke-width="1" rx="6"/>
+  <text x="1075" y="450" font-size="11" font-weight="bold" fill="#1f2937" text-anchor="middle">Create & Run</text>
+  <text x="1075" y="470" font-size="9" fill="#666666" text-anchor="middle">If schedule matches</text>
 
-    <path d="M 1075,495 L 1075,525" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+  <path d="M 1075,495 L 1075,525" stroke="#666666" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
 
-    <!-- Result -->
-    <rect x="935" y="525" width="280" height="80" fill="#d1fae5" rx="6"/>
-    <text x="1075" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Execute When Due</text>
-    <text x="1075" y="570" font-size="9" fill="#065f46" text-anchor="middle">At exact time</text>
-    <text x="1075" y="585" font-size="9" fill="#065f46" text-anchor="middle">Fully automated</text>
+  <!-- Result -->
+  <rect x="935" y="525" width="280" height="80" fill="#d1fae5" stroke="#10b981" stroke-width="2" rx="6"/>
+  <text x="1075" y="550" font-size="11" font-weight="bold" fill="#047857" text-anchor="middle">✓ Execute When Due</text>
+  <text x="1075" y="570" font-size="9" fill="#065f46" text-anchor="middle">At exact time</text>
+  <text x="1075" y="585" font-size="9" fill="#065f46" text-anchor="middle">Fully automated</text>
 
-    <!-- Key feature -->
-    <rect x="935" y="620" width="280" height="25" fill="#f59e0b" rx="4"/>
-    <text x="1075" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Regular intervals, no user input</text>
-  </g>
+  <!-- Key feature -->
+  <rect x="935" y="620" width="280" height="25" fill="#f59e0b" stroke="#d97706" stroke-width="1" rx="4"/>
+  <text x="1075" y="637" font-size="9" fill="#fff" text-anchor="middle" font-weight="bold">Regular intervals, no user input</text>
 
   <!-- Comparison table -->
-  <g id="comparison">
-    <text x="30" y="710" font-size="12" font-weight="bold" class="text-main">Comparison</text>
+  <text x="30" y="710" font-size="12" font-weight="bold" fill="#374151">Comparison</text>
 
-    <!-- Headers -->
-    <rect x="30" y="725" width="240" height="30" class="header" rx="4"/>
-    <text x="150" y="747" font-size="10" font-weight="bold" class="text-main" text-anchor="middle">Aspect</text>
+  <!-- Headers -->
+  <rect x="30" y="725" width="240" height="30" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="150" y="747" font-size="10" font-weight="bold" fill="#1f2937" text-anchor="middle">Aspect</text>
 
-    <rect x="270" y="725" width="240" height="30" class="header-manual" rx="4"/>
-    <text x="390" y="747" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Manual</text>
+  <rect x="270" y="725" width="240" height="30" fill="#3b82f6" rx="4"/>
+  <text x="390" y="747" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Manual</text>
 
-    <rect x="510" y="725" width="240" height="30" class="header-event" rx="4"/>
-    <text x="630" y="747" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Event-Based</text>
+  <rect x="510" y="725" width="240" height="30" fill="#10b981" rx="4"/>
+  <text x="630" y="747" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Event-Based</text>
 
-    <rect x="750" y="725" width="240" height="30" class="header-schedule" rx="4"/>
-    <text x="870" y="747" font-size="10" font-weight="bold" fill="#000" text-anchor="middle">Scheduled</text>
+  <rect x="750" y="725" width="240" height="30" fill="#f59e0b" rx="4"/>
+  <text x="870" y="747" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">Scheduled</text>
 
-    <!-- Row 1: When -->
-    <rect x="30" y="755" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="150" y="773" font-size="9" font-weight="bold" class="text-main" text-anchor="middle">When</text>
+  <!-- Rows -->
+  <rect x="30" y="755" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="150" y="773" font-size="9" font-weight="bold" fill="#1f2937" text-anchor="middle">When</text>
 
-    <rect x="270" y="755" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="390" y="773" font-size="9" class="text-secondary" text-anchor="middle">User clicks [Run]</text>
+  <rect x="270" y="755" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="390" y="773" font-size="9" fill="#1f2937" text-anchor="middle">User clicks [Run]</text>
 
-    <rect x="510" y="755" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="630" y="773" font-size="9" class="text-secondary" text-anchor="middle">Event occurs</text>
+  <rect x="510" y="755" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="630" y="773" font-size="9" fill="#1f2937" text-anchor="middle">Event occurs</text>
 
-    <rect x="750" y="755" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="870" y="773" font-size="9" class="text-secondary" text-anchor="middle">Cron schedule matches</text>
+  <rect x="750" y="755" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="870" y="773" font-size="9" fill="#1f2937" text-anchor="middle">Cron schedule</text>
 
-    <!-- Row 2: User Input -->
-    <rect x="30" y="780" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="150" y="798" font-size="9" font-weight="bold" class="text-main" text-anchor="middle">User Input</text>
+  <!-- Row 2 -->
+  <rect x="30" y="780" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="150" y="798" font-size="9" font-weight="bold" fill="#1f2937" text-anchor="middle">User Input</text>
 
-    <rect x="270" y="780" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="390" y="798" font-size="9" class="text-secondary" text-anchor="middle">Required</text>
+  <rect x="270" y="780" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="390" y="798" font-size="9" fill="#1f2937" text-anchor="middle">Required</text>
 
-    <rect x="510" y="780" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="630" y="798" font-size="9" class="text-secondary" text-anchor="middle">No (automatic)</text>
+  <rect x="510" y="780" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="630" y="798" font-size="9" fill="#1f2937" text-anchor="middle">No (automatic)</text>
 
-    <rect x="750" y="780" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="870" y="798" font-size="9" class="text-secondary" text-anchor="middle">No (automatic)</text>
-
-    <!-- Row 3: Use Case -->
-    <rect x="30" y="805" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="150" y="823" font-size="9" font-weight="bold" class="text-main" text-anchor="middle">Best For</text>
-
-    <rect x="270" y="805" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="390" y="823" font-size="9" class="text-secondary" text-anchor="middle">Ad-hoc requests</text>
-
-    <rect x="510" y="805" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="630" y="823" font-size="9" class="text-secondary" text-anchor="middle">Auto-responses</text>
-
-    <rect x="750" y="805" width="240" height="25" class="comparison-row" rx="4"/>
-    <text x="870" y="823" font-size="9" class="text-secondary" text-anchor="middle">Recurring tasks</text>
-  </g>
+  <rect x="750" y="780" width="240" height="25" fill="#f9fafb" stroke="#d1d5db" stroke-width="1" rx="4"/>
+  <text x="870" y="798" font-size="9" fill="#1f2937" text-anchor="middle">No (automatic)</text>
 
   <!-- Cron examples -->
-  <g id="cron">
-    <text x="30" y="860" font-size="11" font-weight="bold" class="text-main">Cron Examples:</text>
-    <text x="30" y="880" font-size="9" class="text-secondary">0 9 * * 1 = Monday 9am | 0 9 * * 1-5 = Weekdays 9am | */15 * * * * = Every 15 minutes</text>
-  </g>
+  <text x="30" y="850" font-size="11" font-weight="bold" fill="#374151">Cron Examples:</text>
+  <text x="30" y="870" font-size="9" fill="#666666">0 9 * * 1 = Monday 9am | 0 9 * * 1-5 = Weekdays 9am | */15 * * * * = Every 15 minutes</text>
 </svg>
