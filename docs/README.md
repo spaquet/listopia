@@ -370,7 +370,7 @@ docs/archived/README.md (Historical Reference)
 | **RAG_SEMANTIC_SEARCH.md** | Search & RAG guide | 800+ | Working with search/embeddings |
 | **CONNECTORS_ARCHITECTURE.md** | Third-party integrations | 500+ | Working with connectors (OAuth, sync, webhooks) |
 | **CONNECTORS_SECURITY_CHECKLIST.md** | Pre-testing security verification | 400+ | Before testing connector functionality |
-| **DOCUMENTATION_MAP.md** | This file | - | Finding the right doc |
+| **README.md** | This file | - | Finding the right doc |
 
 ### In docs/ (AI Agents - Active)
 
