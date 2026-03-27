@@ -87,18 +87,33 @@ class AiAgentRunsController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.replace(
-            "interaction-#{interaction.id}",
-            partial: "ai_agents/interaction_answered",
+        # If the run was triggered from a chat, broadcast the answer confirmation to chat
+        if @run.invocable.is_a?(Chat)
+          chat = @run.invocable
+          chat_message_id = @run.input_parameters&.dig("chat_message_id")
+          target = chat_message_id ? "message-#{chat_message_id}" : "chat-loading-#{chat.id}"
+          channel = "chat_#{chat.id}"
+
+          render turbo_stream: turbo_stream.replace(
+            "message-hitl-#{interaction.id}",
+            partial: "chats/hitl_answered",
             locals: { interaction: interaction }
-          ),
-          turbo_stream.replace(
-            "agent-run-status-#{@run.id}",
-            partial: "ai_agents/run_status",
-            locals: { run: @run }
           )
-        ]
+        else
+          # For show.html.erb view, replace the interaction form
+          render turbo_stream: [
+            turbo_stream.replace(
+              "interaction-#{interaction.id}",
+              partial: "ai_agents/interaction_answered",
+              locals: { interaction: interaction }
+            ),
+            turbo_stream.replace(
+              "agent-run-status-#{@run.id}",
+              partial: "ai_agents/run_status",
+              locals: { run: @run }
+            )
+          ]
+        end
       end
       format.html { redirect_to ai_agent_run_path(@run) }
     end

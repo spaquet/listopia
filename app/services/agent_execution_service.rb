@@ -37,6 +37,17 @@ class AgentExecutionService < ApplicationService
           return failure(message: llm_response.message) if llm_response.failure?
 
           response_data = llm_response.data
+
+          # If HITL was triggered inside RubyLLM's tool execution cycle, pause now
+          if response_data[:hitl_triggered]
+            step.complete!(output: { response: "Awaiting user interaction..." })
+            record_step_tokens(step, response_data)
+            @run.pause!
+            broadcast_status_update
+            broadcast_hitl_to_chat(response_data[:hitl_interaction])
+            return success(data: { run: @run, paused_for_interaction: true })
+          end
+
           step.complete!(output: { response: response_data[:content] })
           record_step_tokens(step, response_data)
 
@@ -85,10 +96,18 @@ class AgentExecutionService < ApplicationService
     context_result = AgentContextBuilder.call(run: @run)
     system_content = context_result.success? ? context_result.data[:context] : @agent.persona
 
-    [
+    messages = [
       { role: "system", content: system_content },
       { role: "user", content: @run.user_input }
     ]
+
+    # Re-inject answered HITL interactions so the LLM has context for the answers
+    @run.ai_agent_interactions.where(status: :answered).order(created_at: :asc).each do |interaction|
+      messages << { role: "assistant", content: "I asked: #{interaction.question}" }
+      messages << { role: "user", content: interaction.answer }
+    end
+
+    messages
   end
 
   def call_llm(messages)
@@ -155,6 +174,22 @@ class AgentExecutionService < ApplicationService
     Rails.logger.debug("LLM Response content: #{response.respond_to?(:content) ? response.content.inspect : 'N/A'}")
     Rails.logger.debug("Response class: #{response.class}")
     Rails.logger.debug("Response methods: #{response.respond_to?(:tool_calls) ? 'has tool_calls' : 'no tool_calls'}")
+
+    # HITL Check: if ask_user or confirm_action was called internally by RubyLLM,
+    # a pending AiAgentInteraction will exist. Signal the caller to pause.
+    pending_interaction = @run.ai_agent_interactions.where(status: :pending).order(created_at: :desc).first
+    if pending_interaction
+      Rails.logger.debug("HITL Detected: Pending interaction found (#{pending_interaction.id})")
+      return {
+        content: nil,
+        tool_calls: nil,
+        hitl_triggered: true,
+        hitl_interaction: pending_interaction,
+        input_tokens: extract_input_tokens(response),
+        output_tokens: extract_output_tokens(response),
+        thinking_tokens: extract_thinking_tokens(response)
+      }
+    end
 
     # Extract response content (defensive duck-typing for various response formats)
     content = extract_content(response)
@@ -390,6 +425,33 @@ class AgentExecutionService < ApplicationService
     if @run.invocable.is_a?(Chat)
       broadcast_list_created_to_chat(@run.invocable)
     end
+  end
+
+  def broadcast_hitl_to_chat(interaction)
+    return unless @run.invocable.is_a?(Chat)
+
+    chat = @run.invocable
+    chat_message_id = @run.input_parameters&.dig("chat_message_id")
+    target = chat_message_id ? "message-#{chat_message_id}" : "chat-loading-#{chat.id}"
+    channel = "chat_#{chat.id}"
+
+    Rails.logger.debug("Turbo broadcast HITL:")
+    Rails.logger.debug("  Channel: #{channel}")
+    Rails.logger.debug("  Target: #{target}")
+    Rails.logger.debug("  Interaction ID: #{interaction.id}")
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      channel,
+      target: target,
+      html: ApplicationController.render(
+        partial: "chats/hitl_question",
+        locals: { interaction: interaction, run: @run }
+      )
+    )
+
+    Rails.logger.debug("✓ HITL broadcast sent successfully")
+  rescue => e
+    Rails.logger.error("broadcast_hitl_to_chat failed: #{e.class} - #{e.message}")
   end
 
   private

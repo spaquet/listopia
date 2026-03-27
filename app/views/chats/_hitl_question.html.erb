@@ -1,0 +1,26 @@
+<div id="message-<%= "hitl-#{interaction.id}" %>" class="flex gap-3 justify-start">
+  <div class="flex flex-col gap-2 max-w-2xl">
+    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
+      <p class="text-sm font-medium text-purple-900 mb-3"><%= interaction.question %></p>
+
+      <% if interaction.options.any? %>
+        <div class="flex flex-wrap gap-2">
+          <% interaction.options.each do |option| %>
+            <%= button_to answer_interaction_ai_agent_run_path(run),
+                method: :post,
+                params: { interaction_id: interaction.id, answer: option },
+                class: "px-3 py-1.5 text-sm bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg border border-purple-300 transition-colors font-medium" do %>
+              <%= option %>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <%= form_with url: answer_interaction_ai_agent_run_path(run), method: :post, local: true do |f| %>
+          <%= f.hidden_field :interaction_id, value: interaction.id %>
+          <%= f.text_area :answer, rows: 2, class: "w-full text-sm border border-purple-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-purple-300", placeholder: "Type your answer..." %>
+          <%= f.submit "Submit", class: "mt-2 px-4 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>
