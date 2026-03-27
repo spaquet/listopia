@@ -26,6 +26,7 @@ class MessageTemplate
     # Agent execution (Phase 3)
     "agent_running" => "AgentRunningTemplate",
     "list_created"  => "ListCreatedTemplate",
+    "list_followup" => "ListFollowupTemplate",
 
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
@@ -264,6 +265,23 @@ class ListCreatedTemplate < BaseTemplate
       list_title: dig_data("list_title"),
       items_count: dig_data("items_count") || 0,
       run_id: dig_data("run_id")
+    }
+  end
+end
+
+class ListFollowupTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["list_id"].present?
+  end
+
+  def render_data
+    {
+      list_id: dig_data("list_id"),
+      list_title: dig_data("list_title"),
+      chat_id: dig_data("chat_id"),
+      questions: dig_data("questions") || [],
+      suggestions: dig_data("suggestions") || [],
+      actions: dig_data("actions") || []
     }
   end
 end

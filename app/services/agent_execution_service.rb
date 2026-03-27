@@ -553,6 +553,12 @@ class AgentExecutionService < ApplicationService
     )
 
     Rails.logger.debug("✓ Broadcast sent successfully")
+
+    # Queue follow-up options generation in background
+    if list_id.present?
+      Rails.logger.debug("Queuing follow-up options generation for list #{list_id}")
+      GenerateListFollowUpJob.perform_later(list_id, chat.id)
+    end
   rescue => e
     Rails.logger.error("broadcast_list_created_to_chat failed: #{e.class} - #{e.message}")
     Rails.logger.error(e.backtrace.first(5).join("\n"))
