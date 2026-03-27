@@ -115,6 +115,14 @@ class AgentExecutionService < ApplicationService
     # Use RubyLLM to call the specified model with tools
     llm_chat = RubyLLM::Chat.new(provider: :openai, model: @agent.model)
 
+    # Log the system message and user input
+    Rails.logger.debug("=== Agent Execution Start ===")
+    Rails.logger.debug("Agent: #{@agent.name}")
+    Rails.logger.debug("Model: #{@agent.model}")
+    messages.each do |msg|
+      Rails.logger.debug("Message role=#{msg[:role]}: #{msg[:content].to_s.truncate(500)}")
+    end
+
     # Add messages to the chat
     messages.each do |msg|
       llm_chat.add_message(role: msg[:role], content: msg[:content])
@@ -123,6 +131,7 @@ class AgentExecutionService < ApplicationService
     # Register tools using RubyLLM's proper API (with_tool)
     # Note: Store agent context so tools can execute properly
     if tools.present?
+      Rails.logger.debug("Registering #{tools.length} tools")
       tools.each do |tool_hash|
         tool_class = AgentToolWrapper.create_tool_class(
           tool_hash,
@@ -132,15 +141,20 @@ class AgentExecutionService < ApplicationService
           invocable: @run.invocable,
           run: @run
         )
-        Rails.logger.debug("Registering tool: #{tool_hash[:name]}")
+        Rails.logger.debug("Registering tool: #{tool_hash[:name]} - #{tool_hash[:description]}")
         llm_chat.with_tool(tool_class)
       end
+    else
+      Rails.logger.debug("⚠️  NO TOOLS AVAILABLE - LLM will not be able to call any functions")
     end
 
     # Call the LLM
     response = llm_chat.complete
 
+    Rails.logger.debug("=== LLM Response ===")
     Rails.logger.debug("LLM Response content: #{response.respond_to?(:content) ? response.content.inspect : 'N/A'}")
+    Rails.logger.debug("Response class: #{response.class}")
+    Rails.logger.debug("Response methods: #{response.respond_to?(:tool_calls) ? 'has tool_calls' : 'no tool_calls'}")
 
     # Extract response content (defensive duck-typing for various response formats)
     content = extract_content(response)
@@ -381,16 +395,50 @@ class AgentExecutionService < ApplicationService
   private
 
   def broadcast_list_created_to_chat(chat)
-    # Extract list_id from the last create_list tool result
+    # Extract list_id from agent run steps
+    # First try to find a dedicated tool_call step (for newer versions)
     list_tool_step = @run.ai_agent_run_steps
       .where(step_type: "tool_call", tool_name: "create_list")
       .order(created_at: :desc).first
 
-    tool_output = list_tool_step&.tool_output || {}
-    list_id = tool_output["list_id"]
+    # If not found, get the last llm_call step which may contain tool results
+    list_tool_step ||= @run.ai_agent_run_steps
+      .where(step_type: "llm_call")
+      .order(created_at: :desc).first
+
+    # Parse tool_output JSON
+    tool_output = {}
+    list_id = nil
+    list_title = nil
+    items_count = 0
+
+    if list_tool_step&.tool_output.present?
+      begin
+        # Tool output might be nested in a "response" key
+        output_data = if list_tool_step.tool_output.is_a?(String)
+                        JSON.parse(list_tool_step.tool_output)
+                      else
+                        list_tool_step.tool_output
+                      end
+
+        # If response is a string (nested JSON), parse it
+        if output_data["response"].is_a?(String)
+          output_data = JSON.parse(output_data["response"])
+        end
+
+        tool_output = output_data
+        list_id = tool_output["list_id"]
+        list_title = tool_output["list_title"]
+        items_count = tool_output["items_created"].to_i
+      rescue JSON::ParserError => e
+        Rails.logger.warn("Failed to parse tool_output: #{e.message}")
+      end
+    end
+
+    Rails.logger.debug("broadcast_list_created_to_chat: list_id=#{list_id.inspect}, title=#{list_title.inspect}, items=#{items_count}")
 
     if list_id.present? && (list = List.find_by(id: list_id))
-      # Create list_created message
+      # Create list_created templated message with button
       msg = Message.create_templated(
         chat: chat,
         template_type: "list_created",
@@ -401,27 +449,50 @@ class AgentExecutionService < ApplicationService
           run_id: @run.id
         }
       )
+    elsif list_id.present? && list_title.present?
+      # Fallback: create templated message even if list lookup failed (might be scope issue)
+      msg = Message.create_templated(
+        chat: chat,
+        template_type: "list_created",
+        template_data: {
+          list_id: list_id,
+          list_title: list_title,
+          items_count: items_count,
+          run_id: @run.id
+        }
+      )
     else
-      # Fallback: create text message if list not found
+      # Final fallback: text message with result summary
+      fallback_content = @run.result_summary.presence || "✓ List created successfully!"
       msg = Message.create_assistant(
         chat: chat,
-        content: @run.result_summary.presence || "List created successfully."
+        content: fallback_content
       )
     end
 
     # Replace the agent_running message (stored in run.input_parameters)
     chat_message_id = @run.input_parameters&.dig("chat_message_id")
     target = chat_message_id ? "message-#{chat_message_id}" : "chat-loading-#{chat.id}"
+    channel = "chat_#{chat.id}"
+
+    Rails.logger.debug("Turbo broadcast:")
+    Rails.logger.debug("  Channel: #{channel}")
+    Rails.logger.debug("  Target: #{target}")
+    Rails.logger.debug("  Message ID: #{msg.id}")
+    Rails.logger.debug("  Message Template Type: #{msg.template_type}")
 
     Turbo::StreamsChannel.broadcast_replace_to(
-      "chat_#{chat.id}",
+      channel,
       target: target,
       html: ApplicationController.render(
         partial: "chats/assistant_message_replacement",
         locals: { message: msg, chat_context: chat.build_ui_context }
       )
     )
+
+    Rails.logger.debug("✓ Broadcast sent successfully")
   rescue => e
     Rails.logger.error("broadcast_list_created_to_chat failed: #{e.class} - #{e.message}")
+    Rails.logger.error(e.backtrace.first(5).join("\n"))
   end
 end

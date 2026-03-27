@@ -217,26 +217,27 @@ module AgentToolBuilder
           },
           items: {
             type: "array",
-            description: "Array of items to add to the list (8-15 recommended)",
+            description: "Array of items to add to the list (8-15 recommended). EACH item MUST have both title and description.",
             items: {
               type: "object",
               properties: {
                 title: {
                   type: "string",
-                  description: "Item title",
-                  minLength: 1
+                  description: "Item name/headline (SHORT - max 100 chars). Example: 'JavaScript'",
+                  minLength: 1,
+                  maxLength: 100
                 },
                 description: {
                   type: "string",
-                  description: "Optional item description"
+                  description: "Item details/explanation (DETAILED - 1-3 sentences). Example: 'A scripting language widely used for web development...'"
                 },
                 priority: {
                   type: "string",
                   enum: [ "low", "medium", "high", "urgent" ],
-                  description: "Item priority"
+                  description: "Item priority level (optional, default 'medium')"
                 }
               },
-              required: [ "title" ]
+              required: [ "title", "description" ]
             },
             minItems: 1
           }

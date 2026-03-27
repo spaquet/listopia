@@ -77,27 +77,29 @@ class CombinedIntentComplexityService < ApplicationService
       }
 
       INTENT:
-      - create_list: "create/build/plan X", "I want X items/books/recipes", "give me a list of", "organize X", explicit creation requests
-      - general_question: "What X should I Y?", "How do I...?", "Tell me about...", advisory/recommendation questions
+      - create_list: "create/build/plan X", "I want/need X", "I'm looking for/to buy/to find", "give me a list of", "organize X", "recommend", "suggest", explicit creation/gathering requests
+      - general_question: "What X should I Y?" (asking for advice WITHOUT wanting a list), "How do I...?", "Tell me about...", pure advisory questions
       - create_resource: adding users/teams/organizations
       - navigate_to_page: show/list pages, "go to", "take me to"
       - search_data: find/search, "find X", "search for"
       - manage_resource: update/delete/archive existing lists
 
       COMPLEXITY (for create_list only):
-      COMPLEX = request is MISSING CRITICAL INFO:
+      COMPLEX = request is MISSING CRITICAL INFO (needs user to answer clarifying questions):
+      ✓ "I'm looking to buy a boat for fishing" → missing: budget, size, new/used, features, location preference
       ✓ "roadshow across US in June" → missing: cities, dates, budget, activities, audience
       ✓ "vacation to spain this summer" → missing: dates, budget, companions, interests
       ✓ "sprint planning" → missing: team size, deliverables, timeline
       ✓ "plan a product launch" → missing: timeline, phases, team, deliverables
 
-      NOT COMPLEX = user intent is clear AND quantity/scope is defined:
+      NOT COMPLEX = user has provided ENOUGH INFO to generate items without clarification:
       ✗ "grocery list" → user knows what to buy, scope is clear
       ✗ "5 books to become a better manager" → quantity explicit (5), purpose clear (becoming better manager)
       ✗ "3 recipes for weeknight dinners" → quantity (3), purpose (weeknight dinners), scope clear
       ✗ "mac update tasks" → context is sufficient, can infer items
       ✗ "daily todo list" → scope is clear
       ✗ "I need 3 books about marketing" → quantity (3), topic (marketing), scope clear
+      ✗ "10 jets for world travel" → clear purpose and quantity, scope well-defined
 
       MISSING FIELDS RULES:
       Only mark as MISSING if the user did NOT provide it:
@@ -128,10 +130,12 @@ class CombinedIntentComplexityService < ApplicationService
 
       EXAMPLES:
       - "I'm looking for 5 books to become a better manager" → create_list (explicit: "looking for X")
+      - "I'm looking to buy a boat for fishing" → create_list (intent to gather options/recommendations in a list format)
       - "Give me a grocery list for pasta dinner" → create_list (explicit: "give me a list")
+      - "Recommend boats for fishing" → create_list (gathering recommendations in list form)
       - "Plan a roadshow across US cities in June" → create_list (explicit: "Plan")
-      - "What books should I read on AI?" → general_question (advisory: "What should I read?", not requesting a list)
-      - "What type of sailboat should I purchase?" → general_question (advisory: recommendation request)
+      - "What books should I read on AI?" → general_question (just asking what to read, not requesting a list)
+      - "Should I buy a sailboat or motorboat?" → general_question (pure advice, not wanting a list)
       - "Create a vacation itinerary to Spain" → create_list (explicit: "Create")
       - "How do I use tags?" → general_question
       - "Create a user john@example.com" → create_resource

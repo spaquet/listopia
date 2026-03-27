@@ -73,6 +73,72 @@ How the agent is invoked:
 
 ---
 
+## RubyLLM Integration
+
+**RubyLLM** (v1.11+) is the gem powering all LLM interactions. It provides:
+- OpenAI API interface
+- Tool/function calling support
+- Message history management
+- Token usage tracking
+- Streaming support
+
+### Key RubyLLM Methods
+
+```ruby
+# Create chat instance
+chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o")
+
+# Add messages to conversation history
+chat.add_message(role: "system", content: "You are...")
+chat.add_message(role: "user", content: "Create a list...")
+
+# Register tools (function definitions)
+chat.with_tool(CreateListTool)
+chat.with_tool(UpdateItemTool)
+
+# Execute LLM with registered tools
+response = chat.complete
+
+# Access message history
+chat.messages.last           # Last message
+chat.messages.last.tool_calls  # Tool invocations (Array<ToolCall>)
+
+# Extract response components
+response.content             # Text response
+response.usage.input_tokens  # Token count
+response.usage.output_tokens # Token count
+```
+
+### Tool Definition in RubyLLM
+
+Tools are subclasses of `RubyLLM::Tool`:
+
+```ruby
+class CreateListTool < RubyLLM::Tool
+  # Set tool description for LLM
+  description "Create a new list with items"
+
+  # Define parameters (appear in function schema)
+  param :title, type: :string, desc: "List title", required: true
+  param :items, type: :array, desc: "Items array", required: true
+
+  # Tool name (used by LLM to invoke)
+  def name
+    "create_list"
+  end
+
+  # Called when LLM invokes this tool
+  def execute(**kwargs)
+    title = kwargs[:title]
+    items = kwargs[:items]
+    # ... create list and items ...
+    { list_id: "...", items_created: 5 }
+  end
+end
+```
+
+---
+
 ## Run Lifecycle
 
 ```
@@ -89,20 +155,112 @@ IF pre_run_questions exist?
 AgentExecutionService
   ├─ AgentContextBuilder: composes rich system prompt
   │   (persona + instructions + auto-loaded context + user answers)
-  ├─ Real RubyLLM call with tools
+  ├─ Create RubyLLM::Chat instance
+  ├─ Add message history to chat
+  ├─ Register tools with chat.with_tool()
+  ├─ Call llm_chat.complete (RubyLLM handles OpenAI API)
+  ├─ Extract tool_calls from response
   ├─ Tool execution loop:
   │   ├─ List CRUD (read, create, update, complete items)
   │   ├─ Web search
   │   ├─ Sub-agent invocation
   │   └─ HITL tools (ask_user, confirm_action)
+  ├─ Add tool results back to message history
   ├─ IF ask_user/confirm_action tool:
   │   ├─ AiAgentInteraction created
   │   ├─ run.status = paused
   │   └─ Return (resume triggered by user answer)
-  └─ ELSE (no more tool calls):
+  ├─ ELSE IF more tool calls needed:
+  │   └─ Loop back to llm_chat.complete with updated messages
+  └─ ELSE (agent complete):
       ├─ run.complete!
       ├─ Event.emit("agent_run.completed", ...)
-      └─ Notification sent
+      └─ Broadcast result to chat
+```
+
+---
+
+## Message History & Tool Calling
+
+### Message Structure
+
+Agents maintain a message array in OpenAI format:
+
+```ruby
+messages = [
+  {
+    role: "system",
+    content: "You are a list curator..."
+  },
+  {
+    role: "user",
+    content: "Create a list of 10 jets for world travel"
+  },
+  {
+    role: "assistant",
+    content: "I'll create a list of luxury jets...",
+    tool_calls: [
+      {
+        id: "call_abc123",
+        function: {
+          name: "create_list",
+          arguments: "{\"title\":\"10 Luxury Jets\",\"items\":[...]}"
+        }
+      }
+    ]
+  },
+  {
+    role: "tool",
+    tool_call_id: "call_abc123",
+    content: "{\"list_id\":\"uuid\",\"items_created\":10}"
+  }
+]
+```
+
+### Tool Call Extraction
+
+After `llm_chat.complete`, RubyLLM provides tool calls:
+
+```ruby
+response = llm_chat.complete
+
+# Extract content (text response)
+content = response.content
+
+# Extract tool calls from message history
+if llm_chat.messages.last.respond_to?(:tool_calls)
+  tool_calls = llm_chat.messages.last.tool_calls
+
+  # Convert RubyLLM format to our format
+  tool_calls.map do |tc|
+    {
+      id: tc.id || SecureRandom.uuid,
+      function: {
+        name: tc.name,                    # Tool name from RubyLLM
+        arguments: tc.arguments.to_json   # Parameters as JSON
+      }
+    }
+  end
+end
+```
+
+### Feeding Results Back to LLM
+
+After executing a tool, add the result to messages so LLM can see it:
+
+```ruby
+# Execute tool
+result = AgentToolExecutorService.call(tool_call: tool_call, ...)
+
+# Add result to message history
+messages << {
+  role: "tool",
+  tool_call_id: tool_call["id"],
+  content: result.data.to_json  # Must be JSON string
+}
+
+# Next llm_chat.complete call will see this result
+# LLM decides: call more tools, or complete execution
 ```
 
 ---
@@ -186,6 +344,87 @@ Agent: "I'm about to re-prioritize 12 items. Do you approve?"
 5. User answers → `AiAgentInteraction.mark_answered!`
 6. Run resumes via `AgentRunJob` with the answer injected
 7. LLM receives answer and continues execution
+
+---
+
+## Dynamic Tool Creation System
+
+Since agents have different permissions, we **generate tool classes at runtime** using `AgentToolWrapper`:
+
+```ruby
+# In AgentExecutionService.make_llm_request()
+tools = AgentToolBuilder.tools_for_agent(@agent)  # Get tools based on permissions
+
+tools.each do |tool_hash|
+  # Dynamically create a RubyLLM::Tool subclass
+  tool_class = AgentToolWrapper.create_tool_class(
+    tool_hash,                  # { name:, description:, parameters: }
+    agent: @agent,              # Context for execution
+    user: @user,
+    organization: @organization,
+    invocable: @run.invocable,
+    run: @run
+  )
+
+  # Register with chat
+  llm_chat.with_tool(tool_class)
+end
+
+# Each dynamic tool:
+# - Has name, description, and param definitions from tool_hash
+# - execute() method calls AgentToolExecutorService
+# - Can access agent context (user, org, permissions)
+```
+
+### Why Dynamic?
+
+1. **Permission filtering** — Only register tools the agent has permission to use
+2. **Execution context** — Pass user/org/run context to tools
+3. **Just-in-time generation** — No need to predefine 100 tool classes
+4. **Consistency** — Single source of truth (TOOL_SPECS in AgentToolBuilder)
+
+### Tool Parameter Schema
+
+Tool parameters use OpenAI-compatible JSON Schema:
+
+```ruby
+# From TOOL_SPECS in AgentToolBuilder
+{
+  name: "create_list",
+  description: "Create a new list with items",
+  parameters: {
+    type: "object",
+    properties: {
+      title: {
+        type: "string",
+        description: "List title",
+        minLength: 1,
+        maxLength: 255
+      },
+      items: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            description: { type: "string" },
+            priority: { enum: ["low", "medium", "high"] }
+          },
+          required: ["title", "description"]  # ← Forces agent to provide both
+        },
+        minItems: 1
+      }
+    },
+    required: ["title", "items"]
+  }
+}
+```
+
+**Key Design Decisions:**
+- `required: ["title", "description"]` for items forces the LLM to provide both
+- `minItems: 1` ensures at least one item
+- `maxLength` prevents overly long titles
+- `enum` restricts values (e.g., priority levels)
 
 ---
 
@@ -276,6 +515,118 @@ Agents can be created at different scopes:
 
 ---
 
+## RubyLLM Usage Examples
+
+### Example 1: Basic Chat with Tools
+
+```ruby
+# Create chat instance
+llm_chat = RubyLLM::Chat.new(
+  provider: :openai,
+  model: "gpt-4o"
+)
+
+# Add messages
+llm_chat.add_message(
+  role: "system",
+  content: "You are a helpful list curator."
+)
+llm_chat.add_message(
+  role: "user",
+  content: "Create a list of 5 programming languages"
+)
+
+# Register tools
+class ListTool < RubyLLM::Tool
+  description "Create a list with items"
+  param :title, type: :string, desc: "List title"
+  param :items, type: :array, desc: "Items to add"
+
+  def name
+    "create_list"
+  end
+
+  def execute(**kwargs)
+    # Execute tool logic
+    { list_id: SecureRandom.uuid, created: true }
+  end
+end
+
+llm_chat.with_tool(ListTool)
+
+# Get response
+response = llm_chat.complete
+
+# Check results
+if llm_chat.messages.last.tool_calls.present?
+  puts "Tools called: #{llm_chat.messages.last.tool_calls.map(&:name).join(', ')}"
+else
+  puts "Response: #{response.content}"
+end
+
+# Check tokens
+puts "Tokens: input=#{response.usage.input_tokens}, output=#{response.usage.output_tokens}"
+```
+
+### Example 2: Multi-Turn Conversation with Tool Results
+
+```ruby
+# Start conversation
+llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-4o")
+
+llm_chat.add_message(role: "system", content: "You are helpful.")
+llm_chat.add_message(role: "user", content: "Create a boat shopping list")
+
+# Register tool
+llm_chat.with_tool(CreateListTool)
+
+# First turn: LLM decides to call tool
+response1 = llm_chat.complete
+# → LLM calls create_list
+
+# Add tool result
+tool_call = llm_chat.messages.last.tool_calls.first
+llm_chat.add_message(
+  role: "tool",
+  tool_call_id: tool_call.id,
+  content: '{"list_id":"abc","items_created":5}'
+)
+
+# Second turn: LLM sees result, decides next action
+response2 = llm_chat.complete
+# → LLM can call more tools or respond with text
+
+# Now both turns are in message history
+puts "Turns: #{llm_chat.messages.count}"
+```
+
+### Example 3: Dynamic Tool Creation (Like Listopia)
+
+```ruby
+# Build tools based on agent permissions
+tools_specs = AgentToolBuilder.tools_for_agent(agent)
+
+tools_specs.each do |tool_spec|
+  # Dynamically create tool class at runtime
+  tool_class = AgentToolWrapper.create_tool_class(
+    tool_spec,
+    agent: agent,
+    user: user,
+    organization: org,
+    invocable: invocable,
+    run: run
+  )
+
+  # Register with chat
+  llm_chat.with_tool(tool_class)
+end
+
+# LLM can now use all permitted tools
+response = llm_chat.complete
+```
+
+---
+
 ## Example: Creating a Custom Agent
 
 ```ruby
@@ -312,16 +663,49 @@ agent.ai_agent_resources.create!(resource_type: "user_interaction", permission: 
 
 ---
 
-## Performance & Token Budgets
+## Token Management with RubyLLM
 
-Each agent has:
+RubyLLM automatically tracks token usage from OpenAI responses:
+
+```ruby
+response = llm_chat.complete
+
+# Get usage stats from RubyLLM
+input_tokens = response.usage.input_tokens      # Tokens in request
+output_tokens = response.usage.output_tokens    # Tokens in response
+thinking_tokens = response.usage.thinking_tokens || 0  # Extended thinking (GPT-4)
+
+# Store in run
+step.update(
+  input_tokens: input_tokens,
+  output_tokens: output_tokens
+)
+
+@run.increment!(:input_tokens, input_tokens)
+@run.increment!(:output_tokens, output_tokens)
+@run.increment!(:thinking_tokens, thinking_tokens)
+@run.increment!(:total_tokens, input_tokens + output_tokens)
+```
+
+### Token Budgets
+
+Each agent has enforced quotas:
 - `max_tokens_per_run` — Max tokens for a single run (default: 4000)
 - `max_tokens_per_day` — Daily quota (default: 50,000)
 - `max_tokens_per_month` — Monthly quota (default: 500,000)
 - `timeout_seconds` — Max execution time (default: 120s)
 - `max_steps` — Max reasoning iterations (default: 20)
 
-The `AgentTokenBudgetService` enforces these limits before running.
+The `AgentTokenBudgetService` enforces these before running:
+
+```ruby
+budget_check = AgentTokenBudgetService.call(
+  agent: @agent,
+  estimated_tokens: @agent.max_tokens_per_run
+)
+
+return failure("Token budget exceeded") if budget_check.failure?
+```
 
 ---
 
