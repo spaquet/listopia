@@ -215,10 +215,8 @@ bundle exec brakeman         # Security
 ## Useful Commands
 ```bash
 rails db:create db:migrate       # Setup dev DB
-RAILS_ENV=test rails db:reset   # Reset test DB
 bundle exec rspec               # Run tests
 rails g stimulus ControllerName # Create Stimulus controller
-kamal deploy                     # Deploy changes
 ```
 
 ## External Resources
