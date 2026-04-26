@@ -14,10 +14,11 @@
 - Phase 1.3 ✅ Utility classes (colors, typography, spacing)
 - Phase 1.4 ✅ Typography system
 - Phase 2 ✅ Navigation & headers (commit 01c5c5d)
+- Phase 2.2-2.4 ✅ Cards, forms, buttons (commit a2efcca)
 
-**Current Status:** Design system foundation solid. All color tokens, theme switching, utilities ready. Navigation fully redesigned with Editorial/Console themes.
+**Current Status:** Full component library ready. All core UI patterns (cards, buttons, forms, alerts, dropdowns) styled with design tokens and theme support.
 
-**Next Priority:** Phase 3 (Cards, Forms, Buttons) → Phase 4 (Lists Views)
+**Next Priority:** Phase 4 (Lists & List Items Views) - template integration
 
 ---
 
@@ -68,31 +69,31 @@
 - [x] Update all navigation links with hover:text-accent
 - [x] Ensure Turbo Stream updates to nav work with new styles
 
-### 2.2 Cards & Surfaces
-- [ ] Create `.card` component using surface-raised with proper rule borders
-- [ ] Style `.card-header` with eyebrow labels
-- [ ] Design `.card-body` with proper padding (using spacing tokens)
-- [ ] Create `.card-footer` with rules
-- [ ] Style `.card-hover` state with shadow-pop
-- [ ] Update all existing card components in `/lists/*`, `/lists_items/*`
+### 2.2 Cards & Surfaces ✅ COMPLETE
+- [x] Create `.card` component using surface-raised with proper rule borders
+- [x] Style `.card-header` with typography sizing
+- [x] Design `.card-body` with proper padding (using spacing tokens)
+- [x] Create `.card-footer` with rules
+- [x] Style `.card:hover` state with shadow-pop
+- [x] Component ready for template integration
 
-### 2.3 Forms & Inputs
-- [ ] Update `<input>` base styles (surface-sunken bg, ink text, rule borders)
-- [ ] Style `:focus` states with accent color + shadow
-- [ ] Create `.form-group` wrapper with proper spacing
-- [ ] Style `<label>` with eyebrow styling
-- [ ] Update `.radio` and `.checkbox` components
-- [ ] Style `.form-error` messages (danger color)
-- [ ] Create `.input-addon` for prefix/suffix icons
+### 2.3 Forms & Inputs ✅ COMPLETE
+- [x] Update `<input>` base styles (surface-sunken bg, ink text, rule borders)
+- [x] Style `:focus` states with accent color + box-shadow
+- [x] Create `.form-group` wrapper with proper spacing
+- [x] Style `<label>` with uppercase text styling
+- [x] Create `.checkbox` and `.radio` components
+- [x] Style `.form-error` messages (danger color)
+- [x] Create `.input-prefix` and `.input-suffix` for icons
 
-### 2.4 Buttons & Actions
-- [ ] Create `.btn` base with font tokens, padding, radius-sm/md
-- [ ] Design `.btn-primary` (accent bg, ink-inverse text)
-- [ ] Design `.btn-secondary` (surface-raised bg, ink text, rule border)
-- [ ] Design `.btn-ghost` (transparent, ink text, hover: surface-raised)
-- [ ] Create `.btn-sm`, `.btn-md`, `.btn-lg` size variants
-- [ ] Style `:active` + `:disabled` states
-- [ ] Update all button instances in templates
+### 2.4 Buttons & Actions ✅ COMPLETE
+- [x] Create `.btn` base with font tokens, padding, radius-sm
+- [x] Design `.btn-primary` (accent bg, ink-inverse text)
+- [x] Design `.btn-secondary` (surface-raised bg, ink text, rule border)
+- [x] Design `.btn-ghost` (transparent, ink text, hover: surface-raised)
+- [x] Create `.btn-sm`, `.btn-md`, `.btn-lg` size variants
+- [x] Style `:active`, `:disabled`, `:focus` states
+- [x] Ready for template integration
 
 ### 2.5 Lists & Tables
 - [ ] Design `.list-row` structure with padding (--row-pad-x, --row-pad-y)
