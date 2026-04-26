@@ -40,6 +40,8 @@ module Listopia
       g.orm :active_record, primary_key_type: :uuid
     end
 
+    config.active_support.isolation_level = :fiber  # required for fibers
+
     # Logidze uses DB functions and triggers, hence you need to use SQL format for a schema dump
     # Other Logidze-related config options can be set in the initializer in config/initializers/logidze.rb
     config.active_record.schema_format = :sql

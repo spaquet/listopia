@@ -1,34 +1,34 @@
 # Claude.md - Listopia Development Quick Reference
 
-Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-time collaboration.
+Rails 8.1: collaborative list mgmt, Hotwire, AI chat, real-time collab.
 
 ## Stack
-- **Rails 8.1** with Solid Queue, Cache, Cable
-- **Ruby 3.4.7** with UUID primary keys
-- **PostgreSQL 15+**, RubyLLM 1.11+ (GPT-5)
-- **Hotwire** (Turbo Streams + Stimulus)
-- **Tailwind CSS 4.1**, Bun package manager
-- **RSpec + Capybara** for testing
+- Rails 8.1 w/ Solid Queue, Cache, Cable
+- Ruby 3.4.7 w/ UUID PKs
+- PostgreSQL 15+, RubyLLM 1.11+ (GPT-5)
+- Hotwire (Turbo Streams + Stimulus)
+- Tailwind CSS 4.1, Bun package mgr
+- RSpec + Capybara testing
 
 ## Architecture
 
-**Multi-Tenant with Organizations**
+**Multi-Tenant w/ Organizations**
 - User → Organization → Team (optional) → Lists
-- All queries scoped to organization (use `policy_scope`)
+- All queries scoped to org (use `policy_scope`)
 - See: [ORGANIZATIONS_TEAMS.md](docs/ORGANIZATIONS_TEAMS.md)
 
 **Organization Context & Current Organization**
-- **Critical Requirement**: Every user MUST belong to at least one organization
-- Organization selection happens in the navigation bar (single place)
-- Use `Current.organization` to access the current organization in any controller/service
-- **Never** implement local organization selectors in views (use the nav bar selector)
-- If no organization is selected, redirect to dashboard/root with alert
+- **Critical**: Every user MUST belong to ≥1 org
+- Org selection in nav bar (single place)
+- Use `Current.organization` in any controller/service
+- **Never** add local org selectors in views (nav bar only)
+- No org selected? Redirect to root w/ alert
 - Pattern: `redirect_to root_path, alert: "Please select an organization first" unless Current.organization`
 - See: [ORGANIZATIONS_TEAMS.md](docs/ORGANIZATIONS_TEAMS.md)
 
 **Real-Time Collaboration**
-- Prefer Turbo Streams for all reactive UI
-- Use Stimulus only when Turbo can't solve it
+- Prefer Turbo Streams for reactive UI
+- Use Stimulus only when Turbo can't solve
 - See: [REAL_TIME.md](docs/REAL_TIME.md)
 
 **Authorization**
@@ -36,19 +36,19 @@ Rails 8.1 collaborative list management with Hotwire, AI-powered chat, and real-
 - Pundit policies: always `authorize @resource`
 - See: [AUTHENTICATION.md](docs/AUTHENTICATION.md)
 
-**AI Chat & List Creation** (Fully Domain-Agnostic)
-- Unified chat interface for natural language list creation and management
-- **Chat context system** for semantic state persistence across chat messages
-- LLM-powered intent detection, complexity analysis, and pre-creation planning
-- **Truly Generic & Domain-Agnostic**: Works with ANY list type (events, projects, reading lists, courses, recipes, travel, learning, personal, etc.)
-  - Does NOT hardcode specific domains: tests may use events/vacations repeatedly, but system works equally well for any domain
-  - `ParameterMapperService` uses LLM to intelligently detect subdivision strategies from user input
-  - `HierarchicalItemGenerator` creates subdivisions based on detected strategy (locations, books, modules, topics, phases, etc.)
-  - Parent items generated dynamically based on planning domain and request context
-  - `ItemGenerationService` generates context-appropriate items for any subdivision type
-- Real-time UI feedback: State indicator, progress tracking, list preview, success confirmation
-- Built-in security: Prompt injection detection, content moderation
-- **Documentation:** [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) (consolidated reference), [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
+**AI Chat & List Creation** (Domain-Agnostic)
+- Unified chat for natural language list creation/mgmt
+- Chat context for semantic state persistence across messages
+- LLM intent detection, complexity analysis, pre-creation planning
+- Works w/ ANY list type (events, projects, reading, courses, recipes, travel, learning, personal, etc.)
+  - No hardcoded domains; works equally for any domain
+  - `ParameterMapperService` detects subdivision strategies via LLM
+  - `HierarchicalItemGenerator` creates subdivisions (locations, books, modules, topics, phases, etc.)
+  - Parent items generated dynamically per planning domain & context
+  - `ItemGenerationService` generates context-appropriate items for any subdivision
+- Real-time UI feedback: state indicator, progress, list preview, confirm
+- Built-in security: prompt injection detection, content moderation
+- Docs: [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md), [CHAT_FLOW.md](docs/CHAT_FLOW.md), [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md), [ITEM_GENERATION.md](docs/ITEM_GENERATION.md)
 
 ## Common Patterns
 
@@ -92,29 +92,29 @@ end
 ```
 
 ## Key Files
-- Models with UUID: `app/models/`, foreign keys as UUID
-- Authorization policies: `app/policies/`
+- Models w/ UUID: `app/models/`, FKs as UUID
+- Auth policies: `app/policies/`
 - Complex logic: `app/services/` (inherit ApplicationService)
-- Tests: RSpec with Factory Bot, Faker
-- Database: PostgreSQL with pgcrypto, plpgsql
+- Tests: RSpec w/ Factory Bot, Faker
+- Database: PostgreSQL w/ pgcrypto, plpgsql
   - Uses `db/structure.sql` (not schema.rb) — enforced by user change tracking service
-  - All models annotated with `annotate` gem: see Schema Information at top of each model
+  - All models annotated w/ `annotate` gem: see Schema Info at top of each model
 
 ## Pagination (Pagy v43+)
 
 **CRITICAL: Pagy v43+ has major breaking changes from previous versions**
 
-This project uses **Pagy v43.3.2**, which has completely restructured its API. Do NOT rely on old Pagy documentation or examples from pre-v43 versions.
+Project uses Pagy v43.3.2 w/ restructured API. Don't rely on old Pagy docs or pre-v43 examples.
 
 **Key Differences:**
-- ❌ No `pagy_nav` method (was common in older versions)
-- ✅ Use `series_nav` for numeric pagination (requires `include Pagy::NumericHelpers` in helpers)
-- ❌ Old helper methods are renamed/removed
+- ❌ No `pagy_nav` method (old)
+- ✅ Use `series_nav` for numeric pagination (need `include Pagy::NumericHelpers` in helpers)
+- ❌ Old helper methods renamed/removed
 - ✅ View helpers must be explicitly included: `include Pagy::NumericHelpers` in ApplicationHelper
 
 **Available Pagy v43+ View Helpers** (from `Pagy::NumericHelpers`):
-- `series_nav(@pagy)` - Numeric pagination with previous/next links
-- `series_nav_js(@pagy)` - JavaScript-powered pagination
+- `series_nav(@pagy)` - Numeric pagination w/ prev/next links
+- `series_nav_js(@pagy)` - JS-powered pagination
 - `info_tag(@pagy)` - Shows "Displaying X of Y"
 - `previous_tag(@pagy)` - Previous page link
 - `input_nav_js(@pagy)` - Jump to page input
@@ -139,24 +139,24 @@ include Pagy::NumericHelpers  # Adds series_nav, info_tag, etc. for views
 <%= series_nav(@pagy) %>
 ```
 
-**Before implementing any Pagy features:**
-1. Check [Pagy v43 official docs](https://ddnexus.github.io/pagy/): Method names and APIs are NOT compatible with older tutorials
+**Before implementing Pagy features:**
+1. Check [Pagy v43 official docs](https://ddnexus.github.io/pagy/): Method names & APIs NOT compatible w/ older tutorials
 2. Look for existing usage in `app/views/` to match patterns
-3. If unsure about a method name, check `lib/pagy/toolbox/helpers/loaders.rb` for available methods
+3. Unsure about method name? Check `lib/pagy/toolbox/helpers/loaders.rb` for available methods
 
 ## Development
 
 **Ruby LSP Integration**
-- Ruby LSP plugin is installed in Claude Code
-- Use LSP tools for code navigation and analysis:
-  - `goToDefinition` - Find where a symbol is defined
-  - `findReferences` - Find all usages of a symbol
-  - `hover` - Get type info and documentation
-  - `documentSymbol` - List all symbols in a file
+- Ruby LSP plugin installed in Claude Code
+- Use LSP tools for code navigation & analysis:
+  - `goToDefinition` - Find symbol definition
+  - `findReferences` - Find all usages
+  - `hover` - Get type info & docs
+  - `documentSymbol` - List all symbols in file
   - `workspaceSymbol` - Search symbols across codebase
-  - `goToImplementation` - Find implementations of interfaces/methods
+  - `goToImplementation` - Find implementations
   - `prepareCallHierarchy` / `incomingCalls` / `outgoingCalls` - Analyze call chains
-- Useful for understanding service dependencies, model relationships, and controller flows
+- Useful for understanding service dependencies, model relationships, controller flows
 
 **Quick Setup**
 ```bash
@@ -176,23 +176,23 @@ bundle exec brakeman         # Security
 |-------|----------|
 | N+1 Queries | Use `includes`, `preload`, or `joins` |
 | Auth Failed | Call `authorize @resource` after load |
-| Turbo not working | Respond with `format.turbo_stream` |
+| Turbo not working | Respond w/ `format.turbo_stream` |
 | Test DB issues | `RAILS_ENV=test rails db:reset` |
-| No organization selected | User must select one in nav bar; redirect if `Current.organization` is nil |
-| Cross-org data leak | Always scope queries with `organization_id`; use `Current.organization` |
-| Organization selector on view | Don't add local selectors; use nav bar only |
+| No org selected | Select in nav bar; redirect if `Current.organization` nil |
+| Cross-org data leak | Always scope queries w/ `organization_id`; use `Current.organization` |
+| Org selector on view | Don't add local selectors; nav bar only |
 
 ## Detailed Docs
 
 **Architecture & Design Principles** (START HERE)
-- [ARCHITECTURE_GENERIC_DESIGN.md](docs/ARCHITECTURE_GENERIC_DESIGN.md) - **Critical**: Explains how the system is domain-agnostic and works for ANY list type. Required reading for contributors.
+- [ARCHITECTURE_GENERIC_DESIGN.md](docs/ARCHITECTURE_GENERIC_DESIGN.md) - **Critical**: Domain-agnostic design for ANY list type. Required reading.
 
-**Chat Context System** (Consolidated reference)
-- [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) - Complete system overview: architecture, services, integration, UI components, testing & migration
+**Chat Context System** (Consolidated Reference)
+- [CHAT_CONTEXT.md](docs/CHAT_CONTEXT.md) - System overview: architecture, services, integration, UI components, testing & migration
 
-**Chat System** (Integration with chat flow)
-- [CHAT_FLOW.md](docs/CHAT_FLOW.md) - Complete message flow & state machine
-- [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md) - Simple/complex/nested list handling (domain-agnostic)
+**Chat System** (Integration w/ chat flow)
+- [CHAT_FLOW.md](docs/CHAT_FLOW.md) - Message flow & state machine
+- [CHAT_REQUEST_TYPES.md](docs/CHAT_REQUEST_TYPES.md) - Simple/complex/nested list handling
 - [CHAT_MODEL_SELECTION.md](docs/CHAT_MODEL_SELECTION.md) - Model selection strategy
 - [CHAT_FEATURES.md](docs/CHAT_FEATURES.md) - How to add features
 

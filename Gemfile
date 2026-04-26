@@ -41,7 +41,10 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
 gem "solid_cache"
-gem "solid_queue"
+# gem "solid_queue"
+# Experimental fiber based async execution mode for Solid Queue (requires Ruby 4+ and Rails 8.1+)
+# read me [https://paolino.me/solid-queue-doesnt-need-a-thread-per-job/]
+gem "solid_queue", git: "https://github.com/crmne/solid_queue.git", branch: "async-worker-execution-mode"
 gem "solid_cable"
 
 # Pagination
