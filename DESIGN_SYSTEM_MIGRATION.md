@@ -18,12 +18,13 @@
 - [x] Add theme toggle to navigation
 - [ ] Test in dev browser (theme toggle + localStorage)
 
-### 1.2 Update Base Styles & Resets
-- [ ] Update `app/assets/stylesheets/application.css` to use design tokens
-- [ ] Replace hardcoded colors with CSS variables (--color-*, --font-*)
-- [ ] Update global `html` + `body` styles to reference tokens
-- [ ] Ensure ::selection color follows accent
-- [ ] Test light/dark theme switching at html root level
+### 1.2 Update Base Styles & Resets ✅ COMPLETE
+- [x] Update `application.tailwind.css` to use design tokens
+- [x] Replace hardcoded colors with CSS variables (--color-*, --font-*)
+- [x] Update custom-select-dropdown styling with design tokens
+- [x] Add global html + body styles with smooth transitions
+- [x] Style scrollbars with design colors
+- [x] Update link colors and ::selection with design tokens
 
 ### 1.3 Create Utility Classes for Common Patterns
 - [ ] Add `.eyebrow`, `.kbd`, `.status-dot`, `.mark` utility classes

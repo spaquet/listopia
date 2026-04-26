@@ -8,15 +8,90 @@
 /* Moved to the index.js to make sure the styles are applied */
 /* @import "highlight.js/styles/github.css"; */
 
+/* Global base styles */
+html,
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  transition: background-color var(--duration-base) var(--ease-out),
+              color var(--duration-base) var(--ease-out);
+}
+
+/* Link styling */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+a:hover {
+  color: var(--color-ink);
+}
+
+/* Scrollbar styling (webkit only) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rule-strong);
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
 /* Custom Select Style */
 .custom-select-dropdown {
-  @apply absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+
+  @apply absolute z-20 w-full mt-1 max-h-60 overflow-auto;
+
   transform: translateY(-4px);
   opacity: 0;
-  transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+  transition: transform var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
 }
 
 .custom-select-dropdown:not(.hidden) {
   transform: translateY(0);
   opacity: 1;
+}
+
+/* Custom select item styling */
+.custom-select-dropdown > div {
+  color: var(--color-ink);
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-rule-soft);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.custom-select-dropdown > div:last-child {
+  border-bottom: none;
+}
+
+.custom-select-dropdown > div:hover {
+  background-color: var(--color-surface-sunken);
+}
+
+.custom-select-dropdown > div.selected {
+  background-color: var(--color-accent-soft);
+  color: var(--color-ink);
+  font-weight: 500;
 }
