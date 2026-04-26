@@ -1,19 +1,19 @@
 <!-- app/views/list_items/edit.html.erb -->
 <%= turbo_frame_tag "modal" do %>
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+  <div class="fixed inset-0 bg-ink/50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
        data-controller="modal"
        data-modal-target="modal">
-    <div class="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-auto border border-gray-200 max-h-[90vh] overflow-y-auto"
+    <div class="relative bg-surface rounded-md shadow-pop max-w-2xl w-full mx-auto border border-rule max-h-[90vh] overflow-y-auto"
          data-modal-target="backdrop"
          data-action="click->modal#clickOutside">
       <!-- Modal Header -->
-      <div class="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
+      <div class="flex items-center justify-between p-6 border-b border-rule sticky top-0 bg-surface rounded-t-md">
         <div class="flex-1">
-          <h2 class="text-lg font-semibold text-gray-900">Edit Item</h2>
-          <p class="text-sm text-gray-500 mt-1"><%= @list.title %></p>
+          <h2 class="text-lg font-semibold text-ink">Edit Item</h2>
+          <p class="text-sm text-ink-muted mt-1"><%= @list.title %></p>
         </div>
         <button data-action="click->modal#close"
-          class="ml-4 text-gray-400 hover:text-gray-600 transition-colors duration-200 shrink-0">
+          class="ml-4 text-ink-muted hover:text-ink transition-colors duration-200 shrink-0">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -25,14 +25,14 @@
         <%= form_with model: [@list, @list_item], local: true, class: "space-y-6", data: { controller: "date-calculator" } do |f| %>
           <!-- Error Messages -->
           <% if @list_item.errors.any? %>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="alert alert-danger">
               <div class="flex items-start space-x-3">
-                <svg class="w-5 h-5 text-red-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-danger mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <div>
-                  <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
-                  <ul class="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+                  <h3 class="text-sm font-medium text-danger">Please fix the following errors:</h3>
+                  <ul class="mt-2 text-sm text-danger list-disc list-inside space-y-1">
                     <% @list_item.errors.full_messages.each do |message| %>
                       <li><%= message %></li>
                     <% end %>
@@ -44,31 +44,31 @@
 
           <!-- Content Section -->
           <div class="space-y-4">
-            <h3 class="text-sm font-semibold text-gray-900">Content</h3>
+            <h3 class="text-sm font-semibold text-ink">Content</h3>
             <!-- Title Field -->
             <div>
-              <%= f.label :title, class: "block text-sm font-medium text-gray-700 mb-1" %>
+              <%= f.label :title, class: "form-label" %>
               <%= f.text_field :title,
                               placeholder: "Item title...",
-                              class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                              class: "form-input" %>
             </div>
             <!-- Description Field -->
             <div data-controller="wysiwyg-markdown">
-              <%= f.label :description, class: "block text-sm font-medium text-gray-700 mb-1" do %>
-                Description <span class="text-xs font-normal text-gray-500">(optional, markdown)</span>
+              <%= f.label :description, class: "form-label" do %>
+                Description <span class="text-xs font-normal text-ink-muted">(optional, markdown)</span>
               <% end %>
-              <div data-wysiwyg-markdown-target="editor" class="border border-gray-300 rounded-lg"></div>
+              <div data-wysiwyg-markdown-target="editor" class="border border-rule rounded-md bg-surface-sunken"></div>
               <%= f.hidden_field :description, data: { "wysiwyg-markdown-target": "input" } %>
             </div>
           </div>
 
           <!-- Classification Section -->
           <div class="space-y-4">
-            <h3 class="text-sm font-semibold text-gray-900">Classification</h3>
+            <h3 class="text-sm font-semibold text-ink">Classification</h3>
             <div class="grid grid-cols-3 gap-4">
               <!-- Type Select -->
               <div>
-                <%= f.label :item_type, "Type", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                <%= f.label :item_type, "Type", class: "form-label" %>
                 <%= f.select :item_type,
                             options_for_select([
                               ['Task', 'task'],
@@ -89,11 +89,11 @@
                               ['Habit', 'habit']
                             ], @list_item.item_type),
                             {},
-                            class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                            class: "form-input" %>
               </div>
               <!-- Priority Select -->
               <div>
-                <%= f.label :priority, "Priority", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                <%= f.label :priority, "Priority", class: "form-label" %>
                 <%= f.select :priority,
                             options_for_select([
                               ['Low', 'low'],
@@ -102,11 +102,11 @@
                               ['Urgent', 'urgent']
                             ], @list_item.priority),
                             {},
-                            class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                            class: "form-input" %>
               </div>
               <!-- Status Select -->
               <div>
-                <%= f.label :status, "Status", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                <%= f.label :status, "Status", class: "form-label" %>
                 <%= f.select :status,
                             options_for_select([
                               ['Pending', 'pending'],
@@ -114,7 +114,7 @@
                               ['Completed', 'completed']
                             ], @list_item.status),
                             {},
-                            class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                            class: "form-input" %>
               </div>
             </div>
           </div>
@@ -122,8 +122,8 @@
           <!-- Timeline Section -->
           <div class="space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-gray-900">Timeline</h3>
-              <button type="button" data-action="date-calculator#clearAllDates" class="text-xs text-red-600 hover:text-red-800 font-medium transition-colors">
+              <h3 class="text-sm font-semibold text-ink">Timeline</h3>
+              <button type="button" data-action="date-calculator#clearAllDates" class="text-xs text-danger hover:text-danger font-medium transition-colors">
                 Clear all
               </button>
             </div>
@@ -131,10 +131,10 @@
               <!-- Start Date -->
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <%= f.label :start_date, class: "block text-sm font-medium text-gray-700" do %>
+                  <%= f.label :start_date, class: "form-label" do %>
                     Start Date
                   <% end %>
-                  <button type="button" data-action="date-calculator#setTodayStartDate" class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                  <button type="button" data-action="date-calculator#setTodayStartDate" class="text-xs text-accent hover:text-accent font-medium transition-colors">
                     Today
                   </button>
                 </div>
@@ -144,15 +144,15 @@
                                            value: start_date_value,
                                            placeholder: "YYYY-MM-DD HH:MM",
                                            data: { "date-calculator-target": "startDate", action: "date-calculator#onStartDateChange" },
-                                           class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400" %>
+                                           class: "form-input" %>
               </div>
               <!-- Duration Days -->
               <div>
                 <div class="flex items-center justify-between mb-1">
-                  <%= f.label :duration_days, class: "block text-sm font-medium text-gray-700" do %>
+                  <%= f.label :duration_days, class: "form-label" do %>
                     Duration (Days)
                   <% end %>
-                  <button type="button" data-action="date-calculator#clearDuration" class="text-xs text-red-600 hover:text-red-800 font-medium transition-colors">
+                  <button type="button" data-action="date-calculator#clearDuration" class="text-xs text-danger hover:text-danger font-medium transition-colors">
                     Clear
                   </button>
                 </div>
@@ -162,11 +162,11 @@
                                   min: 0,
                                   placeholder: "value in days",
                                   data: { "date-calculator-target": "duration", action: "date-calculator#onDurationChange" },
-                                  class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400" %>
+                                  class: "form-input" %>
               </div>
               <!-- Due Date -->
               <div>
-                <%= f.label :due_date, class: "block text-sm font-medium text-gray-700 mb-1" do %>
+                <%= f.label :due_date, class: "form-label" do %>
                   Due Date
                 <% end %>
                 <% due_date_value = @list_item.due_date&.strftime("%Y-%m-%dT%H:%M") %>
@@ -174,24 +174,24 @@
                                            value: due_date_value,
                                            placeholder: "YYYY-MM-DD HH:MM",
                                            data: { "date-calculator-target": "dueDate", action: "date-calculator#onDueDateChange" },
-                                           class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400" %>
+                                           class: "form-input" %>
               </div>
             </div>
           </div>
 
           <!-- Recurrence Section -->
           <div class="space-y-4">
-            <h3 class="text-sm font-semibold text-gray-900">Recurrence</h3>
+            <h3 class="text-sm font-semibold text-ink">Recurrence</h3>
             <%= render 'list_items/recurrence_fields', form_object: f, item: @list_item %>
           </div>
 
           <!-- Assignment & Links Section -->
           <div class="space-y-4">
-            <h3 class="text-sm font-semibold text-gray-900">Assignment & Links</h3>
+            <h3 class="text-sm font-semibold text-ink">Assignment & Links</h3>
             <div class="grid grid-cols-2 gap-4">
               <!-- Assigned User -->
               <div>
-                <%= f.label :assigned_user_id, "Assign To", class: "block text-sm font-medium text-gray-700 mb-1" %>
+                <%= f.label :assigned_user_id, "Assign To", class: "form-label" %>
                 <%
                   assignable_users = [current_user, @list.owner]
                   assignable_users.concat(@list.collaborator_users)
@@ -200,26 +200,26 @@
                 <%= f.select :assigned_user_id,
                              options_from_collection_for_select(assignable_users, :id, ->(user) { format_assignee_name(user) }, @list_item.assigned_user_id),
                              { prompt: "Unassigned" },
-                             class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                             class: "form-input" %>
               </div>
               <!-- URL Field -->
               <div>
-                <%= f.label :url, class: "block text-sm font-medium text-gray-700 mb-1" do %>
-                  Link <span class="text-xs font-normal text-gray-500">(optional)</span>
+                <%= f.label :url, class: "form-label" do %>
+                  Link <span class="text-xs font-normal text-ink-muted">(optional)</span>
                 <% end %>
                 <%= f.url_field :url,
                                placeholder: "https://example.com",
-                               class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+                               class: "form-input" %>
               </div>
             </div>
           </div>
 
           <!-- Form Actions -->
-          <div class="flex gap-2 pt-4 border-t border-gray-200">
+          <div class="flex gap-2 pt-4 border-t border-rule">
             <%= f.submit "Save Changes",
-                        class: "px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200" %>
+                        class: "btn btn-primary" %>
             <button type="button" data-action="click->modal#close"
-              class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium">
+              class="btn btn-secondary">
               Cancel
             </button>
           </div>

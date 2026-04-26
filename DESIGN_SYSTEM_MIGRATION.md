@@ -18,6 +18,7 @@
 - Phase 4.1 ✅ Lists index & grid (commit 8defa86)
 - Phase 4.2 ✅ List cards with design system
 - Phase 4.3 ✅ List show page & item rows
+- Phase 4.4 ✅ List item editor (modal form)
 
 **Current Status:** 
 - Design tokens & theme system fully operational
@@ -25,6 +26,7 @@
 - Navigation redesigned with Editorial/Console themes
 - Lists index/grid views updated to design system
 - List show page, header, & item rows redesigned
+- List item editor modal with design system colors, form utilities
 - Theme toggle working with localStorage persistence
 
 **Completed Templates:**
@@ -34,9 +36,10 @@
 - app/views/lists/show.html.erb ✅
 - app/views/lists/_header.html.erb ✅
 - app/views/list_items/_item.html.erb ✅
+- app/views/list_items/edit.html.erb ✅
 
 **Remaining Priority:**
-- Phase 4.4: List item editor (inline & modal)
+- Phase 4.5: Quick add form & inline edit
 - Phase 5: Search & filtering
 - Phase 8-12: Chat, email, admin, testing & polish
 
@@ -143,6 +146,8 @@
 - [ ] Add `.list-card-actions` with new button styles
 - [ ] Ensure responsive grid adapts to dark theme
 
+---
+
 ### 3.2 List Show & Detail View ✅ COMPLETE
 - [x] Update `/lists/show.html.erb` layout with card, pill components
 - [x] Redesign `.list-header` with design tokens (title, actions)
@@ -157,14 +162,16 @@
   - [x] Assignee icons with text-ink-subtle
   - [x] Delete + edit buttons (text-ink-muted hover:text-accent/danger)
 
-### 3.3 List Item Editor (Inline & Modal)
-- [ ] Update inline `.list-item-edit` form styles
-- [ ] Redesign modal `.list-item-detail-view`
-- [ ] Create `.list-item-section` dividers with labels
-- [ ] Style `.list-item-description` editor
-- [ ] Update `.list-item-metadata` (dates, priority, assignees)
-- [ ] Design `.list-item-attachments` display
-- [ ] Style comment threads with new colors
+### 3.3 List Item Editor (Modal) ✅ PARTIAL
+- [x] Update modal layout with card, surface tokens
+- [x] Create form sections (Content, Classification, Timeline, Recurrence, Assignment)
+- [x] Style all inputs with .form-input, .form-label utilities
+- [x] Update buttons with .btn classes (primary for save, secondary for cancel)
+- [x] Style error messages with alert alert-danger
+- [x] Design form field groups with proper spacing
+- [ ] Quick add form (separate phase, more complex)
+- [ ] Inline edit form
+- [ ] Comment threads styling
 
 ### 3.4 Kanban View
 - [ ] Update `/lists/kanban.html.erb` layout
