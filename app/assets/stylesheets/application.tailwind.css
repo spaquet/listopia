@@ -3,6 +3,7 @@
 /* Design System - Secure Mail theme tokens (light/dark) */
 @import "design-system/tokens.css";
 @import "design-system/utilities.css";
+@import "design-system/components.css";
 
 /* Import Highlight.js theme */
 /* Moved to the index.js to make sure the styles are applied */

@@ -1,0 +1,485 @@
+/* ─────────────────────────────────────────────────────────────────
+   Design System Components
+   Cards, buttons, forms, and common UI patterns
+   ────────────────────────────────────────────────────────────────── */
+
+/* ── CARDS ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--duration-base) var(--ease-out),
+              background-color var(--duration-base) var(--ease-out);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-pop);
+}
+
+.card-header {
+  padding: var(--row-pad-y) var(--row-pad-x);
+  border-bottom: 1px solid var(--color-rule-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header .title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+[data-theme="console"] .card-header .title {
+  font-family: var(--font-sans-alt);
+  font-size: var(--text-2xl);
+}
+
+.card-body {
+  padding: var(--row-pad-y) var(--row-pad-x);
+}
+
+.card-footer {
+  padding: var(--row-pad-y) var(--row-pad-x);
+  border-top: 1px solid var(--color-rule-soft);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ── BUTTONS ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Primary button */
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-ink-inverse);
+  border: 1px solid transparent;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-primary:active:not(:disabled) {
+  opacity: 0.8;
+}
+
+/* Secondary button */
+.btn-secondary {
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-rule-strong);
+}
+
+/* Ghost button (no background) */
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink);
+  border: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+}
+
+.btn-ghost:active:not(:disabled) {
+  background: var(--color-surface-sunken);
+}
+
+/* Button sizes */
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-xs);
+}
+
+.btn-md {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-base);
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: var(--text-md);
+}
+
+/* ── FORMS ─────────────────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-ink-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  background: var(--color-surface-raised);
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled,
+.form-group select:disabled {
+  background: var(--color-surface);
+  color: var(--color-ink-faint);
+  cursor: not-allowed;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: var(--color-danger);
+  margin-top: 0.25rem;
+}
+
+.form-error-input {
+  border-color: var(--color-danger) !important;
+}
+
+/* Input with prefix/suffix */
+.input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-prefix,
+.input-suffix {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-ink-subtle);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.input-prefix {
+  left: 0.75rem;
+}
+
+.input-suffix {
+  right: 0.75rem;
+}
+
+.input-wrapper input.has-prefix {
+  padding-left: 2.5rem;
+}
+
+.input-wrapper input.has-suffix {
+  padding-right: 2.5rem;
+}
+
+/* ── CHECKBOXES & RADIOS ───────────────────────────────────────── */
+.checkbox,
+.radio {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-sunken);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.radio {
+  border-radius: var(--radius-pill);
+}
+
+.checkbox:checked,
+.radio:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.checkbox:checked::after {
+  content: '✓';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-ink-inverse);
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.checkbox:focus,
+.radio:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── PILLS & BADGES ────────────────────────────────────────────── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-rule-soft);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  color: var(--color-ink-subtle);
+  font-weight: 500;
+}
+
+.pill.accent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.pill.success {
+  background: rgba(63, 138, 74, 0.1);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.pill.warning {
+  background: rgba(184, 116, 26, 0.1);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.pill.danger {
+  background: rgba(138, 44, 44, 0.1);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.pill-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.pill-close:hover {
+  opacity: 1;
+}
+
+/* ── ALERTS ────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-title {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0 0 0.25rem;
+  font-size: var(--text-base);
+}
+
+.alert-message {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.alert-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  color: var(--color-ink-subtle);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.alert-close:hover {
+  color: var(--color-ink);
+}
+
+.alert.success {
+  border-color: var(--color-success);
+  background: rgba(63, 138, 74, 0.05);
+}
+
+.alert.success .alert-icon {
+  color: var(--color-success);
+}
+
+.alert.success .alert-title {
+  color: var(--color-success);
+}
+
+.alert.warning {
+  border-color: var(--color-warning);
+  background: rgba(184, 116, 26, 0.05);
+}
+
+.alert.warning .alert-icon {
+  color: var(--color-warning);
+}
+
+.alert.warning .alert-title {
+  color: var(--color-warning);
+}
+
+.alert.danger {
+  border-color: var(--color-danger);
+  background: rgba(138, 44, 44, 0.05);
+}
+
+.alert.danger .alert-icon {
+  color: var(--color-danger);
+}
+
+.alert.danger .alert-title {
+  color: var(--color-danger);
+}
+
+/* ── DROPDOWNS ─────────────────────────────────────────────────── */
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  min-width: 200px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  z-index: 10;
+}
+
+.dropdown-menu.active {
+  display: block;
+}
+
+.dropdown-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-ink);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-size: var(--text-sm);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.dropdown-menu-item:first-child {
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+}
+
+.dropdown-menu-item:last-child {
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+}
+
+.dropdown-menu-item:hover {
+  background-color: var(--color-surface-sunken);
+}
+
+.dropdown-menu-divider {
+  height: 1px;
+  background: var(--color-rule-soft);
+  margin: 0.5rem 0;
+}
