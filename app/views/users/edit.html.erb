@@ -1,83 +1,81 @@
 <!-- app/views/users/edit.html.erb -->
 <div class="max-w-2xl mx-auto">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div class="card">
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">Edit Profile</h1>
-      <p class="text-gray-600 mt-1">Update your personal information and preferences.</p>
+      <h1 class="t-display-s text-ink">Edit Profile</h1>
+      <p class="text-ink-muted mt-1">Update your personal information and preferences.</p>
     </div>
     <%= form_with model: @user, local: true, class: "space-y-6" do |f| %>
       <% if @user.errors.any? %>
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 class="text-sm font-medium text-red-800 mb-2">Please fix the following errors:</h3>
-          <ul class="text-sm text-red-700 space-y-1">
+        <div class="alert alert-danger">
+          <h3 class="font-semibold mb-2">Please fix the following errors:</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
             <% @user.errors.full_messages.each do |message| %>
-              <li>• <%= message %></li>
+              <li><%= message %></li>
             <% end %>
           </ul>
         </div>
       <% end %>
-      <div>
-        <%= f.label :name, "Full Name", class: "block text-sm font-medium text-gray-700 mb-2" %>
-        <%= f.text_field :name,
-                         class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+      <div class="form-group">
+        <%= f.label :name, "Full Name", class: "form-label" %>
+        <%= f.text_field :name, class: "form-input" %>
       </div>
-      <div>
-        <%= f.label :email, "Email Address", class: "block text-sm font-medium text-gray-700 mb-2" %>
-        <%= f.email_field :email,
-                          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
-        <p class="mt-1 text-sm text-gray-500">
+      <div class="form-group">
+        <%= f.label :email, "Email Address", class: "form-label" %>
+        <%= f.email_field :email, class: "form-input" %>
+        <p class="mt-1 t-meta text-ink-muted">
           Changing your email will require verification of the new address.
         </p>
       </div>
-      <div>
-        <%= f.label :bio, "Bio", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label :bio, "Bio", class: "form-label" %>
         <%= f.text_area :bio,
                         rows: 3,
                         placeholder: "Tell us a bit about yourself...",
-                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+                        class: "form-input" %>
       </div>
-      <div>
-        <%= f.label :avatar_url, "Avatar URL", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label :avatar_url, "Avatar URL", class: "form-label" %>
         <%= f.url_field :avatar_url,
                         placeholder: "https://example.com/avatar.jpg",
-                        class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
-        <p class="mt-1 text-sm text-gray-500">
+                        class: "form-input" %>
+        <p class="mt-1 t-meta text-ink-muted">
           Optional: Link to your profile picture.
         </p>
       </div>
       <!-- Preferred language and timezone -->
-      <div>
-        <%= f.label :locale, "Language/Locale", class: "block text-sm font-medium text-gray-700 mb-2" %>
-        <%= f.select :locale, 
+      <div class="form-group">
+        <%= f.label :locale, "Language/Locale", class: "form-label" %>
+        <%= f.select :locale,
                options_for_select(locale_options, @user.locale),
                { prompt: "Select your preferred language" },
-               { class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" } %>
-        <p class="mt-1 text-sm text-gray-500">
+               { class: "form-input" } %>
+        <p class="mt-1 t-meta text-ink-muted">
           This affects the language used in the interface and AI responses.
         </p>
       </div>
-      <div>
-        <%= f.label :timezone, "Timezone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label :timezone, "Timezone", class: "form-label" %>
         <%= f.select :timezone,
                options_for_select(timezone_options, @user.timezone),
                { prompt: "Select your timezone" },
-               { class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" } %>
-        <p class="mt-1 text-sm text-gray-500">
+               { class: "form-input" } %>
+        <p class="mt-1 t-meta text-ink-muted">
           Used for displaying dates and times in your local timezone.
         </p>
       </div>
-      <div class="flex items-center justify-between pt-6 border-t border-gray-200">
-        <%= link_to user_path, 
-                    class: "text-gray-600 hover:text-gray-900 font-medium" do %>
+      <div class="flex items-center justify-between pt-6 border-t border-rule">
+        <%= link_to user_path,
+                    class: "text-ink-muted hover:text-ink font-medium" do %>
           Cancel
         <% end %>
         <div class="flex space-x-3">
-          <%= link_to settings_user_path, 
-                      class: "px-4 py-2 text-blue-600 hover:text-blue-800 font-medium" do %>
+          <%= link_to settings_user_path,
+                      class: "text-accent hover:text-accent font-medium" do %>
             Password & Settings
           <% end %>
           <%= f.submit "Update Profile",
-                       class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+                       class: "btn btn-primary" %>
         </div>
       </div>
     <% end %>

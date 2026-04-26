@@ -1,8 +1,8 @@
 <div class="max-w-6xl mx-auto p-6">
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-xl font-semibold text-gray-900">Audit Logs</h2>
-      <p class="text-sm text-gray-600 mt-1"><%= @organization.name %></p>
+  <div class="bg-surface card border-rule">
+    <div class="px-6 py-4 border-b border-rule">
+      <h2 class="text-xl font-semibold text-ink">Audit Logs</h2>
+      <p class="text-sm text-ink-muted mt-1"><%= @organization.name %></p>
     </div>
 
     <div class="px-6 py-4">
@@ -10,13 +10,13 @@
         <div class="space-y-4">
           <% @audits.each do |audit| %>
             <div class="border-b pb-4">
-              <p class="text-sm font-medium text-gray-900"><%= audit.class %></p>
-              <p class="text-xs text-gray-500"><%= audit.created_at.strftime('%b %d, %Y %H:%M:%S') %></p>
+              <p class="text-sm font-medium text-ink"><%= audit.class %></p>
+              <p class="t-meta text-ink-muted"><%= audit.created_at.strftime('%b %d, %Y %H:%M:%S') %></p>
             </div>
           <% end %>
         </div>
       <% else %>
-        <p class="text-sm text-gray-500">No audit logs available</p>
+        <p class="t-meta text-ink-muted">No audit logs available</p>
       <% end %>
     </div>
   </div>

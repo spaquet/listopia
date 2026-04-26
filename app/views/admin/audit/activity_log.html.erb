@@ -1,59 +1,59 @@
-<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-surface-raised py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-8 flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">User Activity Log</h1>
-        <p class="mt-2 text-gray-600">Track individual user actions and changes</p>
+        <h1 class="t-display-m text-ink">User Activity Log</h1>
+        <p class="mt-2 text-ink-muted">Track individual user actions and changes</p>
       </div>
-      <%= link_to "← Back to Audit", admin_audit_index_path, class: "px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors" %>
+      <%= link_to "← Back to Audit", admin_audit_index_path, class: "px-4 py-2 bg-surface-raised hover:bg-surface-raised rounded-lg text-sm font-medium transition-colors" %>
     </div>
 
     <!-- Organization Context -->
-    <div class="mb-6 bg-white rounded-lg shadow p-4">
-      <p class="text-sm text-gray-600">Organization</p>
-      <p class="text-xl font-semibold text-gray-900"><%= @organization.name %></p>
+    <div class="mb-6 bg-surface rounded-lg shadow p-4">
+      <p class="t-meta text-ink-muted">Organization</p>
+      <p class="text-xl font-semibold text-ink"><%= @organization.name %></p>
     </div>
 
     <% if @user %>
       <!-- User Activity Summary -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-gray-600">Total Events</div>
-          <div class="text-3xl font-bold text-gray-900"><%= @summary[:total_events] %></div>
+        <div class="bg-surface rounded-lg shadow p-6">
+          <div class="t-meta text-ink-muted">Total Events</div>
+          <div class="t-display-m text-ink"><%= @summary[:total_events] %></div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-gray-600">Event Types</div>
-          <div class="text-3xl font-bold text-gray-900"><%= @summary[:events_by_type]&.keys&.count || 0 %></div>
+        <div class="bg-surface rounded-lg shadow p-6">
+          <div class="t-meta text-ink-muted">Event Types</div>
+          <div class="t-display-m text-ink"><%= @summary[:events_by_type]&.keys&.count || 0 %></div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-sm text-gray-600">User</div>
-          <div class="text-lg font-semibold text-gray-900"><%= @user.email %></div>
+        <div class="bg-surface rounded-lg shadow p-6">
+          <div class="t-meta text-ink-muted">User</div>
+          <div class="t-body-l font-semibold text-ink"><%= @user.email %></div>
         </div>
       </div>
 
       <!-- Activity Timeline -->
-      <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Activity Timeline</h2>
+      <div class="bg-surface rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-rule">
+          <h2 class="t-body-l font-semibold text-ink">Activity Timeline</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-surface-raised border-b border-rule">
               <tr>
-                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Timestamp</th>
-                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Event Type</th>
-                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-900">Details</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Timestamp</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Event Type</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Details</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
               <% @events.each do |event| %>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-3 text-sm text-gray-600"><%= event.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
-                  <td class="px-6 py-3 text-sm text-gray-900"><span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium"><%= event.event_type %></span></td>
-                  <td class="px-6 py-3 text-sm text-gray-600">
+                <tr class="hover:bg-surface-raised">
+                  <td class="px-6 py-3 t-meta text-ink-muted"><%= event.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
+                  <td class="px-6 py-3 text-sm text-ink"><span class="inline-block bg-surface-raised text-accent px-2 py-1 rounded text-xs font-medium"><%= event.event_type %></span></td>
+                  <td class="px-6 py-3 t-meta text-ink-muted">
                     <% case event.event_type %>
                       <% when "list_item.created" %>
                         Created: <%= event.event_data["title"] %>
@@ -75,13 +75,13 @@
       </div>
     <% else %>
       <!-- Select User -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Select User</h2>
+      <div class="bg-surface rounded-lg shadow p-6">
+        <h2 class="t-body-l font-semibold text-ink mb-4">Select User</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <% @users.each do |user| %>
-            <%= link_to activity_log_admin_audit_index_path(user_id: user.id), class: "block p-4 border border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors" do %>
-              <div class="font-medium text-gray-900"><%= user.name %></div>
-              <div class="text-sm text-gray-600"><%= user.email %></div>
+            <%= link_to activity_log_admin_audit_index_path(user_id: user.id), class: "block p-4 card hover:border-indigo-500 hover:bg-indigo-50 transition-colors" do %>
+              <div class="font-medium text-ink"><%= user.name %></div>
+              <div class="t-meta text-ink-muted"><%= user.email %></div>
             <% end %>
           <% end %>
         </div>

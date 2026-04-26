@@ -1,28 +1,28 @@
 <!-- app/views/admin/organizations/_organization_row.html.erb -->
-<tr id="organization_<%= organization.id %>" class="hover:bg-gray-50 transition-colors">
+<tr id="organization_<%= organization.id %>" class="hover:bg-surface-raised transition-colors">
   <td class="px-6 py-4 whitespace-nowrap">
     <div class="flex flex-col">
-      <span class="text-sm font-medium text-gray-900"><%= link_to organization.name, admin_organization_path(organization), class: "text-blue-600 hover:text-blue-700" %></span>
-      <span class="text-xs text-gray-500"><%= organization.slug %></span>
+      <span class="text-sm font-medium text-ink"><%= link_to organization.name, admin_organization_path(organization), class: "text-accent hover:text-accent" %></span>
+      <span class="t-meta text-ink-muted"><%= organization.slug %></span>
     </div>
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
-    <span class="text-sm text-gray-700 capitalize"><%= organization.size.humanize %></span>
+    <span class="text-sm text-ink capitalize"><%= organization.size.humanize %></span>
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
-    <span class="text-sm font-medium text-gray-900"><%= organization.users.count %></span>
+    <span class="text-sm font-medium text-ink"><%= organization.users.count %></span>
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
     <% status_class = case organization.status
-      when "active" then "bg-green-100 text-green-800"
+      when "active" then "bg-surface-raised text-ink"
       when "suspended" then "bg-yellow-100 text-yellow-800"
-      else "bg-gray-100 text-gray-800"
+      else "bg-surface-raised text-gray-800"
       end %>
     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %>">
       <%= organization.status.humanize %>
     </span>
   </td>
-  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+  <td class="px-6 py-4 whitespace-nowrap t-meta text-ink-muted">
     <%= time_ago_in_words(organization.created_at) %> ago
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -33,7 +33,7 @@
         <% if organization.status_active? %>
           <%= button_to suspend_admin_organization_path(organization), method: :post,
               form_class: "inline",
-              class: "text-yellow-600 hover:text-yellow-900 bg-transparent border-none cursor-pointer p-0 m-0",
+              class: "text-warning hover:text-yellow-900 bg-transparent border-none cursor-pointer p-0 m-0",
               form: { data: { turbo_confirm: "Are you sure?" } } do %>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -42,7 +42,7 @@
         <% elsif organization.status_suspended? %>
           <%= button_to reactivate_admin_organization_path(organization), method: :post,
               form_class: "inline",
-              class: "text-green-600 hover:text-green-900 bg-transparent border-none cursor-pointer p-0 m-0",
+              class: "text-success hover:text-ink bg-transparent border-none cursor-pointer p-0 m-0",
               form: { data: { turbo_confirm: "Are you sure?" } } do %>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -65,7 +65,7 @@
         <!-- Delete button -->
         <%= button_to admin_organization_path(organization), method: :delete,
             form_class: "inline",
-            class: "text-red-600 hover:text-red-900 bg-transparent border-none cursor-pointer p-0 m-0",
+            class: "text-danger hover:text-ink bg-transparent border-none cursor-pointer p-0 m-0",
             form: { data: { turbo_confirm: "Are you sure? This action cannot be undone." } } do %>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

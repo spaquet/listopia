@@ -2,10 +2,10 @@
 <div class="max-w-7xl mx-auto space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-      <p class="text-gray-600 mt-1">Manage organizations, users, and system settings</p>
+      <h1 class="t-display-m text-ink">Admin Dashboard</h1>
+      <p class="text-ink-muted mt-1">Manage organizations, users, and system settings</p>
     </div>
-    <%= link_to dashboard_path, class: "text-gray-600 hover:text-gray-900 flex items-center" do %>
+    <%= link_to dashboard_path, class: "text-ink-muted hover:text-ink flex items-center transition-colors duration-fast" do %>
       <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
       </svg>
@@ -13,43 +13,43 @@
     <% end %>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="card">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600">Users</p>
+          <p class="t-eyebrow text-ink-muted">Users</p>
           <div class="flex items-baseline mt-1">
-            <p class="text-2xl font-bold text-green-600"><%= @stats[:active_users] %></p>
-            <p class="text-gray-500 ml-2">of <span class="font-semibold text-gray-700"><%= @stats[:total_users] %></span> total</p>
+            <p class="text-2xl font-bold text-success"><%= @stats[:active_users] %></p>
+            <p class="text-ink-muted ml-2">of <span class="font-semibold text-ink"><%= @stats[:total_users] %></span> total</p>
           </div>
         </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+          <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
           </svg>
         </div>
       </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="card">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600">Admins</p>
-          <p class="text-2xl font-bold text-purple-600 mt-1"><%= @stats[:admin_users] %></p>
+          <p class="t-eyebrow text-ink-muted">Admins</p>
+          <p class="text-2xl font-bold text-accent mt-1"><%= @stats[:admin_users] %></p>
         </div>
-        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
           </svg>
         </div>
       </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="card">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-gray-600">New This Month</p>
-          <p class="text-2xl font-bold text-blue-600 mt-1"><%= @stats[:new_users_this_month] %></p>
+          <p class="t-eyebrow text-ink-muted">New This Month</p>
+          <p class="text-2xl font-bold text-accent mt-1"><%= @stats[:new_users_this_month] %></p>
         </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
           </svg>
         </div>
@@ -57,52 +57,52 @@
     </div>
   </div>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <%= link_to admin_organizations_path, class: "bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" do %>
+    <%= link_to admin_organizations_path, class: "card hover:shadow-pop transition-shadow duration-fast cursor-pointer" do %>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12a2 2 0 0 1 2 2v18H4V4a2 2 0 0 1 2-2m0 18h4v-4h4v4h4V4H6zm7-14h3v3h-3zm-5 5h3v3H8zm5 0h3v3h-3zM8 6h3v3H8z"/></svg>
+          <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+            <svg class="w-6 h-6 text-accent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h12a2 2 0 0 1 2 2v18H4V4a2 2 0 0 1 2-2m0 18h4v-4h4v4h4V4H6zm7-14h3v3h-3zm-5 5h3v3H8zm5 0h3v3h-3zM8 6h3v3H8z"/></svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">Manage Organizations</h3>
-            <p class="text-sm text-gray-600">View and manage all organizations and their members</p>
+            <h3 class="t-body-l text-ink font-semibold">Manage Organizations</h3>
+            <p class="t-meta text-ink-muted">View and manage all organizations and their members</p>
           </div>
         </div>
-        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
       </div>
     <% end %>
-    <%= link_to admin_users_path, class: "bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" do %>
+    <%= link_to admin_users_path, class: "card hover:shadow-pop transition-shadow duration-fast cursor-pointer" do %>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">Manage Users</h3>
-            <p class="text-sm text-gray-600">Add, edit, or remove users and manage their roles</p>
+            <h3 class="t-body-l text-ink font-semibold">Manage Users</h3>
+            <p class="t-meta text-ink-muted">Add, edit, or remove users and manage their roles</p>
           </div>
         </div>
-        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
       </div>
     <% end %>
-    <%= link_to admin_audit_index_path, class: "bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200" do %>
+    <%= link_to admin_audit_index_path, class: "card hover:shadow-pop transition-shadow duration-fast cursor-pointer" do %>
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-amber-600" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          <div class="w-12 h-12 bg-surface-raised rounded-md flex items-center justify-center">
+            <svg class="w-6 h-6 text-accent" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
           </div>
           <div>
-            <h3 class="text-lg font-semibold text-gray-900">Audit & Compliance</h3>
-            <p class="text-sm text-gray-600">View audit trail, compliance reports, and activity logs</p>
+            <h3 class="t-body-l text-ink font-semibold">Audit & Compliance</h3>
+            <p class="t-meta text-ink-muted">View audit trail, compliance reports, and activity logs</p>
           </div>
         </div>
-        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-ink-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
         </svg>
       </div>

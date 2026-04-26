@@ -1,10 +1,10 @@
 <%= form_with model: [:admin, @organization], local: true, class: "space-y-6" do |f| %>
   <% if @organization.errors.any? %>
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-      <h3 class="text-sm font-medium text-red-900 mb-2">
+    <div class="alert alert-danger">
+      <h3 class="text-sm font-medium text-ink mb-2">
         <%= pluralize(@organization.errors.count, "error") %> prevented this organization from being saved:
       </h3>
-      <ul class="text-sm text-red-700 list-disc list-inside">
+      <ul class="text-sm text-danger list-disc list-inside">
         <% @organization.errors.full_messages.each do |message| %>
           <li><%= message %></li>
         <% end %>
@@ -13,23 +13,23 @@
   <% end %>
 
   <div>
-    <%= f.label :name, "Organization Name", class: "block text-sm font-medium text-gray-900 mb-2" %>
+    <%= f.label :name, "Organization Name", class: "form-label" %>
     <%= f.text_field :name,
-      class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+      class: "form-input",
       placeholder: "My Organization",
       required: true
     %>
-    <p class="mt-1 text-sm text-gray-600">The name of your organization</p>
+    <p class="mt-1 t-meta text-ink-muted">The name of your organization</p>
   </div>
 
   <div>
-    <%= f.label :size, "Organization Size", class: "block text-sm font-medium text-gray-900 mb-2" %>
+    <%= f.label :size, "Organization Size", class: "form-label" %>
     <%= f.select :size,
       [["Small (1-10 members)", "small"], ["Medium (11-50 members)", "medium"], ["Large (51-200 members)", "large"], ["Enterprise (200+ members)", "enterprise"]],
       { selected: @organization.size || "small" },
-      class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      class: "form-input"
     %>
-    <p class="mt-1 text-sm text-gray-600">Helps us provide the right support for your organization</p>
+    <p class="mt-1 t-meta text-ink-muted">Helps us provide the right support for your organization</p>
   </div>
 
   <div class="flex gap-2">
@@ -38,7 +38,7 @@
     %>
     <%= link_to "Cancel",
       @organization.persisted? ? admin_organization_path(@organization) : admin_organizations_path,
-      class: "px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
+      class: "px-6 py-2 bg-surface-raised hover:bg-surface-raised rounded-lg font-medium"
     %>
   </div>
 <% end %>

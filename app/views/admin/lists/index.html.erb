@@ -3,30 +3,30 @@
 
   <% if @lists.any? %>
     <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300">
-        <thead class="bg-gray-100">
+      <table class="min-w-full border border-rule">
+        <thead class="bg-surface-raised">
           <tr>
-            <th class="border border-gray-300 px-4 py-2 text-left">Title</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Owner</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Created At</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">Actions</th>
+            <th class="border border-rule px-4 py-2 text-left">Title</th>
+            <th class="border border-rule px-4 py-2 text-left">Owner</th>
+            <th class="border border-rule px-4 py-2 text-left">Created At</th>
+            <th class="border border-rule px-4 py-2 text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
           <% @lists.each do |list| %>
-            <tr class="hover:bg-gray-50">
-              <td class="border border-gray-300 px-4 py-2">
-                <%= link_to list.title, admin_list_path(list), class: "text-blue-600 hover:underline" %>
+            <tr class="hover:bg-surface-raised">
+              <td class="border border-rule px-4 py-2">
+                <%= link_to list.title, admin_list_path(list), class: "text-accent hover:underline" %>
               </td>
-              <td class="border border-gray-300 px-4 py-2">
+              <td class="border border-rule px-4 py-2">
                 <%= list.owner&.email %>
               </td>
-              <td class="border border-gray-300 px-4 py-2">
+              <td class="border border-rule px-4 py-2">
                 <%= list.created_at.strftime("%B %d, %Y") %>
               </td>
-              <td class="border border-gray-300 px-4 py-2 text-center">
-                <%= link_to "Show", admin_list_path(list), class: "text-blue-600 hover:underline mr-3" %>
-                <%= link_to "Delete", admin_list_path(list), method: :delete, data: { confirm: "Are you sure?" }, class: "text-red-600 hover:underline" %>
+              <td class="border border-rule px-4 py-2 text-center">
+                <%= link_to "Show", admin_list_path(list), class: "text-accent hover:underline mr-3" %>
+                <%= link_to "Delete", admin_list_path(list), method: :delete, data: { confirm: "Are you sure?" }, class: "text-danger hover:underline" %>
               </td>
             </tr>
           <% end %>
@@ -34,6 +34,6 @@
       </table>
     </div>
   <% else %>
-    <p class="text-gray-600">No lists found.</p>
+    <p class="text-ink-muted">No lists found.</p>
   <% end %>
 </div>

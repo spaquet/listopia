@@ -3,7 +3,7 @@
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
     <!-- Sidebar -->
     <div class="lg:col-span-1">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-4">
+      <div class="card sticky top-4">
         <%= render "shared/settings_sidebar" %>
       </div>
     </div>
@@ -11,77 +11,77 @@
     <!-- Main Content -->
     <div class="lg:col-span-3 space-y-6">
       <!-- Page Header -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h1 class="text-2xl font-bold text-gray-900">Account Settings</h1>
-        <p class="text-gray-600 mt-1">Manage your password, account preferences, and notification settings.</p>
+      <div class="card">
+        <h1 class="t-display-s text-ink">Account Settings</h1>
+        <p class="text-ink-muted mt-1">Manage your password, account preferences, and notification settings.</p>
       </div>
 
       <!-- Application Version -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-medium text-gray-900 mb-1">Application Version</h2>
-        <p class="text-sm text-gray-500 mb-4">Current version of Listopia running on this server.</p>
+      <div class="card">
+        <h2 class="t-body-l font-semibold text-ink mb-1">Application Version</h2>
+        <p class="t-meta text-ink-muted mb-4">Current version of Listopia running on this server.</p>
         <div class="flex items-center gap-4">
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <span class="pill accent">
             v<%= APP_VERSION %>
           </span>
-          <span class="text-xs text-gray-400 font-mono">Build: <%= APP_BUILD %></span>
+          <span class="t-meta text-ink-muted font-mono">Build: <%= APP_BUILD %></span>
         </div>
       </div>
 
   <!-- Change Password -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Change Password</h2>
+  <div class="card">
+    <h2 class="t-body-l font-semibold text-ink mb-4">Change Password</h2>
     <%= form_with url: update_password_user_path, method: :patch, local: true, class: "space-y-4" do |f| %>
       <% if flash[:alert] %>
-        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div class="alert alert-danger">
           <%= flash[:alert] %>
         </div>
       <% end %>
-      <div>
-        <%= f.label :current_password, "Current Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label :current_password, "Current Password", class: "form-label" %>
         <%= f.password_field :current_password,
                              required: true,
-                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+                             class: "form-input" %>
       </div>
-      <div>
-        <%= f.label "user[password]", "New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label "user[password]", "New Password", class: "form-label" %>
         <%= f.password_field "user[password]",
                              minlength: 8,
-                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
-        <p class="mt-1 text-sm text-gray-500">Must be at least 8 characters long.</p>
+                             class: "form-input" %>
+        <p class="mt-1 t-meta text-ink-muted">Must be at least 8 characters long.</p>
       </div>
-      <div>
-        <%= f.label "user[password_confirmation]", "Confirm New Password", class: "block text-sm font-medium text-gray-700 mb-2" %>
+      <div class="form-group">
+        <%= f.label "user[password_confirmation]", "Confirm New Password", class: "form-label" %>
         <%= f.password_field "user[password_confirmation]",
-                             class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" %>
+                             class: "form-input" %>
       </div>
-      <div class="pt-4">
+      <div class="pt-4 border-t border-rule">
         <%= f.submit "Update Password",
-                     class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+                     class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
   <!-- Notification Settings -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div class="card">
     <div class="mb-6">
-      <h2 class="text-lg font-medium text-gray-900">Notification Preferences</h2>
-      <p class="text-sm text-gray-500 mt-1">Configure how and when you receive notifications</p>
+      <h2 class="t-body-l font-semibold text-ink">Notification Preferences</h2>
+      <p class="t-meta text-ink-muted mt-1">Configure how and when you receive notifications</p>
     </div>
     <%= form_with url: update_notification_settings_user_path, method: :patch, local: true, class: "space-y-6" do |f| %>
       <% if flash[:alert] %>
-        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+        <div class="alert alert-danger">
           <%= flash[:alert] %>
         </div>
       <% end %>
       <!-- Delivery Channels -->
       <div>
-        <h3 class="text-base font-medium text-gray-900 mb-4">Delivery Channels</h3>
+        <h3 class="t-body-m font-semibold text-ink mb-4">Delivery Channels</h3>
         <div class="space-y-4">
           <!-- Email Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">Email Notifications</label>
-              <p class="text-sm text-gray-500">Receive notifications via email</p>
+              <label class="t-body-s font-medium text-ink">Email Notifications</label>
+              <p class="t-meta text-ink-muted">Receive notifications via email</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -92,59 +92,59 @@
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
           <!-- SMS Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">SMS Notifications</label>
-              <p class="text-sm text-gray-500">Receive notifications via text message</p>
+              <label class="t-body-s font-medium text-ink">SMS Notifications</label>
+              <p class="t-meta text-ink-muted">Receive notifications via text message</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
-                <%= ns.check_box :sms_notifications, 
+                <%= ns.check_box :sms_notifications,
                                  checked: current_user.notification_preferences.sms_notifications?,
                                  class: "sr-only peer",
-                                 data: { 
+                                 data: {
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
           <!-- Push Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">Push Notifications</label>
-              <p class="text-sm text-gray-500">Receive browser push notifications</p>
+              <label class="t-body-s font-medium text-ink">Push Notifications</label>
+              <p class="t-meta text-ink-muted">Receive browser push notifications</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
-                <%= ns.check_box :push_notifications, 
+                <%= ns.check_box :push_notifications,
                                  checked: current_user.notification_preferences.push_notifications?,
                                  class: "sr-only peer",
-                                 data: { 
+                                 data: {
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
         </div>
       </div>
       <!-- Notification Types -->
-      <div class="border-t border-gray-200 pt-6">
-        <h3 class="text-base font-medium text-gray-900 mb-4">Notification Types</h3>
+      <div class="border-t border-rule pt-6">
+        <h3 class="t-body-m font-semibold text-ink mb-4">Notification Types</h3>
         <div class="space-y-4">
           <!-- Collaboration Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">Collaboration</label>
-              <p class="text-sm text-gray-500">Invitations, new collaborators, permission changes</p>
+              <label class="t-body-s font-medium text-ink">Collaboration</label>
+              <p class="t-meta text-ink-muted">Invitations, new collaborators, permission changes</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -155,15 +155,15 @@
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
           <!-- List Activity Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">List Updates</label>
-              <p class="text-sm text-gray-500">List title, description, and status changes</p>
+              <label class="t-body-s font-medium text-ink">List Updates</label>
+              <p class="t-meta text-ink-muted">List title, description, and status changes</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -174,15 +174,15 @@
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
           <!-- Item Activity Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">Item Activity</label>
-              <p class="text-sm text-gray-500">Items added, updated, completed, or deleted</p>
+              <label class="t-body-s font-medium text-ink">Item Activity</label>
+              <p class="t-meta text-ink-muted">Items added, updated, completed, or deleted</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -193,15 +193,15 @@
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
           <!-- Status Change Notifications -->
           <div class="flex items-center justify-between">
             <div>
-              <label class="text-sm font-medium text-gray-700">Status Changes</label>
-              <p class="text-sm text-gray-500">When lists change status (draft, active, completed, archived)</p>
+              <label class="t-body-s font-medium text-ink">Status Changes</label>
+              <p class="t-meta text-ink-muted">When lists change status (draft, active, completed, archived)</p>
             </div>
             <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
               <label class="relative inline-flex items-center cursor-pointer">
@@ -212,71 +212,71 @@
                                    action: "change->toggle#updateField",
                                    toggle_target: "input"
                                  } %>
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div class="w-11 h-6 bg-surface-raised peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-rule after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
               </label>
             <% end %>
           </div>
         </div>
       </div>
       <!-- Notification Frequency -->
-      <div class="border-t border-gray-200 pt-6">
-        <h3 class="text-base font-medium text-gray-900 mb-4">Notification Frequency</h3>
+      <div class="border-t border-rule pt-6">
+        <h3 class="t-body-m font-semibold text-ink mb-4">Notification Frequency</h3>
         <%= f.fields_for :notification_settings, current_user.notification_preferences do |ns| %>
           <div class="space-y-3">
             <label class="flex items-center">
-              <%= ns.radio_button :notification_frequency, "immediate", 
+              <%= ns.radio_button :notification_frequency, "immediate",
                                   checked: current_user.notification_preferences.notification_frequency == 'immediate',
-                                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+                                  class: "h-4 w-4 text-accent focus:ring-accent border-rule" %>
               <span class="ml-3">
-                <span class="text-sm font-medium text-gray-700">Immediate</span>
-                <span class="block text-sm text-gray-500">Get notified right away (respects quiet hours)</span>
+                <span class="t-body-s font-medium text-ink">Immediate</span>
+                <span class="block t-meta text-ink-muted">Get notified right away (respects quiet hours)</span>
               </span>
             </label>
             <label class="flex items-center">
-              <%= ns.radio_button :notification_frequency, "daily_digest", 
+              <%= ns.radio_button :notification_frequency, "daily_digest",
                                   checked: current_user.notification_preferences.notification_frequency == 'daily_digest',
-                                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+                                  class: "h-4 w-4 text-accent focus:ring-accent border-rule" %>
               <span class="ml-3">
-                <span class="text-sm font-medium text-gray-700">Daily Digest</span>
-                <span class="block text-sm text-gray-500">Receive a summary once per day</span>
+                <span class="t-body-s font-medium text-ink">Daily Digest</span>
+                <span class="block t-meta text-ink-muted">Receive a summary once per day</span>
               </span>
             </label>
             <label class="flex items-center">
-              <%= ns.radio_button :notification_frequency, "weekly_digest", 
+              <%= ns.radio_button :notification_frequency, "weekly_digest",
                                   checked: current_user.notification_preferences.notification_frequency == 'weekly_digest',
-                                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+                                  class: "h-4 w-4 text-accent focus:ring-accent border-rule" %>
               <span class="ml-3">
-                <span class="text-sm font-medium text-gray-700">Weekly Digest</span>
-                <span class="block text-sm text-gray-500">Receive a summary once per week</span>
+                <span class="t-body-s font-medium text-ink">Weekly Digest</span>
+                <span class="block t-meta text-ink-muted">Receive a summary once per week</span>
               </span>
             </label>
             <label class="flex items-center">
-              <%= ns.radio_button :notification_frequency, "disabled", 
+              <%= ns.radio_button :notification_frequency, "disabled",
                                   checked: current_user.notification_preferences.notification_frequency == 'disabled',
-                                  class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" %>
+                                  class: "h-4 w-4 text-accent focus:ring-accent border-rule" %>
               <span class="ml-3">
-                <span class="text-sm font-medium text-gray-700">Disabled</span>
-                <span class="block text-sm text-gray-500">Turn off all notifications</span>
+                <span class="t-body-s font-medium text-ink">Disabled</span>
+                <span class="block t-meta text-ink-muted">Turn off all notifications</span>
               </span>
             </label>
           </div>
         <% end %>
       </div>
       <!-- Save Button -->
-      <div class="pt-4 border-t border-gray-200">
+      <div class="pt-4 border-t border-rule">
         <%= f.submit "Save Notification Preferences",
-                     class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+                     class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
   <!-- Account Actions -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h2>
+  <div class="card">
+    <h2 class="t-body-l font-semibold text-ink mb-4">Account Actions</h2>
     <div class="space-y-4">
-      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div class="flex items-center justify-between p-4 bg-surface-raised rounded-md">
         <div>
-          <h3 class="text-sm font-medium text-gray-900">Account Verification</h3>
-          <p class="text-sm text-gray-500">
+          <h3 class="t-body-s font-semibold text-ink">Account Verification</h3>
+          <p class="t-meta text-ink-muted">
             <% if current_user.email_verified? %>
               ✅ Your email is verified
             <% else %>
@@ -285,25 +285,27 @@
           </p>
         </div>
         <% unless current_user.email_verified? %>
-          <%= link_to "Resend Verification", "#", 
-                      class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+          <%= link_to "Resend Verification", "#",
+                      class: "text-accent hover:text-accent t-body-s font-semibold" %>
         <% end %>
       </div>
-      <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
-        <div>
-          <h3 class="text-sm font-medium text-red-900">Delete Account</h3>
-          <p class="text-sm text-red-700">Permanently delete your account and all data</p>
+      <div class="alert alert-danger p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="t-body-s font-semibold text-danger">Delete Account</h3>
+            <p class="t-meta text-danger">Permanently delete your account and all data</p>
+          </div>
+          <%= link_to "Delete Account", "#",
+                      class: "text-danger hover:text-danger t-body-s font-semibold",
+                      data: { confirm: "Are you sure? This action cannot be undone." } %>
         </div>
-        <%= link_to "Delete Account", "#", 
-                    class: "text-red-600 hover:text-red-800 text-sm font-medium",
-                    data: { confirm: "Are you sure? This action cannot be undone." } %>
       </div>
     </div>
   </div>
       <!-- Navigation -->
       <div class="text-center">
         <%= link_to "← Back to Profile", profile_path,
-                    class: "text-blue-600 hover:text-blue-800 font-medium" %>
+                    class: "text-accent hover:text-accent font-medium" %>
       </div>
     </div>
   </div>
