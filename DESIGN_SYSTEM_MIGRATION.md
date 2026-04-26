@@ -26,21 +26,20 @@
 - [x] Style scrollbars with design colors
 - [x] Update link colors and ::selection with design tokens
 
-### 1.3 Create Utility Classes for Common Patterns
-- [ ] Add `.eyebrow`, `.kbd`, `.status-dot`, `.mark` utility classes
-- [ ] Add `.section-divider` for labeled horizontal rules
-- [ ] Create `.row-grid` and `.list-row` utilities for table-like layouts
-- [ ] Add `.text-ink*` variants (ink, ink-muted, ink-subtle, ink-faint, ink-inverse)
-- [ ] Add `.bg-surface*` variants (surface, surface-raised, surface-sunken)
-- [ ] Create semantic color utilities (.text-success, .text-warning, .text-danger, .text-ai-*
+### 1.3 Create Utility Classes for Common Patterns ✅ COMPLETE
+- [x] Add `.eyebrow`, `.kbd`, `.status-dot`, `.mark` utility classes
+- [x] Add `.section-divider` for labeled horizontal rules
+- [x] Add `.text-ink*` variants (ink, ink-muted, ink-subtle, ink-faint, ink-inverse)
+- [x] Add `.bg-surface*` variants (surface, surface-raised, surface-sunken)
+- [x] Create semantic color utilities (.text-success, .text-warning, .text-danger)
+- [x] Add typography presets (.t-display-l, .t-body, .t-meta, .t-eyebrow)
 
-### 1.4 Typography System Integration
-- [ ] Map design system font sizes (--text-2xs through --text-3xl) to Tailwind utilities
-- [ ] Configure font families as Tailwind theme values
-- [ ] Create size scale helpers: `.text-display-l`, `.text-display-m`, `.text-display-s`, `.text-body-l`, `.text-body`, `.text-body-s`, `.text-meta`
-- [ ] Verify font weights map (--font-weight-regular through --font-weight-bold)
-- [ ] Test leading/line-height tokens on long text
-- [ ] Update any Google Fonts CDN link if needed
+### 1.4 Typography System Integration ✅ COMPLETE
+- [x] Map design system font sizes (--text-2xs through --text-3xl)
+- [x] Configure font families as CSS variables (--font-display, --font-body, --font-mono, etc.)
+- [x] Create size scale helpers: `.text-display-l`, `.text-display-m`, `.text-display-s`, `.text-body-l`, `.text-body`, `.text-body-s`, `.text-meta`
+- [x] Font weights mapped (--font-weight-regular through --font-weight-bold)
+- [x] Leading/line-height tokens available (--leading-tight through --leading-relaxed)
 
 ---
 

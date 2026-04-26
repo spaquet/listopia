@@ -1,35 +1,35 @@
 <!-- app/views/shared/_navigation.html.erb -->
-<nav class="<%= current_user ? 'bg-white shadow-sm border-b border-gray-200' : 'px-6 py-4 bg-white/30 backdrop-blur-sm border-b border-white/50' %>">
+<nav class="bg-surface border-b border-rule shadow-sm transition-colors duration-base <%= 'bg-opacity-30 backdrop-blur-sm' unless current_user %>">
   <div class="<%= current_user ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto' %>">
     <div class="<%= current_user ? 'flex justify-between h-16 items-center' : 'flex justify-between items-center' %>">
       <!-- Logo -->
       <div class="flex items-center">
-        <%= link_to root_path, class: "flex items-center space-x-2" do %>
-          <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <span class="text-white font-bold text-lg">L</span>
+        <%= link_to root_path, class: "flex items-center space-x-2 hover:opacity-80 transition-opacity duration-base" do %>
+          <div class="w-8 h-8 bg-accent rounded-md flex items-center justify-center">
+            <span class="text-ink-inverse font-bold text-lg font-display">L</span>
           </div>
-          <span class="text-xl font-bold text-gray-900">Listopia</span>
+          <span class="text-xl font-bold text-ink font-display">Listopia</span>
         <% end %>
       </div>
       <!-- Navigation Links -->
-      <div class="flex items-center <%= current_user ? 'space-x-4' : 'space-x-3' %>">
+      <div class="flex items-center <%= current_user ? 'space-x-2' : 'space-x-3' %>">
         <% if current_user %>
           <!-- Organization Switcher (only for authenticated users) -->
           <%= render "shared/current_org_button" %>
           <!-- Authenticated User Navigation -->
-          <%= link_to dashboard_path, class: nav_link_class(dashboard_path) do %>
+          <%= link_to dashboard_path, class: "text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base flex items-center" do %>
             <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
               <path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4-2h2v20h-2zm4 4h2v16h-2z"/>
             </svg>
             Dashboard
           <% end %>
-          <%= link_to lists_path, class: nav_link_class(lists_path) do %>
+          <%= link_to lists_path, class: "text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base flex items-center" do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
             </svg>
             My Lists
           <% end %>
-          <%= link_to browse_ai_agents_path, class: nav_link_class(browse_ai_agents_path) do %>
+          <%= link_to browse_ai_agents_path, class: "text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base flex items-center" do %>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4 mr-2">
               <path stroke-width="2" fill="currentColor" d="M12 2c2.65 0 5.19 1.06 7.07 2.93l-1.42 1.42A8 8 0 0 0 12 4c-2.12 0-4.16.84-5.65 2.35L4.93 4.93C6.81 3.06 9.35 2 12 2M3.66 6.5l1.45 1.44A8.04 8.04 0 0 0 4 12a8 8 0 0 0 8 8a8 8 0 0 0 8-8c0-1.43-.39-2.83-1.12-4.06l1.46-1.44A9.93 9.93 0 0 1 22 12a10 10 0 0 1-10 10A10 10 0 0 1 2 12c0-1.96.58-3.88 1.66-5.5M12 6a6 6 0 0 1 6 6c0 1.59-.63 3.12-1.76 4.24l-1.41-1.41a4.004 4.004 0 0 1-5.66 0l-1.41 1.41A5.97 5.97 0 0 1 6 12a6 6 0 0 1 6-6m0 2a1 1 0 0 0-1 1a1 1 0 0 0 1 1a1 1 0 0 0 1-1a1 1 0 0 0-1-1"/>
             </svg>
@@ -40,13 +40,13 @@
           <!-- Search Icon (Spotlight) -->
           <button type="button"
                   data-action="click->spotlight-trigger#open"
-            class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+            class="text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base flex items-center"
             aria-label="Search (⌘K)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
             </svg>
           </button>
-          <%= link_to new_list_path, class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center" do %>
+          <%= link_to new_list_path, class: "bg-accent text-ink-inverse px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity duration-base flex items-center ml-2" do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
@@ -58,53 +58,53 @@
           </div>
           <!-- User Menu -->
           <div class="relative" data-controller="dropdown">
-            <button data-action="click->dropdown#toggle" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors duration-200">
+            <button data-action="click->dropdown#toggle" class="flex items-center space-x-2 text-ink hover:text-accent transition-colors duration-base">
               <%= user_avatar_initials(current_user, size: 'w-8 h-8') %>
               <span class="text-sm font-medium"><%= current_user.name %></span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-            <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10 border border-gray-200">
-              <%= link_to profile_path, class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+            <div data-dropdown-target="menu" class="hidden absolute right-0 mt-2 w-48 bg-surface-raised rounded-md shadow-pop py-1 z-10 border border-rule">
+              <%= link_to profile_path, class: "flex items-center px-4 py-2 text-sm text-ink hover:bg-surface-sunken transition-colors duration-base" do %>
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
                 Profile
               <% end %>
-              <%= link_to settings_user_path, class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+              <%= link_to settings_user_path, class: "flex items-center px-4 py-2 text-sm text-ink hover:bg-surface-sunken transition-colors duration-base" do %>
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
                 Settings
               <% end %>
-              <%= link_to connectors_connector_accounts_path, class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+              <%= link_to connectors_connector_accounts_path, class: "flex items-center px-4 py-2 text-sm text-ink hover:bg-surface-sunken transition-colors duration-base" do %>
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6"></path>
                 </svg>
                 Integrations
               <% end %>
-              <%= link_to invitations_path, class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+              <%= link_to invitations_path, class: "flex items-center px-4 py-2 text-sm text-ink hover:bg-surface-sunken transition-colors duration-base" do %>
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                 </svg>
                 Invitations
               <% end %>
               <% if current_user.admin? %>
-                <hr class="my-1">
-                <%= link_to admin_root_path, class: "flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200" do %>
+                <div class="border-t border-rule my-1"></div>
+                <%= link_to admin_root_path, class: "flex items-center px-4 py-2 text-sm text-ink hover:bg-surface-sunken transition-colors duration-base" do %>
                   <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                   </svg>
                   Admin
                 <% end %>
               <% end %>
-              <hr class="my-1">
-              <%= button_to destroy_session_path, method: :delete, 
+              <div class="border-t border-rule my-1"></div>
+              <%= button_to destroy_session_path, method: :delete,
                             form: { class: "w-full" },
-                            class: "flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 text-left border-0 bg-transparent" do %>
+                            class: "flex items-center w-full px-4 py-2 text-sm text-danger hover:bg-surface-sunken transition-colors duration-base text-left border-0 bg-transparent" do %>
                 <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                 </svg>
@@ -114,18 +114,18 @@
           </div>
         <% else %>
           <!-- Unauthenticated User Navigation -->
-          <!-- GitHub Link (visible for unauthenticated and authenticated users) -->
-          <a href="https://github.com/spaquet/listopia" target="_blank" rel="noopener noreferrer" 
-           class="<%= current_user ? 'text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center' : 'inline-flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors px-4 py-2 rounded-lg hover:bg-white/40' %>">
+          <!-- GitHub Link -->
+          <a href="https://github.com/spaquet/listopia" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center space-x-2 text-ink hover:text-accent transition-colors px-4 py-2 rounded-md text-sm font-medium">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
             <span class="text-sm font-medium hidden sm:inline">GitHub</span>
           </a>
-          <%= link_to new_session_path, class: "text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" do %>
+          <%= link_to new_session_path, class: "text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base" do %>
             Sign In
           <% end %>
-          <%= link_to new_registration_path, class: "bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105" do %>
+          <%= link_to new_registration_path, class: "bg-accent text-ink-inverse px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity duration-base" do %>
             Get Started
           <% end %>
         <% end %>
