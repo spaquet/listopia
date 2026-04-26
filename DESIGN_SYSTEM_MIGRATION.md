@@ -19,14 +19,15 @@
 - Phase 4.2 ✅ List cards with design system
 - Phase 4.3 ✅ List show page & item rows
 - Phase 4.4 ✅ List item editor (modal form)
+- Phase 4.5 ✅ Quick add form & recurrence
 
-**Current Status:** 
+**Current Status:**
 - Design tokens & theme system fully operational
 - All components (cards, buttons, forms, alerts, pills) available
 - Navigation redesigned with Editorial/Console themes
 - Lists index/grid views updated to design system
-- List show page, header, & item rows redesigned
-- List item editor modal with design system colors, form utilities
+- List show/edit views completely redesigned
+- Quick add form with custom selects styled
 - Theme toggle working with localStorage persistence
 
 **Completed Templates:**
@@ -37,9 +38,11 @@
 - app/views/lists/_header.html.erb ✅
 - app/views/list_items/_item.html.erb ✅
 - app/views/list_items/edit.html.erb ✅
+- app/views/list_items/_quick_add_form.html.erb ✅
+- app/views/shared/_item_type_select.html.erb ✅
+- app/views/list_items/_recurrence_fields.html.erb ✅
 
 **Remaining Priority:**
-- Phase 4.5: Quick add form & inline edit
 - Phase 5: Search & filtering
 - Phase 8-12: Chat, email, admin, testing & polish
 
