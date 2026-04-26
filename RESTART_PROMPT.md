@@ -3,11 +3,11 @@ LISTOPIA DESIGN SYSTEM MIGRATION — COMPLETE RESTART PROMPT
 ═══════════════════════════════════════════════════════════════════════════════
 
 PROJECT: Apply Secure Mail Design System (Editorial light + Console dark themes)
-STATUS: Phases 1-4.5 complete. All list management views styled. Ready for Phase 5.
+STATUS: Phases 1-5 complete. All list management & search views styled. Ready for Phase 6.
 BRANCH: fix/version-0.9
 
 ═══════════════════════════════════════════════════════════════════════════════
-WHAT'S COMPLETE (13 Git Commits)
+WHAT'S COMPLETE (16 Git Commits)
 ═══════════════════════════════════════════════════════════════════════════════
 
 ✅ PHASE 1.1: Design Tokens + Theme Infrastructure (a1e18d6)
@@ -60,6 +60,24 @@ WHAT'S COMPLETE (13 Git Commits)
    - app/views/list_items/_recurrence_fields.html.erb
    - All custom selects: surface-sunken trigger, surface-raised dropdown
    - Priority colors: success/warning/accent/danger indicator dots
+
+✅ PHASE 5: Search & Filter Views (e6f620e, cd903f3, dc1ea3b)
+   - app/views/lists/_filters.html.erb fully redesigned with design system
+     * Search input: .form-input class
+     * Filter buttons: styled links with active state (bg-surface-raised + border-rule + text-accent)
+     * Active filters: .alert component with .pill badges
+   - app/views/team_members/search.turbo_stream.erb (dropdown member search)
+     * bg-surface-raised + border-rule dropdown
+     * Hover: bg-surface-sunken with duration-fast
+   - app/views/message_templates/_search_results.html.erb (chat search results)
+     * Result titles: text-accent with hover state
+     * Type badges: bg-surface-sunken + text-ink
+     * All text: text-ink / text-ink-muted semantic colors
+   - app/views/connectors/storage/google_drive/files/index.html.erb (file browser)
+     * Table header: bg-surface-sunken + t-eyebrow
+     * Table rows: hover:bg-surface-raised
+     * Links: text-accent with transitions
+     * Pagination & buttons use .btn .btn-primary
 
 ═══════════════════════════════════════════════════════════════════════════════
 DESIGN SYSTEM FILES LOCATION & REFERENCE
@@ -143,14 +161,14 @@ UTILITIES:
 NEXT PRIORITIES
 ═══════════════════════════════════════════════════════════════════════════════
 
-PHASE 5: Search & Filtering Views
-  - Search results view styling (/lists/search or relevant)
-  - Filter sidebar + facets styling
-  - Search result rows with design tokens
-  - Filter pills and clear buttons
-  - Search input styling
+PHASE 6: AI Agent Runs & Chat Interface
+  - AI agent run status views (ai_agents/runs.html.erb, ai_agent_runs/show.html.erb)
+  - Chat interface styling (unified chat messages, input)
+  - Message bubbles (user vs AI) with design tokens
+  - Typing indicators
+  - Chat controls and commands
 
-PHASE 8: Chat Interface (if exists)
+PHASE 7-9: Admin, Email, Testing, Polish
   - Unified chat styling
   - Message bubbles (user vs AI)
   - Chat input area
