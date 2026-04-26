@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="editorial" data-controller="theme">
   <head>
     <title><%= content_for(:title) || "Listopia" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -17,7 +17,7 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_include_tag "application", "data-turbo-track": "reload", type: "module" %>
   </head>
-  <body class="bg-gray-50 min-h-screen" data-controller="error-handler keyboard-shortcuts spotlight-trigger">
+  <body class="bg-surface text-ink min-h-screen transition-colors duration-base" data-controller="error-handler keyboard-shortcuts spotlight-trigger">
     <%= render "shared/navigation" %>
     <%= render "shared/flash_messages" %>
     <!-- Main Content -->

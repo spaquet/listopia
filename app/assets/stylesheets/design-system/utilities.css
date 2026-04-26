@@ -1,0 +1,211 @@
+/* ─────────────────────────────────────────────────────────────────
+   Design System Utility Classes
+   Additional helpers beyond design-system/tokens.css
+   ────────────────────────────────────────────────────────────────── */
+
+/* Semantic text color utilities */
+.text-ink { color: var(--color-ink); }
+.text-ink-muted { color: var(--color-ink-muted); }
+.text-ink-subtle { color: var(--color-ink-subtle); }
+.text-ink-faint { color: var(--color-ink-faint); }
+.text-ink-inverse { color: var(--color-ink-inverse); }
+.text-accent { color: var(--color-accent); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+
+/* Background utilities */
+.bg-surface { background-color: var(--color-surface); }
+.bg-surface-raised { background-color: var(--color-surface-raised); }
+.bg-surface-sunken { background-color: var(--color-surface-sunken); }
+.bg-accent { background-color: var(--color-accent); color: var(--color-ink-inverse); }
+.bg-accent-soft { background-color: var(--color-accent-soft); }
+.bg-success { background-color: var(--color-success); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-danger { background-color: var(--color-danger); }
+.bg-note { background-color: var(--color-note); }
+
+/* Border utilities */
+.border-rule { border-color: var(--color-rule); }
+.border-rule-soft { border-color: var(--color-rule-soft); }
+.border-rule-strong { border-color: var(--color-rule-strong); }
+
+/* Typography utilities */
+.font-display { font-family: var(--font-display); }
+.font-body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono); }
+.font-ui { font-family: var(--font-ui); }
+.font-sans-alt { font-family: var(--font-sans-alt); }
+
+/* Size scale utilities */
+.text-2xs { font-size: var(--text-2xs); }
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-md { font-size: var(--text-md); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+/* Typography presets */
+.t-display-l {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 56px;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+}
+[data-theme="console"] .t-display-l {
+  font-family: var(--font-sans-alt);
+}
+
+.t-display-m {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+[data-theme="console"] .t-display-m {
+  font-family: var(--font-sans-alt);
+}
+
+.t-display-s {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.18;
+  letter-spacing: -0.018em;
+}
+[data-theme="console"] .t-display-s {
+  font-family: var(--font-sans-alt);
+}
+
+.t-body-l {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.t-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.t-body-s {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+}
+
+.t-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-ink-subtle);
+  letter-spacing: 0.02em;
+}
+
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+  font-weight: 500;
+}
+
+/* Semantic components */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-ink-subtle);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  display: inline-block;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-success);
+  display: inline-block;
+}
+
+mark,
+.mark {
+  background: var(--color-ai-mark);
+  color: var(--color-ink);
+  padding: 0 2px;
+  border-radius: var(--radius-xs);
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-divider .label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.section-divider .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--color-rule);
+}
+
+/* Motion utilities */
+.duration-fast { transition-duration: var(--duration-fast); }
+.duration-base { transition-duration: var(--duration-base); }
+.duration-slow { transition-duration: var(--duration-slow); }
+
+.ease-out { transition-timing-function: var(--ease-out); }
+.ease-in-out { transition-timing-function: var(--ease-in-out); }
+
+/* Shadow utilities */
+.shadow-card { box-shadow: var(--shadow-card); }
+.shadow-pop { box-shadow: var(--shadow-pop); }
+
+/* Radius utilities */
+.rounded-none { border-radius: var(--radius-none); }
+.rounded-xs { border-radius: var(--radius-xs); }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-pill { border-radius: var(--radius-pill); }
+
+/* Layout density utilities */
+.row-gap-sm { gap: var(--row-gap-sm); }
+.row-gap { gap: var(--row-gap); }
+.row-pad-x { padding-left: var(--row-pad-x); padding-right: var(--row-pad-x); }
+.row-pad-y { padding-top: var(--row-pad-y); padding-bottom: var(--row-pad-y); }
+.row-pad { padding: var(--row-pad-y) var(--row-pad-x); }
+
+/* Smooth transitions for theme changes */
+html {
+  transition: background-color var(--duration-base) var(--ease-out),
+              color var(--duration-base) var(--ease-out);
+}
+
+body {
+  transition: background-color var(--duration-base) var(--ease-out),
+              color var(--duration-base) var(--ease-out);
+}
