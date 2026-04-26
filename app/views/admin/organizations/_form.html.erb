@@ -34,11 +34,11 @@
 
   <div class="flex gap-2">
     <%= f.submit @organization.persisted? ? "Update Organization" : "Create Organization",
-      class: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+      class: "btn btn-primary"
     %>
     <%= link_to "Cancel",
       @organization.persisted? ? admin_organization_path(@organization) : admin_organizations_path,
-      class: "px-6 py-2 bg-surface-raised hover:bg-surface-raised rounded-lg font-medium"
+      class: "btn btn-secondary"
     %>
   </div>
 <% end %>

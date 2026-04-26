@@ -1,102 +1,107 @@
 <%= form_with model: agent, local: true, class: "space-y-6" do |f| %>
   <% if agent.errors.any? %>
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-      <h2 class="font-semibold text-red-900 mb-2"><%= pluralize(agent.errors.count, "error") %> prohibited this agent:</h2>
-      <ul class="text-sm text-red-700 list-disc list-inside">
-        <% agent.errors.full_messages.each do |message| %>
-          <li><%= message %></li>
-        <% end %>
-      </ul>
+    <div class="alert alert-danger">
+      <div class="alert-icon">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <div class="alert-content">
+        <h2 class="alert-title"><%= pluralize(agent.errors.count, "error") %> prohibited this agent:</h2>
+        <ul class="mt-2 text-sm list-disc list-inside">
+          <% agent.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
     </div>
   <% end %>
 
   <!-- Tabs Navigation -->
-  <div class="border-b border-gray-200">
-    <div class="flex space-x-8">
-      <button type="button" data-tab="identity" class="tab-button active px-1 py-4 border-b-2 border-blue-600 font-semibold text-sm text-gray-700 hover:text-gray-900">Identity</button>
-      <button type="button" data-tab="instructions" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Instructions</button>
-      <button type="button" data-tab="context" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Context</button>
-      <button type="button" data-tab="questions" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Pre-Run Questions</button>
-      <button type="button" data-tab="triggers" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Triggers</button>
-      <button type="button" data-tab="execution" class="tab-button px-1 py-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700">Execution</button>
-    </div>
+  <div class="tab-nav">
+    <button type="button" data-tab="identity" class="tab-item active">Identity</button>
+    <button type="button" data-tab="instructions" class="tab-item">Instructions</button>
+    <button type="button" data-tab="context" class="tab-item">Context</button>
+    <button type="button" data-tab="questions" class="tab-item">Pre-Run Questions</button>
+    <button type="button" data-tab="triggers" class="tab-item">Triggers</button>
+    <button type="button" data-tab="execution" class="tab-item">Execution</button>
   </div>
 
   <!-- Tab 1: Identity -->
   <div id="identity" class="tab-content space-y-4">
     <div>
-      <%= f.label :name, "Agent Name", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.text_field :name, placeholder: "e.g., Task Breakdown Agent", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <%= f.label :name, "Agent Name", class: "form-label" %>
+      <%= f.text_field :name, placeholder: "e.g., Task Breakdown Agent", class: "form-input" %>
     </div>
 
     <div>
-      <%= f.label :description, "Description", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.text_area :description, placeholder: "What does this agent do? Used for embeddings and discovery.", class: "w-full border border-gray-300 rounded-lg p-2 text-sm", rows: 3 %>
+      <%= f.label :description, "Description", class: "form-label" %>
+      <%= f.text_area :description, placeholder: "What does this agent do? Used for embeddings and discovery.", class: "form-input", rows: 3 %>
     </div>
 
     <div>
-      <%= f.label :scope, "Agent Scope", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+      <%= f.label :scope, "Agent Scope", class: "form-label" %>
       <% available_scopes = ["user_agent", "org_agent", "team_agent"].map { |k| [k.titleize, k] } %>
-      <%= f.select :scope, available_scopes, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-      <p class="text-xs text-gray-500 mt-1">Determines who can access this agent</p>
+      <%= f.select :scope, available_scopes, {}, class: "form-input" %>
+      <p class="text-xs text-ink-muted mt-1">Determines who can access this agent</p>
     </div>
 
     <div>
-      <%= f.label :status, "Status", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.select :status, AiAgent.statuses.keys.map { |k| [k.titleize, k] }, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <%= f.label :status, "Status", class: "form-label" %>
+      <%= f.select :status, AiAgent.statuses.keys.map { |k| [k.titleize, k] }, {}, class: "form-input" %>
     </div>
   </div>
 
   <!-- Tab 2: Instructions -->
   <div id="instructions" class="tab-content space-y-4 hidden">
     <div>
-      <%= f.label :persona, "Persona (Role & Tone)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.text_area :prompt, placeholder: "Who is this agent? Example: 'You are a senior project manager expert at decomposing complex goals...'", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 4 %>
-      <p class="text-xs text-gray-500 mt-1">Define the agent's role, tone, and constraints</p>
+      <%= f.label :persona, "Persona (Role & Tone)", class: "form-label" %>
+      <%= f.text_area :prompt, placeholder: "Who is this agent? Example: 'You are a senior project manager expert at decomposing complex goals...'", class: "form-input font-mono", rows: 4 %>
+      <p class="text-xs text-ink-muted mt-1">Define the agent's role, tone, and constraints</p>
     </div>
 
     <div>
-      <%= f.label :instructions, "Instructions (Step-by-Step SOP)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.text_area :instructions, placeholder: "1. Understand the goal\n2. Identify phases\n3. Break into tasks\n4. Assign priorities\n5. Confirm with user", class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono", rows: 6 %>
-      <p class="text-xs text-gray-500 mt-1">What the agent does, step by step. Separate from persona.</p>
+      <%= f.label :instructions, "Instructions (Step-by-Step SOP)", class: "form-label" %>
+      <%= f.text_area :instructions, placeholder: "1. Understand the goal\n2. Identify phases\n3. Break into tasks\n4. Assign priorities\n5. Confirm with user", class: "form-input font-mono", rows: 6 %>
+      <p class="text-xs text-ink-muted mt-1">What the agent does, step by step. Separate from persona.</p>
     </div>
   </div>
 
   <!-- Tab 3: Body Context -->
   <div id="context" class="tab-content space-y-4 hidden">
-    <p class="text-sm text-gray-600">What context does the agent automatically load before running?</p>
+    <p class="text-sm text-ink-muted">What context does the agent automatically load before running?</p>
     <% context_config = agent.body_context_config || {} %>
 
-    <div class="space-y-3 border rounded-lg p-4 bg-gray-50">
-      <label class="flex items-center">
-        <input type="checkbox" name="ai_agent[body_context_config][load_invocable]" value="invocable" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "invocable" %>>
-        <span class="ml-3 text-sm text-gray-700"><strong>Invocable Resource</strong> — Load the target list/item the agent is working on</span>
+    <div class="space-y-3 border border-rule rounded-md p-4 bg-surface-sunken">
+      <label class="flex items-center space-x-3">
+        <input type="checkbox" name="ai_agent[body_context_config][load_invocable]" value="invocable" class="checkbox" <%= "checked" if context_config["load"] == "invocable" %>>
+        <span class="text-sm text-ink"><strong>Invocable Resource</strong> — Load the target list/item the agent is working on</span>
       </label>
 
-      <label class="flex items-center">
-        <input type="checkbox" name="ai_agent[body_context_config][load_all_lists]" value="all_lists" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "all_lists" %>>
-        <span class="ml-3 text-sm text-gray-700"><strong>All Lists</strong> — Load all lists in the organization (for status reports, summaries)</span>
+      <label class="flex items-center space-x-3">
+        <input type="checkbox" name="ai_agent[body_context_config][load_all_lists]" value="all_lists" class="checkbox" <%= "checked" if context_config["load"] == "all_lists" %>>
+        <span class="text-sm text-ink"><strong>All Lists</strong> — Load all lists in the organization (for status reports, summaries)</span>
       </label>
 
-      <label class="flex items-center">
-        <input type="checkbox" name="ai_agent[body_context_config][load_recent_runs]" value="recent_runs" class="h-4 w-4 rounded border-gray-300" <%= "checked" if context_config["load"] == "recent_runs" %>>
-        <span class="ml-3 text-sm text-gray-700"><strong>Recent Runs</strong> — Load summaries of the last 5 completed runs (cross-run memory)</span>
+      <label class="flex items-center space-x-3">
+        <input type="checkbox" name="ai_agent[body_context_config][load_recent_runs]" value="recent_runs" class="checkbox" <%= "checked" if context_config["load"] == "recent_runs" %>>
+        <span class="text-sm text-ink"><strong>Recent Runs</strong> — Load summaries of the last 5 completed runs (cross-run memory)</span>
       </label>
     </div>
   </div>
 
   <!-- Tab 4: Pre-Run Questions -->
   <div id="questions" class="tab-content space-y-4 hidden">
-    <p class="text-sm text-gray-600">Ask the user these questions BEFORE the agent executes. Answers are injected as parameters.</p>
+    <p class="text-sm text-ink-muted">Ask the user these questions BEFORE the agent executes. Answers are injected as parameters.</p>
 
-    <%= f.label :pre_run_questions, "Questions (JSON Array)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+    <%= f.label :pre_run_questions, "Questions (JSON Array)", class: "form-label" %>
     <% questions_value = agent.pre_run_questions.present? ? (agent.pre_run_questions.is_a?(String) ? agent.pre_run_questions : JSON.pretty_generate(agent.pre_run_questions)) : '[]' %>
     <%= f.text_area :pre_run_questions,
         value: questions_value,
         placeholder: '[{"key":"goal","question":"What is the main goal?","required":true},{"key":"deadline","question":"Deadline?","required":false}]',
-        class: "w-full border border-gray-300 rounded-lg p-2 text-sm font-mono",
+        class: "form-input font-mono",
         rows: 6 %>
-    <p class="text-xs text-gray-500 mt-1">Each question object needs: key, question, required. Optional: options (array for multiple choice).</p>
+    <p class="text-xs text-ink-muted mt-1">Each question object needs: key, question, required. Optional: options (array for multiple choice).</p>
   </div>
 
   <!-- Tab 5: Triggers -->
@@ -105,8 +110,8 @@
     <% trigger_type = trigger_config["type"] || "manual" %>
 
     <div>
-      <%= f.label :trigger_config, "Trigger Type", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <select name="ai_agent[trigger_type]" onchange="updateTriggerFields(this.value)" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+      <%= f.label :trigger_config, "Trigger Type", class: "form-label" %>
+      <select name="ai_agent[trigger_type]" onchange="updateTriggerFields(this.value)" class="form-input">
         <option value="manual" <%= "selected" if trigger_type == "manual" %>>Manual (Click Run in UI)</option>
         <option value="event" <%= "selected" if trigger_type == "event" %>>Event-Driven (Trigger on app events)</option>
         <option value="schedule" <%= "selected" if trigger_type == "schedule" %>>Scheduled (Cron-based)</option>
@@ -115,18 +120,18 @@
 
     <div id="event-config" class="space-y-3 <%= "hidden" unless trigger_type == "event" %>">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Event Type</label>
-        <input type="text" name="ai_agent[trigger_config][event_type]" value="<%= trigger_config['event_type'] %>" placeholder="e.g., list_item.completed" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
-        <p class="text-xs text-gray-500 mt-1">Available: list_item.completed, list_item.created, list_item.updated</p>
+        <label class="form-label">Event Type</label>
+        <input type="text" name="ai_agent[trigger_config][event_type]" value="<%= trigger_config['event_type'] %>" placeholder="e.g., list_item.completed" class="form-input">
+        <p class="text-xs text-ink-muted mt-1">Available: list_item.completed, list_item.created, list_item.updated</p>
       </div>
     </div>
 
     <div id="schedule-config" class="space-y-3 <%= "hidden" unless trigger_type == "schedule" %>">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Cron Expression</label>
-        <input type="text" name="ai_agent[trigger_config][cron]" value="<%= trigger_config['cron'] %>" placeholder="e.g., 0 9 * * 1 (Monday 9am)" class="w-full border border-gray-300 rounded-lg p-2 text-sm font-mono">
-        <p class="text-xs text-gray-500 mt-1">Standard cron syntax: minute hour day-of-month month day-of-week</p>
-        <p class="text-xs text-gray-500">Examples: <code>0 9 * * 1</code> (Mon 9am), <code>0 17 * * *</code> (daily 5pm), <code>*/15 * * * *</code> (every 15 min)</p>
+        <label class="form-label">Cron Expression</label>
+        <input type="text" name="ai_agent[trigger_config][cron]" value="<%= trigger_config['cron'] %>" placeholder="e.g., 0 9 * * 1 (Monday 9am)" class="form-input font-mono">
+        <p class="text-xs text-ink-muted mt-1">Standard cron syntax: minute hour day-of-month month day-of-week</p>
+        <p class="text-xs text-ink-muted">Examples: <code>0 9 * * 1</code> (Mon 9am), <code>0 17 * * *</code> (daily 5pm), <code>*/15 * * * *</code> (every 15 min)</p>
       </div>
     </div>
 
@@ -138,61 +143,61 @@
   <div id="execution" class="tab-content space-y-4 hidden">
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <%= f.label :model, "LLM Model", class: "block text-sm font-semibold text-gray-700 mb-1" %>
+        <%= f.label :model, "LLM Model", class: "form-label" %>
         <% model_groups = {
           "GPT-5 Series" => ["gpt-5-pro", "gpt-5", "gpt-5-mini", "gpt-5-nano"],
           "Reasoning Models" => ["o3", "o3-mini", "o1", "o1-mini"],
           "GPT-4 Series" => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4"],
           "GPT-3.5" => ["gpt-3.5-turbo"]
         } %>
-        <%= f.select :model, model_groups, {}, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+        <%= f.select :model, model_groups, {}, class: "form-input" %>
       </div>
 
       <div>
-        <%= f.label :timeout_seconds, "Timeout (seconds)", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-        <%= f.number_field :timeout_seconds, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <%= f.label :max_steps, "Max Steps", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-        <%= f.number_field :max_steps, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
-      </div>
-
-      <div>
-        <%= f.label :max_tokens_per_run, "Max Tokens per Run", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-        <%= f.number_field :max_tokens_per_run, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+        <%= f.label :timeout_seconds, "Timeout (seconds)", class: "form-label" %>
+        <%= f.number_field :timeout_seconds, class: "form-input" %>
       </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <%= f.label :max_tokens_per_day, "Max Tokens per Day", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-        <%= f.number_field :max_tokens_per_day, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+        <%= f.label :max_steps, "Max Steps", class: "form-label" %>
+        <%= f.number_field :max_steps, class: "form-input" %>
       </div>
 
       <div>
-        <%= f.label :max_tokens_per_month, "Max Tokens per Month", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-        <%= f.number_field :max_tokens_per_month, class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+        <%= f.label :max_tokens_per_run, "Max Tokens per Run", class: "form-label" %>
+        <%= f.number_field :max_tokens_per_run, class: "form-input" %>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <%= f.label :max_tokens_per_day, "Max Tokens per Day", class: "form-label" %>
+        <%= f.number_field :max_tokens_per_day, class: "form-input" %>
+      </div>
+
+      <div>
+        <%= f.label :max_tokens_per_month, "Max Tokens per Month", class: "form-label" %>
+        <%= f.number_field :max_tokens_per_month, class: "form-input" %>
       </div>
     </div>
 
     <div>
-      <%= f.label :tag_list, "Tags", class: "block text-sm font-semibold text-gray-700 mb-1" %>
-      <%= f.text_field :tag_list, placeholder: "Separate with commas", class: "w-full border border-gray-300 rounded-lg p-2 text-sm" %>
+      <%= f.label :tag_list, "Tags", class: "form-label" %>
+      <%= f.text_field :tag_list, placeholder: "Separate with commas", class: "form-input" %>
     </div>
   </div>
 
-  <div class="flex gap-2 pt-4 border-t">
-    <%= f.submit agent.new_record? ? "Create Agent" : "Update Agent", class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition" %>
-    <%= link_to "Cancel", agent.new_record? ? browse_ai_agents_path : ai_agent_path(agent), class: "bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded transition" %>
+  <div class="flex gap-2 pt-4 border-t border-rule">
+    <%= f.submit agent.new_record? ? "Create Agent" : "Update Agent", class: "btn btn-primary" %>
+    <%= link_to "Cancel", agent.new_record? ? browse_ai_agents_path : ai_agent_path(agent), class: "btn btn-secondary" %>
   </div>
 <% end %>
 
 <script>
 // Tab switching logic
-document.querySelectorAll('.tab-button').forEach(button => {
+document.querySelectorAll('.tab-item').forEach(button => {
   button.addEventListener('click', (e) => {
     e.preventDefault();
     const tabName = button.dataset.tab;
@@ -202,18 +207,16 @@ document.querySelectorAll('.tab-button').forEach(button => {
       tab.classList.add('hidden');
     });
 
-    // Remove active border from all buttons
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('border-blue-600', 'text-gray-700');
-      btn.classList.add('border-transparent', 'text-gray-500');
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-item').forEach(btn => {
+      btn.classList.remove('active');
     });
 
     // Show selected tab
     document.getElementById(tabName).classList.remove('hidden');
 
-    // Add active border to clicked button
-    button.classList.remove('border-transparent', 'text-gray-500');
-    button.classList.add('border-blue-600', 'text-gray-700');
+    // Add active class to clicked button
+    button.classList.add('active');
   });
 });
 
