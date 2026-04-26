@@ -3,11 +3,11 @@ LISTOPIA DESIGN SYSTEM MIGRATION — COMPLETE RESTART PROMPT
 ═══════════════════════════════════════════════════════════════════════════════
 
 PROJECT: Apply Secure Mail Design System (Editorial light + Console dark themes)
-STATUS: Phases 1-5 complete. All list management & search views styled. Ready for Phase 6.
+STATUS: Phases 1-6 complete. All list management, search, AI agent & chat views styled. Ready for Phase 7.
 BRANCH: fix/version-0.9
 
 ═══════════════════════════════════════════════════════════════════════════════
-WHAT'S COMPLETE (16 Git Commits)
+WHAT'S COMPLETE (17 Git Commits)
 ═══════════════════════════════════════════════════════════════════════════════
 
 ✅ PHASE 1.1: Design Tokens + Theme Infrastructure (a1e18d6)
@@ -78,6 +78,25 @@ WHAT'S COMPLETE (16 Git Commits)
      * Table rows: hover:bg-surface-raised
      * Links: text-accent with transitions
      * Pagination & buttons use .btn .btn-primary
+
+✅ PHASE 6: AI Agent Runs & Chat Interface (462e8e3)
+   - AI Agent Run Views
+     * app/views/ai_agents/runs.html.erb - Agent runs list with .card, status pills
+     * app/views/ai_agent_runs/show.html.erb - Full run details page with forms
+     * app/views/ai_agents/_run_step.html.erb - Step progress with color-coded borders
+     * app/views/ai_agents/_run_status.html.erb - Status spinner & badge
+     * app/views/ai_agents/_run_progress.html.erb - Progress bar with accent color
+     * app/views/ai_agents/_run_result.html.erb - Result summary (.alert variants)
+     * app/views/ai_agents/_run_placeholder.html.erb - Initial container
+   - Chat Interface Views
+     * app/views/chats/show.html.erb - Chat page with metadata cards
+     * app/views/chat/_unified_chat.html.erb - Main chat UI with header/messages/input
+     * app/views/shared/_chat_message.html.erb - Message bubbles (CSS variables for themes)
+     * app/views/chats/_hitl_question.html.erb - HITL interaction form
+     * app/views/chats/_hitl_answered.html.erb - HITL answered state
+     * app/views/chat/_floating_chat.html.erb - Floating chat widget
+   - Helper Updates
+     * app/helpers/chat_helper.rb - Updated message_bubble_classes, links, badges with tokens
 
 ═══════════════════════════════════════════════════════════════════════════════
 DESIGN SYSTEM FILES LOCATION & REFERENCE
@@ -161,25 +180,27 @@ UTILITIES:
 NEXT PRIORITIES
 ═══════════════════════════════════════════════════════════════════════════════
 
-PHASE 6: AI Agent Runs & Chat Interface
-  - AI agent run status views (ai_agents/runs.html.erb, ai_agent_runs/show.html.erb)
-  - Chat interface styling (unified chat messages, input)
-  - Message bubbles (user vs AI) with design tokens
-  - Typing indicators
-  - Chat controls and commands
+PHASE 7: Additional Views (Dashboard, Admin, Email)
+  - Dashboard view styling (home/dashboard page)
+  - Admin dashboard styling (if present)
+  - Email templates (action mailer templates)
+  - Settings/preferences views
+  - User profile views
 
-PHASE 7-9: Admin, Email, Testing, Polish
-  - Unified chat styling
-  - Message bubbles (user vs AI)
-  - Chat input area
-  - Typing indicator
+PHASE 8: Forms, Modals & Special Components
+  - Form validations & error messages
+  - Modals & overlays
+  - Dropdowns & selects
+  - Toasts/alerts system
+  - Loading states & spinners
 
-PHASE 9-12: Admin, Email, Testing, Polish
-  - Admin dashboard styling
-  - Email templates
-  - Dark theme comprehensive testing
-  - Accessibility & responsive design
-  - Browser compatibility
+PHASE 9-12: Testing, Dark Theme, Polish
+  - Comprehensive dark theme (Console) testing
+  - Accessibility testing (contrast, focus states, etc.)
+  - Responsive design testing (mobile, tablet, desktop)
+  - Browser compatibility (Chrome, Safari, Firefox, Edge)
+  - Fine-tuning animations & transitions
+  - Performance optimization
 
 ═══════════════════════════════════════════════════════════════════════════════
 HOW TO RESUME FOR PHASE 5
