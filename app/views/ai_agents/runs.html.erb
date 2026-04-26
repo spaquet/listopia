@@ -1,69 +1,71 @@
-<div class="container max-w-4xl mx-auto px-4 py-8">
+<div class="container max-w-4xl mx-auto row-pad py-8">
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2"><%= @agent.name %> — Execution Runs</h1>
-    <p class="text-gray-600"><%= @agent.description %></p>
+    <h1 class="t-display-m text-ink mb-2"><%= @agent.name %> — Execution Runs</h1>
+    <p class="text-ink-muted"><%= @agent.description %></p>
   </div>
 
   <% if @runs.any? %>
     <div class="space-y-4">
       <% @runs.each do |run| %>
-        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+        <div class="card">
           <div class="flex items-start justify-between mb-3">
             <div>
-              <h3 class="font-semibold text-lg mb-1">
+              <h3 class="t-body-l font-semibold mb-1">
                 Run <%= run.id.to_s.slice(0, 8) %>
               </h3>
-              <p class="text-sm text-gray-600">
+              <p class="text-xs text-ink-muted">
                 <%= run.created_at.strftime("%B %d, %Y at %l:%M %p") %>
               </p>
             </div>
             <div class="text-right">
               <% case run.status %>
               <% when 'pending' %>
-                <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Pending</span>
+                <span class="pill warning"><%= run.status.titleize %></span>
               <% when 'running' %>
-                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Running</span>
+                <span class="pill accent"><%= run.status.titleize %></span>
               <% when 'completed' %>
-                <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Completed</span>
+                <span class="pill success"><%= run.status.titleize %></span>
               <% when 'failed' %>
-                <span class="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">Failed</span>
+                <span class="pill danger"><%= run.status.titleize %></span>
               <% when 'paused' %>
-                <span class="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">Paused</span>
+                <span class="pill accent"><%= run.status.titleize %></span>
               <% when 'cancelled' %>
-                <span class="inline-block px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">Cancelled</span>
+                <span class="pill"><%= run.status.titleize %></span>
               <% end %>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
             <div>
-              <p class="text-gray-600">Input</p>
-              <p class="font-mono text-xs bg-gray-50 p-2 rounded break-words"><%= truncate(run.user_input, length: 100) %></p>
+              <p class="t-eyebrow text-ink-muted">Input</p>
+              <p class="font-mono text-xs bg-surface-sunken p-2 rounded break-words text-ink"><%= truncate(run.user_input, length: 100) %></p>
             </div>
             <div>
-              <p class="text-gray-600">Tokens Used</p>
-              <p class="text-lg font-semibold"><%= run.total_tokens %></p>
+              <p class="t-eyebrow text-ink-muted">Tokens Used</p>
+              <p class="text-lg font-semibold text-ink"><%= run.total_tokens %></p>
             </div>
           </div>
 
           <% if run.error_message.present? %>
-            <div class="bg-red-50 border border-red-200 rounded p-3 mb-4">
-              <p class="text-red-800 text-sm"><strong>Error:</strong> <%= run.error_message %></p>
+            <div class="alert alert-danger mb-4">
+              <strong class="block mb-1">Error</strong>
+              <p><%= run.error_message %></p>
             </div>
           <% end %>
 
           <% if run.result_summary.present? %>
-            <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4">
-              <p class="text-blue-800 text-sm"><strong>Summary:</strong> <%= truncate(run.result_summary, length: 200) %></p>
+            <div class="alert alert-success mb-4">
+              <strong class="block mb-1">Summary</strong>
+              <p><%= truncate(run.result_summary, length: 200) %></p>
             </div>
           <% end %>
 
           <div class="flex gap-2">
-            <%= link_to "View Details", ai_agent_run_path(run), class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+            <%= link_to "View Details", ai_agent_run_path(run), class: "btn btn-ghost text-accent hover:text-accent text-sm" %>
             <% if run.status_paused? %>
-              <%= button_to "Resume", resume_ai_agent_run_path(run), method: :patch, class: "text-green-600 hover:text-green-800 text-sm font-medium" %>
+              <%= button_to "Resume", resume_ai_agent_run_path(run), method: :patch, class: "btn btn-ghost text-success text-sm" %>
             <% elsif run.status_running? %>
-              <%= button_to "Pause", pause_ai_agent_run_path(run), method: :patch, class: "text-orange-600 hover:text-orange-800 text-sm font-medium" %>
+              <%= button_to "Pause", pause_ai_agent_run_path(run), method: :patch, class: "btn btn-ghost text-warning text-sm" %>
             <% end %>
           </div>
         </div>
@@ -74,9 +76,9 @@
       <%= render 'shared/pagination', pagy: @pagy %>
     </div>
   <% else %>
-    <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-      <p class="text-gray-600 mb-2">No runs yet</p>
-      <p class="text-gray-500 text-sm">Agent runs will appear here after they are triggered</p>
+    <div class="alert alert-note">
+      <p class="font-semibold mb-1">No runs yet</p>
+      <p class="text-sm">Agent runs will appear here after they are triggered</p>
     </div>
   <% end %>
 </div>

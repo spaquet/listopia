@@ -1,19 +1,19 @@
 <div id="agent-run-result-<%= run.id %>">
   <% if run.status_completed? %>
-    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-      <h3 class="text-lg font-semibold text-green-900 mb-3">✓ Complete</h3>
-      <p class="text-green-700"><%= simple_format(run.result_summary) %></p>
+    <div class="alert alert-success mb-6">
+      <h3 class="text-lg font-semibold mb-3">✓ Complete</h3>
+      <p><%= simple_format(run.result_summary) %></p>
     </div>
   <% elsif run.status_failed? %>
-    <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
-      <h3 class="text-lg font-semibold text-red-900 mb-3">✗ Failed</h3>
-      <p class="text-red-700"><%= run.error_message %></p>
+    <div class="alert alert-danger mb-6">
+      <h3 class="text-lg font-semibold mb-3">✗ Failed</h3>
+      <p><%= run.error_message %></p>
     </div>
   <% end %>
 
   <% if current_user && run.status_completed? && !run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <p class="text-blue-700 text-sm">Please share feedback to help improve this agent.</p>
+    <div class="alert alert-note">
+      <p class="text-sm">Please share feedback to help improve this agent.</p>
     </div>
   <% end %>
 </div>

@@ -1,22 +1,27 @@
 <div id="agent-run-status-<%= run.id %>">
-  <div class="flex items-center justify-between p-3 bg-gray-50 rounded">
+  <div class="flex items-center justify-between p-3 bg-surface-raised rounded-md border border-rule">
     <div class="flex items-center gap-3">
       <div class="animate-spin" id="spinner-<%= run.id %>" style="<%= 'display: none;' unless run.status_running? %>">
-        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
         </svg>
       </div>
       <div>
-        <p class="font-semibold text-gray-900"><%= run.ai_agent.name %></p>
-        <p class="text-xs text-gray-600"><%= run.status.titleize %></p>
+        <p class="font-semibold text-ink"><%= run.ai_agent.name %></p>
+        <p class="text-xs text-ink-muted"><%= run.status.titleize %></p>
       </div>
     </div>
-    <span class="px-2 py-1 text-xs font-semibold rounded <%= case run.status
-      when "running" then "bg-yellow-100 text-yellow-800"
-      when "completed" then "bg-green-100 text-green-800"
-      when "failed" then "bg-red-100 text-red-800"
-      when "paused" then "bg-blue-100 text-blue-800"
-      else "bg-gray-100 text-gray-800"
-      end %>"><%= run.status.titleize %></span>
+    <% case run.status %>
+    <% when "running" %>
+      <span class="pill warning"><%= run.status.titleize %></span>
+    <% when "completed" %>
+      <span class="pill success"><%= run.status.titleize %></span>
+    <% when "failed" %>
+      <span class="pill danger"><%= run.status.titleize %></span>
+    <% when "paused" %>
+      <span class="pill accent"><%= run.status.titleize %></span>
+    <% else %>
+      <span class="pill"><%= run.status.titleize %></span>
+    <% end %>
   </div>
 </div>
