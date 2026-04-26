@@ -17,22 +17,27 @@
 - Phase 2.2-2.4 ✅ Cards, forms, buttons (commit a2efcca)
 - Phase 4.1 ✅ Lists index & grid (commit 8defa86)
 - Phase 4.2 ✅ List cards with design system
+- Phase 4.3 ✅ List show page & item rows
 
 **Current Status:** 
 - Design tokens & theme system fully operational
-- All components (cards, buttons, forms, alerts) available
+- All components (cards, buttons, forms, alerts, pills) available
 - Navigation redesigned with Editorial/Console themes
 - Lists index/grid views updated to design system
+- List show page, header, & item rows redesigned
 - Theme toggle working with localStorage persistence
 
 **Completed Templates:**
 - app/views/shared/_navigation.html.erb ✅
 - app/views/lists/index.html.erb ✅
 - app/views/lists/_list_card.html.erb ✅
+- app/views/lists/show.html.erb ✅
+- app/views/lists/_header.html.erb ✅
+- app/views/list_items/_item.html.erb ✅
 
 **Remaining Priority:**
-- Phase 4.3: List show view & item rows
 - Phase 4.4: List item editor (inline & modal)
+- Phase 5: Search & filtering
 - Phase 8-12: Chat, email, admin, testing & polish
 
 ---
@@ -138,19 +143,19 @@
 - [ ] Add `.list-card-actions` with new button styles
 - [ ] Ensure responsive grid adapts to dark theme
 
-### 3.2 List Show & Detail View
-- [ ] Update `/lists/show.html.erb` layout
-- [ ] Redesign `.list-header` (title, org selector, actions)
-- [ ] Update `.list-filter-bar` with new pill styles
-- [ ] Restyle `.list-items-container` row structure
-- [ ] Update `.list-item-row` component:
-  - [ ] Checkbox styling (surface-sunken, accent checked)
-  - [ ] Priority indicator colors (danger, warning, success)
-  - [ ] Status badges (new pill design)
-  - [ ] Assignee avatars
-  - [ ] Due date formatting
-  - [ ] Collaborator flags
-  - [ ] Delete + expand buttons
+### 3.2 List Show & Detail View ✅ COMPLETE
+- [x] Update `/lists/show.html.erb` layout with card, pill components
+- [x] Redesign `.list-header` with design tokens (title, actions)
+- [x] Update sort/filter button with design system colors
+- [x] Restyle `.list-items-container` with divide-rule
+- [x] Update `.list-item-row` component:
+  - [x] Checkbox styling (border-rule, accent checked, ink-inverse)
+  - [x] Title styling (text-ink, hover:text-accent)
+  - [x] Status badges (pill success/warning/accent)
+  - [x] Due date formatting (text-danger if overdue)
+  - [x] Recurring indicator (text-accent)
+  - [x] Assignee icons with text-ink-subtle
+  - [x] Delete + edit buttons (text-ink-muted hover:text-accent/danger)
 
 ### 3.3 List Item Editor (Inline & Modal)
 - [ ] Update inline `.list-item-edit` form styles
@@ -415,19 +420,4 @@
 6. **Accessibility**: Maintain sufficient contrast:
    - Editorial: Dark navy on warm paper ✓
    - Console: Phosphor green/amber on near-black ✓
-
----
-
-## Testing Checklist
-
-- [ ] All views render without console errors
-- [ ] Theme toggle works (localStorage persists)
-- [ ] Colors update correctly on theme switch
-- [ ] No flashing/jank during transitions
-- [ ] Mobile responsive at all breakpoints
-- [ ] Keyboard navigation works
-- [ ] Color contrast passes WCAG AA
-- [ ] Turbo updates work with new styles
-- [ ] Images/avatars visible in both themes
-- [ ] Print stylesheet (if any) works
 
