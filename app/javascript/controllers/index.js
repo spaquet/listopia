@@ -103,6 +103,9 @@ application.register("spotlight-search", SpotlightSearchController)
 import SpotlightTriggerController from "./spotlight_trigger_controller"
 application.register("spotlight-trigger", SpotlightTriggerController)
 
+import ThemeController from "./theme_controller"
+application.register("theme", ThemeController)
+
 import ToggleController from "./toggle_controller"
 application.register("toggle", ToggleController)
 
