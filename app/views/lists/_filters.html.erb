@@ -28,9 +28,9 @@
           </div>
           <!-- Clear Button for Search -->
           <button type="button"
-                  class="absolute inset-y-0 right-0 pr-3 flex items-center <%= params[:search].present? ? '' : 'hidden' %}"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center<%= params[:search].present? ? '' : ' hidden' %>"
                   data-action="click->list-filter#clearFilters"
-            data-list-filter-target="clearBtn">
+                  data-list-filter-target="clearBtn">
             <svg class="w-5 h-5 text-ink-muted hover:text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
