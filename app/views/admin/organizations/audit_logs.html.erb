@@ -1,7 +1,7 @@
 <div class="max-w-6xl mx-auto p-6">
   <div class="bg-surface card border-rule">
     <div class="px-6 py-4 border-b border-rule">
-      <h2 class="text-xl font-semibold text-ink">Audit Logs</h2>
+      <h2 class="t-body-l font-semibold text-ink">Audit Logs</h2>
       <p class="text-sm text-ink-muted mt-1"><%= @organization.name %></p>
     </div>
 
@@ -9,7 +9,7 @@
       <% if @audits.any? %>
         <div class="space-y-4">
           <% @audits.each do |audit| %>
-            <div class="border-b pb-4">
+            <div class="border-b border-rule pb-4">
               <p class="text-sm font-medium text-ink"><%= audit.class %></p>
               <p class="t-meta text-ink-muted"><%= audit.created_at.strftime('%b %d, %Y %H:%M:%S') %></p>
             </div>

@@ -1,15 +1,15 @@
 <div class="max-w-6xl mx-auto p-6">
   <div class="bg-surface card border-rule">
     <div class="px-6 py-4 border-b border-rule">
-      <h2 class="text-xl font-semibold text-ink">Organization Members</h2>
+      <h2 class="t-body-l font-semibold text-ink">Organization Members</h2>
       <p class="text-sm text-ink-muted mt-1"><%= @organization.name %></p>
     </div>
 
     <div class="px-6 py-4">
       <% if @members.any? %>
         <div class="overflow-x-auto">
-          <table class="min-w-full">
-            <thead>
+          <table class="w-full">
+            <thead class="bg-surface-raised">
               <tr class="border-b border-rule">
                 <th class="px-4 py-2 text-left text-xs font-medium text-ink-muted uppercase">User</th>
                 <th class="px-4 py-2 text-left text-xs font-medium text-ink-muted uppercase">Role</th>
@@ -17,13 +17,28 @@
                 <th class="px-4 py-2 text-left text-xs font-medium text-ink-muted uppercase">Joined At</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="divide-y divide-rule">
               <% @members.each do |membership| %>
-                <tr class="border-b border-rule hover:bg-surface-raised">
-                  <td class="px-4 py-2 text-sm text-ink"><%= membership.user.email %></td>
-                  <td class="px-4 py-2 t-meta text-ink-muted capitalize"><%= membership.role %></td>
-                  <td class="px-4 py-2 t-meta text-ink-muted capitalize"><%= membership.status %></td>
-                  <td class="px-4 py-2 t-meta text-ink-muted"><%= membership.joined_at.strftime('%b %d, %Y') %></td>
+                <tr class="hover:bg-surface-raised transition-colors">
+                  <td class="px-6 py-4 text-sm font-medium text-ink"><%= membership.user.email %></td>
+                  <td class="px-6 py-4 text-sm">
+                    <% if membership.role == 'admin' %>
+                      <span class="pill accent"><%= membership.role.humanize %></span>
+                    <% else %>
+                      <span class="pill"><%= membership.role.humanize %></span>
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 text-sm">
+                    <% case membership.status %>
+                      <% when 'active' %>
+                        <span class="pill success"><%= membership.status.humanize %></span>
+                      <% when 'pending' %>
+                        <span class="pill warning"><%= membership.status.humanize %></span>
+                      <% else %>
+                        <span class="pill"><%= membership.status.humanize %></span>
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 t-meta text-ink-muted"><%= membership.joined_at.strftime('%b %d, %Y') %></td>
                 </tr>
               <% end %>
             </tbody>
