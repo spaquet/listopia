@@ -63,7 +63,7 @@
           <p class="t-meta text-ink-muted">Suspended</p>
           <p class="text-2xl font-bold text-warning mt-1" id="suspended-count"><%= managed_orgs.where(status: :suspended).count %></p>
         </div>
-        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+        <div class="w-12 h-12 bg-surface-raised rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -74,10 +74,10 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="t-meta text-ink-muted">Enterprise Plans</p>
-          <p class="text-2xl font-bold text-purple-600 mt-1"><%= managed_orgs.where(size: :enterprise).count %></p>
+          <p class="text-2xl font-bold text-accent mt-1"><%= managed_orgs.where(size: :enterprise).count %></p>
         </div>
-        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-12 h-12 bg-surface-raised rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
         </div>
@@ -197,7 +197,7 @@
             <th class="px-6 py-3 text-right text-xs font-medium text-ink uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200" id="organizations-table">
+        <tbody class="divide-y divide-rule" id="organizations-table">
           <% if @organizations.any? %>
             <% @organizations.each do |organization| %>
               <%= render "organization_row", organization: organization %>

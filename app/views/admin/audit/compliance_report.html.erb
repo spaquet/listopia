@@ -24,7 +24,7 @@
 
       <div class="bg-surface rounded-lg shadow p-6">
         <div class="t-meta text-ink-muted">Sensitive Changes</div>
-        <div class="text-3xl font-bold text-amber-600"><%= @html_report[:summary][:sensitive_changes] %></div>
+        <div class="text-3xl font-bold text-warning"><%= @html_report[:summary][:sensitive_changes] %></div>
       </div>
 
       <div class="bg-surface rounded-lg shadow p-6">
@@ -42,15 +42,15 @@
     <div class="bg-surface rounded-lg shadow p-6 mb-8">
       <h2 class="t-body-l font-semibold text-ink mb-4">Risk Assessment</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="border-l-4 border-red-500 pl-4">
+        <div class="border-l-4 border-danger pl-4">
           <div class="t-meta text-ink-muted">Bulk Deletions</div>
           <div class="t-display-s text-ink"><%= @html_report[:risk_assessment][:high_risk][:bulk_deletions] ? '⚠️ Yes' : '✅ No' %></div>
         </div>
-        <div class="border-l-4 border-amber-500 pl-4">
+        <div class="border-l-4 border-warning pl-4">
           <div class="t-meta text-ink-muted">Access Changes</div>
           <div class="t-display-s text-ink"><%= @html_report[:risk_assessment][:high_risk][:access_changes] %></div>
         </div>
-        <div class="border-l-4 border-amber-500 pl-4">
+        <div class="border-l-4 border-warning pl-4">
           <div class="t-meta text-ink-muted">Ownership Changes</div>
           <div class="t-display-s text-ink"><%= @html_report[:risk_assessment][:high_risk][:ownership_changes] %></div>
         </div>
@@ -72,13 +72,13 @@
     <div class="bg-surface rounded-lg shadow p-6 mb-8">
       <h2 class="t-body-l font-semibold text-ink mb-4">Export Report</h2>
       <div class="flex gap-3">
-        <%= link_to compliance_report_admin_audit_index_path(format: :csv), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+        <%= link_to compliance_report_admin_audit_index_path(format: :csv), class: "btn btn-primary inline-flex items-center gap-2" do %>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
           </svg>
           Download CSV
         <% end %>
-        <%= link_to compliance_report_admin_audit_index_path(format: :json), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+        <%= link_to compliance_report_admin_audit_index_path(format: :json), class: "btn btn-primary inline-flex items-center gap-2" do %>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
           </svg>
@@ -103,12 +103,12 @@
                 <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Details</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-rule">
               <% @html_report[:sensitive_changes].first(50).each do |event| %>
                 <tr class="hover:bg-surface-raised">
                   <td class="px-6 py-3 t-meta text-ink-muted"><%= event["created_at"] %></td>
                   <td class="px-6 py-3 text-sm text-ink"><%= event["actor_id"] || "System" %></td>
-                  <td class="px-6 py-3 text-sm"><span class="inline-block bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs font-medium"><%= event["event_type"] %></span></td>
+                  <td class="px-6 py-3 text-sm"><span class="pill warning"><%= event["event_type"] %></span></td>
                   <td class="px-6 py-3 t-meta text-ink-muted"><%= event["event_data"]&.to_s&.truncate(80) || "—" %></td>
                 </tr>
               <% end %>

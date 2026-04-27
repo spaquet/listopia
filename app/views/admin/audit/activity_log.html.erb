@@ -48,7 +48,7 @@
                 <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Details</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-rule">
               <% @events.each do |event| %>
                 <tr class="hover:bg-surface-raised">
                   <td class="px-6 py-3 t-meta text-ink-muted"><%= event.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>
@@ -79,7 +79,7 @@
         <h2 class="t-body-l font-semibold text-ink mb-4">Select User</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <% @users.each do |user| %>
-            <%= link_to activity_log_admin_audit_index_path(user_id: user.id), class: "block p-4 card hover:border-indigo-500 hover:bg-indigo-50 transition-colors" do %>
+            <%= link_to activity_log_admin_audit_index_path(user_id: user.id), class: "block p-4 card hover:border-accent transition-colors" do %>
               <div class="font-medium text-ink"><%= user.name %></div>
               <div class="t-meta text-ink-muted"><%= user.email %></div>
             <% end %>

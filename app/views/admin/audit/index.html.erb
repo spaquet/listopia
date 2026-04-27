@@ -26,19 +26,19 @@
           </div>
 
           <div class="flex gap-3">
-            <%= link_to compliance_report_admin_audit_index_path, class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+            <%= link_to compliance_report_admin_audit_index_path, class: "btn btn-primary inline-flex items-center gap-2" do %>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
               Compliance Report
             <% end %>
-            <%= link_to activity_log_admin_audit_index_path, class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+            <%= link_to activity_log_admin_audit_index_path, class: "btn btn-primary inline-flex items-center gap-2" do %>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               Activity Log
             <% end %>
-            <%= link_to export_audit_admin_audit_index_path(format: :csv), class: "inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors" do %>
+            <%= link_to export_audit_admin_audit_index_path(format: :csv), class: "btn btn-primary inline-flex items-center gap-2" do %>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
               </svg>
@@ -115,7 +115,7 @@
                 <th class="px-6 py-3 text-left text-sm font-semibold text-ink">Details</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-rule">
               <% @recent_events.each do |event| %>
                 <tr>
                   <td class="px-6 py-3 t-meta text-ink-muted"><%= event.created_at.strftime("%Y-%m-%d %H:%M:%S") %></td>

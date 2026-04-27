@@ -14,11 +14,11 @@
   </td>
   <td class="px-6 py-4 whitespace-nowrap">
     <% status_class = case organization.status
-      when "active" then "bg-surface-raised text-ink"
-      when "suspended" then "bg-yellow-100 text-yellow-800"
-      else "bg-surface-raised text-gray-800"
+      when "active" then "pill success"
+      when "suspended" then "pill warning"
+      else "pill"
       end %>
-    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <%= status_class %>">
+    <span class="<%= status_class %>">
       <%= organization.status.humanize %>
     </span>
   </td>
@@ -33,7 +33,7 @@
         <% if organization.status_active? %>
           <%= button_to suspend_admin_organization_path(organization), method: :post,
               form_class: "inline",
-              class: "text-warning hover:text-yellow-900 bg-transparent border-none cursor-pointer p-0 m-0",
+              class: "text-warning hover:text-ink bg-transparent border-none cursor-pointer p-0 m-0",
               form: { data: { turbo_confirm: "Are you sure?" } } do %>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -54,7 +54,7 @@
         <% if !organization.status_deleted? %>
           <%= button_to suspend_admin_organization_path(organization), method: :post,
               form_class: "inline",
-              class: "text-orange-600 hover:text-orange-900 bg-transparent border-none cursor-pointer p-0 m-0",
+              class: "text-warning hover:text-ink bg-transparent border-none cursor-pointer p-0 m-0",
               form: { data: { turbo_confirm: "Archive this organization?" } } do %>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9-3h4m-4 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
