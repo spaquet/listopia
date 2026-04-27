@@ -1,12 +1,8 @@
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-  <div style="background-color: white; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <!-- Header -->
-    <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 20px; margin-bottom: 20px;">
-      <h1 style="color: #1f2937; margin: 0; font-size: 24px;">Join team '<%= @team_name %>'</h1>
-    </div>
+<div class="email-header">
+  <h1>Join team '<%= @team_name %>'</h1>
+</div>
 
-    <!-- Content -->
-    <div style="color: #4b5563; line-height: 1.6;">
+<div class="email-body">
       <% if @membership.present? %>
         <!-- Existing user added to team -->
         <p>Hi <%= @membership.user.name %>,</p>
@@ -19,10 +15,8 @@
           <li>Participate in team activities</li>
         </ul>
 
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="<%= @team_url %>" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-            Go to <%= @team_name %>
-          </a>
+        <div style="text-align: center;">
+          <a href="<%= @team_url %>" class="button">Go to <%= @team_name %></a>
         </div>
       <% else %>
         <!-- New user invitation -->
@@ -42,28 +36,21 @@
           <li>If you already have a Listopia account, log in and accept the invitation</li>
         </ol>
 
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="<%= @accept_url %>" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; margin-right: 10px;">
-            Accept Invitation
-          </a>
-          <a href="<%= @signup_url %>" style="display: inline-block; background-color: #6b7280; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-            Sign Up
-          </a>
+        <div style="text-align: center;">
+          <a href="<%= @accept_url %>" class="button" style="margin-right: 10px;">Accept Invitation</a>
+          <a href="<%= @signup_url %>" class="button-secondary">Sign Up</a>
         </div>
 
-        <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
+        <p style="font-size: 12px; color: #666666; margin-top: 20px;">
           Or copy and paste this link in your browser:<br/>
-          <a href="<%= @accept_url %>" style="color: #3b82f6; text-decoration: none; word-break: break-all;">
+          <a href="<%= @accept_url %>" style="color: #8a2c2c; text-decoration: none; word-break: break-all;">
             <%= @accept_url %>
           </a>
         </p>
       <% end %>
     </div>
 
-    <!-- Footer -->
-    <div style="border-top: 1px solid #e5e7eb; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #9ca3af;">
-      <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-      <p>© Listopia. All rights reserved.</p>
-    </div>
-  </div>
+  <div class="divider"></div>
+  <p style="font-size: 13px; color: #666666; margin-bottom: 8px;">If you didn't expect this invitation, you can safely ignore this email.</p>
+  <p style="font-size: 13px; color: #666666;">Thanks,<br><strong>The Listopia Team</strong></p>
 </div>
