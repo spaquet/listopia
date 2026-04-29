@@ -35,29 +35,46 @@
       <%= render "chat/floating_chat" %>
     <% end %>
 
-    <!-- Theme Console Helpers (replicates Stimulus controller logic) -->
+    <!-- Theme Console Helpers (calls actual Stimulus controller) -->
     <script>
       const htmlElement = document.documentElement;
-      window.themeToggle = () => {
-        const current = htmlElement.getAttribute("data-theme");
-        const newTheme = current === "editorial" ? "console" : "editorial";
-        htmlElement.setAttribute("data-theme", newTheme);
-        localStorage.setItem("theme-preference", newTheme);
-        window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: newTheme } }));
-        console.log(`✓ Theme: ${newTheme}`);
+      const getThemeController = () => {
+        // Stimulus app is available as window.Stimulus
+        if (!window.Stimulus) return null;
+        for (const controller of window.Stimulus.controllers) {
+          if (controller.constructor.name === "ThemeController") {
+            return controller;
+          }
+        }
+        return null;
       };
+
+      window.themeToggle = () => {
+        const controller = getThemeController();
+        if (controller) {
+          controller.toggle();
+          console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
+        } else {
+          console.error("Theme controller not found");
+        }
+      };
+
       window.themeSet = (name) => {
         if (!["editorial", "console"].includes(name)) {
           console.error("Invalid theme. Use 'editorial' or 'console'");
           return;
         }
-        htmlElement.setAttribute("data-theme", name);
-        localStorage.setItem("theme-preference", name);
-        window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: name } }));
-        console.log(`✓ Theme: ${name}`);
+        const controller = getThemeController();
+        if (controller) {
+          controller.setTheme(name);
+          console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
+        } else {
+          console.error("Theme controller not found");
+        }
       };
+
       console.log(`
-🎨 Theme Control (replicates Stimulus controller)
+🎨 Theme Control (calls Stimulus theme_controller)
   themeToggle()           — Switch between editorial (light) & console (dark)
   themeSet('editorial')   — Set light theme
   themeSet('console')     — Set dark theme
