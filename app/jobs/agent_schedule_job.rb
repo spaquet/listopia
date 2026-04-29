@@ -1,6 +1,5 @@
 class AgentScheduleJob < ApplicationJob
   queue_as :default
-  sidekiq_options retry: 0  # Don't retry this job
 
   def perform
     # Find all active agents with schedule triggers
