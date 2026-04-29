@@ -1064,7 +1064,7 @@ class ChatCompletionService < ApplicationService
       parameters[:description] ||= ""
 
       Rails.logger.info("ChatCompletionService - Creating list directly for complex request")
-      return handle_list_creation("list", parameters)
+      handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1082,7 +1082,7 @@ class ChatCompletionService < ApplicationService
       parameters[:description] ||= ""
 
       # Phase 3: Direct list creation without planning context ceremony
-      return handle_list_creation("list", parameters)
+      handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])

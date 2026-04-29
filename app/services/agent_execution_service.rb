@@ -240,22 +240,22 @@ class AgentExecutionService < ApplicationService
               tc_name = if tc.respond_to?(:name)
                          name_val = tc.name
                          name_val.is_a?(Array) ? name_val.first : name_val
-                       elsif tc.respond_to?(:tool_name)
+              elsif tc.respond_to?(:tool_name)
                          tc.tool_name
-                       elsif tc.is_a?(Hash)
+              elsif tc.is_a?(Hash)
                          tc["name"] || tc[:name]
-                       else
+              else
                          nil
-                       end
+              end
 
               tc_args = if tc.respond_to?(:arguments)
                          args_val = tc.arguments
                          args_val.is_a?(String) ? args_val : (args_val&.to_json || "{}")
-                       elsif tc.is_a?(Hash)
+              elsif tc.is_a?(Hash)
                          (tc["arguments"] || tc[:arguments] || {}).to_json
-                       else
+              else
                          "{}"
-                       end
+              end
 
               {
                 id: (tc.respond_to?(:id) ? tc.id : nil) || SecureRandom.uuid,
@@ -479,9 +479,9 @@ class AgentExecutionService < ApplicationService
         # Tool output might be nested in a "response" key
         output_data = if list_tool_step.tool_output.is_a?(String)
                         JSON.parse(list_tool_step.tool_output)
-                      else
+        else
                         list_tool_step.tool_output
-                      end
+        end
 
         # If response is a string (nested JSON), parse it
         if output_data["response"].is_a?(String)

@@ -28,7 +28,7 @@
   </div>
 
   <!-- Tab 1: Identity -->
-  <div id="identity" class="tab-content space-y-4">
+  <div id="identity" class="tab-content active space-y-4">
     <div>
       <%= f.label :name, "Agent Name", class: "form-label" %>
       <%= f.text_field :name, placeholder: "e.g., Task Breakdown Agent", class: "form-input" %>
@@ -53,7 +53,7 @@
   </div>
 
   <!-- Tab 2: Instructions -->
-  <div id="instructions" class="tab-content space-y-4 hidden">
+  <div id="instructions" class="tab-content space-y-4">
     <div>
       <%= f.label :persona, "Persona (Role & Tone)", class: "form-label" %>
       <%= f.text_area :prompt, placeholder: "Who is this agent? Example: 'You are a senior project manager expert at decomposing complex goals...'", class: "form-input font-mono", rows: 4 %>
@@ -68,7 +68,7 @@
   </div>
 
   <!-- Tab 3: Body Context -->
-  <div id="context" class="tab-content space-y-4 hidden">
+  <div id="context" class="tab-content space-y-4">
     <p class="text-sm text-ink-muted">What context does the agent automatically load before running?</p>
     <% context_config = agent.body_context_config || {} %>
 
@@ -91,7 +91,7 @@
   </div>
 
   <!-- Tab 4: Pre-Run Questions -->
-  <div id="questions" class="tab-content space-y-4 hidden">
+  <div id="questions" class="tab-content space-y-4">
     <p class="text-sm text-ink-muted">Ask the user these questions BEFORE the agent executes. Answers are injected as parameters.</p>
 
     <%= f.label :pre_run_questions, "Questions (JSON Array)", class: "form-label" %>
@@ -105,7 +105,7 @@
   </div>
 
   <!-- Tab 5: Triggers -->
-  <div id="triggers" class="tab-content space-y-4 hidden">
+  <div id="triggers" class="tab-content space-y-4">
     <% trigger_config = agent.trigger_config || { "type" => "manual" } %>
     <% trigger_type = trigger_config["type"] || "manual" %>
 
@@ -140,7 +140,7 @@
   </div>
 
   <!-- Tab 6: Execution -->
-  <div id="execution" class="tab-content space-y-4 hidden">
+  <div id="execution" class="tab-content space-y-4">
     <div class="grid grid-cols-2 gap-4">
       <div>
         <%= f.label :model, "LLM Model", class: "form-label" %>
@@ -204,7 +204,7 @@ document.querySelectorAll('.tab-item').forEach(button => {
 
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
-      tab.classList.add('hidden');
+      tab.classList.remove('active');
     });
 
     // Remove active class from all buttons
@@ -213,7 +213,7 @@ document.querySelectorAll('.tab-item').forEach(button => {
     });
 
     // Show selected tab
-    document.getElementById(tabName).classList.remove('hidden');
+    document.getElementById(tabName).classList.add('active');
 
     // Add active class to clicked button
     button.classList.add('active');

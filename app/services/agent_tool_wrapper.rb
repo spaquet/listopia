@@ -64,9 +64,9 @@ class AgentToolWrapper
                           # Stringify keys just in case they're symbols
                           string_hash = kwargs.transform_keys { |k| k.to_s }
                           string_hash.to_json
-                        else
+        else
                           kwargs.to_json
-                        end
+        end
 
         tool_call_obj = {
           "id" => SecureRandom.uuid,
