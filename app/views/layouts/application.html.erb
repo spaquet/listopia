@@ -37,49 +37,51 @@
 
     <!-- Theme Console Helpers (calls actual Stimulus controller) -->
     <script>
-      const htmlElement = document.documentElement;
-      const getThemeController = () => {
-        // Stimulus app available as window.Stimulus
-        if (!window.Stimulus) return null;
-        // Find controller by checking for toggle method (more reliable)
-        for (const controller of window.Stimulus.controllers) {
-          if (typeof controller.toggle === "function" && typeof controller.setTheme === "function") {
-            return controller;
+      if (!window.themeToggle) {
+        const htmlElement = document.documentElement;
+        const getThemeController = () => {
+          // Stimulus app available as window.Stimulus
+          if (!window.Stimulus) return null;
+          // Find controller by checking for toggle method (more reliable)
+          for (const controller of window.Stimulus.controllers) {
+            if (typeof controller.toggle === "function" && typeof controller.setTheme === "function") {
+              return controller;
+            }
           }
-        }
-        return null;
-      };
+          return null;
+        };
 
-      window.themeToggle = () => {
-        const controller = getThemeController();
-        if (controller) {
-          controller.toggle();
-          console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
-        } else {
-          console.error("Theme controller not found. Stimulus might not be loaded yet.");
-        }
-      };
+        window.themeToggle = () => {
+          const controller = getThemeController();
+          if (controller) {
+            controller.toggle();
+            console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
+          } else {
+            console.error("Theme controller not found. Stimulus might not be loaded yet.");
+          }
+        };
 
-      window.themeSet = (name) => {
-        if (!["editorial", "console"].includes(name)) {
-          console.error("Invalid theme. Use 'editorial' or 'console'");
-          return;
-        }
-        const controller = getThemeController();
-        if (controller) {
-          controller.setTheme(name);
-          console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
-        } else {
-          console.error("Theme controller not found. Stimulus might not be loaded yet.");
-        }
-      };
+        window.themeSet = (name) => {
+          if (!["editorial", "console"].includes(name)) {
+            console.error("Invalid theme. Use 'editorial' or 'console'");
+            return;
+          }
+          const controller = getThemeController();
+          if (controller) {
+            controller.setTheme(name);
+            console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
+          } else {
+            console.error("Theme controller not found. Stimulus might not be loaded yet.");
+          }
+        };
 
-      console.log(`
+        console.log(`
 🎨 Theme Control (calls Stimulus theme_controller)
   themeToggle()           — Switch between editorial (light) & console (dark)
   themeSet('editorial')   — Set light theme
   themeSet('console')     — Set dark theme
-      `);
+        `);
+      }
     </script>
   </body>
 </html>
