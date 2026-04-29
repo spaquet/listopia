@@ -512,6 +512,754 @@
   border-color: var(--color-warning);
 }
 
+/* ── RECOMMENDATION CARDS ──────────────────────────────────────── */
+.recommendation-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-base) var(--ease-out);
+}
+
+.recommendation-card:hover {
+  box-shadow: var(--shadow-pop);
+  border-color: var(--color-accent);
+}
+
+.recommendation-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.recommendation-card-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--color-ink);
+  font-size: var(--text-base);
+  margin: 0;
+}
+
+.recommendation-card-title a {
+  color: var(--color-ink);
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+}
+
+.recommendation-card-title a:hover {
+  color: var(--color-accent);
+}
+
+.recommendation-card-owner {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  margin-top: 0.25rem;
+}
+
+.recommendation-card-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.recommendation-card-reason {
+  display: inline-block;
+  font-size: var(--text-xs);
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-subtle);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-rule-soft);
+}
+
+.recommendation-card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+.recommendation-card-stat-value {
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-right: 0.25rem;
+}
+
+/* Progress bar */
+.progress-bar {
+  display: flex;
+  height: 1.5px;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-bar-fill {
+  background: var(--color-success);
+  height: 100%;
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+.progress-bar-fill.warning {
+  background: var(--color-warning);
+}
+
+.progress-bar-fill.danger {
+  background: var(--color-danger);
+}
+
+/* Urgency indicator dot */
+.urgency-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.urgency-dot.high {
+  background: var(--color-danger);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.urgency-dot.medium {
+  background: var(--color-warning);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Next item section */
+.recommendation-next-item {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-rule-soft);
+}
+
+.recommendation-next-item-label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  margin-bottom: 0.25rem;
+}
+
+.recommendation-next-item-content {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.recommendation-next-item-checkbox {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-sunken);
+  margin-top: 0.125rem;
+}
+
+.recommendation-next-item-title {
+  flex: 1;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.recommendation-next-item-due {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+}
+
+/* ── NUDGE ALERT ────────────────────────────────────────────── */
+.nudge-alert {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(184, 116, 26, 0.05);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.75rem;
+}
+
+.nudge-alert-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-warning);
+}
+
+.nudge-alert-content h4 {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.nudge-alert-content p {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+/* Nudge motivation box */
+.nudge-motivation {
+  padding: 0.75rem;
+  background: rgba(63, 138, 74, 0.05);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  text-align: center;
+  color: var(--color-success);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.5rem;
+  color: var(--color-ink-faint);
+}
+
+.empty-state-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+  margin: 0.5rem 0 0;
+}
+
+.empty-state-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-ink-faint);
+  margin: 0.25rem 0 0;
+}
+
+/* Action button (arrow/icon button in cards) */
+.card-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+}
+
+.card-action-button:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-accent);
+}
+
+/* ── KANBAN BOARD ──────────────────────────────────────────── */
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  width: 384px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--row-pad-y) var(--row-pad-x);
+  border-bottom: 1px solid var(--color-rule-soft);
+  background: var(--color-surface-raised);
+}
+
+.kanban-column-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.kanban-column-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-pill);
+}
+
+.kanban-column-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Kanban Card */
+.kanban-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  cursor: move;
+  transition: all var(--duration-base) var(--ease-out);
+}
+
+.kanban-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-pop);
+}
+
+.kanban-card-actions {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.kanban-card:hover .kanban-card-actions {
+  opacity: 1;
+}
+
+.kanban-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.kanban-card-action:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-accent);
+}
+
+.kanban-card-action.delete:hover {
+  color: var(--color-danger);
+}
+
+.kanban-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.kanban-card-type-icon {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--color-ink-subtle);
+}
+
+.kanban-card-title {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-ink);
+  margin: 0 0 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kanban-card-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+}
+
+.kanban-card-title a:hover {
+  color: var(--color-accent);
+}
+
+.kanban-card-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.kanban-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.kanban-card-badge.low {
+  background: rgba(90, 98, 117, 0.05);
+  color: var(--color-ink-subtle);
+  border-color: var(--color-rule-soft);
+}
+
+.kanban-card-badge.medium {
+  background: rgba(184, 116, 26, 0.1);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.kanban-card-badge.high {
+  background: rgba(184, 116, 26, 0.15);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.kanban-card-badge.urgent {
+  background: rgba(138, 44, 44, 0.1);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.kanban-card-badge.completed {
+  background: rgba(63, 138, 74, 0.1);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.kanban-card-badge.in-progress {
+  background: rgba(138, 44, 44, 0.05);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.kanban-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-rule-soft);
+}
+
+.kanban-card-due-date {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kanban-card-due-date.overdue {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.kanban-card-assignee {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kanban-card-assignee-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-ink-inverse);
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kanban-card-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+}
+
+.kanban-card-action-button:hover {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── CONNECTOR CARDS ────────────────────────────────────────── */
+.connector-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--duration-base) var(--ease-out);
+  height: 100%;
+}
+
+.connector-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-pop);
+}
+
+.connector-card-actions {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+  z-index: 10;
+}
+
+.connector-card:hover .connector-card-actions {
+  opacity: 1;
+}
+
+.connector-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.connector-card-action:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-accent);
+}
+
+.connector-card-action.delete:hover {
+  color: var(--color-danger);
+}
+
+.connector-card-action.pause:hover {
+  color: var(--color-warning);
+}
+
+.connector-card-action.resume:hover {
+  color: var(--color-success);
+}
+
+.connector-card-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  margin-bottom: 1rem;
+  border: 1px solid;
+}
+
+.connector-card-status.active {
+  background: rgba(63, 138, 74, 0.1);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.connector-card-status.paused {
+  background: rgba(184, 116, 26, 0.1);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.connector-card-status.errored {
+  background: rgba(138, 44, 44, 0.1);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.connector-card-status.pending {
+  background: var(--color-surface-sunken);
+  color: var(--color-ink-subtle);
+  border-color: var(--color-rule-soft);
+}
+
+.connector-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex: 1;
+}
+
+.connector-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-ink);
+}
+
+.connector-card-info h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink);
+  margin: 0 0 0.25rem;
+}
+
+.connector-card-info p {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  margin: 0;
+}
+
+.connector-card-description {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  line-height: var(--leading-normal);
+  margin-bottom: 1rem;
+  flex: 1;
+}
+
+.connector-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: rgba(63, 138, 74, 0.1);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.connector-card-meta {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-rule-soft);
+}
+
+.connector-card-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-base) var(--ease-out);
+  border: 1px solid var(--color-rule);
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.connector-card-action-button:hover {
+  background: var(--color-surface-sunken);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.connector-card-action-button.primary {
+  background: var(--color-accent);
+  color: var(--color-ink-inverse);
+  border: none;
+}
+
+.connector-card-action-button.primary:hover {
+  background: var(--color-accent);
+  opacity: 0.9;
+  color: var(--color-surface);
+}
+
+/* ── STATUS INDICATOR ──────────────────────────────────────── */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-inverse);
+  flex-shrink: 0;
+}
+
+.status-indicator.draft {
+  background: var(--color-ink-subtle);
+}
+
+.status-indicator.active {
+  background: var(--color-success);
+}
+
+.status-indicator.completed {
+  background: var(--color-accent);
+}
+
+.status-indicator.archived {
+  background: var(--color-warning);
+}
+
 /* ── MODALS ────────────────────────────────────────────────────── */
 .modal-backdrop {
   position: fixed;
