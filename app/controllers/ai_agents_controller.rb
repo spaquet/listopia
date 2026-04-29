@@ -29,7 +29,8 @@ class AiAgentsController < ApplicationController
 
   def create
     @agent = AiAgent.new(agent_params)
-    @agent.user = current_user if params[:ai_agent][:scope] == "user_agent"
+    @agent.scope = :user_agent
+    @agent.user = current_user if @agent.scope_user_agent?
     @agent.organization = Current.organization unless @agent.scope_system_agent?
     authorize @agent
 
@@ -94,10 +95,10 @@ class AiAgentsController < ApplicationController
 
   def agent_params
     permitted = params.require(:ai_agent).permit(
-      :name, :description, :prompt, :scope, :model,
+      :name, :description, :prompt, :model,
       :max_tokens_per_run, :max_tokens_per_day, :max_tokens_per_month,
       :timeout_seconds, :max_steps, :rate_limit_per_hour,
-      :status, :tag_list, :parameters, :instructions,
+      :tag_list, :parameters, :instructions,
       :body_context_config, :trigger_config,
       :pre_run_questions,
       metadata: {}
