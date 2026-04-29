@@ -5,7 +5,7 @@
       <h1 class="t-display-s text-ink">Edit Profile</h1>
       <p class="text-ink-muted mt-1">Update your personal information and preferences.</p>
     </div>
-    <%= form_with model: @user, local: true, class: "space-y-6" do |f| %>
+    <%= form_with model: @user, url: profile_path, method: :patch, local: true, class: "space-y-6" do |f| %>
       <% if @user.errors.any? %>
         <div class="alert alert-danger">
           <h3 class="font-semibold mb-2">Please fix the following errors:</h3>
@@ -65,7 +65,7 @@
         </p>
       </div>
       <div class="flex items-center justify-between pt-6 border-t border-rule">
-        <%= link_to user_path,
+        <%= link_to profile_path,
                     class: "text-ink-muted hover:text-ink font-medium" do %>
           Cancel
         <% end %>
