@@ -21,6 +21,7 @@
 .bg-accent { background-color: var(--color-accent); color: var(--color-ink-inverse); }
 .bg-accent-soft { background-color: var(--color-accent-soft); }
 .bg-success { background-color: var(--color-success); }
+.bg-success-soft { background-color: rgba(63, 138, 74, 0.1); }
 .bg-warning { background-color: var(--color-warning); }
 .bg-danger { background-color: var(--color-danger); }
 .bg-note { background-color: var(--color-note); }
