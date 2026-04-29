@@ -22,10 +22,7 @@
       <div class="flex flex-col space-y-4">
         <!-- Search Input -->
         <div class="w-full">
-          <%= form_with url: invitations_path, method: :get, local: true, class: "w-full",
-                        data: {
-                          invitation_filter_target: "form"
-                        } do |f| %>
+          <%= form_with url: invitations_path, method: :get, local: true, class: "w-full", data: { invitation_filter_target: "form" } do |f| %>
             <input type="hidden" name="tab" value="<%= @tab %>" />
             <div class="relative" data-turbo-permanent id="search-field-container">
               <%= f.text_field :search,
