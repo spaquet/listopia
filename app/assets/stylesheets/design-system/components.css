@@ -84,7 +84,14 @@
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: var(--color-surface);
   opacity: 0.9;
+}
+
+/* Console theme: improve text contrast on hover */
+[data-theme="console"] .btn-primary:hover:not(:disabled) {
+  color: var(--color-surface);
 }
 
 .btn-primary:active:not(:disabled) {
