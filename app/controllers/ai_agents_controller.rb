@@ -98,16 +98,19 @@ class AiAgentsController < ApplicationController
       :name, :description, :prompt, :model,
       :max_tokens_per_run, :max_tokens_per_day, :max_tokens_per_month,
       :timeout_seconds, :max_steps, :rate_limit_per_hour,
-      :tag_list, :parameters, :instructions,
-      :body_context_config, :trigger_config,
-      :pre_run_questions,
-      metadata: {}
+      :tag_list, :instructions,
+      metadata: {},
+      parameters: {},
+      body_context_config: {},
+      trigger_config: {},
+      pre_run_questions: []
     )
 
     # Parse JSON string for parameters field
     if permitted[:parameters].is_a?(String) && permitted[:parameters].present?
       begin
-        permitted[:parameters] = JSON.parse(permitted[:parameters])
+        parsed = JSON.parse(permitted[:parameters])
+        permitted[:parameters] = parsed.is_a?(Hash) ? parsed : {}
       rescue JSON::ParserError
         permitted[:parameters] = {}
       end
@@ -116,7 +119,8 @@ class AiAgentsController < ApplicationController
     # Parse body_context_config if string
     if permitted[:body_context_config].is_a?(String) && permitted[:body_context_config].present?
       begin
-        permitted[:body_context_config] = JSON.parse(permitted[:body_context_config])
+        parsed = JSON.parse(permitted[:body_context_config])
+        permitted[:body_context_config] = parsed.is_a?(Hash) ? parsed : {}
       rescue JSON::ParserError
         permitted[:body_context_config] = {}
       end
@@ -125,7 +129,8 @@ class AiAgentsController < ApplicationController
     # Parse trigger_config if string
     if permitted[:trigger_config].is_a?(String) && permitted[:trigger_config].present?
       begin
-        permitted[:trigger_config] = JSON.parse(permitted[:trigger_config])
+        parsed = JSON.parse(permitted[:trigger_config])
+        permitted[:trigger_config] = parsed.is_a?(Hash) ? parsed : { type: "manual" }
       rescue JSON::ParserError
         permitted[:trigger_config] = { type: "manual" }
       end
@@ -134,7 +139,8 @@ class AiAgentsController < ApplicationController
     # Parse pre_run_questions if string
     if permitted[:pre_run_questions].is_a?(String) && permitted[:pre_run_questions].present?
       begin
-        permitted[:pre_run_questions] = JSON.parse(permitted[:pre_run_questions])
+        parsed = JSON.parse(permitted[:pre_run_questions])
+        permitted[:pre_run_questions] = parsed.is_a?(Array) ? parsed : []
       rescue JSON::ParserError
         permitted[:pre_run_questions] = []
       end
