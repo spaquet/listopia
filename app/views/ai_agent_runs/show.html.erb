@@ -1,0 +1,187 @@
+<div class="container mx-auto row-pad py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="card mb-6">
+      <div class="card-header">
+        <div class="flex items-start justify-between">
+          <div>
+            <h1 class="t-display-m text-ink"><%= @run.ai_agent.name %> Run</h1>
+            <p class="text-ink-muted mt-1"><%= @run.user_input %></p>
+          </div>
+          <% case @run.status %>
+          <% when "running" %>
+            <span class="pill accent"><%= @run.status.titleize %></span>
+          <% when "completed" %>
+            <span class="pill success"><%= @run.status.titleize %></span>
+          <% when "failed" %>
+            <span class="pill danger"><%= @run.status.titleize %></span>
+          <% when "paused" %>
+            <span class="pill warning"><%= @run.status.titleize %></span>
+          <% when "cancelled" %>
+            <span class="pill"><%= @run.status.titleize %></span>
+          <% else %>
+            <span class="pill"><%= @run.status.titleize %></span>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4 py-4 border-t border-b border-rule">
+        <div>
+          <p class="t-eyebrow text-ink-muted">Status</p>
+          <p class="text-sm font-semibold text-ink"><%= @run.status.titleize %></p>
+        </div>
+        <div>
+          <p class="t-eyebrow text-ink-muted">Progress</p>
+          <p class="text-sm font-semibold text-ink"><%= @run.steps_completed %>/<%= @run.steps_total %></p>
+        </div>
+        <div>
+          <p class="t-eyebrow text-ink-muted">Tokens</p>
+          <p class="text-sm font-semibold text-ink"><%= @run.total_tokens %></p>
+        </div>
+        <div>
+          <p class="t-eyebrow text-ink-muted">Duration</p>
+          <p class="text-sm font-semibold text-ink"><%= @run.duration_seconds || "—" %><% if @run.duration_seconds %>s<% end %></p>
+        </div>
+      </div>
+
+      <% if @run.status_running? || @run.status_paused? %>
+        <div class="mt-4 flex gap-2">
+          <% if @run.status_running? %>
+            <%= button_to "Pause", pause_ai_agent_run_path(@run), method: :patch, class: "btn btn-secondary" %>
+            <%= button_to "Cancel", cancel_ai_agent_run_path(@run), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-secondary text-danger" %>
+          <% elsif @run.status_paused? %>
+            <%= button_to "Resume", resume_ai_agent_run_path(@run), method: :patch, class: "btn btn-primary" %>
+            <%= button_to "Cancel", cancel_ai_agent_run_path(@run), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-secondary text-danger" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Pre-Run Question Form -->
+    <% if @run.status_awaiting_input? %>
+      <div class="card alert alert-note mb-6">
+        <div class="card-header">
+          <h3 class="t-body-l font-semibold">Answer Pre-Run Questions</h3>
+        </div>
+        <div class="card-body">
+          <%= form_with url: submit_pre_run_answers_ai_agent_run_path(@run), method: :post, local: true, class: "space-y-4" do |f| %>
+            <% @run.ai_agent.pre_run_questions.each do |question| %>
+              <div class="form-group">
+                <label class="form-label">
+                  <%= question["question"] %>
+                  <% if question["required"] %>
+                    <span class="text-danger">*</span>
+                  <% end %>
+                </label>
+
+                <% if question["options"] && question["options"].any? %>
+                  <!-- Multiple choice -->
+                  <div class="space-y-2">
+                    <% question["options"].each do |option| %>
+                      <label class="flex items-center">
+                        <input type="radio" name="answers[<%= question['key'] %>]" value="<%= option %>" class="h-4 w-4 rounded border-rule" <% if question["required"] %>required<% end %>>
+                        <span class="ml-2 text-sm text-ink"><%= option %></span>
+                      </label>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <!-- Free text -->
+                  <%= f.text_area "answers[#{question['key']}]", placeholder: "Your answer...", class: "form-input", rows: 2, required: question["required"] %>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= f.submit "Start Agent", class: "btn btn-primary w-full" %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- HITL Interactions -->
+    <% pending_interactions = @run.ai_agent_interactions.pending %>
+    <% if pending_interactions.any? %>
+      <div class="card alert alert-success mb-6" id="hitl-interactions">
+        <div class="card-header">
+          <h3 class="t-body-l font-semibold">Agent Needs Your Input</h3>
+        </div>
+        <div class="card-body space-y-3">
+          <% pending_interactions.each do |interaction| %>
+            <div class="p-4 bg-surface-raised border border-rule rounded" id="interaction-<%= interaction.id %>">
+              <p class="font-semibold text-ink mb-3"><%= interaction.question %></p>
+
+              <%= form_with url: answer_interaction_ai_agent_run_path(@run), method: :post, local: true, class: "flex gap-2" do |f| %>
+                <%= f.hidden_field :interaction_id, value: interaction.id %>
+
+                <% if interaction.options.any? %>
+                  <!-- Multiple choice options -->
+                  <div class="flex gap-2 flex-wrap flex-1">
+                    <% interaction.options.each do |option| %>
+                      <%= f.submit option, name: "answer", value: option, class: "btn btn-secondary text-sm" %>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <!-- Free text input -->
+                  <%= f.text_field :answer, placeholder: "Enter your response...", class: "form-input flex-1", required: true %>
+                  <%= f.submit "Submit", class: "btn btn-primary" %>
+                <% end %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if @run.error_message.present? %>
+      <div class="alert alert-danger mb-6">
+        <h3 class="font-semibold mb-2">Error</h3>
+        <p><%= @run.error_message %></p>
+      </div>
+    <% end %>
+
+    <div class="card mb-6">
+      <div class="card-header">
+        <h2 class="t-body-l font-semibold">Execution Steps</h2>
+      </div>
+      <div class="card-body">
+        <div class="space-y-2" id="agent-run-steps-<%= @run.id %>">
+          <% @steps.each do |step| %>
+            <%= render "ai_agents/run_step", step: step %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <% if @run.result_summary.present? %>
+      <div class="alert alert-success mb-6">
+        <h2 class="t-body-l font-semibold mb-2">Result</h2>
+        <p><%= simple_format(@run.result_summary) %></p>
+      </div>
+    <% end %>
+
+    <% if @run.status_completed? && !@run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
+      <div class="card">
+        <div class="card-header">
+          <h2 class="t-body-l font-semibold">Feedback</h2>
+        </div>
+        <div class="card-body">
+          <p class="text-ink-muted mb-4">How helpful was this agent run?</p>
+          <%= form_with model: [@run, AiAgentFeedback.new], local: true, class: "space-y-3" do |f| %>
+            <div class="form-group">
+              <%= f.select :rating, AiAgentFeedback.ratings.keys.map { |k| [k.titleize, k] }, { include_blank: "Select rating..." }, class: "form-input" %>
+            </div>
+            <div class="form-group">
+              <%= f.select :feedback_type, AiAgentFeedback.feedback_types.keys.map { |k| [k.titleize, k] }, { include_blank: "Optional: feedback type..." }, class: "form-input" %>
+            </div>
+            <div class="form-group">
+              <%= f.text_area :comment, placeholder: "Optional comments...", class: "form-input", rows: 3 %>
+            </div>
+            <%= f.submit "Submit Feedback", class: "btn btn-primary w-full" %>
+          <% end %>
+        </div>
+      </div>
+    <% elsif @run.status_completed? %>
+      <div class="alert alert-success">
+        <p>✓ You've already submitted feedback for this run</p>
+      </div>
+    <% end %>
+  </div>
+</div>

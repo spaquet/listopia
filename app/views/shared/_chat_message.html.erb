@@ -48,22 +48,22 @@
 
   <!-- Message Footer (Timestamp and Rating) -->
   <% if message.user_message? %>
-    <div class="flex justify-end mt-1 text-xs text-gray-400 pr-2">
+    <div class="flex justify-end mt-1 text-xs text-ink-muted pr-2">
       <span><%= time_ago_in_words(message.created_at) %> ago</span>
     </div>
   <% elsif message.assistant_message? %>
-    <div class="flex justify-start mt-2 text-xs text-gray-500">
+    <div class="flex justify-start mt-2 text-xs text-ink-muted">
       <div class="ml-2 flex items-center gap-2">
         <!-- Timestamp -->
         <span><%= time_ago_in_words(message.created_at) %> ago</span>
 
         <!-- Message Rating Buttons -->
-        <div class="flex items-center gap-2 border-l border-gray-200 pl-2"
+        <div class="flex items-center gap-2 border-l border-rule pl-2"
              data-controller="message-rating"
              data-message-id="<%= message.id %>"
              data-chat-id="<%= chat_context&.chat&.id %>">
 
-          <button class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors p-1 rounded"
+          <button class="text-ink-muted hover:text-accent hover:bg-surface-raised transition-colors p-1 rounded-sm duration-fast"
                   data-action="message-rating#rate"
                   data-rating="helpful"
                   title="Helpful"
@@ -73,7 +73,7 @@
             </svg>
           </button>
 
-          <button class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors p-1 rounded"
+          <button class="text-ink-muted hover:text-accent hover:bg-surface-raised transition-colors p-1 rounded-sm duration-fast"
                   data-action="message-rating#rate"
                   data-rating="unhelpful"
                   title="Not helpful"
@@ -84,7 +84,7 @@
           </button>
 
           <!-- Report -->
-          <button class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors p-1 rounded"
+          <button class="text-ink-muted hover:text-accent hover:bg-surface-raised transition-colors p-1 rounded-sm duration-fast"
                   data-action="click->message-rating#showReportModal"
                   title="Report"
                   aria-label="Report message">
@@ -100,58 +100,106 @@
 
 <style>
   /* Message bubble styling based on role */
-  .chat-message.user .message-content {
-    @apply text-gray-900;
+  .chat-message.user {
+    --message-bg: var(--color-accent-soft);
+    --message-text: var(--color-ink-inverse);
   }
 
-  .chat-message.assistant .message-content {
-    @apply text-gray-900;
+  .chat-message.assistant {
+    --message-bg: var(--color-surface-raised);
+    --message-text: var(--color-ink);
+  }
+
+  .chat-message.system {
+    --message-bg: var(--color-surface-sunken);
+    --message-text: var(--color-ink-muted);
+  }
+
+  .chat-message .message-content {
+    color: var(--message-text);
+    background: var(--message-bg);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    max-width: 28rem;
   }
 
   /* Code block styling inside messages */
   .message-content pre {
-    @apply bg-gray-900 text-gray-100 p-3 rounded-lg text-xs overflow-x-auto;
+    background: var(--color-surface-sunken);
+    color: var(--color-ink);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
   }
 
   .message-content code {
-    @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+    background: var(--color-surface-sunken);
+    color: var(--color-accent);
+    padding: 0.25rem 0.375rem;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-mono);
+    font-size: 0.875em;
   }
 
   .message-content pre code {
-    @apply bg-transparent p-0;
+    background: transparent;
+    color: var(--color-ink);
+    padding: 0;
   }
 
   /* Link styling */
   .message-content a {
-    @apply text-blue-600 hover:underline;
+    color: var(--color-accent);
+    text-decoration: underline;
+    transition: opacity var(--duration-fast);
+  }
+
+  .message-content a:hover {
+    opacity: 0.8;
   }
 
   /* List styling */
   .message-content ul,
   .message-content ol {
-    @apply ml-4 my-2;
+    margin-left: 1rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .message-content li {
-    @apply my-1;
+    margin: 0.25rem 0;
   }
 
   /* Table styling */
   .message-content table {
-    @apply border-collapse w-full text-sm my-2;
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.875rem;
+    margin: 0.5rem 0;
   }
 
   .message-content th,
   .message-content td {
-    @apply border border-gray-300 px-2 py-1;
+    border: 1px solid var(--color-rule);
+    padding: 0.5rem;
   }
 
   .message-content th {
-    @apply bg-gray-100 font-semibold;
+    background: var(--color-surface-sunken);
+    font-weight: 600;
+    color: var(--color-ink);
   }
 
   /* Blockquote styling */
   .message-content blockquote {
-    @apply border-l-4 border-gray-300 pl-4 my-2 text-gray-600;
+    border-left: 3px solid var(--color-rule);
+    padding-left: 1rem;
+    margin: 0.5rem 0;
+    color: var(--color-ink-muted);
+    font-style: italic;
   }
 </style>

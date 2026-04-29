@@ -2,7 +2,7 @@
 <div data-controller="recurrence" class="space-y-3">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <%= form_object.label :recurrence_rule, "Recurrence", class: "block text-sm font-medium text-gray-700 mb-1" %>
+      <%= form_object.label :recurrence_rule, "Recurrence", class: "form-label" %>
       <%= form_object.select :recurrence_rule,
           options_for_select([
             ["Does not repeat", "none"],
@@ -13,17 +13,17 @@
             ["Yearly", "yearly"]
           ], item.recurrence_rule || "none"),
           {},
-          class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all",
+          class: "form-input",
           data: { "recurrence-target": "ruleSelect", action: "change->recurrence#ruleChanged" } %>
     </div>
     <div data-recurrence-target="endDateWrapper"
          class="<%= item.recurrence_rule.blank? || item.recurrence_rule == 'none' ? 'hidden' : '' %>">
-      <%= form_object.label :recurrence_end_date, class: "block text-sm font-medium text-gray-700 mb-1" do %>
-        End Date <span class="text-xs text-gray-500 font-normal">(optional)</span>
+      <%= form_object.label :recurrence_end_date, class: "form-label" do %>
+        End Date <span class="text-xs text-ink-muted font-normal">(optional)</span>
       <% end %>
       <%= form_object.datetime_local_field :recurrence_end_date,
           value: item.recurrence_end_date&.strftime("%Y-%m-%dT%H:%M"),
-          class: "w-full h-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" %>
+          class: "form-input" %>
     </div>
   </div>
 </div>

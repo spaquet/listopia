@@ -90,17 +90,17 @@ module ChatHelper
 
   # Get CSS classes for message bubble based on role and location
   def message_bubble_classes(message)
-    base = "max-w-[90%] px-3 rounded-lg"
+    base = "max-w-[90%] px-3 rounded-md"
     padding = message.system_message? ? "py-1" : "py-1.5"
 
     if message.user_message?
-      "#{base} #{padding} bg-blue-600 text-white"
+      "#{base} #{padding} bg-accent text-ink-inverse"
     elsif message.assistant_message?
-      "#{base} #{padding} bg-gray-100 text-gray-900"
+      "#{base} #{padding} bg-surface-raised text-ink"
     elsif message.system_message?
-      "#{base} #{padding} bg-gray-200 text-gray-800 italic"
+      "#{base} #{padding} bg-surface-sunken text-ink-muted italic"
     else
-      "#{base} #{padding} bg-gray-100 text-gray-900"
+      "#{base} #{padding} bg-surface-raised text-ink"
     end
   end
 
@@ -155,11 +155,11 @@ module ChatHelper
   def attachment_preview(attachment)
     case attachment["type"]
     when "image"
-      tag.img(src: attachment["url"], alt: attachment["name"], class: "max-w-xs rounded-lg")
+      tag.img(src: attachment["url"], alt: attachment["name"], class: "max-w-xs rounded-md")
     when "file"
-      tag.a(attachment["name"], href: attachment["url"], class: "text-blue-600 hover:underline", download: true)
+      tag.a(attachment["name"], href: attachment["url"], class: "text-accent hover:underline", download: true)
     else
-      tag.span(attachment["name"], class: "text-gray-600")
+      tag.span(attachment["name"], class: "text-ink-muted")
     end
   end
 
@@ -178,9 +178,9 @@ module ChatHelper
     content_tag(:div, class: "space-y-2") do
       suggestions.map { |suggestion|
         content_tag(:button,
-                    class: "block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm",
+                    class: "block w-full text-left px-3 py-2 rounded-sm hover:bg-surface-raised transition-colors text-sm duration-fast",
                     data: { action: "unified-chat#insertCommand", command: suggestion[:command] }) do
-          concat content_tag(:span, suggestion[:command], class: "font-mono text-blue-600")
+          concat content_tag(:span, suggestion[:command], class: "font-mono text-accent")
           concat " "
           concat suggestion[:description]
         end
@@ -191,15 +191,15 @@ module ChatHelper
   # Build HTML for code block with copy button
   def render_code_block(language, code)
     content_tag(:div, class: "code-block-container") do
-      concat content_tag(:div, class: "code-block-header flex justify-between items-center bg-gray-900 text-white px-3 py-2 text-xs font-mono rounded-t") do
-        concat content_tag(:span, language.presence || "code", class: "text-gray-400")
+      concat content_tag(:div, class: "code-block-header flex justify-between items-center bg-surface-sunken text-ink px-3 py-2 text-xs font-mono rounded-t-sm border-b border-rule") do
+        concat content_tag(:span, language.presence || "code", class: "text-ink-muted")
         concat content_tag(:button,
                           "Copy",
-                          class: "btn btn-sm btn-ghost",
+                          class: "btn btn-ghost btn-sm",
                           data: { action: "chat#copyCode", code: code })
       end
 
-      concat content_tag(:div, class: "code-block-content bg-gray-800 text-gray-100 p-3 rounded-b overflow-x-auto") do
+      concat content_tag(:div, class: "code-block-content bg-surface-sunken text-ink p-3 rounded-b-sm overflow-x-auto") do
         concat content_tag(:pre, code, class: "text-xs font-mono")
       end
     end
@@ -222,7 +222,7 @@ module ChatHelper
         :a,
         mention_text,
         href: user_path(user_id),
-        class: "mention-link text-blue-600 hover:underline font-medium",
+        class: "mention-link text-accent hover:underline font-medium",
         title: "#{user_name} (#{user_email})",
         data: { mention_id: user_id }
       )
@@ -252,7 +252,7 @@ module ChatHelper
         :a,
         link_text,
         href: ref_url,
-        class: "reference-link text-green-600 hover:underline font-medium",
+        class: "reference-link text-success hover:underline font-medium",
         title: "#{ref_type.titleize}: #{reference['title'] || reference['name']}",
         data: { reference_id: ref_id, reference_type: ref_type }
       )
@@ -288,9 +288,9 @@ module ChatHelper
   def render_mention_badge(mention)
     content_tag(
       :span,
-      class: "inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium"
+      class: "pill accent"
     ) do
-      concat content_tag(:span, "👤", title: "User mention")
+      concat content_tag(:span, "👤", title: "User mention", class: "mr-1")
       concat mention["name"]
     end
   end
@@ -311,9 +311,9 @@ module ChatHelper
     title = reference["title"] || reference["name"]
     content_tag(
       :span,
-      class: "inline-flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium"
+      class: "pill success"
     ) do
-      concat content_tag(:span, icon, title: "#{reference['type']} reference")
+      concat content_tag(:span, icon, title: "#{reference['type']} reference", class: "mr-1")
       concat title
     end
   end

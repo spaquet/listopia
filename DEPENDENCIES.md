@@ -41,12 +41,15 @@ Overview of all dependencies used in the Listopia.
 
 ### AI & Search Features
 - **ruby_llm** (~> 1.8+) - LLM integration for AI-powered chat, intent detection, and embeddings
+- **ruby_llm-schema** - Structured output support with schemas
 - **neighbor** - Vector similarity search for semantic embeddings (pgvector integration)
 - **multi_json** - JSON processing for MCP and API responses
+- **jwt** - JWT token handling for OAuth
 
 ### Markdown & Content Rendering
 - **redcarpet** - Markdown rendering for rich text
 - **rouge** - Code syntax highlighting in markdown
+- **csv** - CSV processing (required for Ruby 3.4+)
 
 ### Development Tools
 - **debug** - Debugger
@@ -56,6 +59,10 @@ Overview of all dependencies used in the Listopia.
 - **annotaterb** - Model annotations
 - **bullet** - N+1 query detection
 - **dotenv-rails** - Environment variables
+- **rack-mini-profiler** - Performance profiling and insights
+- **stackprof** - Sampling CPU profiler for bottleneck identification
+- **prosopite** - Object allocation and memory tracking
+- **memory_profiler** - Detailed memory usage reports
 
 ### Testing
 - **rspec-rails** - Testing framework
@@ -66,9 +73,11 @@ Overview of all dependencies used in the Listopia.
 - **cuprite** - Headless browser testing
 - **vcr** (~> 6.2) - HTTP request recording and playback
 - **webmock** (~> 3.18) - HTTP mocking for tests
+- **simplecov** (~> 0.22.0) - Code coverage reporting
 - **database_cleaner-active_record** - Test database cleanup
 - **rails-controller-testing** - Controller testing helpers
 - **shoulda-matchers** (~> 7.0) - RSpec matchers for model testing
+- **pundit-matchers** (~> 4.0.0) - Pundit authorization testing
 - **rspec-retry** - Retry flaky tests
 - **timecop** - Time-based testing utilities
 
@@ -84,34 +93,23 @@ Overview of all dependencies used in the Listopia.
 
 ### Core Libraries
 - **@hotwired/stimulus** (^3.2.2) - Stimulus framework
-- **@hotwired/turbo-rails** (^8.0.20) - Turbo framework
+- **@hotwired/turbo-rails** (^8.0.23) - Turbo framework
 
 ### CSS
-- **tailwindcss** (^4.1.17) - Utility-first CSS framework (upgraded from 4.1.16)
-- **@tailwindcss/cli** (^4.1.17) - Tailwind CLI (upgraded from 4.1.16)
+- **tailwindcss** (^4.2.4) - Utility-first CSS framework
+- **@tailwindcss/cli** (^4.2.4) - Tailwind CLI
 
 ### UI Components & Interactions
-- **sortablejs** (^1.15.6) - Drag and drop library
+- **sortablejs** (^1.15.7) - Drag and drop library
 - **@stimulus-components/character-counter** (^5.1.0) - Character counter
 - **@stimulus-components/notification** (^3.0.0) - Notifications
 - **@stimulus-components/reveal** (^5.0.0) - Reveal/hide toggle
 - **@stimulus-components/scroll-to** (^5.0.1) - Scroll behavior
 - **stimulus-textarea-autogrow** (^4.1.0) - Auto-growing textarea
 
-### Rich Text Editor
-- **prosemirror-model** (^1.25.4) - ProseMirror document model
-- **prosemirror-state** (^1.4.4) - Editor state management
-- **prosemirror-view** (^1.41.4) - Editor view and DOM binding
-- **prosemirror-transform** (^1.10.5) - Document transformations
-- **prosemirror-commands** (^1.7.1) - Editor commands
-- **prosemirror-keymap** (^1.2.3) - Keyboard handling
-- **prosemirror-schema-list** (^1.5.1) - List schema support
-- **prosemirror-markdown** (^1.13.2) - Markdown serialization
-
 ### Utilities
-- **marked** (^17.0.1) - Markdown parser (upgraded from 16.4.1)
+- **marked** (^17.0.6) - Markdown parser
 - **highlight.js** (^11.11.1) - Code syntax highlighting
-- **lodash** (^4.17.21) - Utility library
 
 ---
 
@@ -120,56 +118,67 @@ Overview of all dependencies used in the Listopia.
 ### New Gems (Recently Added)
 
 **AI & Search:**
-- `neighbor` - Vector similarity search for pgvector embeddings
-- `redcarpet` - Markdown rendering for rich text content
-- `rouge` - Code syntax highlighting in markdown
+- `ruby_llm-schema` - Structured output with schemas for LLM responses
+- `jwt` - JWT token handling for OAuth
 
-**Database & Content:**
-- `friendly_id` - Human-readable URL slugs
-- `image_processing` - Image variants and transformations
+**Development Tools:**
+- `rack-mini-profiler` - HTTP request profiling and caching analysis
+- `stackprof` - Sampling-based CPU profiler for bottleneck identification
+- `prosopite` - Object allocation and memory leak detection
+- `memory_profiler` - Detailed memory usage analysis
 
 **Testing:**
-- `cuprite` - Headless browser testing
-- `vcr` - HTTP request recording/playback for tests
-- `webmock` - HTTP mocking for tests
-- `timecop` - Time-based testing utilities
+- `simplecov` - Code coverage reporting
+- `pundit-matchers` - Pundit authorization policy matchers
 
 ### Upgraded Dependencies
 
 **Ruby Gems:**
 - `ruby_llm` → 1.8+ (Enhanced LLM integration with embeddings)
 - `shoulda-matchers` → 7.0 (Better model testing)
+- `solid_queue` → async-worker-execution-mode branch (Fiber-based async execution)
 
 **JavaScript:**
-- `tailwindcss` → 4.1.17 (from 4.1.16)
-- `@tailwindcss/cli` → 4.1.17 (from 4.1.16)
-- `marked` → 17.0.1 (from 16.4.1)
+- `@hotwired/turbo-rails` → 8.0.23 (from 8.0.20)
+- `tailwindcss` → 4.2.4 (from 4.1.17)
+- `@tailwindcss/cli` → 4.2.4 (from 4.1.17)
+- `marked` → 17.0.6 (from 17.0.1)
+- `sortablejs` → 1.15.7 (from 1.15.6)
 
 ### New Feature Support
 
 **AI-Powered Chat:**
-- Integrated `ruby_llm` 1.8+ for intent detection, embeddings, and LLM calls
-- Added `neighbor` for vector similarity in semantic search
+- Integrated `ruby_llm` 1.8+ with `ruby_llm-schema` for structured output
+- LLM intent detection, embeddings, and schema validation
+- `neighbor` for vector similarity in semantic search
 - Full RAG (Retrieval-Augmented Generation) support
 
 **Rich Text & Content:**
-- `ProseMirror` libraries for advanced rich text editing
-- `redcarpet` + `rouge` for beautiful markdown rendering
+- `redcarpet` + `rouge` for beautiful markdown rendering with syntax highlighting
 - `image_processing` for image variants and optimization
+- `friendly_id` for human-readable URL slugs
+
+**Performance & Profiling:**
+- `rack-mini-profiler` for HTTP request analysis
+- `stackprof`, `prosopite`, `memory_profiler` for bottleneck identification
+- `bullet` for N+1 query detection and prevention
 
 **Testing Infrastructure:**
 - `cuprite` for headless browser automation
 - `vcr` + `webmock` for API testing (especially for LLM mocks)
 - `timecop` for time-dependent feature testing
+- `simplecov` for code coverage reporting
+- `pundit-matchers` for authorization testing
 
 ---
 
 ## Dependency Statistics
 
-- **Total Ruby Gems:** 50+
-- **Total JavaScript Dependencies:** 20+
-- **Testing Libraries:** 13 (comprehensive test suite support)
-- **AI/ML Libraries:** 2 (RubyLLM, Neighbor)
+- **Total Ruby Gems:** 55+
+- **Total JavaScript Dependencies:** 11
+- **Testing Libraries:** 15 (comprehensive test suite support)
+- **Performance Profiling:** 4 (rack-mini-profiler, stackprof, prosopite, memory_profiler)
+- **AI/ML Libraries:** 3 (RubyLLM, RubyLLM-Schema, Neighbor)
 - **UI Framework Libraries:** 3 (Stimulus, Turbo, Tailwind)
 
 ## Notes
@@ -178,3 +187,6 @@ Overview of all dependencies used in the Listopia.
 - Development/test gems are properly grouped
 - pgvector PostgreSQL extension required for semantic search (via `neighbor` gem)
 - Bun is the preferred package manager (faster than npm/yarn)
+- `solid_queue` uses async-worker-execution-mode branch for Fiber-based async execution
+- Performance profiling tools (rack-mini-profiler, stackprof, prosopite) enabled for development
+- `ruby_llm-schema` provides structured output validation for LLM responses

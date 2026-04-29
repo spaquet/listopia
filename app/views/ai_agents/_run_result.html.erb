@@ -1,0 +1,19 @@
+<div id="agent-run-result-<%= run.id %>">
+  <% if run.status_completed? %>
+    <div class="alert alert-success mb-6">
+      <h3 class="text-lg font-semibold mb-3">✓ Complete</h3>
+      <p><%= simple_format(run.result_summary) %></p>
+    </div>
+  <% elsif run.status_failed? %>
+    <div class="alert alert-danger mb-6">
+      <h3 class="text-lg font-semibold mb-3">✗ Failed</h3>
+      <p><%= run.error_message %></p>
+    </div>
+  <% end %>
+
+  <% if current_user && run.status_completed? && !run.ai_agent_feedbacks.where(user_id: current_user.id).exists? %>
+    <div class="alert alert-note">
+      <p class="text-sm">Please share feedback to help improve this agent.</p>
+    </div>
+  <% end %>
+</div>

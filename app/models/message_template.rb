@@ -18,6 +18,15 @@ class MessageTemplate
 
     # List planning
     "pre_creation_planning" => "PreCreationPlanningTemplate",
+    "context_reuse_options" => "ContextReuseOptionsTemplate",
+
+    # General conversation
+    "clarifying_questions" => "ClarifyingQuestionsTemplate",
+
+    # Agent execution (Phase 3)
+    "agent_running" => "AgentRunningTemplate",
+    "list_created"  => "ListCreatedTemplate",
+    "list_followup" => "ListFollowupTemplate",
 
     # System messages
     "rag_sources" => "RAGSourcesTemplate",
@@ -194,6 +203,85 @@ class PreCreationPlanningTemplate < BaseTemplate
       questions: dig_data("questions"),
       chat_id: dig_data("chat_id"),
       list_title: dig_data("list_title")
+    }
+  end
+end
+
+# Template for context reuse options (use existing plan or clear)
+class ContextReuseOptionsTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["items_count"].is_a?(Integer) && data["sublists_count"].is_a?(Integer) && data["chat_id"].present?
+  end
+
+  def render_data
+    {
+      items_count: dig_data("items_count"),
+      sublists_count: dig_data("sublists_count"),
+      chat_id: dig_data("chat_id")
+    }
+  end
+end
+
+# Template for clarifying questions in general conversations
+class ClarifyingQuestionsTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["questions"].is_a?(Array) && data["chat_id"].present?
+  end
+
+  def render_data
+    {
+      questions: dig_data("questions"),
+      chat_id: dig_data("chat_id"),
+      context_title: dig_data("context_title") || "Please answer the following questions"
+    }
+  end
+end
+
+# Template for agent execution in progress
+class AgentRunningTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["run_id"].present? && data["agent_name"].present?
+  end
+
+  def render_data
+    {
+      run_id: dig_data("run_id"),
+      agent_name: dig_data("agent_name"),
+      status: dig_data("status") || "running",
+      message: dig_data("message") || "Agent is processing your request..."
+    }
+  end
+end
+
+# Template for list creation confirmation
+class ListCreatedTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["list_id"].present? && data["list_title"].present?
+  end
+
+  def render_data
+    {
+      list_id: dig_data("list_id"),
+      list_title: dig_data("list_title"),
+      items_count: dig_data("items_count") || 0,
+      run_id: dig_data("run_id")
+    }
+  end
+end
+
+class ListFollowupTemplate < BaseTemplate
+  def self.validate_data(data)
+    data.is_a?(Hash) && data["list_id"].present?
+  end
+
+  def render_data
+    {
+      list_id: dig_data("list_id"),
+      list_title: dig_data("list_title"),
+      chat_id: dig_data("chat_id"),
+      questions: dig_data("questions") || [],
+      suggestions: dig_data("suggestions") || [],
+      actions: dig_data("actions") || []
     }
   end
 end

@@ -1,0 +1,4 @@
+<%= turbo_stream.remove "resource_form" %>
+<%= turbo_stream.replace "ai_agent_resource_#{@resource.id}" do %>
+  <%= render "resource", resource: @resource, agent: @agent %>
+<% end %>

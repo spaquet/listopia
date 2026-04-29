@@ -1,5 +1,5 @@
 <div class="email-header">
-  <h1 style="margin: 0; color: #ffffff; font-size: 20px;">Task Completed</h1>
+  <h1 style="margin: 0; font-size: 20px;">✓ Task Completed</h1>
 </div>
 
 <div class="email-body">
@@ -7,20 +7,22 @@
 
   <p><strong><%= @actor_name %></strong> completed a task:</p>
 
-  <div style="background-color: #f3f4f6; padding: 16px; border-left: 4px solid #10B981; margin: 20px 0; border-radius: 4px;">
-    <h3 style="margin: 0 0 8px 0; color: #1F2937;">
+  <div style="background-color: #f7f4ee; padding: 16px; border-left: 4px solid #3f8a4a; margin: 20px 0; border-radius: 4px;">
+    <h3 style="margin: 0 0 8px 0; color: #13243a;">
       <strike><%= @item_title %></strike>
     </h3>
-    <p style="margin: 0; color: #6B7280; font-size: 14px;">
+    <p style="margin: 0; color: #666666; font-size: 14px;">
       on <strong><%= @list_title %></strong>
     </p>
   </div>
 
-  <p>
-    <%= link_to "View List", @list_url, class: "button" %>
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="<%= @list_url %>" class="button">View List</a>
   </p>
 
-  <p style="color: #6B7280; font-size: 14px; margin-top: 30px;">
+  <div class="divider"></div>
+
+  <p style="color: #666666; font-size: 13px; margin-top: 16px;">
     Great work! You received this email because you collaborate on this list.
   </p>
 </div>

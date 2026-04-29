@@ -14,7 +14,7 @@ class ChatCompletionService < ApplicationService
   def initialize(chat, user_message, context = nil)
     @chat = chat
     @user_message = user_message
-    @context = context || ChatContext.new(
+    @context = context || ChatUiContext.new(
       chat: chat,
       user: user_message.user,
       organization: chat.organization,
@@ -27,23 +27,10 @@ class ChatCompletionService < ApplicationService
     return failure(errors: [ "User message not found" ]) unless @user_message
 
     begin
-      # PHASE 3: Check if this chat has a PlanningContext in pre_creation state
-      if @chat.planning_context&.state == "pre_creation"
-        planning_result = handle_pre_creation_planning_response_new
-        return planning_result if planning_result
-      end
-
-      # Check if we're in pre-creation planning state (old flow, metadata-based) FIRST
-      # This takes precedence over other pending flows
-      if pending_pre_creation_planning?
-        planning_result = handle_pre_creation_planning_response
-        return planning_result if planning_result
-      end
-
-      # Check if we're in a list refinement stage and user is answering questions
-      if pending_list_refinement?
-        refinement_result = handle_list_refinement_response
-        return refinement_result if refinement_result
+      # Check for /clear command to reset chat
+      if @user_message.content.strip.downcase.start_with?("/clear")
+        clear_result = handle_clear_context_command
+        return clear_result if clear_result
       end
 
       # Check if we're continuing a pending resource creation FIRST
@@ -110,14 +97,28 @@ class ChatCompletionService < ApplicationService
         return handle_tool_call(response)
       end
 
+      # Try to parse structured response with questions
+      response_text = response.is_a?(String) ? response : response.to_s
+      parsed_response = parse_response_with_questions(response_text)
+
       # Create assistant message with the response
       assistant_message = Message.create_assistant(
         chat: @chat,
-        content: response.is_a?(String) ? response : response.to_s
+        content: parsed_response[:response_text]
       )
 
       # Update chat with last message time
       @chat.update(last_message_at: Time.current)
+
+      # If response included structured questions, display them as a form
+      if parsed_response[:has_questions] && parsed_response[:questions].any?
+        Rails.logger.info("ChatCompletionService - Showing #{parsed_response[:questions].length} structured questions as form")
+        ClarifyingQuestionsService.new(
+          chat: @chat,
+          questions: parsed_response[:questions],
+          context_title: "Help me refine my recommendation"
+        ).call
+      end
 
       success(data: assistant_message)
     rescue StandardError => e
@@ -129,87 +130,6 @@ class ChatCompletionService < ApplicationService
   private
 
   # Check for missing parameters in resource creation/management
-  def check_parameters_for_intent(intent)
-    # SAFETY CHECK: Detect if this was misclassified as user creation
-    # When intent is "create_resource", do additional validation
-    if intent == "create_resource"
-      if looks_like_planning_request(@user_message.content)
-        # Reclassify as create_list
-        intent = "create_list"
-      end
-    end
-
-    param_result = ParameterExtractionService.new(
-      user_message: @user_message,
-      intent: intent,
-      context: @context
-    ).call
-
-    return nil unless param_result.success?
-
-    data = param_result.data
-    missing_params = data[:missing] || []
-    resource_type = data[:resource_type]
-    needs_clarification = data[:needs_clarification]
-
-    Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Intent: #{intent}, Data: #{data.inspect}")
-
-    # Filter out organization_id from missing params for teams/lists since it defaults to current org
-    if resource_type.in?([ "team", "list" ])
-      missing_params = missing_params.reject { |param| param.downcase.include?("organization") }
-    end
-
-    # For list creation, check complexity FIRST (before asking for category clarification)
-    # This ensures complex requests go straight to pre-creation planning form
-    if intent == "create_list"
-      parameters = data[:parameters] || {}
-
-      # DEBUG: Log what we're about to use
-      Rails.logger.warn("ChatCompletionService#check_parameters_for_intent - BEFORE COMPLEXITY CHECK - data[:parameters]: #{data[:parameters].inspect}")
-
-      # Check if this is a complex request requiring pre-creation planning
-      complexity_result = ListComplexityDetectorService.new(
-        user_message: @user_message,
-        context: @context
-      ).call
-
-      if complexity_result.success? && complexity_result.data[:is_complex]
-        Rails.logger.info("ChatCompletionService - Detected complex list request: #{complexity_result.data[:reasoning]}")
-        Rails.logger.warn("ChatCompletionService - CALLING handle_pre_creation_planning with parameters: #{parameters.inspect}")
-        planning_domain = complexity_result.data[:planning_domain] || "general"
-        # For complex requests, pre-creation planning will handle category internally
-        return handle_pre_creation_planning(parameters, planning_domain)
-      end
-
-      # Not complex - now check if we need category clarification
-      if needs_clarification
-        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Returning category clarification")
-        return handle_list_category_clarification(data)
-      end
-
-      # Check if there are other missing parameters
-      if missing_params.present?
-        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
-        return handle_missing_parameters(data, missing_params)
-      end
-
-      # All parameters ready for simple list creation
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with simple list creation, parameters: #{parameters.inspect}")
-      return handle_list_creation("list", parameters)
-    elsif intent == "create_resource"
-      # If there are missing parameters for resource creation, ask the user for them
-      if missing_params.present?
-        Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Missing params: #{missing_params.inspect}, Returning missing parameters handler")
-        return handle_missing_parameters(data, missing_params)
-      end
-
-      Rails.logger.info("ChatCompletionService#check_parameters_for_intent - Proceeding with resource creation")
-      return handle_resource_creation(data[:resource_type] || "resource", data[:parameters] || {})
-    end
-
-    # For other intents with complete parameters, return nil to continue normal flow
-    nil
-  end
 
   # PHASE 1 OPTIMIZATION: Use combined intent+parameter data directly
   # Avoids second LLM call by using data from CombinedIntentParameterService
@@ -367,96 +287,7 @@ class ChatCompletionService < ApplicationService
   # Handle pre-creation planning for complex list requests
   # Ask clarifying questions BEFORE creating the list
   # OPTIMIZATION: Move question generation to background job for fast response
-  def handle_pre_creation_planning(parameters, planning_domain = "general")
-    start_time = Time.current
 
-    title = parameters[:title] || parameters["title"] || "your list"
-    category = parameters[:category] || parameters["category"] || "personal"
-    items = parameters[:items] || parameters["items"] || []
-
-    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - PARAMETERS - title: #{title.inspect}, category: #{category.inspect}, domain: #{planning_domain.inspect}")
-
-    # Generate clarifying questions SYNCHRONOUSLY using fast model (gpt-4o-mini)
-    # This is fast (1-2 seconds) and returns immediately, no background jobs needed
-    question_result = QuestionGenerationService.new(
-      list_title: title,
-      category: category,
-      planning_domain: planning_domain
-    ).call
-
-    unless question_result.success?
-      Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Failed to generate questions, proceeding with creation")
-      # Graceful degradation: proceed with immediate list creation
-      return handle_list_creation("list", parameters)
-    end
-
-    questions = question_result.data[:questions]
-
-    # Store pending pre-creation planning state with generated questions
-    @chat.metadata ||= {}
-    @chat.metadata["pending_pre_creation_planning"] = {
-      extracted_params: parameters,
-      questions_asked: questions.map { |q| q["question"] },
-      refinement_context: {
-        list_title: title,
-        category: category,
-        initial_items: items,
-        refinement_stage: "awaiting_answers",
-        created_at: Time.current.iso8601
-      },
-      intent: "create_list",
-      status: "ready"
-    }
-    @chat.save
-
-    # Create assistant message with the pre-creation planning form (with questions embedded)
-    assistant_message = Message.create_assistant(
-      chat: @chat,
-      content: "Let me ask a few clarifying questions to structure this list better:"
-    )
-
-    @chat.update(last_message_at: Time.current)
-
-    # Broadcast the pre-creation planning form via Turbo Stream
-    broadcast_planning_form(@chat, questions, title)
-
-    elapsed_ms = ((Time.current - start_time) * 1000).round(2)
-    Rails.logger.warn("ChatCompletionService#handle_pre_creation_planning - Pre-creation form returned in #{elapsed_ms}ms with #{questions.length} questions")
-
-    success(data: assistant_message)
-  rescue => e
-    Rails.logger.error("Pre-creation planning failed: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
-    # Graceful degradation: proceed with immediate creation
-    handle_list_creation("list", parameters)
-  end
-
-  def broadcast_planning_form(chat, questions, list_title)
-    # Broadcast the pre-creation planning form immediately via Turbo Stream
-    # Render the partial first, then broadcast the HTML (matching ProcessChatMessageJob pattern)
-    begin
-      html = ApplicationController.render(
-        partial: "chats/pre_creation_planning_message",
-        locals: {
-          questions: questions,
-          chat: chat,
-          list_title: list_title
-        }
-      )
-
-      Rails.logger.info("ChatCompletionService - Rendered form partial (#{html.length} chars)")
-
-      Turbo::StreamsChannel.broadcast_append_to(
-        "chat_#{chat.id}",
-        target: "chat-messages-#{chat.id}",
-        html: html
-      )
-
-      Rails.logger.info("ChatCompletionService - Pre-creation planning form broadcasted to chat_#{chat.id}")
-    rescue => e
-      Rails.logger.error("ChatCompletionService - Failed to broadcast pre-creation form: #{e.message}\n#{e.backtrace.take(5).join("\n")}")
-      # Non-blocking - form generation succeeded, broadcast is just a nice-to-have
-    end
-  end
 
   # Create a message asking for missing parameters
   def handle_missing_parameters(param_data, missing_params)
@@ -487,111 +318,12 @@ class ChatCompletionService < ApplicationService
   end
 
   # Check if we're in a pre-creation planning state
-  def pending_pre_creation_planning?
-    @chat.metadata&.dig("pending_pre_creation_planning").present?
-  end
 
   # Check if we're in a list refinement state
-  def pending_list_refinement?
-    @chat.metadata&.dig("pending_list_refinement").present?
-  end
 
   # Handle user's response to pre-creation planning questions
-  def handle_pre_creation_planning_response
-    planning_data = @chat.metadata["pending_pre_creation_planning"]
-    return nil unless planning_data
-
-    extracted_params = planning_data["extracted_params"] || {}
-
-    # Extract planning parameters from user's answers
-    planning_params = extract_planning_parameters_from_answers(
-      user_answers: @user_message.content,
-      list_title: extracted_params["title"],
-      category: extracted_params["category"],
-      initial_items: extracted_params["items"] || []
-    )
-
-    # Enrich the list structure with planning context
-    enriched_params = enrich_list_structure_with_planning(
-      base_params: extracted_params,
-      planning_params: planning_params
-    )
-
-    # Clear pre-creation planning state
-    @chat.metadata.delete("pending_pre_creation_planning")
-
-    # Mark that we should skip post-creation refinement
-    @chat.metadata["skip_post_creation_refinement"] = true
-    @chat.save
-
-    # Create the list with enriched structure
-    creation_result = handle_list_creation("list", enriched_params)
-
-    # Clear the skip flag after creation
-    @chat.metadata.delete("skip_post_creation_refinement")
-    @chat.save
-
-    creation_result
-  rescue => e
-    Rails.logger.error("Pre-creation planning response handling failed: #{e.message}")
-
-    # Fallback: create list with original params
-    @chat.metadata.delete("pending_pre_creation_planning")
-    @chat.save
-
-    handle_list_creation("list", extracted_params)
-  end
 
   # Handle user's response to refinement questions
-  def handle_list_refinement_response
-    refinement_data = @chat.metadata["pending_list_refinement"]
-    return nil unless refinement_data
-
-    list_id = refinement_data["list_id"]
-    list = List.find_by(id: list_id)
-    return nil unless list
-
-    # Process the refinement answers
-    processor = ListRefinementProcessorService.new(
-      list: list,
-      user_answers: @user_message.content,
-      refinement_context: refinement_data["context"],
-      context: @context
-    )
-
-    result = processor.call
-
-    if result.success?
-      # Clear refinement state
-      @chat.metadata.delete("pending_list_refinement")
-      @chat.save
-
-      # Create success message with refinement summary
-      message_content = result.data[:message]
-
-      assistant_message = Message.create_assistant(
-        chat: @chat,
-        content: message_content
-      )
-
-      @chat.update(last_message_at: Time.current)
-
-      success(data: assistant_message)
-    else
-      # If processing fails, ask user to try again
-      message_content = "I had trouble understanding those details. Could you provide a bit more information? " \
-                       "For example: #{refinement_data[:example_format]}"
-
-      assistant_message = Message.create_assistant(
-        chat: @chat,
-        content: message_content
-      )
-
-      @chat.update(last_message_at: Time.current)
-
-      success(data: assistant_message)
-    end
-  end
 
   # Check if we're in a pending resource creation state
   def pending_resource_creation?
@@ -854,66 +586,6 @@ class ChatCompletionService < ApplicationService
 
   # LEGACY: Old blocking refinement method - kept for backward compatibility
   # If you want to use this, be aware it will block the user response
-  def trigger_list_refinement_blocking(list:, list_title:, category:, items:, message:, nested_sublists: [])
-    refinement = ListRefinementService.new(
-      list_title: list_title,
-      category: category,
-      items: items,
-      nested_sublists: nested_sublists,
-      context: @context
-    )
-
-    result = refinement.call
-
-    if result.success? && result.data[:needs_refinement]
-      questions = result.data[:questions] || []
-
-      if questions.present?
-        # Store refinement state in chat metadata
-        @chat.metadata ||= {}
-        @chat.metadata["pending_list_refinement"] = {
-          list_id: list.id,
-          context: result.data[:refinement_context],
-          questions_asked: questions.map { |q| q["question"] },
-          example_format: "duration, budget, preferences, etc."
-        }
-        @chat.save
-
-        # Build refinement message
-        refinement_message = message.content + "\n\n"
-        refinement_message += "I have a few quick questions to make this list even more useful:\n\n"
-        questions.each_with_index do |q, idx|
-          refinement_message += "#{idx + 1}. #{q["question"]}\n"
-        end
-
-        # Create refinement message
-        refinement_assistant_message = Message.create_assistant(
-          chat: @chat,
-          content: refinement_message
-        )
-
-        @chat.update(last_message_at: Time.current)
-
-        return success(data: {
-          needs_refinement: true,
-          message: refinement_assistant_message,
-          questions: questions
-        })
-      end
-    end
-
-    success(data: {
-      needs_refinement: false,
-      message: message
-    })
-  rescue => e
-    Rails.logger.error("List refinement trigger failed: #{e.message}")
-    # Graceful fallback - continue without refinement
-    success(data: {
-      needs_refinement: false,
-      message: message
-    })
-  end
 
   # Build a user-friendly message asking for missing parameters
   def build_missing_parameter_message(resource_type, missing_params, extracted_params)
@@ -942,160 +614,12 @@ class ChatCompletionService < ApplicationService
   end
 
   # Extract planning parameters from user's answers to planning questions
-  def extract_planning_parameters_from_answers(user_answers:, list_title:, category:, initial_items:)
-    # Use gpt-5-nano for structured extraction task
-    llm_chat = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
-
-    system_prompt = <<~PROMPT
-      Extract planning parameters from the user's answers.
-
-      List Context:
-      - Title: "#{list_title}"
-      - Category: #{category}
-      - Initial items: #{initial_items.join(", ")}
-
-      Respond with ONLY a JSON object (no other text):
-      {
-        "duration": "extracted time/duration if mentioned",
-        "budget": "extracted budget if mentioned",
-        "locations": ["extracted locations if multi-location event"],
-        "start_date": "extracted start date if mentioned",
-        "timeline": "extracted timeline/deadline if mentioned",
-        "team_size": "extracted team/people count if mentioned",
-        "phases": ["extracted phases/stages/weeks/chapters/modules if mentioned"],
-        "preferences": "extracted preferences/constraints",
-        "other_details": "any other relevant context"
-      }
-
-      Rules:
-      1. Extract only information actually mentioned
-      2. Be specific and preserve units (e.g., "3 days", "$2000", "6 weeks")
-      3. If locations mentioned, extract as array ["New York", "Chicago"]
-      4. If phases/stages/weeks/time periods mentioned, extract as array ["Week 1", "Week 2"] or ["Planning", "Execution", "Wrap-up"]
-      5. Different subdivision types: locations for multi-site events, phases/weeks for time-based plans, chapters/modules for learning
-      6. Return empty string or empty array for fields not mentioned
-
-      User's answers: "#{user_answers}"
-    PROMPT
-
-    llm_chat.add_message(role: "system", content: system_prompt)
-    llm_chat.add_message(role: "user", content: "Extract planning parameters from these answers.")
-
-    response = llm_chat.complete
-    response_text = extract_response_content(response)
-
-    json_match = response_text.match(/\{[\s\S]*\}/m)
-    return {} unless json_match
-
-    begin
-      JSON.parse(json_match[0])
-    rescue JSON::ParserError
-      {}
-    end
-  rescue => e
-    Rails.logger.error("Planning parameter extraction failed: #{e.message}")
-    {}
-  end
 
   # Enrich list structure based on planning parameters
-  def enrich_list_structure_with_planning(base_params:, planning_params:)
-    enriched = base_params.dup
-
-    # Update description with planning context
-    description_parts = [ enriched["description"] ].compact
-
-    if planning_params["duration"].present?
-      description_parts << "Duration: #{planning_params["duration"]}"
-    end
-
-    if planning_params["budget"].present?
-      description_parts << "Budget: #{planning_params["budget"]}"
-    end
-
-    if planning_params["start_date"].present?
-      description_parts << "Start: #{planning_params["start_date"]}"
-    end
-
-    enriched["description"] = description_parts.join(" | ") if description_parts.present?
-
-    # Determine subdivision type (locations take precedence, then phases, then other)
-    subdivision_type = determine_subdivision_type(planning_params)
-
-    # Generate nested lists based on subdivision type
-    case subdivision_type
-    when :locations
-      enriched["nested_lists"] = planning_params["locations"].map do |location|
-        result = ItemGenerationService.new(
-          list_title: enriched["title"],
-          description: enriched["description"],
-          category: enriched["category"] || enriched["list_type"] || "professional",
-          planning_context: planning_params,
-          sublist_title: location
-        ).call
-
-        {
-          "title" => location,
-          "description" => "Planning for #{location}",
-          "items" => result.success? ? result.data : []
-        }
-      end
-
-    when :phases
-      enriched["nested_lists"] = planning_params["phases"].map do |phase|
-        result = ItemGenerationService.new(
-          list_title: enriched["title"],
-          description: enriched["description"],
-          category: enriched["category"] || enriched["list_type"] || "professional",
-          planning_context: planning_params,
-          sublist_title: phase
-        ).call
-
-        {
-          "title" => phase,
-          "description" => "Phase: #{phase}",
-          "items" => result.success? ? result.data : []
-        }
-      end
-
-    when :other
-      # For other subdivision types, use generic generation
-      other_items = planning_params["other_items"] || []
-      enriched["nested_lists"] = other_items.map do |item|
-        result = ItemGenerationService.new(
-          list_title: enriched["title"],
-          description: enriched["description"],
-          category: enriched["category"] || enriched["list_type"] || "professional",
-          planning_context: planning_params,
-          sublist_title: item
-        ).call
-
-        {
-          "title" => item,
-          "description" => "Items for #{item}",
-          "items" => result.success? ? result.data : []
-        }
-      end
-    end
-
-    # Clear parent items when nested lists are created - they're now specific to each subdivision
-    enriched["items"] = [] if enriched["nested_lists"].present?
-    enriched
-  end
 
 
   # Determine what type of subdivision to use for nested lists
   # Locations take precedence, then phases, then other subdivisions
-  def determine_subdivision_type(planning_params)
-    if planning_params["locations"].present? && planning_params["locations"].is_a?(Array) && planning_params["locations"].any?
-      :locations
-    elsif planning_params["phases"].present? && planning_params["phases"].is_a?(Array) && planning_params["phases"].any?
-      :phases
-    elsif planning_params["other_items"].present? && planning_params["other_items"].is_a?(Array) && planning_params["other_items"].any?
-      :other
-    else
-      :none
-    end
-  end
 
   # Handle navigation intent detected by AI
   def handle_navigation_intent(intent_data)
@@ -1398,6 +922,43 @@ class ChatCompletionService < ApplicationService
       When a user asks to view something like "show me active users" or "list all organizations",
       recognize their intent and help them navigate to the appropriate page or retrieve the information.
 
+      FORMATTING FOLLOW-UP QUESTIONS (REQUIRED JSON FORMAT):
+      =====================================================
+      When you need to ask clarifying questions, you MUST return JSON (not plain text).
+
+      Return ONLY this JSON structure - no markdown code blocks, no additional text:
+      {
+        "response": "Your conversational answer here with proper markdown formatting (paragraphs separated by blank lines, lists with - or *, bold **text**, etc.)",
+        "has_questions": true,
+        "questions": [
+          {
+            "question": "What is your budget?",
+            "input_type": "text",
+            "options": [],
+            "context": "Optional helpful hint"
+          },
+          {
+            "question": "New or used?",
+            "input_type": "select",
+            "options": ["New", "Used"],
+            "context": null
+          }
+        ]
+      }
+
+      Rules:
+      - response: Your answer WITH markdown formatting (paragraphs, bold, italics, lists, etc.) - NO questions in it
+      - has_questions: true/false - MUST be boolean
+      - questions: Array of question objects (empty array if has_questions is false)
+      - input_type: "text" (single line), "textarea" (multi-line), or "select" (dropdown)
+      - options: Array of choices for "select" type, empty array otherwise
+      - context: Optional hint to help user answer (can be null)
+      - Format with clear paragraph breaks (blank lines between paragraphs)
+      - Use bullet points or numbered lists for multiple items
+      - Use **bold** and _italics_ for emphasis
+
+      CRITICAL: Return ONLY the JSON object, nothing else. No markdown code blocks, no explanations.
+
       CREATING STRUCTURED PLANS - INTELLIGENT INSTRUCTION:
       ====================================================
       WHEN USER ASKS FOR A PLAN, LEARNING PATH, ITINERARY, ROADMAP, OR STRUCTURED APPROACH:
@@ -1472,17 +1033,17 @@ class ChatCompletionService < ApplicationService
 
   # ===== PHASE 3: PlanningContext Integration =====
 
-  # Check if this chat has an existing PlanningContext
+  # Check if this chat has an existing ChatContext
   def existing_planning_context?
-    @chat.planning_context.present?
+    @chat.chat_context.present?
   end
 
   # Get or create planning context for this chat
   def get_or_create_planning_context
-    return @chat.planning_context if @chat.planning_context.present?
+    return @chat.chat_context if @chat.chat_context.present?
 
-    # Create new planning context using PlanningContextHandler
-    handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+    # Create new planning context using ChatContextHandler
+    handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
     result = handler.call
 
     return nil unless result.success?
@@ -1493,36 +1054,17 @@ class ChatCompletionService < ApplicationService
   # Initialize planning context for list creation (new Phase 3 flow)
   def initialize_planning_with_new_context(combined_data)
     begin
-      Rails.logger.info("ChatCompletionService - Initializing planning context for list creation")
+      Rails.logger.info("ChatCompletionService - Complex list detected: #{combined_data[:planning_domain]} (confidence: #{combined_data[:complexity_confidence]})")
 
-      # Use PlanningContextHandler to create context and detect complexity
-      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
-      handler_result = handler.call
+      # Phase 3: Agent-based orchestration
+      # For now, create list directly with generated items
+      parameters = combined_data[:parameters] || {}
+      parameters[:title] ||= @user_message.content.truncate(100)
+      parameters[:category] ||= combined_data[:planning_domain] || "personal"
+      parameters[:description] ||= ""
 
-      return handler_result unless handler_result.success?
-
-      handler_data = handler_result.data
-      planning_context = handler_data[:planning_context]
-
-      # If planning context wasn't created, return early
-      unless planning_context.present?
-        Rails.logger.info("ChatCompletionService - Planning context not created, skipping flow")
-        return nil
-      end
-
-      # If simple request, generate items and create list immediately
-      unless planning_context.is_complex
-        Rails.logger.info("ChatCompletionService - Simple list request, generating items and creating list")
-        generation_result = handler.generate_items_for_context(planning_context)
-        return generation_result unless generation_result.success?
-
-        # Items generated, now create the actual list
-        return auto_create_list_from_planning(planning_context)
-      end
-
-      # For complex requests, generate and show pre-creation planning form
-      Rails.logger.info("ChatCompletionService - Complex list request, generating pre-creation questions")
-      show_pre_creation_planning_form(planning_context)
+      Rails.logger.info("ChatCompletionService - Creating list directly for complex request")
+      handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("initialize_planning_with_new_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1532,38 +1074,15 @@ class ChatCompletionService < ApplicationService
   # Create and process a simple list (goes directly to completed state)
   def create_and_process_simple_list(combined_data, parameters)
     begin
-      Rails.logger.info("ChatCompletionService - Creating planning context for simple list")
+      Rails.logger.info("ChatCompletionService - Creating simple list directly")
 
-      # Create planning context for this chat
-      planning_context = PlanningContext.create!(
-        chat: @chat,
-        user: @context.user,
-        organization: @context.organization,
-        request_content: @user_message.content,
-        state: "completed",
-        status: "complete",
-        detected_intent: combined_data[:intent],
-        intent_confidence: combined_data[:intent_confidence] || 0.95,
-        planning_domain: combined_data[:planning_domain] || "personal",
-        complexity_level: "simple",
-        parameters: parameters,
-        complexity_reasoning: combined_data[:complexity_reasoning] || "Simple, straightforward request",
-        hierarchical_items: build_simple_list_structure(combined_data, parameters)
-      )
+      # Prepare list parameters
+      parameters[:title] ||= @user_message.content.truncate(100)
+      parameters[:category] ||= combined_data[:planning_domain] || "personal"
+      parameters[:description] ||= ""
 
-      Rails.logger.info("ChatCompletionService - Created planning context: #{planning_context.id}")
-
-      # Use PlanningContextToListService to create the list
-      list_service = PlanningContextToListService.new(planning_context, @context.user, @context.organization)
-      list_result = list_service.call
-
-      return list_result unless list_result.success?
-
-      # For simple lists, mark as completed (after list is created)
-      planning_context.update!(state: :completed)
-
-      Rails.logger.info("ChatCompletionService - Simple list created successfully")
-      success(data: list_result.data)
+      # Phase 3: Direct list creation without planning context ceremony
+      handle_list_creation("list", parameters)
     rescue StandardError => e
       Rails.logger.error("create_and_process_simple_list error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
@@ -1572,12 +1091,24 @@ class ChatCompletionService < ApplicationService
 
   # Build hierarchical items structure for a simple list
   def build_simple_list_structure(combined_data, parameters)
-    # Extract parent requirements if available (fallback to generic structure)
-    parent_reqs = combined_data[:parent_requirements] || {}
-    parent_items = parent_reqs.is_a?(Hash) ? (parent_reqs["items"] || []) : []
+    list_title = @user_message.content
+    category = parameters[:category] || "personal"
+    planning_domain = combined_data[:planning_domain] || "personal"
+    generation_type = combined_data[:generation_type] || "planning"
+
+    # Generate items using ItemGenerationService
+    item_result = ItemGenerationService.new(
+      list_title: list_title,
+      description: list_title,
+      category: category,
+      planning_context: parameters,
+      generation_type: generation_type
+    ).call
+
+    generated_items = item_result.data || []
 
     {
-      "parent_items" => parent_items.map { |item|
+      "parent_items" => generated_items.map { |item|
         {
           title: item[:title] || item["title"] || "Item",
           description: item[:description] || item["description"] || ""
@@ -1604,7 +1135,7 @@ class ChatCompletionService < ApplicationService
       unless question_result.success?
         Rails.logger.warn("ChatCompletionService - Failed to generate questions, proceeding with immediate creation")
         # Graceful degradation: proceed with item generation
-        handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+        handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
         return handler.generate_items_for_context(planning_context)
       end
 
@@ -1636,30 +1167,137 @@ class ChatCompletionService < ApplicationService
     end
   end
 
+  # Handle /clear command to clear the planning context
+  def handle_clear_context_command
+    begin
+      planning_context = @chat.chat_context
+
+      if planning_context.blank?
+        message_content = "No active planning context to clear."
+      else
+        # Clear the planning context
+        planning_context.update!(
+          hierarchical_items: nil,
+          generated_items: nil,
+          pre_creation_questions: nil,
+          parameters: {},
+          state: :initial,
+          status: :pending
+        )
+        message_content = "✓ Planning context cleared. Ready to start fresh planning!"
+      end
+
+      assistant_message = Message.create_assistant(
+        chat: @chat,
+        content: message_content
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - /clear command executed")
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("handle_clear_context_command error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Show options to reuse or clear existing planning context
+  def show_context_reuse_options(planning_context)
+    begin
+      items_count = planning_context.generated_items&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
+
+      # Set state to context_reuse so next user message is handled as a choice
+      planning_context.update!(post_creation_mode: true)
+
+      # Create templated message with interactive buttons
+      assistant_message = Message.create_templated(
+        chat: @chat,
+        template_type: "context_reuse_options",
+        template_data: {
+          items_count: items_count,
+          sublists_count: sublists_count,
+          chat_id: @chat.id
+        }
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - Context reuse options shown (#{items_count} items, #{sublists_count} sublists)")
+
+      success(data: assistant_message)
+    rescue StandardError => e
+      Rails.logger.error("show_context_reuse_options error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  # Handle user choice to use or clear planning context
+  def handle_context_reuse_choice(planning_context, user_choice)
+    begin
+      # Exit post-creation mode - we're handling the user's choice now
+      planning_context.update!(post_creation_mode: false)
+
+      if user_choice.downcase.include?("clear") || user_choice.downcase.include?("fresh") || user_choice.downcase.include?("start")
+        # Clear the context
+        Rails.logger.info("ChatCompletionService - User chose to clear context, resetting")
+        planning_context.update!(
+          hierarchical_items: nil,
+          generated_items: nil,
+          pre_creation_questions: nil,
+          parameters: {},
+          state: :initial,
+          status: :analyzing
+        )
+        show_pre_creation_planning_form(planning_context)
+      else
+        # Use existing context and create list
+        Rails.logger.info("ChatCompletionService - User chose to use existing context, creating list")
+        auto_create_list_from_planning(planning_context)
+      end
+    rescue StandardError => e
+      Rails.logger.error("handle_context_reuse_choice error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
   # Handle user answers to pre-creation planning questions using new flow
   def handle_pre_creation_planning_response_new
-    planning_context = @chat.planning_context
+    planning_context = @chat.chat_context
     return nil unless planning_context&.state == "pre_creation"
 
     begin
       Rails.logger.info("ChatCompletionService - Processing pre-creation planning answers")
+      Rails.logger.info("ChatCompletionService - User answered: #{@user_message.content[0..100]}")
 
       # Extract answers from user message
       answers = extract_answers_from_user_input(@user_message.content, planning_context.pre_creation_questions)
+      Rails.logger.info("ChatCompletionService - Extracted answers: #{answers.inspect[0..200]}")
 
-      # Store answers in PlanningContext
+      # SAFETY CHECK: If answers look like JSON/structure instead of parameters, skip this answer
+      if answers.to_s.include?("createlist") || answers.to_s.include?("nestedlists")
+        Rails.logger.warn("ChatCompletionService - Detected malformed answer extraction, using raw content")
+        answers = { "duration" => @user_message.content, "notes" => @user_message.content }
+      end
+
+      # Store answers in ChatContext
       planning_context.record_answers(answers)
 
-      # Use PlanningContextHandler to process answers and generate items
-      handler = PlanningContextHandler.new(@user_message, @chat, @context.user, @context.organization)
+      # Use ChatContextHandler to process answers and generate items
+      handler = ChatContextHandler.new(@user_message, @chat, @context.user, @context.organization)
       generation_result = handler.process_answers(planning_context, answers)
 
-      return generation_result unless generation_result.success?
+      unless generation_result.success?
+        Rails.logger.error("ChatCompletionService - Item generation failed: #{generation_result.errors.inspect}")
+        return generation_result
+      end
 
       gen_data = generation_result.data
       updated_context = gen_data[:planning_context]
 
-      Rails.logger.info("ChatCompletionService - Items generated, now creating list from planning context")
+      Rails.logger.info("ChatCompletionService - Items generated successfully, now creating list from planning context")
 
       # Mark context as completed before list creation
       updated_context.mark_complete!
@@ -1667,28 +1305,102 @@ class ChatCompletionService < ApplicationService
       # Items generated, create the actual list
       result = auto_create_list_from_planning(updated_context)
 
-      # Ensure context is marked as completed (PlanningContextToListService may change it)
+      unless result.success?
+        Rails.logger.error("ChatCompletionService - Auto-create list failed: #{result.errors.inspect}")
+      end
+
+      # Ensure context is marked as completed (ChatContextToListService may change it)
       updated_context.update!(state: :completed) if result.success?
 
       result
     rescue StandardError => e
       Rails.logger.error("handle_pre_creation_planning_response_new error: #{e.class} - #{e.message}")
-      failure(errors: [ e.message ])
+      Rails.logger.error(e.backtrace.take(10).join("\n"))
+      failure(errors: [ "Failed to process your answers. Please try again." ])
     end
   end
 
   # Extract structured answers from user's free-form text response
   def extract_answers_from_user_input(user_input, questions)
-    answers = {}
+    # Use LLM to parse free-form answers into structured format
+    extraction_result = extract_structured_parameters_from_answers(user_input, questions)
 
-    # Try to map each question to extracted answer
-    # For now, store the entire input as the response
-    # In Phase 4, we can use LLM to extract structured answers
-    questions.each_with_index do |question, index|
-      answers[index.to_s] = user_input
+    if extraction_result.success?
+      extraction_result.data
+    else
+      # Fallback: store entire input if parsing fails
+      answers = {}
+      questions.each_with_index do |question, index|
+        answers[index.to_s] = user_input
+      end
+      answers
     end
+  end
 
-    answers
+  # Use LLM to parse free-form user answers into structured parameters
+  def extract_structured_parameters_from_answers(user_input, questions)
+    begin
+      prompt = build_answer_extraction_prompt(user_input, questions)
+
+      response = call_llm_for_answer_extraction(prompt)
+      return failure(errors: [ "Failed to parse answers" ]) if response.blank?
+
+      # Try to parse JSON response
+      parsed = JSON.parse(response) rescue nil
+      return failure(errors: [ "Invalid response format" ]) unless parsed.is_a?(Hash)
+
+      success(data: parsed)
+    rescue StandardError => e
+      Rails.logger.error("extract_structured_parameters_from_answers error: #{e.class} - #{e.message}")
+      failure(errors: [ e.message ])
+    end
+  end
+
+  def build_answer_extraction_prompt(user_input, questions)
+    <<~PROMPT
+      Extract structured parameters from the user's answers below.
+
+      Original questions were:
+      #{questions.map.with_index { |q, i| "#{i + 1}. #{q}" }.join("\n")}
+
+      User's answers:
+      #{user_input}
+
+      Extract and return as JSON with these keys (extract only what's explicitly provided):
+      {
+        "locations": ["city, state country with date if provided", ...],
+        "budget": "total amount if mentioned",
+        "timeline": "duration/dates if mentioned",
+        "team_members": ["name/role", ...],
+        "duration": "length of event/project",
+        "activities": ["activity1", "activity2", ...],
+        "audience": "target audience description",
+        "category": "professional/personal"
+      }
+
+      Return ONLY valid JSON, no other text.
+    PROMPT
+  end
+
+  def call_llm_for_answer_extraction(prompt)
+    begin
+      Rails.logger.info("ChatCompletionService - Extracting answers with AnswerExtractionSchema")
+
+      # Use RubyLLM::Schema for guaranteed structured output
+      response = RubyLLM::Chat.new(provider: :openai, model: "gpt-5-nano")
+        .with_instructions("You are a data extraction assistant. Extract structured data from user input and return valid JSON.")
+        .with_schema(AnswerExtractionSchema)
+        .ask(prompt)
+
+      Rails.logger.info("ChatCompletionService - Answer extraction completed with schema validation")
+
+      # response.content is automatically parsed and validated against AnswerExtractionSchema
+      # Return JSON string for compatibility with existing code
+      response.content.to_json
+    rescue StandardError => e
+      Rails.logger.error("call_llm_for_answer_extraction error: #{e.class} - #{e.message}")
+      nil
+    end
   end
 
   # Build a summary message for list creation
@@ -1722,7 +1434,7 @@ class ChatCompletionService < ApplicationService
     summary_parts.join("\n")
   end
 
-  # Broadcast pre-creation planning form using new PlanningContext
+  # Broadcast pre-creation planning form using new ChatContext
   def broadcast_planning_form_new(chat, questions, planning_context)
     begin
       html = ApplicationController.render(
@@ -1751,7 +1463,7 @@ class ChatCompletionService < ApplicationService
 
   # ===== PHASE 4: Planning Context to List Creation =====
 
-  # Create an actual List from a completed PlanningContext
+  # Create an actual List from a completed ChatContext
   def create_list_from_planning_context(planning_context)
     begin
       Rails.logger.info("ChatCompletionService - Creating list from planning context: #{planning_context.id}")
@@ -1761,8 +1473,8 @@ class ChatCompletionService < ApplicationService
         return failure(errors: [ "Planning context not ready for list creation. Current state: #{planning_context.state}" ])
       end
 
-      # Use PlanningContextToListService to create the list
-      service = PlanningContextToListService.new(
+      # Use ChatContextToListService to create the list
+      service = ChatContextToListService.new(
         planning_context,
         @context.user,
         @context.organization
@@ -1793,15 +1505,26 @@ class ChatCompletionService < ApplicationService
     begin
       Rails.logger.info("ChatCompletionService - Auto-creating list from completed planning context")
 
+      # SAFETY: Verify we have the data we need
+      unless planning_context.hierarchical_items.present?
+        Rails.logger.error("ChatCompletionService - No hierarchical items to create list from")
+        return failure(errors: [ "List structure is incomplete. Please try again." ])
+      end
+
       # Show list preview first (PHASE 5 enhancement)
       show_list_preview(planning_context)
 
       # Create the list
       list_result = create_list_from_planning_context(planning_context)
-      return list_result unless list_result.success?
+      unless list_result.success?
+        Rails.logger.error("ChatCompletionService - Failed to create list: #{list_result.errors.inspect}")
+        return failure(errors: [ "Failed to create your list. Please try again or contact support." ])
+      end
 
       list = list_result.data[:list]
       updated_context = list_result.data[:planning_context]
+
+      Rails.logger.info("ChatCompletionService - List created successfully: #{list.id}")
 
       # Create brief text message
       brief_message = "✨ Creating your list..."
@@ -1815,10 +1538,15 @@ class ChatCompletionService < ApplicationService
       # Broadcast the success confirmation (PHASE 5 enhancement)
       broadcast_list_created_confirmation(list, updated_context)
 
+      # Show context management buttons (keep or clear for next task)
+      show_context_management_buttons(updated_context)
+
       success(data: assistant_message)
     rescue StandardError => e
       Rails.logger.error("auto_create_list_from_planning error: #{e.class} - #{e.message}")
-      failure(errors: [ e.message ])
+      Rails.logger.error(e.backtrace.take(5).join("\n"))
+      # NEVER return raw JSON or internal structures to user
+      failure(errors: [ "An error occurred while creating your list. Please try again." ])
     end
   end
 
@@ -1902,8 +1630,11 @@ class ChatCompletionService < ApplicationService
       html = ApplicationController.render(
         partial: "message_templates/item_generation_progress",
         locals: {
-          subdivisions: subdivisions,
-          total: subdivisions.length
+          data: {
+            subdivisions: subdivisions,
+            current_index: 0,
+            total: subdivisions.length
+          }
         }
       )
 
@@ -1946,6 +1677,35 @@ class ChatCompletionService < ApplicationService
     end
   end
 
+  # Show buttons to clear or keep context after list creation
+  def show_context_management_buttons(planning_context)
+    begin
+      items_count = planning_context.generated_items&.length || 0
+      sublists_count = planning_context.hierarchical_items&.dig("subdivisions")&.length || 0
+
+      # Set state to context_reuse so user can interact with buttons
+      planning_context.update!(post_creation_mode: true)
+
+      # Create templated message with interactive buttons
+      assistant_message = Message.create_templated(
+        chat: @chat,
+        template_type: "context_reuse_options",
+        template_data: {
+          items_count: items_count,
+          sublists_count: sublists_count,
+          chat_id: @chat.id
+        }
+      )
+
+      @chat.update(last_message_at: Time.current)
+
+      Rails.logger.info("ChatCompletionService - Context management buttons shown (#{items_count} items, #{sublists_count} sublists)")
+    rescue => e
+      Rails.logger.error("ChatCompletionService - Failed to show context buttons: #{e.message}")
+      # Non-blocking error
+    end
+  end
+
   # Handle the complete flow for simple list creation (no pre-creation planning needed)
   def create_simple_list_from_context(planning_context)
     begin
@@ -1962,5 +1722,118 @@ class ChatCompletionService < ApplicationService
       Rails.logger.error("create_simple_list_from_context error: #{e.class} - #{e.message}")
       failure(errors: [ e.message ])
     end
+  end
+
+  # Parse response that may contain structured questions in JSON format
+  # Falls back to plain text if not valid JSON
+  def parse_response_with_questions(response_text)
+    begin
+      # Try to parse as JSON
+      json_match = response_text.match(/\{[\s\S]*\}/m)
+      return fallback_response(response_text) unless json_match
+
+      data = JSON.parse(json_match[0])
+
+      # Validate required fields
+      return fallback_response(response_text) unless data.is_a?(Hash) && data["response"].present?
+
+      {
+        response_text: data["response"],
+        has_questions: data["has_questions"] == true,
+        questions: data["has_questions"] == true ? (data["questions"] || []) : []
+      }
+    rescue JSON::ParserError => e
+      Rails.logger.debug("Failed to parse response as JSON: #{e.message}, falling back to plain text")
+      fallback_response(response_text)
+    rescue StandardError => e
+      Rails.logger.error("parse_response_with_questions error: #{e.class} - #{e.message}")
+      fallback_response(response_text)
+    end
+  end
+
+  # Fallback when response is plain text (not structured JSON)
+  def fallback_response(response_text)
+    {
+      response_text: response_text,
+      has_questions: false,
+      questions: []
+    }
+  end
+
+  # Detect and display follow-up questions from LLM responses
+  def detect_and_show_follow_up_questions(response_text, chat)
+    begin
+      detector_result = FollowUpQuestionsDetector.new(response_text: response_text).call
+
+      return unless detector_result.success? && detector_result.data[:has_followups]
+
+      questions = detector_result.data[:questions]
+      return if questions.blank?
+
+      Rails.logger.info("ChatCompletionService - Showing #{questions.length} follow-up questions as form")
+
+      # Display questions as interactive form
+      ClarifyingQuestionsService.new(
+        chat: chat,
+        questions: questions,
+        context_title: "Help me refine my recommendation"
+      ).call
+    rescue StandardError => e
+      Rails.logger.error("detect_and_show_follow_up_questions error: #{e.class} - #{e.message}")
+      # Non-blocking - if follow-up detection fails, just continue without it
+    end
+  end
+
+  # Check if list refinement is pending (awaiting clarifying questions)
+  def pending_list_refinement?
+    @chat.metadata&.dig("pending_list_refinement").present?
+  end
+
+  # Enrich list structure with planning details (locations, phases, timeline, budget)
+  def enrich_list_structure_with_planning(base_params:, planning_params:)
+    enriched = base_params.dup
+
+    # Extract planning keywords from planning_params
+    locations = planning_params.dig("locations") || []
+    phases = planning_params.dig("phases") || []
+    budget = planning_params.dig("budget")
+    start_date = planning_params.dig("start_date")
+    duration = planning_params.dig("duration")
+
+    # Create nested lists for locations or phases
+    nested_lists = []
+    if locations.any?
+      nested_lists = locations.map { |location|
+        {
+          "title" => location,
+          "items" => [],
+          "description" => "Tasks for #{location}"
+        }
+      }
+    elsif phases.any?
+      nested_lists = phases.map { |phase|
+        {
+          "title" => phase,
+          "items" => [],
+          "description" => "Activities for #{phase}"
+        }
+      }
+    end
+
+    # Add nested lists if any were created
+    enriched["nested_lists"] = nested_lists if nested_lists.any?
+
+    # Clear parent items since we're using nested structure
+    enriched["items"] = [] if nested_lists.any?
+
+    # Append planning details to description
+    description_parts = [ enriched["description"] || "" ]
+    description_parts << "Budget: #{budget}" if budget.present?
+    description_parts << "Start: #{start_date}" if start_date.present?
+    description_parts << "Duration: #{duration}" if duration.present?
+
+    enriched["description"] = description_parts.compact.join("\n") if description_parts.any?
+
+    enriched
   end
 end

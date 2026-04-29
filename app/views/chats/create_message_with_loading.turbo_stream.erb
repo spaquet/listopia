@@ -12,14 +12,14 @@
   <!-- Show loading animation while LLM processes in background -->
   <%= turbo_stream.append("chat-messages-#{@chat.id}") do %>
     <div class="flex justify-start" id="chat-loading-<%= @chat.id %>">
-      <div class="max-w-xs lg:max-w-md bg-gray-100 text-gray-900 rounded-lg px-4 py-2">
+      <div class="max-w-xs lg:max-w-md bg-surface-raised border border-rule rounded-lg px-4 py-2">
         <div class="flex items-center gap-2">
-          <div class="flex gap-1">
-            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
-            <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+          <div class="loading-dots text-ink-muted">
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
-          <span class="text-xs text-gray-500">AI is thinking...</span>
+          <span class="text-xs text-ink-muted">AI is thinking...</span>
         </div>
       </div>
     </div>

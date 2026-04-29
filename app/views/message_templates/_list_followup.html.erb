@@ -1,0 +1,62 @@
+<% questions = data[:questions] || [] %>
+<% suggestions = data[:suggestions] || [] %>
+<% actions = data[:actions] || [] %>
+<% chat_id = data[:chat_id] %>
+
+<% if [questions, suggestions, actions].any?(&:any?) %>
+  <div class="space-y-4">
+    <!-- Questions Section -->
+    <% if questions.any? %>
+      <div>
+        <p class="text-xs font-semibold text-purple-700 uppercase tracking-wider mb-2.5">❓ Refine your list</p>
+        <div class="flex flex-wrap gap-2">
+          <% questions.each do |q| %>
+            <form method="POST" action="/chats/<%= chat_id %>/create_message" class="inline">
+              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+              <input type="hidden" name="message[content]" value="<%= q %>">
+              <button type="submit" class="px-3 py-1.5 text-sm bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-full border border-purple-300 transition-colors font-medium cursor-pointer">
+                <%= q %>
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Suggestions Section -->
+    <% if suggestions.any? %>
+      <div>
+        <p class="text-xs font-semibold text-blue-700 uppercase tracking-wider mb-2.5">💡 Suggestions</p>
+        <div class="flex flex-wrap gap-2">
+          <% suggestions.each do |s| %>
+            <form method="POST" action="/chats/<%= chat_id %>/create_message" class="inline">
+              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+              <input type="hidden" name="message[content]" value="<%= s %>">
+              <button type="submit" class="px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 text-blue-900 rounded-full border border-blue-300 transition-colors font-medium cursor-pointer">
+                <%= s %>
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Actions Section -->
+    <% if actions.any? %>
+      <div>
+        <p class="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2.5">⚡ Actions</p>
+        <div class="flex flex-wrap gap-2">
+          <% actions.each do |a| %>
+            <form method="POST" action="/chats/<%= chat_id %>/create_message" class="inline">
+              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+              <input type="hidden" name="message[content]" value="<%= a %>">
+              <button type="submit" class="px-3 py-1.5 text-sm bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-full border border-amber-300 transition-colors font-medium cursor-pointer">
+                <%= a %>
+              </button>
+            </form>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

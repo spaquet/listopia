@@ -1,40 +1,29 @@
-<!-- app/views/admin_mailer/user_invitation.html.erb -->
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-  <div style="background-color: white; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <!-- Header -->
-    <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 20px; margin-bottom: 20px;">
-      <h1 style="color: #1f2937; margin: 0; font-size: 24px;">Welcome to Listopia!</h1>
-    </div>
+<div class="email-header">
+  <h1>Welcome to Listopia!</h1>
+</div>
 
-    <!-- Content -->
-    <div style="color: #4b5563; line-height: 1.6;">
-      <p>Hi <%= @user.name %>,</p>
-      <p>An administrator has created an account for you on <strong>Listopia</strong>. To get started, please set your password by clicking the button below:</p>
+<div class="email-body">
+  <p>Hi <%= @user.name %>,</p>
+  <p>An administrator has created an account for you on <strong>Listopia</strong>. To get started, please set your password by clicking the button below:</p>
 
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="<%= @setup_url %>" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold;">
-          Set Your Password
-        </a>
-      </div>
-
-      <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">
-        If the button doesn't work, copy and paste this link in your browser:
-      </p>
-      <p style="font-size: 12px; color: #9ca3af; word-break: break-all;">
-        <a href="<%= @setup_url %>" style="color: #3b82f6; text-decoration: none;">
-          <%= @setup_url %>
-        </a>
-      </p>
-
-      <p style="font-size: 13px; color: #6b7280; margin-top: 20px;">
-        <strong>Note:</strong> This link will expire in 24 hours. If it expires, please contact your administrator.
-      </p>
-    </div>
-
-    <!-- Footer -->
-    <div style="border-top: 1px solid #e5e7eb; margin-top: 30px; padding-top: 20px; font-size: 12px; color: #9ca3af;">
-      <p>If you didn't expect this invitation, please contact your administrator.</p>
-      <p>© Listopia. All rights reserved.</p>
-    </div>
+  <div style="text-align: center;">
+    <a href="<%= @setup_url %>" class="button">Set Your Password</a>
   </div>
+
+  <p style="font-size: 14px; color: #5a6275; margin-top: 20px;">
+    If the button doesn't work, copy and paste this link in your browser:
+  </p>
+  <p style="font-size: 12px; color: #666666; word-break: break-all;">
+    <a href="<%= @setup_url %>" style="color: #8a2c2c; text-decoration: none;">
+      <%= @setup_url %>
+    </a>
+  </p>
+
+  <p style="font-size: 13px; color: #5a6275; margin-top: 20px;">
+    <strong>Note:</strong> This link will expire in 24 hours. If it expires, please contact your administrator.
+  </p>
+
+  <div class="divider"></div>
+  <p style="font-size: 13px; color: #666666; margin-bottom: 8px;">If you didn't expect this invitation, please contact your administrator.</p>
+  <p style="font-size: 13px; color: #666666;">Thanks,<br><strong>The Listopia Team</strong></p>
 </div>

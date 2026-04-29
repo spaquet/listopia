@@ -1,0 +1,288 @@
+/* ─────────────────────────────────────────────────────────────────────
+   Secure Mail · Design Tokens · Tailwind CSS v4
+   ─────────────────────────────────────────────────────────────────────
+   Two themes:
+     [data-theme="editorial"]  — light, warm paper, deep navy ink
+     [data-theme="console"]    — dark, near-black, phosphor green
+
+   Usage:
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@4.0.0/dist/tailwind.min.css">
+     <link rel="stylesheet" href="tokens.css">
+     <html data-theme="editorial"> ... </html>
+
+   With a real Tailwind v4 build, drop @import "tailwindcss"; above @theme
+   and the classes (bg-surface, text-ink, font-display, etc.) generate
+   automatically. Tokens here are also exposed as plain CSS variables
+   (--color-surface, --font-display) so components can use them directly.
+   ───────────────────────────────────────────────────────────────────── */
+
+
+/* ── Theme: EDITORIAL (light, default) ─────────────────────────────── */
+@theme {
+  /* Color · Surface */
+  --color-surface:           #f7f4ee;   /* paper — main background */
+  --color-surface-raised:    #fbf9f3;   /* raised cards / preview pane */
+  --color-surface-sunken:    #ece6d6;   /* search pill, deadline chips */
+  --color-surface-overlay:   rgba(255, 255, 255, 0.5);  /* unread row tint */
+
+  /* Color · Ink (text + structural) */
+  --color-ink:               #13243a;   /* primary text — deep navy */
+  --color-ink-muted:         #5a6275;   /* secondary text */
+  --color-ink-subtle:        #7a7160;   /* tertiary / metadata */
+  --color-ink-faint:         #a09483;   /* quaternary / handles */
+  --color-ink-inverse:       #f7f4ee;   /* on dark surfaces */
+
+  /* Color · Lines */
+  --color-rule:              #d9d2c1;   /* primary 1px rules */
+  --color-rule-soft:         #e7e0cf;   /* row separators */
+  --color-rule-strong:       #c8bfaa;   /* button borders, dividers */
+
+  /* Color · Accents */
+  --color-accent:            #8a2c2c;   /* bordeaux — primary action, hot signal */
+  --color-accent-soft:       #f4e9c2;   /* highlight / mark background */
+  --color-success:           #3f8a4a;   /* secure / encrypted */
+  --color-warning:           #b8741a;   /* collision / soft caution */
+  --color-danger:            #8a2c2c;   /* BEC, critical (= accent) */
+  --color-note:              #fef9e7;   /* internal note background */
+  --color-note-rule:         #f0e3a8;   /* internal note border */
+
+  /* Color · AI semantic */
+  --color-ai-mark:           #f4e9c2;   /* highlight inside AI summaries */
+  --color-ai-action:         #fbf9f3;   /* AI action button bg */
+
+  /* Typography · Families */
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-ui:      "Inter Tight", "Inter", -apple-system, sans-serif;
+  --font-mono:    "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-sans-alt:"IBM Plex Sans", system-ui, sans-serif;
+
+  /* Typography · Sizes (px-precise to match the inbox views) */
+  --text-2xs:     0.625rem;   /* 10  — kicker, kbd, tiny meta */
+  --text-xs:      0.6875rem;  /* 11  — meta, tertiary */
+  --text-sm:      0.8125rem;  /* 13  — body small, snippets */
+  --text-base:    0.875rem;   /* 14  — body */
+  --text-md:      1rem;       /* 16  — subject lines */
+  --text-lg:      1.375rem;   /* 22  — preview titles */
+  --text-xl:      1.5rem;     /* 24  — score displays */
+  --text-2xl:     1.75rem;    /* 28  — h1 (console) / hero numbers */
+  --text-3xl:     2.25rem;    /* 36  — h1 (editorial) */
+
+  /* Typography · Weights */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* Typography · Tracking */
+  --tracking-tightest:   -0.04em;   /* large display */
+  --tracking-tight:      -0.02em;   /* h1 */
+  --tracking-normal:      0em;
+  --tracking-wide:        0.025em;
+  --tracking-wider:       0.075em;  /* mono labels */
+  --tracking-widest:      0.12em;   /* eyebrow / kicker */
+
+  /* Typography · Leading */
+  --leading-tight:        1.05;
+  --leading-snug:         1.25;
+  --leading-normal:       1.45;
+  --leading-relaxed:      1.55;
+
+  /* Spacing · base 4 (matches inbox padding multiples) */
+  --spacing:              0.25rem;   /* 4px — Tailwind's spacing unit */
+
+  /* Radius — Editorial leans flat. Square corners are a feature. */
+  --radius-none:    0;
+  --radius-xs:      1px;
+  --radius-sm:      2px;
+  --radius-md:      4px;
+  --radius-pill:    9999px;
+
+  /* Shadows — Editorial uses 1px rules instead of shadows; minimal here */
+  --shadow-card:    0 1px 0 rgba(19, 36, 58, 0.04);
+  --shadow-pop:     0 8px 24px -8px rgba(19, 36, 58, 0.18);
+
+  /* Motion */
+  --ease-out:       cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out:    cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast:  120ms;
+  --duration-base:  200ms;
+  --duration-slow:  360ms;
+
+  /* Layout density */
+  --row-gap-sm:     0.5rem;
+  --row-gap:        0.75rem;
+  --row-pad-x:      2rem;       /* 32px — list rows */
+  --row-pad-y:      1rem;       /* 16px */
+  --rail-width:     252px;
+  --preview-width:  380px;
+}
+
+
+/* ── Theme: CONSOLE (dark) — overrides on [data-theme="console"] ────── */
+[data-theme="console"] {
+  /* Surface */
+  --color-surface:           #0e0e0d;   /* near-black main */
+  --color-surface-raised:    #101110;   /* unread row tint */
+  --color-surface-sunken:    #15161e;   /* command line, code blocks */
+  --color-surface-overlay:   #0a0a09;   /* topbar */
+
+  /* Ink */
+  --color-ink:               #cfd6c0;   /* primary text — phosphor desat */
+  --color-ink-muted:         #aab094;   /* secondary */
+  --color-ink-subtle:        #7a7e6c;   /* tertiary — meta */
+  --color-ink-faint:         #666666;   /* quaternary */
+  --color-ink-inverse:       #0e0e0d;
+  --color-ink-bright:        #e6e8d8;   /* extra: emphasized headings */
+
+  /* Lines */
+  --color-rule:              #1f201c;
+  --color-rule-soft:         #15161e;
+  --color-rule-strong:       #2a3a25;
+
+  /* Accents */
+  --color-accent:            #7ec96f;   /* phosphor green — primary signal */
+  --color-accent-soft:       #15161e;   /* dim accent surface */
+  --color-success:           #7ec96f;   /* same as accent */
+  --color-warning:           #d8a657;   /* amber — BEC, collision, deadline */
+  --color-danger:            #d8a657;   /* console treats danger as amber-on-dark */
+  --color-note:              #15161e;
+  --color-note-rule:         #2a3a25;
+
+  /* AI semantic */
+  --color-ai-mark:           rgba(216, 166, 87, 0.18);
+  --color-ai-action:         transparent;
+
+  /* Typography swaps — Console is mono-first */
+  --font-display: "IBM Plex Sans", system-ui, sans-serif;
+  --font-body:    "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-ui:      "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-mono:    "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-sans-alt:"IBM Plex Sans", system-ui, sans-serif;
+
+  /* Console size shifts */
+  --text-base: 0.75rem;   /* 12px — Console body is denser */
+  --text-md:   0.84375rem;/* 13.5 */
+
+  /* Console radii are 0 across the board — terminal aesthetic */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+
+  /* Shadows are mostly invisible on near-black; rules carry structure */
+  --shadow-card:    none;
+  --shadow-pop:     0 8px 24px -4px rgba(0, 0, 0, 0.6);
+}
+
+
+/* ── Base resets that read from the tokens ────────────────────────────
+   These keep <body> reading correctly when tokens swap themes.
+   Components built with bg-surface/text-ink/etc. follow automatically.   */
+
+html {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--duration-base) var(--ease-out),
+              color var(--duration-base) var(--ease-out);
+}
+
+/* Selection follows accent */
+::selection { background: var(--color-accent-soft); color: var(--color-ink); }
+[data-theme="console"] ::selection { background: rgba(126, 201, 111, 0.25); color: var(--color-ink-bright); }
+
+
+/* ── Token utility classes (work without Tailwind build) ──────────────
+   Useful when consuming tokens from plain HTML/JSX without a build step.
+   With a real Tailwind v4 setup, prefer the generated classes.          */
+
+.font-display    { font-family: var(--font-display); }
+.font-body       { font-family: var(--font-body); }
+.font-mono       { font-family: var(--font-mono); }
+.font-ui         { font-family: var(--font-ui); }
+
+.text-ink        { color: var(--color-ink); }
+.text-ink-muted  { color: var(--color-ink-muted); }
+.text-ink-subtle { color: var(--color-ink-subtle); }
+.text-ink-faint  { color: var(--color-ink-faint); }
+.text-accent     { color: var(--color-accent); }
+.text-success    { color: var(--color-success); }
+.text-warning    { color: var(--color-warning); }
+.text-danger     { color: var(--color-danger); }
+
+.bg-surface         { background: var(--color-surface); }
+.bg-surface-raised  { background: var(--color-surface-raised); }
+.bg-surface-sunken  { background: var(--color-surface-sunken); }
+.bg-accent          { background: var(--color-accent); color: var(--color-ink-inverse); }
+.bg-accent-soft     { background: var(--color-accent-soft); }
+
+.border-rule         { border-color: var(--color-rule); }
+.border-rule-soft    { border-color: var(--color-rule-soft); }
+.border-rule-strong  { border-color: var(--color-rule-strong); }
+
+
+/* ── Shared semantic patterns used across both themes ────────────────── */
+
+/* Eyebrow / kicker — mono, uppercase, tracked */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+
+/* Inline keyboard chord — borders adapt per theme */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-ink-subtle);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  display: inline-block;
+}
+
+/* Status dot */
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-success);
+  display: inline-block;
+}
+
+/* AI summary mark / highlight */
+mark, .mark {
+  background: var(--color-ai-mark);
+  color: var(--color-ink);
+  padding: 0 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Section divider with rule */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.section-divider .label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+.section-divider .rule {
+  flex: 1; height: 1px; background: var(--color-rule);
+}

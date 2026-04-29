@@ -2,112 +2,102 @@
 <div class="space-y-6 max-w-2xl">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">Add Team Member</h1>
-      <p class="mt-2 text-gray-600">Add a member to <%= @team.name %></p>
+      <h1 class="text-3xl font-bold text-ink">Add Team Member</h1>
+      <p class="mt-2 text-ink-muted">Add a member to <%= @team.name %></p>
     </div>
-    <a href="javascript:history.back()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">← Back</a>
+    <a href="javascript:history.back()" class="btn btn-secondary">← Back</a>
   </div>
   <!-- Tab Navigation -->
-  <div class="flex border-b border-gray-200">
-    <button class="tab-button px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-medium" data-tab="existing">
-      Add Existing Member
-    </button>
-    <button class="tab-button px-4 py-2 border-b border-gray-200 text-gray-600 hover:text-gray-900 font-medium" data-tab="invite">
-      Invite New Users
-    </button>
+  <div class="tab-nav">
+    <button class="tab-item active" data-tab="existing">Add Existing Member</button>
+    <button class="tab-item" data-tab="invite">Invite New Users</button>
   </div>
   <!-- Add Existing Member Tab -->
-  <div id="existing-tab" class="tab-content bg-white rounded-lg border border-gray-200 p-6">
+  <div id="existing-tab" class="tab-content card">
     <%= form_with url: organization_team_members_path(@organization, @team), local: true, method: :post do |f| %>
-      <div class="space-y-6">
+      <div class="card-body space-y-6">
         <div class="relative">
-          <label class="block text-sm font-medium text-gray-900 mb-2">
+          <label class="form-label">
             Search Member
-            <span class="text-red-600">*</span>
+            <span class="text-danger">*</span>
           </label>
           <input
             type="text"
             id="member_search_input"
             placeholder="Search by name or email..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="form-input"
             autocomplete="off"
           >
           <div id="member_search_results" class="mt-0"></div>
-          <p class="mt-2 text-sm text-gray-600">
+          <p class="mt-2 text-xs text-ink-muted">
             Start typing to search for organization members.
           </p>
         </div>
 
         <input type="hidden" id="selected_user_id" name="user_id" required>
         <div>
-          <label class="block text-sm font-medium text-gray-900 mb-2">
+          <label class="form-label">
             Role
-            <span class="text-red-600">*</span>
+            <span class="text-danger">*</span>
           </label>
-          <select
-            name="role"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
+          <select name="role" class="form-input">
             <option value="member" selected>Member</option>
             <option value="lead">Lead</option>
             <option value="admin">Admin</option>
           </select>
-          <p class="mt-2 text-sm text-gray-600">
+          <p class="mt-2 text-xs text-ink-muted">
             <strong>Member:</strong> Can view and participate in team<br/>
             <strong>Lead:</strong> Can manage team members and lists<br/>
             <strong>Admin:</strong> Full team administration
           </p>
         </div>
         <div class="flex gap-2">
-          <%= f.submit "Add Member", class: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium" %>
-          <%= link_to "Cancel", organization_team_path(@organization, @team), class: "px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium" %>
+          <%= f.submit "Add Member", class: "btn btn-primary" %>
+          <%= link_to "Cancel", organization_team_path(@organization, @team), class: "btn btn-secondary" %>
         </div>
       </div>
     <% end %>
   </div>
   <!-- Invite New Users Tab -->
-  <div id="invite-tab" class="tab-content hidden bg-white rounded-lg border border-gray-200 p-6">
+  <div id="invite-tab" class="tab-content hidden card">
     <%= form_with url: organization_team_members_path(@organization, @team), local: true, method: :post do |f| %>
       <input type="hidden" name="invitation_type" value="bulk">
-      <div class="space-y-6">
+      <div class="card-body space-y-6">
         <div>
-          <label class="block text-sm font-medium text-gray-900 mb-2">
+          <label class="form-label">
             Email Addresses
-            <span class="text-red-600">*</span>
+            <span class="text-danger">*</span>
           </label>
           <textarea
             name="emails"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="form-input"
             rows="6"
             placeholder="Enter one or more email addresses (comma or newline separated)&#10;john@example.com&#10;jane@example.com"
             required
           ></textarea>
-          <p class="mt-2 text-sm text-gray-600">
+          <p class="mt-2 text-xs text-ink-muted">
             Enter email addresses separated by commas or newlines. If the user already has a Listopia account, they'll be added to the team. Otherwise, they'll receive an invitation email.
           </p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-900 mb-2">
+          <label class="form-label">
             Role
-            <span class="text-red-600">*</span>
+            <span class="text-danger">*</span>
           </label>
-          <select
-            name="role"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
+          <select name="role" class="form-input">
             <option value="member" selected>Member</option>
             <option value="lead">Lead</option>
             <option value="admin">Admin</option>
           </select>
-          <p class="mt-2 text-sm text-gray-600">
+          <p class="mt-2 text-xs text-ink-muted">
             <strong>Member:</strong> Can view and participate in team<br/>
             <strong>Lead:</strong> Can manage team members and lists<br/>
             <strong>Admin:</strong> Full team administration
           </p>
         </div>
         <div class="flex gap-2">
-          <%= f.submit "Send Invitations", class: "px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium" %>
-          <%= link_to "Cancel", organization_team_path(@organization, @team), class: "px-6 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium" %>
+          <%= f.submit "Send Invitations", class: "btn btn-primary" %>
+          <%= link_to "Cancel", organization_team_path(@organization, @team), class: "btn btn-secondary" %>
         </div>
       </div>
     <% end %>
@@ -117,21 +107,19 @@
 <script>
   function initializeTeamMemberForm() {
     // Tab switching
-    document.querySelectorAll('.tab-button').forEach(button => {
+    document.querySelectorAll('.tab-item').forEach(button => {
       button.addEventListener('click', function() {
         const tab = this.getAttribute('data-tab');
 
         // Hide all tabs
         document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.tab-button').forEach(el => {
-          el.classList.remove('border-blue-600', 'text-blue-600');
-          el.classList.add('border-gray-200', 'text-gray-600');
+        document.querySelectorAll('.tab-item').forEach(el => {
+          el.classList.remove('active');
         });
 
         // Show selected tab
         document.getElementById(tab + '-tab').classList.remove('hidden');
-        this.classList.add('border-blue-600', 'text-blue-600');
-        this.classList.remove('border-gray-200', 'text-gray-600');
+        this.classList.add('active');
       });
     });
 

@@ -1,27 +1,27 @@
 <!-- app/views/users/show.html.erb -->
 <div class="max-w-4xl mx-auto space-y-6">
   <!-- Page Header with User Avatar -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div class="card">
     <div class="flex items-start justify-between">
       <div class="flex items-center space-x-4">
         <%= user_avatar_initials(current_user, size: 'w-16 h-16 text-xl') %>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900"><%= current_user.name %></h1>
-          <p class="text-gray-600"><%= current_user.email %></p>
+          <h1 class="t-display-s text-ink"><%= current_user.name %></h1>
+          <p class="text-ink-muted"><%= current_user.email %></p>
           <% if current_user.bio.present? %>
-            <p class="text-sm text-gray-500 mt-2"><%= current_user.bio %></p>
+            <p class="t-body-s text-ink-muted mt-2"><%= current_user.bio %></p>
           <% end %>
-          <p class="text-xs text-gray-400 mt-3">Member since <%= current_user.created_at.strftime("%B %Y") %> • UID: <span class="font-mono"><%= current_user.id %></span></p>
+          <p class="t-meta text-ink-muted mt-3">Member since <%= current_user.created_at.strftime("%B %Y") %> • UID: <span class="font-mono"><%= current_user.id %></span></p>
         </div>
       </div>
       <div class="flex space-x-3">
-        <%= link_to edit_user_path, class: "bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center" do %>
+        <%= link_to edit_user_path, class: "btn btn-primary flex items-center" do %>
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
           Edit Profile
         <% end %>
-        <%= link_to settings_user_path, class: "text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors duration-200 flex items-center" do %>
+        <%= link_to settings_user_path, class: "btn btn-secondary flex items-center" do %>
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -34,50 +34,50 @@
   <!-- Profile Information Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- Account Info -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Information</h2>
+    <div class="card">
+      <h2 class="t-body-l font-semibold text-ink mb-4">Account Information</h2>
       <dl class="space-y-4">
         <div>
-          <dt class="text-sm font-medium text-gray-500">Email</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= current_user.email %></dd>
+          <dt class="t-eyebrow text-ink-muted">Email</dt>
+          <dd class="mt-1 t-body-s text-ink"><%= current_user.email %></dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Account Status</dt>
+          <dt class="t-eyebrow text-ink-muted">Account Status</dt>
           <dd class="mt-1">
             <% if current_user.active? %>
-              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+              <span class="pill success">Active</span>
             <% elsif current_user.suspended? %>
-              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>
+              <span class="pill danger">Suspended</span>
             <% else %>
-              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Inactive</span>
+              <span class="pill">Inactive</span>
             <% end %>
           </dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Timezone</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= current_user.timezone || "Not set" %></dd>
+          <dt class="t-eyebrow text-ink-muted">Timezone</dt>
+          <dd class="mt-1 t-body-s text-ink"><%= current_user.timezone || "Not set" %></dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Language</dt>
-          <dd class="mt-1 text-sm text-gray-900"><%= current_user.locale&.humanize || "English" %></dd>
+          <dt class="t-eyebrow text-ink-muted">Language</dt>
+          <dd class="mt-1 t-body-s text-ink"><%= current_user.locale&.humanize || "English" %></dd>
         </div>
       </dl>
     </div>
     <!-- Activity Stats -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity</h2>
+    <div class="card">
+      <h2 class="t-body-l font-semibold text-ink mb-4">Activity</h2>
       <dl class="space-y-4">
         <div>
-          <dt class="text-sm font-medium text-gray-500">Lists Created</dt>
-          <dd class="mt-1 text-3xl font-bold text-blue-600"><%= current_user.lists.count %></dd>
+          <dt class="t-eyebrow text-ink-muted">Lists Created</dt>
+          <dd class="mt-1 text-3xl font-bold text-accent"><%= current_user.lists.count %></dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Shared Lists</dt>
-          <dd class="mt-1 text-3xl font-bold text-purple-600"><%= current_user.collaborated_lists.count %></dd>
+          <dt class="t-eyebrow text-ink-muted">Shared Lists</dt>
+          <dd class="mt-1 text-3xl font-bold text-accent"><%= current_user.collaborated_lists.count %></dd>
         </div>
         <div>
-          <dt class="text-sm font-medium text-gray-500">Last Sign In</dt>
-          <dd class="mt-1 text-sm text-gray-900">
+          <dt class="t-eyebrow text-ink-muted">Last Sign In</dt>
+          <dd class="mt-1 t-body-s text-ink">
             <% if current_user.last_sign_in_at %>
               <%= current_user.last_sign_in_at.strftime("%B %d, %Y at %I:%M %p") %>
             <% else %>
@@ -89,23 +89,23 @@
     </div>
   </div>
   <!-- Account Security Section -->
-  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Security</h2>
+  <div class="card">
+    <h2 class="t-body-l font-semibold text-ink mb-4">Security</h2>
     <div class="space-y-4">
-      <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+      <div class="flex items-center justify-between pb-4 border-b border-rule">
         <div>
-          <p class="text-sm font-medium text-gray-900">Password</p>
-          <p class="text-xs text-gray-500 mt-1">Manage your password</p>
+          <p class="t-body-s font-semibold text-ink">Password</p>
+          <p class="t-meta text-ink-muted mt-1">Manage your password</p>
         </div>
-        <%= link_to "Change Password", settings_user_path, class: "text-blue-600 hover:text-blue-700 text-sm font-medium" %>
+        <%= link_to "Change Password", settings_user_path, class: "text-accent hover:text-accent t-body-s font-semibold" %>
       </div>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-900">Email Verification</p>
+          <p class="t-body-s font-semibold text-ink">Email Verification</p>
           <% if current_user.email_verified_at %>
-            <p class="text-xs text-green-600 mt-1">✓ Email verified</p>
+            <p class="t-meta text-success mt-1">✓ Email verified</p>
           <% else %>
-            <p class="text-xs text-yellow-600 mt-1">⚠ Email not verified</p>
+            <p class="t-meta text-warning mt-1">⚠ Email not verified</p>
           <% end %>
         </div>
       </div>

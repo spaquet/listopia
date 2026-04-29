@@ -1,0 +1,55 @@
+<!-- app/views/message_templates/_context_reuse_options.html.erb
+     Template for context reuse choice after list creation
+     Shows existing plan summary with interactive buttons to use or clear
+-->
+
+<% items_count = data[:items_count] || 0 %>
+<% sublists_count = data[:sublists_count] || 0 %>
+<% chat_id = data[:chat_id] %>
+
+<div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+  <div class="mb-4">
+    <h3 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+      <span class="text-lg">📋</span>
+      I already have a plan with:
+    </h3>
+    <div class="mt-3 ml-6 space-y-1">
+      <p class="text-sm text-gray-700">
+        • <strong><%= items_count %></strong> <%= items_count == 1 ? 'item' : 'items' %>
+      </p>
+      <p class="text-sm text-gray-700">
+        • <strong><%= sublists_count %></strong> <%= sublists_count == 1 ? 'sublist' : 'sublists' %>
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-4 pt-4 border-t border-blue-200">
+    <p class="text-sm text-gray-600 mb-4">Would you like to:</p>
+
+    <!-- Use this plan button -->
+    <form method="POST"
+          action="/chats/<%= chat_id %>/create_message"
+          class="inline-block mr-3"
+          style="display: inline;">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      <input type="hidden" name="message[content]" value="Use this plan">
+      <button type="submit"
+              class="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500">
+        ✓ Use this plan
+      </button>
+    </form>
+
+    <!-- Clear and start over button -->
+    <form method="POST"
+          action="/chats/<%= chat_id %>/create_message"
+          class="inline-block"
+          style="display: inline;">
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      <input type="hidden" name="message[content]" value="Clear and start over">
+      <button type="submit"
+              class="px-4 py-2 bg-gray-300 text-gray-800 font-medium rounded-md hover:bg-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400">
+        🔄 Clear and start over
+      </button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,208 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="agent-section">
+      <div class="agent-section-header">
+        <div>
+          <h1 class="t-display-s text-ink"><%= @agent.name %></h1>
+          <p class="text-ink-muted mt-1"><%= @agent.scope.titleize %> Agent</p>
+        </div>
+        <% if policy(@agent).edit? %>
+          <div class="agent-section-actions">
+            <%= link_to "Edit", edit_ai_agent_path(@agent), class: "btn btn-secondary" %>
+            <%= link_to "Delete", ai_agent_path(@agent), method: :delete, data: { turbo_confirm: "Are you sure?" }, class: "btn btn-secondary" %>
+          </div>
+        <% end %>
+      </div>
+
+      <p class="text-ink-muted mb-4"><%= @agent.description %></p>
+
+      <div class="agent-stats">
+        <div class="agent-stat">
+          <p class="agent-stat-label">Runs</p>
+          <p class="agent-stat-value"><%= @agent.run_count %></p>
+        </div>
+        <div class="agent-stat">
+          <p class="agent-stat-label">Success Rate</p>
+          <p class="agent-stat-value success"><%= @agent.run_count > 0 ? number_with_precision(@agent.success_count * 100.0 / @agent.run_count, precision: 0) : 0 %>%</p>
+        </div>
+        <div class="agent-stat">
+          <p class="agent-stat-label">Rating</p>
+          <p class="agent-stat-value warning"><%= @agent.average_rating.present? ? number_with_precision(@agent.average_rating, precision: 1) : "—" %></p>
+        </div>
+      </div>
+
+      <% if policy(@agent).invoke? %>
+        <div class="agent-invoke-form">
+          <h3>Run Agent</h3>
+          <%= form_with url: invoke_ai_agent_path(@agent), method: :post, local: true do |f| %>
+            <%= f.text_area :user_input, placeholder: "What would you like this agent to do?", rows: 3 %>
+            <%= f.submit "Invoke Agent", class: "btn btn-primary w-full" %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% params_hash = @agent.parameters.is_a?(String) ? (JSON.parse(@agent.parameters) rescue {}) : (@agent.parameters || {}) %>
+      <% if params_hash.present? && params_hash.is_a?(Hash) %>
+        <div class="mt-6">
+          <h3 class="t-body-l text-ink mb-3">Input Parameters</h3>
+          <div class="agent-param-list">
+            <% params_hash.each do |key, description| %>
+              <div class="agent-param">
+                <span class="agent-param-key"><%= key %></span>
+                <% if description.is_a?(String) && description.present? %>
+                  <p class="agent-param-desc"><%= description %></p>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="agent-section">
+      <div class="agent-section-header">
+        <div>
+          <h2 class="agent-section-title">Resources & Tools</h2>
+          <p class="agent-section-subtitle">Resources define what tools this agent can use at runtime</p>
+        </div>
+        <% if policy(@agent).edit? %>
+          <%= link_to "Add Resource", new_ai_agent_ai_agent_resource_path(@agent), data: { turbo_frame: "resource_form" }, class: "btn btn-primary text-sm" %>
+        <% end %>
+      </div>
+
+      <%= turbo_frame_tag "resource_form" %>
+
+      <% if @agent.ai_agent_resources.any? %>
+        <div id="agent_resources_list" class="space-y-2">
+          <% @agent.ai_agent_resources.each do |resource| %>
+            <%= render "ai_agent_resources/resource", resource: resource, agent: @agent %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-ink-muted text-center py-4">No resources configured. Add resources to enable tools.</p>
+      <% end %>
+    </div>
+
+    <!-- Instructions Section -->
+    <% if @agent.instructions.present? %>
+      <div class="agent-section">
+        <h2 class="agent-section-title mb-3">Instructions (Step-by-Step SOP)</h2>
+        <div class="agent-instructions"><%= @agent.instructions %></div>
+      </div>
+    <% end %>
+
+    <!-- Trigger Configuration -->
+    <div class="agent-section">
+      <h2 class="agent-section-title mb-3">Trigger Configuration</h2>
+      <% trigger_config = @agent.trigger_config || { "type" => "manual" } %>
+      <% trigger_type = trigger_config["type"] || "manual" %>
+
+      <div class="agent-trigger-config">
+        <div class="agent-trigger-row">
+          <span class="agent-trigger-label">Type:</span>
+          <span class="agent-trigger-badge <%= trigger_type.downcase %>"><%= trigger_type.titleize %></span>
+        </div>
+
+        <% if trigger_type == "event" %>
+          <div class="agent-trigger-row">
+            <span class="agent-trigger-label">Event:</span>
+            <span class="agent-trigger-value"><code class="agent-code"><%= trigger_config['event_type'] %></code></span>
+          </div>
+        <% elsif trigger_type == "schedule" %>
+          <div class="agent-trigger-row">
+            <span class="agent-trigger-label">Cron:</span>
+            <span class="agent-trigger-value"><code class="agent-code"><%= trigger_config['cron'] %></code></span>
+          </div>
+        <% end %>
+
+        <% if @agent.pre_run_questions.present? && @agent.pre_run_questions.any? %>
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-rule-soft);">
+            <p class="agent-trigger-label mb-2">Pre-Run Questions:</p>
+            <div class="agent-question-list">
+              <% @agent.pre_run_questions.each do |q| %>
+                <div class="agent-question">
+                  <p class="agent-question-text"><%= q["question"] %></p>
+                  <p class="agent-question-required">Required: <%= q["required"] ? "Yes" : "No" %></p>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Body Context Configuration -->
+    <% if @agent.body_context_config.present? && @agent.body_context_config.any? %>
+      <div class="agent-section">
+        <h2 class="agent-section-title mb-3">Auto-Loaded Context</h2>
+        <div class="agent-context-list">
+          <% if @agent.body_context_config["load"] == "invocable" %>
+            <div class="agent-context-item">
+              <svg class="agent-context-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span><strong>Invocable Resource</strong> — Loads the target list/item</span>
+            </div>
+          <% elsif @agent.body_context_config["load"] == "all_lists" %>
+            <div class="agent-context-item">
+              <svg class="agent-context-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span><strong>All Lists</strong> — Loads all organization lists</span>
+            </div>
+          <% elsif @agent.body_context_config["load"] == "recent_runs" %>
+            <div class="agent-context-item">
+              <svg class="agent-context-icon" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+              <span><strong>Recent Runs</strong> — Loads summaries of last <%= @agent.body_context_config["limit"] || 5 %> runs</span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <!-- Similar Agents (via embeddings) -->
+    <% if @agent.embedding.present? %>
+      <% similar_agents = @agent.similar_to(limit: 3) %>
+      <% if similar_agents.any? %>
+        <div class="agent-section">
+          <h2 class="agent-section-title mb-3">Similar Agents (by embedding)</h2>
+          <div class="space-y-2">
+            <% similar_agents.each do |similar_agent| %>
+              <div class="agent-similar-item">
+                <div class="agent-similar-item-info flex-1">
+                  <h4><%= link_to similar_agent.name, ai_agent_path(similar_agent) %></h4>
+                  <p class="agent-similar-item-desc"><%= similar_agent.description.truncate(80) %></p>
+                </div>
+                <span class="agent-similar-item-scope"><%= similar_agent.scope.titleize %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <!-- Recent Runs -->
+    <div class="agent-section">
+      <h2 class="agent-section-title mb-4">Recent Runs</h2>
+      <% if @recent_runs.any? %>
+        <div class="space-y-2">
+          <% @recent_runs.each do |run| %>
+            <div class="agent-run-item">
+              <div class="agent-run-info flex-1">
+                <p class="agent-run-input"><%= run.user_input.truncate(50) %></p>
+                <p class="agent-run-time"><%= time_ago_in_words(run.created_at) %> ago</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="pill <%= case run.status
+                  when "running" then "warning"
+                  when "completed" then "success"
+                  when "failed" then "danger"
+                  else ""
+                  end %>"><%= run.status.titleize %></span>
+                <%= link_to "View", ai_agent_run_path(run), class: "text-accent hover:underline text-sm" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-ink-muted text-center py-4">No runs yet</p>
+      <% end %>
+    </div>
+  </div>
+</div>

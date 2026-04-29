@@ -1,0 +1,43 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="t-display-m text-ink">AI Agents</h1>
+      <p class="text-ink-muted mt-1 t-body">Discover and use AI agents to automate tasks</p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <%= link_to new_ai_agent_path, class: "btn btn-primary" do %>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        <span>Create Agent</span>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Agent Groups -->
+  <div class="space-y-8">
+    <% @agents.each do |scope, agents| %>
+      <div>
+        <h2 class="t-label-l text-ink mb-4">
+          <%= case scope
+              when "system_agent"
+                "Listopia System Agents"
+              when "org_agent"
+                "Organization Agents"
+              when "team_agent"
+                "Team Agents"
+              when "user_agent"
+                "Your Personal Agents"
+              end %>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+          <% agents.each do |agent| %>
+            <%= render "ai_agents/agent_card", agent: agent %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

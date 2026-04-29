@@ -1,0 +1,31 @@
+<div id="step-<%= step.id %>" class="border-l-4 pl-4 py-3 <%= case step.status
+  when "completed" then "border-l-success"
+  when "failed" then "border-l-danger"
+  when "running" then "border-l-warning"
+  else "border-l-rule"
+  end %>">
+  <div class="flex items-start justify-between">
+    <div class="flex-1">
+      <p class="font-semibold text-ink"><%= step.title %></p>
+      <p class="text-sm text-ink-muted"><%= step.description %></p>
+      <% if step.error_message.present? %>
+        <p class="text-sm text-danger mt-1">Error: <%= step.error_message %></p>
+      <% end %>
+    </div>
+    <div class="text-right">
+      <% case step.status %>
+      <% when "completed" %>
+        <span class="pill success"><%= step.status.titleize %></span>
+      <% when "failed" %>
+        <span class="pill danger"><%= step.status.titleize %></span>
+      <% when "running" %>
+        <span class="pill warning"><%= step.status.titleize %></span>
+      <% else %>
+        <span class="pill"><%= step.status.titleize %></span>
+      <% end %>
+      <% if step.input_tokens.present? || step.output_tokens.present? %>
+        <p class="text-xs text-ink-muted mt-1"><%= step.input_tokens %> in / <%= step.output_tokens %> out</p>
+      <% end %>
+    </div>
+  </div>
+</div>

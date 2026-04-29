@@ -1,0 +1,84 @@
+<div class="container max-w-4xl mx-auto row-pad py-8">
+  <div class="mb-8">
+    <h1 class="t-display-m text-ink mb-2"><%= @agent.name %> — Execution Runs</h1>
+    <p class="text-ink-muted"><%= @agent.description %></p>
+  </div>
+
+  <% if @runs.any? %>
+    <div class="space-y-4">
+      <% @runs.each do |run| %>
+        <div class="card">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <h3 class="t-body-l font-semibold mb-1">
+                Run <%= run.id.to_s.slice(0, 8) %>
+              </h3>
+              <p class="text-xs text-ink-muted">
+                <%= run.created_at.strftime("%B %d, %Y at %l:%M %p") %>
+              </p>
+            </div>
+            <div class="text-right">
+              <% case run.status %>
+              <% when 'pending' %>
+                <span class="pill warning"><%= run.status.titleize %></span>
+              <% when 'running' %>
+                <span class="pill accent"><%= run.status.titleize %></span>
+              <% when 'completed' %>
+                <span class="pill success"><%= run.status.titleize %></span>
+              <% when 'failed' %>
+                <span class="pill danger"><%= run.status.titleize %></span>
+              <% when 'paused' %>
+                <span class="pill accent"><%= run.status.titleize %></span>
+              <% when 'cancelled' %>
+                <span class="pill"><%= run.status.titleize %></span>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+            <div>
+              <p class="t-eyebrow text-ink-muted">Input</p>
+              <p class="font-mono text-xs bg-surface-sunken p-2 rounded break-words text-ink"><%= truncate(run.user_input, length: 100) %></p>
+            </div>
+            <div>
+              <p class="t-eyebrow text-ink-muted">Tokens Used</p>
+              <p class="text-lg font-semibold text-ink"><%= run.total_tokens %></p>
+            </div>
+          </div>
+
+          <% if run.error_message.present? %>
+            <div class="alert alert-danger mb-4">
+              <strong class="block mb-1">Error</strong>
+              <p><%= run.error_message %></p>
+            </div>
+          <% end %>
+
+          <% if run.result_summary.present? %>
+            <div class="alert alert-success mb-4">
+              <strong class="block mb-1">Summary</strong>
+              <p><%= truncate(run.result_summary, length: 200) %></p>
+            </div>
+          <% end %>
+
+          <div class="flex gap-2">
+            <%= link_to "View Details", ai_agent_run_path(run), class: "btn btn-ghost text-accent hover:text-accent text-sm" %>
+            <% if run.status_paused? %>
+              <%= button_to "Resume", resume_ai_agent_run_path(run), method: :patch, class: "btn btn-ghost text-success text-sm" %>
+            <% elsif run.status_running? %>
+              <%= button_to "Pause", pause_ai_agent_run_path(run), method: :patch, class: "btn btn-ghost text-warning text-sm" %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="mt-8">
+      <%= render 'shared/pagination', pagy: @pagy %>
+    </div>
+  <% else %>
+    <div class="alert alert-note">
+      <p class="font-semibold mb-1">No runs yet</p>
+      <p class="text-sm">Agent runs will appear here after they are triggered</p>
+    </div>
+  <% end %>
+</div>

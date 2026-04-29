@@ -12,6 +12,14 @@ List.destroy_all
 Message.destroy_all
 ModerationLog.destroy_all
 Chat.destroy_all
+# AI Agent cleanup (new)
+AiAgentFeedback.destroy_all
+AiAgentRunStep.destroy_all
+AiAgentInteraction.destroy_all
+AiAgentRun.destroy_all
+AiAgentResource.destroy_all
+AiAgentTeamMembership.destroy_all
+AiAgent.destroy_all
 User.destroy_all
 
 # Re-enable foreign key checks
@@ -716,3 +724,156 @@ puts "2. Start server: bin/dev"
 puts "3. Log in as any user (password: password123)"
 puts "4. Try the search feature at /search"
 puts "5. Send a message in chat to see RAG in action with source attribution"
+
+# ============================================================================
+# AI AGENTS (System Agents - Redesigned with new architecture)
+# ============================================================================
+puts "\n🤖 Creating AI Agents..."
+
+# 1. Task Breakdown Agent
+agent_task_breakdown = AiAgent.create!(
+  scope: :system_agent,
+  name: "Task Breakdown Agent",
+  slug: "task-breakdown",
+  description: "Breaks down complex goals into actionable tasks with priorities and estimates",
+  prompt: "You are a senior project manager expert at decomposing complex goals into clear, achievable tasks. Your role is to understand the user's goal, identify major phases, create specific tasks, assign realistic priorities and time estimates, and confirm the plan with the user.",
+  instructions: "1. Understand the goal: Ask clarifying questions if needed\n2. Identify major phases and milestones\n3. Break into specific, actionable tasks\n4. Assign priority (low/medium/high/urgent) and effort estimate to each\n5. Ask the user to confirm or adjust before creating items",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [
+    { "key" => "goal", "question" => "What is the main goal you want to accomplish?", "required" => true },
+    { "key" => "deadline", "question" => "Do you have a deadline? (optional)", "required" => false }
+  ],
+  trigger_config: { "type" => "manual" },
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 6000,
+  max_tokens_per_day: 100_000,
+  max_tokens_per_month: 500_000
+)
+agent_task_breakdown.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and create tasks")
+agent_task_breakdown.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Create and update task items")
+agent_task_breakdown.tag_list.add("breakdown", "planning", "decomposition")
+agent_task_breakdown.save!
+puts "✓ Created agent: Task Breakdown Agent"
+
+# 2. Status Report Agent
+agent_status_report = AiAgent.create!(
+  scope: :system_agent,
+  name: "Status Report Agent",
+  slug: "status-report",
+  description: "Generates comprehensive status reports across all lists and identifies blockers",
+  prompt: "You are an executive assistant skilled at synthesizing work status. Your role is to analyze all lists, count progress, identify blockers, and create clear, executive-friendly status summaries.",
+  instructions: "1. Load all lists in the organization\n2. For each list: count total items, completed items, overdue items, and blocked items\n3. Identify critical blockers or at-risk deliverables\n4. Generate a formatted status report with: overall progress, at-risk items, blocked items, and action items",
+  body_context_config: { "load" => "all_lists" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "schedule", "cron" => "0 9 * * 1" },  # Monday 9am
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 5000,
+  max_tokens_per_day: 80_000,
+  max_tokens_per_month: 400_000
+)
+agent_status_report.ai_agent_resources.create!(resource_type: "list", permission: :read_only, description: "Read all lists")
+agent_status_report.ai_agent_resources.create!(resource_type: "list_item", permission: :read_only, description: "Read all items")
+agent_status_report.tag_list.add("reporting", "status", "summary")
+agent_status_report.save!
+puts "✓ Created agent: Status Report Agent"
+
+# 3. List Organizer Agent
+agent_list_organizer = AiAgent.create!(
+  scope: :system_agent,
+  name: "List Organizer Agent",
+  slug: "list-organizer",
+  description: "Optimizes list structure by detecting duplicates, suggesting reorganization, and applying changes after user approval",
+  prompt: "You are a Getting Things Done (GTD) expert who helps users organize their lists for maximum clarity and actionability. You identify duplicates, suggest better prioritization, and group related items logically.",
+  instructions: "1. Load the target list and all items\n2. Scan for potential duplicates or similar items (ask user if unsure)\n3. Analyze priority distribution and suggest rebalancing\n4. Suggest grouping or categorization improvements\n5. Ask user to confirm changes before applying\n6. Update items according to user feedback",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "event", "event_type" => "list_item.completed" },
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 6000,
+  max_tokens_per_day: 90_000,
+  max_tokens_per_month: 450_000
+)
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
+agent_list_organizer.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items")
+agent_list_organizer.tag_list.add("organization", "gtd", "optimization")
+agent_list_organizer.save!
+puts "✓ Created agent: List Organizer Agent"
+
+# 4. Research Agent
+agent_research = AiAgent.create!(
+  scope: :system_agent,
+  name: "Research Agent",
+  slug: "research-agent",
+  description: "Enriches list items with relevant research findings and external information",
+  prompt: "You are a thorough researcher who finds and synthesizes relevant information. Your role is to enhance list items with context, links, and useful details from web search.",
+  instructions: "1. Load the target list and items\n2. For each item, search for relevant information based on the depth setting\n3. Add descriptions, links, and key findings to items\n4. Provide a summary of research results\n5. Flag any items where no relevant information was found",
+  body_context_config: { "load" => "invocable" },
+  pre_run_questions: [
+    { "key" => "depth", "question" => "How deep should research be?", "options" => [ "quick overview", "detailed research" ], "required" => true }
+  ],
+  trigger_config: { "type" => "manual" },
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 8000,
+  max_tokens_per_day: 120_000,
+  max_tokens_per_month: 600_000
+)
+agent_research.ai_agent_resources.create!(resource_type: "list", permission: :read_write, description: "Read and update list")
+agent_research.ai_agent_resources.create!(resource_type: "list_item", permission: :read_write, description: "Read and update items with research")
+agent_research.ai_agent_resources.create!(resource_type: "web_search", permission: :expect_response, description: "Search the web for information")
+agent_research.tag_list.add("research", "web-search", "enrichment")
+agent_research.save!
+puts "✓ Created agent: Research Agent"
+
+# 5. List Creator Agent (for Phase 3 chat integration)
+agent_list_creator = AiAgent.find_or_initialize_by(slug: "list-creator", scope: :system_agent)
+agent_list_creator.assign_attributes(
+  name: "List Creator Agent",
+  description: "Creates lists with specific items from natural language requests via chat",
+  prompt: "You are a skilled list curator. You create focused, relevant lists for users.",
+  instructions: <<~INSTRUCTIONS,
+    1. Read the user's full request (it may include original request + clarifying answers).
+    2. Identify: list title, category (personal/professional), and what items are needed.
+    3. Generate 8-15 specific, relevant, actionable items for the list.
+    4. Call create_list with title, category, description (optional), and the items array.
+    5. Do NOT call ask_user — all context is already provided in the input.
+  INSTRUCTIONS
+  body_context_config: { "load" => "none" },
+  pre_run_questions: [],
+  trigger_config: { "type" => "manual" },
+  status: :active,
+  model: "gpt-4o-mini",
+  max_tokens_per_run: 4000,
+  max_tokens_per_day: 100_000,
+  max_tokens_per_month: 500_000
+)
+agent_list_creator.save!
+agent_list_creator.ai_agent_resources.find_or_create_by!(resource_type: "list") do |r|
+  r.permission = :read_write
+  r.description = "Create and read lists"
+  r.enabled = true
+end
+agent_list_creator.tag_list.add("list-creation", "chat", "core")
+agent_list_creator.save!
+puts "✓ Created agent: List Creator Agent"
+
+puts "\n🔮 Generating agent embeddings..."
+AiAgent.all.each do |agent|
+  result = EmbeddingGenerationService.call(agent)
+  if result.success?
+    puts "  ✓ #{agent.name}"
+  else
+    puts "  ⚠ #{agent.name}: #{result.message} (skipped)"
+  end
+end
+
+puts "\n✅ AI Agents seeded successfully!"
+puts "Available agents:"
+puts "  • Task Breakdown Agent - Manual trigger, asks for goal/deadline"
+puts "  • Status Report Agent - Scheduled every Monday 9am"
+puts "  • List Organizer Agent - Event-triggered when items are completed"
+puts "  • Research Agent - Manual trigger, enriches items with research"
+puts "  • List Creator Agent - Chat integration, creates lists from requests"

@@ -4,73 +4,73 @@
     <%= hidden_field_tag :organization_id, @organization_id %>
   <% end %>
   <div>
-    <%= f.label :name, class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :name, class: "form-label" %>
     <%= f.text_field :name, 
-                     class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                     class: "form-input",
                      placeholder: "Full name" %>
     <% if @user.errors[:name].any? %>
-      <p class="mt-1 text-sm text-red-600"><%= @user.errors[:name].first %></p>
+      <p class="mt-1 text-sm text-danger"><%= @user.errors[:name].first %></p>
     <% end %>
   </div>
   <div>
-    <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :email, class: "form-label" %>
     <%= f.email_field :email, 
-                      class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                      class: "form-input",
                       placeholder: "email@example.com" %>
     <% if @user.errors[:email].any? %>
-      <p class="mt-1 text-sm text-red-600"><%= @user.errors[:email].first %></p>
+      <p class="mt-1 text-sm text-danger"><%= @user.errors[:email].first %></p>
     <% end %>
   </div>
   <% if @user.new_record? %>
     <!-- Admin Setup Info -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <h3 class="text-sm font-medium text-blue-900 mb-2">Password Setup</h3>
-      <p class="text-sm text-blue-800">
+    <div class="alert alert-info mb-6">
+      <h3 class="text-sm font-medium text-ink mb-2">Password Setup</h3>
+      <p class="text-sm text-accent">
         An invitation email with a password setup link will be sent to the user after creation. 
         They will set their own password when they verify their email.
       </p>
     </div>
     <!-- Admin Role -->
     <div class="flex items-center mb-6">
-      <%= check_box_tag 'user[make_admin]', '1', false, class: "h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" %>
-      <%= label_tag 'user[make_admin]', "Grant admin privileges", class: "ml-2 text-sm text-gray-700" %>
+      <%= check_box_tag 'user[make_admin]', '1', false, class: "h-4 w-4 text-accent focus:ring-accent border-rule rounded" %>
+      <%= label_tag 'user[make_admin]', "Grant admin privileges", class: "ml-2 text-sm text-ink" %>
     </div>
   <% end %>
   <div>
-    <%= f.label :bio, "About", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :bio, "About", class: "form-label" %>
     <%= f.text_area :bio, 
                     rows: 4,
-                    class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    class: "form-input",
                     placeholder: "Brief description..." %>
   </div>
   <div>
-    <%= f.label :locale, "Language", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :locale, "Language", class: "form-label" %>
     <%= f.select :locale, 
                  locale_options,
                  {},
-                 class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" %>
+                 class: "form-input" %>
   </div>
   <div>
-    <%= f.label :timezone, "Time Zone", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :timezone, "Time Zone", class: "form-label" %>
     <%= f.select :timezone, 
                  timezone_options,
                  {},
-                 class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" %>
+                 class: "form-input" %>
   </div>
   <div>
-    <%= f.label :admin_notes, "Admin Notes (Internal)", class: "block text-sm font-medium text-gray-700 mb-2" %>
+    <%= f.label :admin_notes, "Admin Notes (Internal)", class: "form-label" %>
     <%= f.text_area :admin_notes, 
                     rows: 3,
-                    class: "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    class: "form-input",
                     placeholder: "Internal notes about this user..." %>
-    <p class="mt-1 text-xs text-gray-500">These notes are only visible to admins</p>
+    <p class="mt-1 t-meta text-ink-muted">These notes are only visible to admins</p>
   </div>
   <div class="flex items-center justify-between pt-4">
     <% cancel_path = @user.new_record? ?
                      admin_users_path(organization_id: @organization_id) :
                      admin_user_path(@user) %>
-    <%= link_to "Cancel", cancel_path, class: "text-gray-600 hover:text-gray-900 font-medium" %>
+    <%= link_to "Cancel", cancel_path, class: "text-ink-muted hover:text-ink font-medium" %>
     <%= f.submit @user.new_record? ? "Create User" : "Update User",
-                 class: "bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium" %>
+                 class: "btn btn-primary transition-colors duration-fast font-medium" %>
   </div>
 <% end %>

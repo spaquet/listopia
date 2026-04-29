@@ -848,6 +848,185 @@ CREATE TABLE public.active_storage_variant_records (
 
 
 --
+-- Name: ai_agent_feedbacks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_feedbacks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_run_id uuid NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    rating integer NOT NULL,
+    feedback_type integer,
+    helpfulness_score integer,
+    comment text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_interactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_interactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_run_id uuid NOT NULL,
+    ai_agent_run_step_id uuid,
+    question text NOT NULL,
+    options jsonb DEFAULT '[]'::jsonb NOT NULL,
+    answer text,
+    status integer DEFAULT 0 NOT NULL,
+    asked_at timestamp(6) without time zone,
+    answered_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_resources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_resources (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    resource_type character varying NOT NULL,
+    resource_identifier character varying,
+    permission integer DEFAULT 0 NOT NULL,
+    description text,
+    config jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_run_steps; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_run_steps (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_run_id uuid NOT NULL,
+    step_number integer NOT NULL,
+    step_type character varying NOT NULL,
+    title character varying,
+    description text,
+    status integer DEFAULT 0 NOT NULL,
+    prompt_sent text,
+    response_received text,
+    tool_name character varying,
+    tool_input jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    tool_output jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    input_tokens integer DEFAULT 0,
+    output_tokens integer DEFAULT 0,
+    processing_time_ms integer,
+    error_message text,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agent_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    invocable_type character varying,
+    invocable_id uuid,
+    parent_run_id uuid,
+    status integer DEFAULT 0 NOT NULL,
+    user_input text,
+    input_parameters jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    result_summary text,
+    result_data jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    input_tokens integer DEFAULT 0,
+    output_tokens integer DEFAULT 0,
+    thinking_tokens integer DEFAULT 0,
+    total_tokens integer DEFAULT 0,
+    processing_time_ms integer,
+    steps_completed integer DEFAULT 0,
+    steps_total integer DEFAULT 0,
+    error_message text,
+    cancellation_reason text,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    paused_at timestamp(6) without time zone,
+    last_activity_at timestamp(6) without time zone,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    pre_run_answers jsonb DEFAULT '{}'::jsonb NOT NULL,
+    trigger_source character varying DEFAULT 'manual'::character varying NOT NULL,
+    awaiting_at timestamp(6) without time zone
+);
+
+
+--
+-- Name: ai_agent_team_memberships; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agent_team_memberships (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_agent_id uuid NOT NULL,
+    team_id uuid NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: ai_agents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_agents (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying NOT NULL,
+    description text,
+    slug character varying NOT NULL,
+    scope integer DEFAULT 0 NOT NULL,
+    user_id uuid,
+    organization_id uuid,
+    prompt text NOT NULL,
+    parameters jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    max_tokens_per_run integer DEFAULT 4000,
+    max_tokens_per_day integer DEFAULT 50000,
+    max_tokens_per_month integer DEFAULT 500000,
+    timeout_seconds integer DEFAULT 120,
+    max_steps integer DEFAULT 20,
+    rate_limit_per_hour integer DEFAULT 10,
+    tokens_used_today integer DEFAULT 0,
+    tokens_used_this_month integer DEFAULT 0,
+    tokens_today_date date,
+    tokens_month_year integer,
+    model character varying DEFAULT 'gpt-4o-mini'::character varying,
+    metadata jsonb DEFAULT '"{}"'::jsonb NOT NULL,
+    run_count integer DEFAULT 0,
+    success_count integer DEFAULT 0,
+    average_rating double precision,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    discarded_at timestamp(6) without time zone,
+    instructions text,
+    body_context_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    pre_run_questions jsonb DEFAULT '[]'::jsonb NOT NULL,
+    trigger_config jsonb DEFAULT '{"type": "manual"}'::jsonb NOT NULL,
+    embedding public.vector(1536),
+    embedding_generated_at timestamp(6) without time zone,
+    requires_embedding_update boolean DEFAULT false NOT NULL
+);
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -934,6 +1113,196 @@ CREATE TABLE public.calendar_events (
 
 
 --
+-- Name: chat_contexts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.chat_contexts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    chat_id uuid NOT NULL,
+    organization_id uuid NOT NULL,
+    state character varying DEFAULT 'initial'::character varying NOT NULL,
+    status character varying DEFAULT 'pending'::character varying NOT NULL,
+    request_content text,
+    detected_intent character varying,
+    planning_domain character varying,
+    is_complex boolean DEFAULT false,
+    complexity_level character varying,
+    complexity_reasoning text,
+    parameters jsonb DEFAULT '{}'::jsonb,
+    pre_creation_questions jsonb DEFAULT '[]'::jsonb,
+    pre_creation_answers jsonb DEFAULT '{}'::jsonb,
+    hierarchical_items jsonb DEFAULT '{}'::jsonb,
+    generated_items jsonb DEFAULT '[]'::jsonb,
+    missing_parameters character varying[] DEFAULT '{}'::character varying[],
+    list_created_id uuid,
+    post_creation_mode boolean DEFAULT false,
+    last_activity_at timestamp(6) without time zone,
+    recovery_checkpoint jsonb DEFAULT '{}'::jsonb,
+    metadata jsonb DEFAULT '{}'::jsonb,
+    error_message text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    intent_confidence double precision DEFAULT 0.0,
+    parent_requirements jsonb DEFAULT '{}'::jsonb
+);
+
+
+--
+-- Name: COLUMN chat_contexts.state; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.state IS 'State: initial, pre_creation, resource_creation, completed';
+
+
+--
+-- Name: COLUMN chat_contexts.status; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.status IS 'Status: pending, analyzing, awaiting_user_input, processing, complete, error';
+
+
+--
+-- Name: COLUMN chat_contexts.request_content; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.request_content IS 'Original user request';
+
+
+--
+-- Name: COLUMN chat_contexts.detected_intent; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.detected_intent IS 'Detected intent: create_list, navigate_to_page, etc.';
+
+
+--
+-- Name: COLUMN chat_contexts.planning_domain; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.planning_domain IS 'Domain: vacation, sprint, roadshow, etc.';
+
+
+--
+-- Name: COLUMN chat_contexts.is_complex; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.is_complex IS 'Whether request is complex and needs clarifying questions';
+
+
+--
+-- Name: COLUMN chat_contexts.complexity_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.complexity_level IS 'simple, complex';
+
+
+--
+-- Name: COLUMN chat_contexts.complexity_reasoning; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.complexity_reasoning IS 'Why the request was classified as simple or complex';
+
+
+--
+-- Name: COLUMN chat_contexts.parameters; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.parameters IS 'Extracted parameters from request';
+
+
+--
+-- Name: COLUMN chat_contexts.pre_creation_questions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.pre_creation_questions IS 'Clarifying questions for complex lists';
+
+
+--
+-- Name: COLUMN chat_contexts.pre_creation_answers; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.pre_creation_answers IS 'User''s answers to pre-creation questions';
+
+
+--
+-- Name: COLUMN chat_contexts.hierarchical_items; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.hierarchical_items IS 'Parent items, subdivisions, subdivision type for nested lists';
+
+
+--
+-- Name: COLUMN chat_contexts.generated_items; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.generated_items IS 'Generated items';
+
+
+--
+-- Name: COLUMN chat_contexts.missing_parameters; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.missing_parameters IS 'Parameters missing from request';
+
+
+--
+-- Name: COLUMN chat_contexts.list_created_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.list_created_id IS 'ID of the created list';
+
+
+--
+-- Name: COLUMN chat_contexts.post_creation_mode; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.post_creation_mode IS 'True when showing ''keep or clear context'' buttons after list creation';
+
+
+--
+-- Name: COLUMN chat_contexts.last_activity_at; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.last_activity_at IS 'Timestamp of last interaction; used for connection recovery';
+
+
+--
+-- Name: COLUMN chat_contexts.recovery_checkpoint; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.recovery_checkpoint IS 'Last known good state snapshot for crash recovery';
+
+
+--
+-- Name: COLUMN chat_contexts.metadata; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.metadata IS 'Additional metadata and performance metrics (thinking_tokens, generation_time_ms, etc.)';
+
+
+--
+-- Name: COLUMN chat_contexts.error_message; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.error_message IS 'Error message if status is error';
+
+
+--
+-- Name: COLUMN chat_contexts.intent_confidence; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.intent_confidence IS 'Confidence score for intent detection (0.0-1.0)';
+
+
+--
+-- Name: COLUMN chat_contexts.parent_requirements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chat_contexts.parent_requirements IS 'Parent item requirements extracted from planning domain';
+
+
+--
 -- Name: chats; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -957,8 +1326,15 @@ CREATE TABLE public.chats (
     visibility character varying DEFAULT 'private'::character varying,
     focused_resource_type character varying,
     focused_resource_id uuid,
-    planning_context_id uuid
+    chat_context_id uuid
 );
+
+
+--
+-- Name: COLUMN chats.chat_context_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.chats.chat_context_id IS 'Reference to the chat context';
 
 
 --
@@ -992,10 +1368,10 @@ CREATE TABLE public.comments (
     metadata json DEFAULT '{}'::json,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    search_document tsvector,
     embedding public.vector,
     embedding_generated_at timestamp(6) without time zone,
-    requires_embedding_update boolean DEFAULT false
+    requires_embedding_update boolean DEFAULT false,
+    search_document tsvector
 );
 
 
@@ -1201,10 +1577,10 @@ CREATE TABLE public.list_items (
     updated_at timestamp(6) without time zone NOT NULL,
     board_column_id uuid,
     completed_at timestamp(6) without time zone,
-    search_document tsvector,
     embedding public.vector,
     embedding_generated_at timestamp(6) without time zone,
-    requires_embedding_update boolean DEFAULT false
+    requires_embedding_update boolean DEFAULT false,
+    search_document tsvector
 );
 
 
@@ -1231,10 +1607,10 @@ CREATE TABLE public.lists (
     updated_at timestamp(6) without time zone NOT NULL,
     list_items_count integer DEFAULT 0 NOT NULL,
     list_collaborations_count integer DEFAULT 0 NOT NULL,
-    search_document tsvector,
     embedding public.vector,
     embedding_generated_at timestamp(6) without time zone,
-    requires_embedding_update boolean DEFAULT false
+    requires_embedding_update boolean DEFAULT false,
+    search_document tsvector
 );
 
 
@@ -1477,62 +1853,54 @@ CREATE TABLE public.organizations (
 
 
 --
--- Name: planning_contexts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.planning_contexts (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    chat_id uuid NOT NULL,
-    organization_id uuid NOT NULL,
-    state character varying DEFAULT 'initial'::character varying NOT NULL,
-    status character varying DEFAULT 'pending'::character varying NOT NULL,
-    error_message character varying(500),
-    request_content text,
-    detected_intent character varying,
-    intent_confidence numeric(3,2),
-    planning_domain character varying,
-    complexity_level character varying,
-    complexity_reasoning text,
-    is_complex boolean DEFAULT false,
-    parent_requirements jsonb DEFAULT '{}'::jsonb,
-    child_requirements jsonb DEFAULT '{}'::jsonb,
-    item_generation_strategy jsonb DEFAULT '{}'::jsonb,
-    parameters jsonb DEFAULT '{}'::jsonb,
-    missing_parameters character varying[] DEFAULT '{}'::character varying[],
-    pre_creation_questions jsonb[] DEFAULT '{}'::jsonb[],
-    pre_creation_answers jsonb DEFAULT '{}'::jsonb,
-    generated_items jsonb[] DEFAULT '{}'::jsonb[],
-    hierarchical_items jsonb DEFAULT '{}'::jsonb,
-    list_created_id uuid,
-    metadata jsonb DEFAULT '{}'::jsonb,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
-);
-
-
---
--- Name: COLUMN planning_contexts.request_content; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.planning_contexts.request_content IS 'Original user request';
-
-
---
 -- Name: planning_relationships; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.planning_relationships (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    planning_context_id uuid NOT NULL,
+    chat_context_id uuid NOT NULL,
     parent_type character varying NOT NULL,
     child_type character varying NOT NULL,
     relationship_type character varying NOT NULL,
-    "position" integer DEFAULT 0,
     metadata jsonb DEFAULT '{}'::jsonb,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: COLUMN planning_relationships.chat_context_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_relationships.chat_context_id IS 'Reference to the planning context';
+
+
+--
+-- Name: COLUMN planning_relationships.parent_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_relationships.parent_type IS 'Type of parent item';
+
+
+--
+-- Name: COLUMN planning_relationships.child_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_relationships.child_type IS 'Type of child item';
+
+
+--
+-- Name: COLUMN planning_relationships.relationship_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_relationships.relationship_type IS 'Type of relationship (hierarchy, dependency, etc.)';
+
+
+--
+-- Name: COLUMN planning_relationships.metadata; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.planning_relationships.metadata IS 'Additional relationship metadata';
 
 
 --
@@ -1634,10 +2002,10 @@ CREATE TABLE public.tags (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     taggings_count integer DEFAULT 0,
-    search_document tsvector,
     embedding public.vector,
     embedding_generated_at timestamp(6) without time zone,
-    requires_embedding_update boolean DEFAULT false
+    requires_embedding_update boolean DEFAULT false,
+    search_document tsvector
 );
 
 
@@ -1800,6 +2168,62 @@ ALTER TABLE ONLY public.active_storage_variant_records
 
 
 --
+-- Name: ai_agent_feedbacks ai_agent_feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT ai_agent_feedbacks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_interactions ai_agent_interactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_interactions
+    ADD CONSTRAINT ai_agent_interactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_resources ai_agent_resources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_resources
+    ADD CONSTRAINT ai_agent_resources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_run_steps ai_agent_run_steps_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_run_steps
+    ADD CONSTRAINT ai_agent_run_steps_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_runs ai_agent_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT ai_agent_runs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agent_team_memberships ai_agent_team_memberships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT ai_agent_team_memberships_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_agents ai_agents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT ai_agents_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1829,6 +2253,14 @@ ALTER TABLE ONLY public.board_columns
 
 ALTER TABLE ONLY public.calendar_events
     ADD CONSTRAINT calendar_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: chat_contexts chat_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_contexts
+    ADD CONSTRAINT chat_contexts_pkey PRIMARY KEY (id);
 
 
 --
@@ -2016,14 +2448,6 @@ ALTER TABLE ONLY public.organizations
 
 
 --
--- Name: planning_contexts planning_contexts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.planning_contexts
-    ADD CONSTRAINT planning_contexts_pkey PRIMARY KEY (id);
-
-
---
 -- Name: planning_relationships planning_relationships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2128,6 +2552,13 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: idx_on_chat_context_id_relationship_type_0ce2ed37ab; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_on_chat_context_id_relationship_type_0ce2ed37ab ON public.planning_relationships USING btree (chat_context_id, relationship_type);
+
+
+--
 -- Name: idx_on_connector_account_id_external_id_external_ty_53f2784fcd; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2146,13 +2577,6 @@ CREATE INDEX idx_on_connector_account_id_status_517af4a019 ON public.connector_w
 --
 
 CREATE INDEX idx_on_organization_id_enrichment_status_172943d07b ON public.attendee_contacts USING btree (organization_id, enrichment_status);
-
-
---
--- Name: idx_on_relationship_type_planning_context_id_12f5db6f2c; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_on_relationship_type_planning_context_id_12f5db6f2c ON public.planning_relationships USING btree (relationship_type, planning_context_id);
 
 
 --
@@ -2188,6 +2612,272 @@ CREATE UNIQUE INDEX index_active_storage_blobs_on_key ON public.active_storage_b
 --
 
 CREATE UNIQUE INDEX index_active_storage_variant_records_uniqueness ON public.active_storage_variant_records USING btree (blob_id, variation_digest);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_ai_agent_id ON public.ai_agent_feedbacks USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_ai_agent_run_id ON public.ai_agent_feedbacks USING btree (ai_agent_run_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_feedbacks_on_ai_agent_run_id_and_user_id ON public.ai_agent_feedbacks USING btree (ai_agent_run_id, user_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_rating; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_rating ON public.ai_agent_feedbacks USING btree (rating);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_user_id ON public.ai_agent_feedbacks USING btree (user_id);
+
+
+--
+-- Name: index_ai_agent_feedbacks_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_feedbacks_on_user_id_and_created_at ON public.ai_agent_feedbacks USING btree (user_id, created_at);
+
+
+--
+-- Name: index_ai_agent_interactions_on_ai_agent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_interactions_on_ai_agent_run_id ON public.ai_agent_interactions USING btree (ai_agent_run_id);
+
+
+--
+-- Name: index_ai_agent_interactions_on_ai_agent_run_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_interactions_on_ai_agent_run_id_and_status ON public.ai_agent_interactions USING btree (ai_agent_run_id, status);
+
+
+--
+-- Name: index_ai_agent_interactions_on_ai_agent_run_step_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_interactions_on_ai_agent_run_step_id ON public.ai_agent_interactions USING btree (ai_agent_run_step_id);
+
+
+--
+-- Name: index_ai_agent_interactions_on_asked_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_interactions_on_asked_at ON public.ai_agent_interactions USING btree (asked_at);
+
+
+--
+-- Name: index_ai_agent_resources_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_ai_agent_id ON public.ai_agent_resources USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_resources_on_enabled; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_enabled ON public.ai_agent_resources USING btree (enabled);
+
+
+--
+-- Name: index_ai_agent_resources_on_resource_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_resources_on_resource_type ON public.ai_agent_resources USING btree (resource_type);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_ai_agent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_ai_agent_run_id ON public.ai_agent_run_steps USING btree (ai_agent_run_id);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_run_steps_on_ai_agent_run_id_and_step_number ON public.ai_agent_run_steps USING btree (ai_agent_run_id, step_number);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_status ON public.ai_agent_run_steps USING btree (status);
+
+
+--
+-- Name: index_ai_agent_run_steps_on_step_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_run_steps_on_step_type ON public.ai_agent_run_steps USING btree (step_type);
+
+
+--
+-- Name: index_ai_agent_runs_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_ai_agent_id ON public.ai_agent_runs USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_completed_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_completed_at ON public.ai_agent_runs USING btree (completed_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_invocable_type_and_invocable_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_invocable_type_and_invocable_id ON public.ai_agent_runs USING btree (invocable_type, invocable_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_last_activity_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_last_activity_at ON public.ai_agent_runs USING btree (last_activity_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_organization_id ON public.ai_agent_runs USING btree (organization_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_parent_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_parent_run_id ON public.ai_agent_runs USING btree (parent_run_id);
+
+
+--
+-- Name: index_ai_agent_runs_on_started_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_started_at ON public.ai_agent_runs USING btree (started_at);
+
+
+--
+-- Name: index_ai_agent_runs_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_status ON public.ai_agent_runs USING btree (status);
+
+
+--
+-- Name: index_ai_agent_runs_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_runs_on_user_id ON public.ai_agent_runs USING btree (user_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_ai_agent_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_team_memberships_on_ai_agent_id ON public.ai_agent_team_memberships USING btree (ai_agent_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_ai_agent_id_and_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agent_team_memberships_on_ai_agent_id_and_team_id ON public.ai_agent_team_memberships USING btree (ai_agent_id, team_id);
+
+
+--
+-- Name: index_ai_agent_team_memberships_on_team_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agent_team_memberships_on_team_id ON public.ai_agent_team_memberships USING btree (team_id);
+
+
+--
+-- Name: index_ai_agents_on_discarded_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_discarded_at ON public.ai_agents USING btree (discarded_at);
+
+
+--
+-- Name: index_ai_agents_on_embedding; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_embedding ON public.ai_agents USING ivfflat (embedding public.vector_cosine_ops);
+
+
+--
+-- Name: index_ai_agents_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_organization_id ON public.ai_agents USING btree (organization_id);
+
+
+--
+-- Name: index_ai_agents_on_organization_id_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agents_on_organization_id_and_slug ON public.ai_agents USING btree (organization_id, slug);
+
+
+--
+-- Name: index_ai_agents_on_run_count; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_run_count ON public.ai_agents USING btree (run_count);
+
+
+--
+-- Name: index_ai_agents_on_scope; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_scope ON public.ai_agents USING btree (scope);
+
+
+--
+-- Name: index_ai_agents_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_status ON public.ai_agents USING btree (status);
+
+
+--
+-- Name: index_ai_agents_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_agents_on_user_id ON public.ai_agents USING btree (user_id);
+
+
+--
+-- Name: index_ai_agents_on_user_id_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_agents_on_user_id_and_slug ON public.ai_agents USING btree (user_id, slug);
 
 
 --
@@ -2261,6 +2951,62 @@ CREATE INDEX index_calendar_events_on_user_id_and_start_time ON public.calendar_
 
 
 --
+-- Name: index_chat_contexts_on_chat_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_chat_contexts_on_chat_id ON public.chat_contexts USING btree (chat_id);
+
+
+--
+-- Name: index_chat_contexts_on_last_activity_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_last_activity_at ON public.chat_contexts USING btree (last_activity_at);
+
+
+--
+-- Name: index_chat_contexts_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_organization_id ON public.chat_contexts USING btree (organization_id);
+
+
+--
+-- Name: index_chat_contexts_on_post_creation_mode; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_post_creation_mode ON public.chat_contexts USING btree (post_creation_mode);
+
+
+--
+-- Name: index_chat_contexts_on_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_state ON public.chat_contexts USING btree (state);
+
+
+--
+-- Name: index_chat_contexts_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_status ON public.chat_contexts USING btree (status);
+
+
+--
+-- Name: index_chat_contexts_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_chat_contexts_on_user_id ON public.chat_contexts USING btree (user_id);
+
+
+--
+-- Name: index_chats_on_chat_context_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_chats_on_chat_context_id ON public.chats USING btree (chat_context_id);
+
+
+--
 -- Name: index_chats_on_conversation_state; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2314,13 +3060,6 @@ CREATE INDEX index_chats_on_organization_id_and_created_at ON public.chats USING
 --
 
 CREATE INDEX index_chats_on_organization_id_and_user_id ON public.chats USING btree (organization_id, user_id);
-
-
---
--- Name: index_chats_on_planning_context_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_chats_on_planning_context_id ON public.chats USING btree (planning_context_id);
 
 
 --
@@ -3241,80 +3980,10 @@ CREATE INDEX index_organizations_on_status ON public.organizations USING btree (
 
 
 --
--- Name: index_planning_contexts_on_chat_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_planning_relationships_on_chat_context_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX index_planning_contexts_on_chat_id ON public.planning_contexts USING btree (chat_id);
-
-
---
--- Name: index_planning_contexts_on_detected_intent; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_detected_intent ON public.planning_contexts USING btree (detected_intent);
-
-
---
--- Name: index_planning_contexts_on_detected_intent_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_detected_intent_and_created_at ON public.planning_contexts USING btree (detected_intent, created_at);
-
-
---
--- Name: index_planning_contexts_on_organization_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_organization_id ON public.planning_contexts USING btree (organization_id);
-
-
---
--- Name: index_planning_contexts_on_planning_domain; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_planning_domain ON public.planning_contexts USING btree (planning_domain);
-
-
---
--- Name: index_planning_contexts_on_state; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_state ON public.planning_contexts USING btree (state);
-
-
---
--- Name: index_planning_contexts_on_state_and_status; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_state_and_status ON public.planning_contexts USING btree (state, status);
-
-
---
--- Name: index_planning_contexts_on_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_user_id ON public.planning_contexts USING btree (user_id);
-
-
---
--- Name: index_planning_contexts_on_user_id_and_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_contexts_on_user_id_and_created_at ON public.planning_contexts USING btree (user_id, created_at);
-
-
---
--- Name: index_planning_relationships_on_parent_type_and_child_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_relationships_on_parent_type_and_child_type ON public.planning_relationships USING btree (parent_type, child_type);
-
-
---
--- Name: index_planning_relationships_on_planning_context_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_planning_relationships_on_planning_context_id ON public.planning_relationships USING btree (planning_context_id);
+CREATE INDEX index_planning_relationships_on_chat_context_id ON public.planning_relationships USING btree (chat_context_id);
 
 
 --
@@ -3741,6 +4410,14 @@ ALTER TABLE ONLY public.notification_settings
 
 
 --
+-- Name: ai_agent_runs fk_rails_0d9588fc2e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_0d9588fc2e FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
+
+
+--
 -- Name: moderation_logs fk_rails_0f166e8887; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3789,6 +4466,22 @@ ALTER TABLE ONLY public.chats
 
 
 --
+-- Name: ai_agents fk_rails_1b5d51740c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT fk_rails_1b5d51740c FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_agents fk_rails_1fa8066c07; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agents
+    ADD CONSTRAINT fk_rails_1fa8066c07 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: messages fk_rails_273a25a7a6; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3802,6 +4495,14 @@ ALTER TABLE ONLY public.messages
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT fk_rails_2c515e778f FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
+-- Name: chat_contexts fk_rails_3560951342; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_contexts
+    ADD CONSTRAINT fk_rails_3560951342 FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -3829,19 +4530,11 @@ ALTER TABLE ONLY public.messages
 
 
 --
--- Name: chats fk_rails_45ed269b19; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: ai_agent_team_memberships fk_rails_4b41739a47; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.chats
-    ADD CONSTRAINT fk_rails_45ed269b19 FOREIGN KEY (planning_context_id) REFERENCES public.planning_contexts(id);
-
-
---
--- Name: planning_relationships fk_rails_49a1b58fd5; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.planning_relationships
-    ADD CONSTRAINT fk_rails_49a1b58fd5 FOREIGN KEY (planning_context_id) REFERENCES public.planning_contexts(id);
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT fk_rails_4b41739a47 FOREIGN KEY (team_id) REFERENCES public.teams(id);
 
 
 --
@@ -3877,6 +4570,14 @@ ALTER TABLE ONLY public.messages
 
 
 --
+-- Name: ai_agent_interactions fk_rails_5654343629; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_interactions
+    ADD CONSTRAINT fk_rails_5654343629 FOREIGN KEY (ai_agent_run_id) REFERENCES public.ai_agent_runs(id);
+
+
+--
 -- Name: organization_memberships fk_rails_57cf70d280; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3909,6 +4610,14 @@ ALTER TABLE ONLY public.moderation_logs
 
 
 --
+-- Name: ai_agent_feedbacks fk_rails_61a9fca31d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_61a9fca31d FOREIGN KEY (ai_agent_run_id) REFERENCES public.ai_agent_runs(id);
+
+
+--
 -- Name: team_memberships fk_rails_61c29b529e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3922,6 +4631,14 @@ ALTER TABLE ONLY public.team_memberships
 
 ALTER TABLE ONLY public.list_items
     ADD CONSTRAINT fk_rails_671dc678fa FOREIGN KEY (board_column_id) REFERENCES public.board_columns(id);
+
+
+--
+-- Name: ai_agent_run_steps fk_rails_6a2d3d54b8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_run_steps
+    ADD CONSTRAINT fk_rails_6a2d3d54b8 FOREIGN KEY (ai_agent_run_id) REFERENCES public.ai_agent_runs(id);
 
 
 --
@@ -4013,6 +4730,14 @@ ALTER TABLE ONLY public.calendar_events
 
 
 --
+-- Name: ai_agent_resources fk_rails_98ab80f011; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_resources
+    ADD CONSTRAINT fk_rails_98ab80f011 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
+
+
+--
 -- Name: active_storage_variant_records fk_rails_993965df05; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4077,6 +4802,30 @@ ALTER TABLE ONLY public.attendee_contacts
 
 
 --
+-- Name: ai_agent_feedbacks fk_rails_b8e5ae114f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_b8e5ae114f FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: chat_contexts fk_rails_bc0ea8d29b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_contexts
+    ADD CONSTRAINT fk_rails_bc0ea8d29b FOREIGN KEY (chat_id) REFERENCES public.chats(id);
+
+
+--
+-- Name: ai_agent_feedbacks fk_rails_bd44f18125; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_feedbacks
+    ADD CONSTRAINT fk_rails_bd44f18125 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
+
+
+--
 -- Name: lists fk_rails_beaf740ad9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4093,6 +4842,14 @@ ALTER TABLE ONLY public.messages
 
 
 --
+-- Name: ai_agent_runs fk_rails_c29504744a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_c29504744a FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4101,11 +4858,35 @@ ALTER TABLE ONLY public.active_storage_attachments
 
 
 --
+-- Name: ai_agent_interactions fk_rails_c6d3bee8ad; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_interactions
+    ADD CONSTRAINT fk_rails_c6d3bee8ad FOREIGN KEY (ai_agent_run_step_id) REFERENCES public.ai_agent_run_steps(id);
+
+
+--
+-- Name: planning_relationships fk_rails_d50b603b78; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.planning_relationships
+    ADD CONSTRAINT fk_rails_d50b603b78 FOREIGN KEY (chat_context_id) REFERENCES public.chat_contexts(id);
+
+
+--
 -- Name: users fk_rails_d5e043db78; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_rails_d5e043db78 FOREIGN KEY (suspended_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: chats fk_rails_d5fb07dc4c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chats
+    ADD CONSTRAINT fk_rails_d5fb07dc4c FOREIGN KEY (chat_context_id) REFERENCES public.chat_contexts(id);
 
 
 --
@@ -4125,11 +4906,43 @@ ALTER TABLE ONLY public.invitations
 
 
 --
+-- Name: ai_agent_runs fk_rails_dd6e51e8ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_dd6e51e8ac FOREIGN KEY (parent_run_id) REFERENCES public.ai_agent_runs(id);
+
+
+--
+-- Name: chat_contexts fk_rails_de81198315; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chat_contexts
+    ADD CONSTRAINT fk_rails_de81198315 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
+-- Name: ai_agent_runs fk_rails_e0a7859fc6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_runs
+    ADD CONSTRAINT fk_rails_e0a7859fc6 FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+
+
+--
 -- Name: chats fk_rails_e555f43151; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.chats
     ADD CONSTRAINT fk_rails_e555f43151 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_agent_team_memberships fk_rails_e7c38eac12; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_agent_team_memberships
+    ADD CONSTRAINT fk_rails_e7c38eac12 FOREIGN KEY (ai_agent_id) REFERENCES public.ai_agents(id);
 
 
 --
@@ -4187,9 +5000,18 @@ ALTER TABLE ONLY public.connector_settings
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
-('20260321000006'),
-('20260321000005'),
-('20260321000004'),
+('20260326000001'),
+('20260325000007'),
+('20260325000006'),
+('20260325000005'),
+('20260325000004'),
+('20260325000003'),
+('20260325000002'),
+('20260325000001'),
+('20260323000001'),
+('20260322000003'),
+('20260322000002'),
+('20260322000001'),
 ('20260320000003'),
 ('20260320000002'),
 ('20260320000001'),

@@ -64,7 +64,6 @@ RSpec.describe NotificationMailer, type: :mailer do
         actor_name: assigner.name,
         target_list: list,
         params: {
-          item_title: "Complete project",
           item_title: "Complete project"
         }
       )

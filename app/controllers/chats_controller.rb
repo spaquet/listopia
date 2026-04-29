@@ -16,7 +16,7 @@ class ChatsController < ApplicationController
   # View single chat
   def show
     @messages = @chat.recent_messages(50)
-    @chat_context = @chat.build_context(location: :dashboard)
+    @chat_context = @chat.build_ui_context(location: :dashboard)
 
     respond_to do |format|
       format.html
@@ -33,7 +33,7 @@ class ChatsController < ApplicationController
       focused_resource: focused_resource
     )
 
-    @chat_context = @chat.build_context(location: params[:location] || :dashboard)
+    @chat_context = @chat.build_ui_context(location: params[:location] || :dashboard)
     @messages = []
 
     respond_to do |format|
@@ -44,13 +44,46 @@ class ChatsController < ApplicationController
 
   # Submit message to chat
   def create_message
-    begin
-      message_params = params.require(:message).permit(:content)
-    rescue ActionController::ParameterMissing
-      return render_security_error("Message content is required", 422)
+    # For JSON API, allow arrays and nested hashes
+    raw_message = params[:message]
+
+    # Handle both form-encoded and JSON submissions
+    if raw_message.is_a?(String)
+      raw_message = JSON.parse(raw_message) rescue {}
     end
 
-    content = message_params[:content].strip
+    # DEBUG: Log what we're receiving
+    Rails.logger.info("=" * 80)
+    Rails.logger.info("ChatsController#create_message - Raw params:")
+    Rails.logger.info("  params class: #{params.class}")
+    Rails.logger.info("  params keys: #{params.keys.inspect}")
+    Rails.logger.info("  raw_message class: #{raw_message.class}")
+    Rails.logger.info("  raw_message keys: #{raw_message.is_a?(Hash) ? raw_message.keys.inspect : 'N/A'}")
+    Rails.logger.info("  Full raw_message: #{raw_message.inspect[0..800]}")
+
+    # Extract parameters manually for better control over nested structures
+    content = raw_message[:content] || raw_message["content"]
+    answers = raw_message[:answers] || raw_message["answers"] || {}
+    questions = raw_message[:questions] || raw_message["questions"] || []
+
+    Rails.logger.info("ChatsController#create_message - Extracted:")
+    Rails.logger.info("  content: #{content.inspect[0..100]}")
+    Rails.logger.info("  answers keys: #{answers.is_a?(Hash) ? answers.keys.inspect : 'not a hash'}")
+    Rails.logger.info("  answers: #{answers.inspect[0..200]}")
+    Rails.logger.info("  questions class: #{questions.class}")
+    Rails.logger.info("  questions count: #{questions.is_a?(Array) ? questions.length : 'not an array'}")
+    Rails.logger.info("  questions[0]: #{questions.is_a?(Array) && questions[0] ? questions[0].inspect[0..100] : 'N/A'}")
+    Rails.logger.info("=" * 80)
+
+    # Handle clarifying questions answers by converting them to natural language
+    if answers.present?
+      Rails.logger.info("ChatsController#create_message - Converting answers with #{questions.is_a?(Array) ? questions.length : 0} questions")
+      content = convert_answers_to_message(answers, questions)
+    else
+      content = content&.to_s&.strip
+    end
+
+    Rails.logger.info("ChatsController#create_message - Final content: #{content.inspect[0..200]}")
 
     return if content.blank?
 
@@ -130,7 +163,7 @@ class ChatsController < ApplicationController
       return render_security_error("This message violates content policies and cannot be sent", 422)
     end
 
-    @chat_context = @chat.build_context(location: :dashboard)
+    @chat_context = @chat.build_ui_context(location: :dashboard)
 
     # Check if message is a command (instant processing)
     is_command = @user_message.content.start_with?("/")
@@ -202,7 +235,7 @@ class ChatsController < ApplicationController
       focused_resource: focused_resource
     )
 
-    @chat_context = @new_chat.build_context(location: params[:location] || :dashboard)
+    @chat_context = @new_chat.build_ui_context(location: params[:location] || :dashboard)
     @messages = []
     @chat = @new_chat  # Set @chat to the new one for the response
 
@@ -237,17 +270,51 @@ class ChatsController < ApplicationController
     end
   end
 
-  def process_message(user_message)
-    # Check if message is a command
-    if user_message.content.start_with?("/")
-      handle_command(user_message)
-      # Return the last created message (the command response)
-      @chat.messages.order(:created_at).last
+  def convert_answers_to_message(answers, questions = nil)
+    # Convert clarifying question answers into a natural language message with questions for context
+    # Format: "**Q:** question text\n**A:** answer text\n\n**Q:** next question\n**A:** answer"
+    return "" if answers.blank?
+
+    # Handle ActionController::Parameters safely
+    answers_hash = if answers.is_a?(Hash)
+      answers
+    elsif answers.is_a?(ActionController::Parameters)
+      answers.permit!.to_h
     else
-      # For now, just acknowledge the message
-      # In full implementation, this would call RubyLLM to generate a response
-      add_placeholder_response(user_message)
+      answers.to_h
     end
+
+    questions_array = questions.is_a?(Array) ? questions : Array(questions)
+
+    Rails.logger.info("convert_answers_to_message - Formatting with #{answers_hash.length} answers and #{questions_array.length} questions")
+
+    # Format with questions for context
+    formatted_parts = answers_hash.sort.map do |idx, answer|
+      idx_num = idx.to_i
+      answer_text = answer.to_s.strip
+      next "" if answer_text.blank?
+
+      # Get corresponding question
+      question_obj = questions_array[idx_num]
+      question_text = question_obj&.dig("question") rescue nil
+
+      if question_text.present?
+        "**Q:** #{question_text}\n**A:** #{answer_text}"
+      else
+        # Fallback: just the answer if question not found
+        Rails.logger.warn("convert_answers_to_message - No question found for index #{idx_num}")
+        answer_text
+      end
+    end.select(&:present?)
+
+    formatted_parts.join("\n\n")
+  end
+
+  def process_message(user_message)
+    # Process command - only called for messages starting with "/"
+    handle_command(user_message)
+    # Return the last created message (the command response)
+    @chat.messages.order(:created_at).last
   end
 
   def handle_command(user_message)
@@ -373,7 +440,16 @@ class ChatsController < ApplicationController
   end
 
   def handle_clear_command
+    # Clear all messages
     @chat.messages.destroy_all
+
+    # Reset chat metadata to clear any pending states
+    @chat.update!(
+      metadata: {},
+      focused_resource_id: nil,
+      focused_resource_type: nil
+    )
+
     Message.create_system(chat: @chat, content: "Chat history cleared.")
   end
 
@@ -391,28 +467,6 @@ class ChatsController < ApplicationController
       template_type: "new_chat_confirmation",
       template_data: template_data
     )
-  end
-
-  def add_placeholder_response(user_message)
-    # Use ChatCompletionService to generate AI response with RubyLLM
-    service = ChatCompletionService.new(@chat, user_message, @chat_context)
-    result = service.call
-
-    if result.success?
-      result.data  # Returns the assistant message
-    else
-      # Fallback response if LLM fails
-      Rails.logger.warn("Chat completion failed: #{result.errors.join(', ')}")
-      Message.create_templated(
-        chat: @chat,
-        template_type: "error",
-        template_data: {
-          message: "I encountered an issue processing your message. Please try again.",
-          error_code: "CHAT_ERROR",
-          details: result.errors.join(", ")
-        }
-      )
-    end
   end
 
   def format_search_result(record)
@@ -508,7 +562,7 @@ class ChatsController < ApplicationController
           partial: "shared/chat_message",
           locals: {
             message: create_error_message(error_message),
-            chat_context: @chat.build_context(location: :dashboard)
+            chat_context: @chat.build_ui_context(location: :dashboard)
           }
         ), status: status
       end

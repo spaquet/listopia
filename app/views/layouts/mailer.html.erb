@@ -4,54 +4,129 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <style>
-      /* Email-specific CSS */
+      /* Email-specific CSS - Design System Colors */
+      :root {
+        --color-surface: #f7f4ee;
+        --color-ink: #13243a;
+        --color-accent: #8a2c2c;
+        --color-rule: #d9d2c1;
+        --color-success: #3f8a4a;
+      }
+
       body {
         margin: 0;
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         font-size: 16px;
         line-height: 1.6;
-        color: #333333;
-        background-color: #f8f9fa;
+        color: #13243a;
+        background-color: #f7f4ee;
       }
 
       .email-container {
         max-width: 600px;
         margin: 0 auto;
         background-color: #ffffff;
+        border: 1px solid #d9d2c1;
+        border-radius: 4px;
+        overflow: hidden;
       }
 
       .email-header {
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-        padding: 20px;
+        background-color: #13243a;
+        padding: 32px 20px;
         text-align: center;
+        color: #ffffff;
+      }
+
+      .email-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+      }
+
+      .email-header p {
+        margin: 8px 0 0 0;
+        font-size: 14px;
+        opacity: 0.9;
       }
 
       .email-body {
         padding: 30px;
+        color: #13243a;
       }
 
       .email-footer {
-        background-color: #f8f9fa;
+        background-color: #f7f4ee;
         padding: 20px;
         text-align: center;
-        border-top: 1px solid #e9ecef;
-        color: #6c757d;
-        font-size: 14px;
+        border-top: 1px solid #d9d2c1;
+        color: #666666;
+        font-size: 13px;
+      }
+
+      .email-footer a {
+        color: #8a2c2c;
+        text-decoration: none;
+      }
+
+      .email-footer a:hover {
+        text-decoration: underline;
       }
 
       .button {
         display: inline-block;
         padding: 12px 24px;
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        background-color: #8a2c2c;
         color: #ffffff;
         text-decoration: none;
-        border-radius: 6px;
-        font-weight: bold;
+        border-radius: 4px;
+        font-weight: 600;
         margin: 16px 0;
+        font-size: 14px;
+        line-height: 1.4;
       }
 
       .button:hover {
-        background: linear-gradient(135deg, #2563EB, #7C3AED);
+        background-color: #6b2020;
+        text-decoration: none;
+      }
+
+      .button-secondary {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #f7f4ee;
+        color: #13243a;
+        text-decoration: none;
+        border: 1px solid #d9d2c1;
+        border-radius: 4px;
+        font-weight: 600;
+        margin: 16px 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .button-secondary:hover {
+        background-color: #ede8df;
+        text-decoration: none;
+      }
+
+      .section-header {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #13243a;
+        margin-top: 24px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #d9d2c1;
+        padding-bottom: 8px;
+      }
+
+      .divider {
+        height: 1px;
+        background-color: #d9d2c1;
+        margin: 24px 0;
       }
 
       @media only screen and (max-width: 600px) {
@@ -62,6 +137,11 @@
         .email-header, .email-body, .email-footer {
           padding: 20px !important;
         }
+
+        .button, .button-secondary {
+          width: 100%;
+          box-sizing: border-box;
+        }
       }
     </style>
   </head>
@@ -69,13 +149,13 @@
     <div class="email-container">
       <%= yield %>
       <div class="email-footer">
-        <p>
+        <p style="margin: 0 0 12px 0;">
           <strong>Listopia</strong><br>
-          Where Lists Come to Life
+          <span style="font-size: 12px; opacity: 0.8;">Where Lists Come to Life</span>
         </p>
-        <p>
-          <a href="<%= root_url %>" style="color: #3B82F6;">Visit Listopia</a> |
-          <a href="#" style="color: #3B82F6;">Unsubscribe</a>
+        <p style="margin: 12px 0 0 0;">
+          <a href="<%= root_url %>">Visit Listopia</a> |
+          <a href="#">Unsubscribe</a>
         </p>
       </div>
     </div>

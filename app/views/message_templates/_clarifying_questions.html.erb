@@ -1,0 +1,94 @@
+<!-- app/views/message_templates/_clarifying_questions.html.erb
+     Generic form for asking clarifying questions in any chat context
+     Works for list refinement, product recommendations, planning, etc.
+-->
+
+<% questions = data[:questions] || [] %>
+<% chat_id = data[:chat_id] %>
+<% context_title = data[:context_title] || "Please answer the following questions" %>
+
+<% if questions.any? %>
+  <div class="bg-blue-50 rounded-lg p-5 border-2 border-blue-300 mt-6">
+    <div class="mb-5">
+      <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+        <span class="text-2xl">❓</span>
+        <%= context_title %>
+      </h3>
+      <p class="text-sm text-gray-700 mt-2 font-medium">
+        ✓ <%= questions.length %> question<%= questions.length != 1 ? 's' : '' %> • Your answers will help me provide more targeted recommendations.
+      </p>
+    </div>
+
+    <!-- Form for answering questions -->
+    <form id="clarifying-questions-form-<%= chat_id %>"
+          data-controller="clarifying-questions"
+          data-chat-id="<%= chat_id %>"
+          data-questions="<%= h(questions.to_json) %>"
+          class="space-y-5"
+          method="POST"
+          action="/chats/<%= chat_id %>/create_message">
+
+      <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+
+      <!-- Questions with input fields -->
+      <% questions.each_with_index do |question, idx| %>
+        <div class="bg-white rounded-lg p-4 border border-blue-200 hover:border-blue-400 transition-colors">
+          <label class="block text-sm font-semibold text-gray-900 mb-3">
+            <span class="inline-block bg-blue-600 text-white rounded-full w-6 h-6 text-center text-xs leading-6 font-bold"><%= idx + 1 %></span>
+            <span class="ml-2"><%= question["question"] %></span>
+          </label>
+
+          <% if question["context"].present? %>
+            <p class="text-sm text-gray-600 mb-3 italic bg-blue-100 px-3 py-2 rounded border-l-3 border-blue-400">
+              💡 <%= question["context"] %>
+            </p>
+          <% end %>
+
+          <% case question.dig("input_type") %>
+          <% when "select" %>
+            <!-- Dropdown for multiple choice -->
+            <select name="message[answers][<%= idx %>]"
+                    class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white hover:border-gray-400 transition-colors"
+                    required>
+              <option value="">-- Select an option --</option>
+              <% (question["options"] || []).each do |option| %>
+                <option value="<%= option %>"><%= option %></option>
+              <% end %>
+            </select>
+
+          <% when "textarea" %>
+            <!-- Multi-line text area -->
+            <textarea name="message[answers][<%= idx %>]"
+                      class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
+                      placeholder="Enter your answer..."
+                      rows="3"
+                      required></textarea>
+
+          <% else %>
+            <!-- Default: single line text input -->
+            <input type="text"
+                   name="message[answers][<%= idx %>]"
+                   class="w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors"
+                   placeholder="Enter your answer..."
+                   required />
+          <% end %>
+        </div>
+      <% end %>
+
+      <!-- Submit Button -->
+      <div class="flex gap-3 pt-5 border-t-2 border-blue-200 mt-5">
+        <button type="submit"
+                class="flex-1 px-5 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm"
+                data-action="clarifying-questions#submit">
+          Submit Answers
+        </button>
+
+        <button type="button"
+                class="px-5 py-3 text-gray-700 font-medium border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                data-action="clarifying-questions#skip">
+          Skip for Now
+        </button>
+      </div>
+    </form>
+  </div>
+<% end %>

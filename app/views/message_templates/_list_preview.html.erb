@@ -3,7 +3,7 @@
      Displays structure: parent items, sublists, and item counts
 -->
 
-<% planning_context = data[:planning_context] %>
+<!-- planning_context passed as local -->
 <% parent_items = planning_context&.parent_requirements&.dig('items') || [] %>
 <% subdivisions = planning_context&.hierarchical_items&.dig('subdivisions') || {} %>
 <% subdivision_type = planning_context&.hierarchical_items&.dig('subdivision_type') || 'none' %>

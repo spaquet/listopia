@@ -2,29 +2,30 @@
 #
 # Table name: chats
 #
-#  id                    :uuid             not null, primary key
-#  context               :json
-#  conversation_state    :string           default("stable")
-#  focused_resource_type :string
-#  last_cleanup_at       :datetime
-#  last_message_at       :datetime
-#  last_stable_at        :datetime
-#  metadata              :json
-#  model_id_string       :string
-#  status                :string           default("active")
-#  title                 :string(255)
-#  visibility            :string           default("private")
-#  created_at            :datetime         not null
-#  updated_at            :datetime         not null
-#  focused_resource_id   :uuid
-#  model_id              :bigint
-#  organization_id       :uuid
-#  planning_context_id   :uuid
-#  team_id               :uuid
-#  user_id               :uuid             not null
+#  id                                             :uuid             not null, primary key
+#  context                                        :json
+#  conversation_state                             :string           default("stable")
+#  focused_resource_type                          :string
+#  last_cleanup_at                                :datetime
+#  last_message_at                                :datetime
+#  last_stable_at                                 :datetime
+#  metadata                                       :json
+#  model_id_string                                :string
+#  status                                         :string           default("active")
+#  title                                          :string(255)
+#  visibility                                     :string           default("private")
+#  created_at                                     :datetime         not null
+#  updated_at                                     :datetime         not null
+#  chat_context_id(Reference to the chat context) :uuid
+#  focused_resource_id                            :uuid
+#  model_id                                       :bigint
+#  organization_id                                :uuid
+#  team_id                                        :uuid
+#  user_id                                        :uuid             not null
 #
 # Indexes
 #
+#  index_chats_on_chat_context_id                                (chat_context_id) UNIQUE
 #  index_chats_on_conversation_state                             (conversation_state)
 #  index_chats_on_focused_resource_type_and_focused_resource_id  (focused_resource_type,focused_resource_id)
 #  index_chats_on_last_message_at                                (last_message_at)
@@ -33,7 +34,6 @@
 #  index_chats_on_organization_id                                (organization_id)
 #  index_chats_on_organization_id_and_created_at                 (organization_id,created_at)
 #  index_chats_on_organization_id_and_user_id                    (organization_id,user_id)
-#  index_chats_on_planning_context_id                            (planning_context_id)
 #  index_chats_on_status                                         (status)
 #  index_chats_on_team_id                                        (team_id)
 #  index_chats_on_team_id_and_user_id                            (team_id,user_id)
@@ -44,9 +44,9 @@
 #
 # Foreign Keys
 #
+#  fk_rails_...  (chat_context_id => chat_contexts.id)
 #  fk_rails_...  (model_id => models.id)
 #  fk_rails_...  (organization_id => organizations.id)
-#  fk_rails_...  (planning_context_id => planning_contexts.id)
 #  fk_rails_...  (team_id => teams.id)
 #  fk_rails_...  (user_id => users.id)
 #
@@ -283,23 +283,6 @@ RSpec.describe Chat, type: :model do
       end
     end
 
-    describe "#build_context" do
-      it "returns ChatContext object" do
-        context = chat.build_context
-        expect(context).to be_a(ChatContext)
-      end
-
-      it "passes location to context" do
-        context = chat.build_context(location: :floating)
-        expect(context.location).to eq(:floating)
-      end
-
-      it "includes chat and user in context" do
-        context = chat.build_context
-        expect(context.chat).to eq(chat)
-        expect(context.user).to eq(user)
-      end
-    end
 
     describe "#clone_with_context" do
       it "creates a new chat with same user and organization" do

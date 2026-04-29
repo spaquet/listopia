@@ -19,7 +19,7 @@ class DashboardController < ApplicationController
 
     # Initialize or fetch current chat for dashboard
     @chat = initialize_dashboard_chat
-    @chat_context = @chat.build_context(location: :dashboard) if @chat.present?
+    @chat_context = @chat.build_ui_context(location: :dashboard) if @chat.present?
     @messages = @chat.present? ? @chat.recent_messages(50) : []
 
     # For backward compatibility with turbo streams

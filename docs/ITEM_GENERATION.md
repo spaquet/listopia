@@ -4,26 +4,45 @@ Intelligent, context-aware item generation for Listopia's pre-creation planning 
 
 ## Overview
 
-`ItemGenerationService` generates appropriate list items based on user context. Instead of hardcoded logic for specific use cases (locations, phases, etc.), it uses a single generic approach powered by Claude's reasoning capabilities (gpt-5.4-2026-03-05).
+`ItemGenerationService` generates appropriate list items based on user context. It is **fully domain-agnostic** and works with ANY type of list (events, courses, reading lists, recipes, projects, etc.). Instead of hardcoded logic for specific use cases, it uses a single generic approach powered by Claude's reasoning capabilities.
 
-**Key principle**: The LLM analyzes the planning context to intelligently determine what items are needed, rather than having hardcoded rules for each domain.
+**Key principle**: The LLM analyzes the planning context and subdivision type to intelligently determine what items are needed. There are NO hardcoded rules for specific domains (events, projects, travel, learning, etc.) - the system adapts to whatever the user is planning.
 
 ## When It's Used
 
-ItemGenerationService is called during the **pre-creation planning phase** when a user's request is detected as "complex" and requires clarification:
+ItemGenerationService is called during the **pre-creation planning phase** when a user's request is detected as "complex" and requires clarification. It works equally for any domain:
 
+### Example 1: Event Planning (Roadshow)
 ```
 User: "Help me plan our roadshow for Listopia"
+  ↓ (detected as complex)
+User: Provides locations, budget, dates
   ↓
-System: "This is complex - I need more details"
+ItemGenerationService: Called for each location
   ↓
-System: Asks 3 clarifying questions
+Sublists created with roadshow-specific items per location
+```
+
+### Example 2: Course Planning (Reading List)
+```
+User: "Create a reading list about machine learning"
+  ↓ (detected as complex)
+User: Provides books, topics, time available
   ↓
-User: Answers with locations (NY, LA, Chicago, SF, Seattle), budget ($500k), dates (June-Sept)
+ItemGenerationService: Called for each book
   ↓
-ItemGenerationService: Called for each sublist (each city)
+Sublists created with reading-specific items per book
+```
+
+### Example 3: Project Planning
+```
+User: "Plan a product launch for next quarter"
+  ↓ (detected as complex)
+User: Provides phases, team members, budget
   ↓
-Sublists created with appropriate items for each location
+ItemGenerationService: Called for each phase
+  ↓
+Sublists created with phase-appropriate tasks
 ```
 
 ## Architecture
@@ -32,30 +51,26 @@ Sublists created with appropriate items for each location
 `app/services/item_generation_service.rb`
 
 ### Key Dependencies
-- **RubyLLM 1.11+** - LLM integration
+- **RubyLLM 1.14+** - LLM integration
 - **gpt-5.4-2026-03-05** - Reasoning model for sophisticated item generation
 - **ApplicationService** - Base service class
 
 ### Call Flow
 
 ```ruby
-# In ChatCompletionService#enrich_list_structure_with_planning
+# In ChatCompletionService#handle_pre_creation_planning_response or ChatContextToListService
 result = ItemGenerationService.new(
   list_title: "roadshow for Listopia",
   description: "Budget: $500k | Timeline: June-Sept",
   category: "professional",
-  planning_context: {
-    locations: ["New York", "Los Angeles", ...],
-    budget: "$500000",
-    timeline: "June 2026 to September 2026",
-    ...
-  },
-  sublist_title: "New York"  # Optional
+  planning_context: chat_context.parameters,  # Extracted from user answers
+  sublist_title: "New York"  # For each subdivision
 ).call
 
 # Result is a service Result object
 if result.success?
   items = result.data  # Array of item hashes with title, description, type, priority
+  # Items stored in chat_context.generated_items for each subdivision
 end
 ```
 
@@ -229,13 +244,19 @@ The service catches and handles:
 ## Integration Points
 
 ### Called From
-`ChatCompletionService#enrich_list_structure_with_planning` when creating nested lists for:
+`ChatCompletionService` or `ChatContextToListService` when creating nested lists with subdivisions:
 - `:locations` - multi-city events, roadshows
 - `:phases` - phased projects, rollouts
-- `:other` - any custom subdivision
+- `:books` - reading lists, learning paths
+- `:modules`, `:sprints`, `:chapters` - any subdivision type
+
+Specifically called when:
+1. User answers pre-creation planning questions
+2. ChatContext contains hierarchical_items with subdivision_type
+3. For each subdivision, ItemGenerationService generates items
 
 ### Feeds Into
-`ListCreationService#create_list_with_structure` which uses generated items to populate sublists.
+`ListCreationService#create_list_with_structure` or direct List/ListItem creation, which uses generated items to populate sublists.
 
 ## Testing
 

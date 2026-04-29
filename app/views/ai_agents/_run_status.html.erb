@@ -1,0 +1,24 @@
+<div id="agent-run-status-<%= run.id %>">
+  <div class="flex items-center justify-between p-3 bg-surface-raised rounded-md border border-rule">
+    <div class="flex items-center gap-3">
+      <div class="spinner text-accent" id="spinner-<%= run.id %>" style="<%= 'display: none;' unless run.status_running? %>">
+      </div>
+      <div>
+        <p class="font-semibold text-ink"><%= run.ai_agent.name %></p>
+        <p class="text-xs text-ink-muted"><%= run.status.titleize %></p>
+      </div>
+    </div>
+    <% case run.status %>
+    <% when "running" %>
+      <span class="pill warning"><%= run.status.titleize %></span>
+    <% when "completed" %>
+      <span class="pill success"><%= run.status.titleize %></span>
+    <% when "failed" %>
+      <span class="pill danger"><%= run.status.titleize %></span>
+    <% when "paused" %>
+      <span class="pill accent"><%= run.status.titleize %></span>
+    <% else %>
+      <span class="pill"><%= run.status.titleize %></span>
+    <% end %>
+  </div>
+</div>
