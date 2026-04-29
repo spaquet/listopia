@@ -35,12 +35,16 @@
       <%= render "chat/floating_chat" %>
     <% end %>
 
-    <!-- Theme Console Helpers (wires Stimulus controller to console) -->
+    <!-- Theme Console Helpers (replicates Stimulus controller logic) -->
     <script>
       const htmlElement = document.documentElement;
       window.themeToggle = () => {
-        htmlElement.dispatchEvent(new CustomEvent('theme:toggle'));
-        console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
+        const current = htmlElement.getAttribute("data-theme");
+        const newTheme = current === "editorial" ? "console" : "editorial";
+        htmlElement.setAttribute("data-theme", newTheme);
+        localStorage.setItem("theme-preference", newTheme);
+        window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: newTheme } }));
+        console.log(`✓ Theme: ${newTheme}`);
       };
       window.themeSet = (name) => {
         if (!["editorial", "console"].includes(name)) {
@@ -49,12 +53,14 @@
         }
         htmlElement.setAttribute("data-theme", name);
         localStorage.setItem("theme-preference", name);
+        window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: name } }));
         console.log(`✓ Theme: ${name}`);
       };
       console.log(`
-🎨 Theme Control (uses existing Stimulus controller)
-  themeToggle()        — Switch between editorial (light) & console (dark)
-  themeSet('editorial') or themeSet('console') — Set specific theme
+🎨 Theme Control (replicates Stimulus controller)
+  themeToggle()           — Switch between editorial (light) & console (dark)
+  themeSet('editorial')   — Set light theme
+  themeSet('console')     — Set dark theme
       `);
     </script>
   </body>
