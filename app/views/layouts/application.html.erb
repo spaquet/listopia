@@ -35,36 +35,27 @@
       <%= render "chat/floating_chat" %>
     <% end %>
 
-    <!-- Theme Console Helpers -->
+    <!-- Theme Console Helpers (wires Stimulus controller to console) -->
     <script>
-      window.theme = {
-        toggle: () => {
-          const current = document.documentElement.getAttribute("data-theme");
-          const newTheme = current === "editorial" ? "console" : "editorial";
-          document.documentElement.setAttribute("data-theme", newTheme);
-          localStorage.setItem("theme-preference", newTheme);
-          console.log(`✓ Theme switched to: ${newTheme}`);
-          return newTheme;
-        },
-        set: (name) => {
-          if (!["editorial", "console"].includes(name)) {
-            console.error("Invalid theme. Use 'editorial' or 'console'");
-            return;
-          }
-          document.documentElement.setAttribute("data-theme", name);
-          localStorage.setItem("theme-preference", name);
-          console.log(`✓ Theme set to: ${name}`);
-          return name;
-        },
-        get: () => document.documentElement.getAttribute("data-theme"),
-        help: () => console.log(`
-🎨 Theme Control
-  theme.toggle()     — Switch between editorial (light) & console (dark)
-  theme.set(name)    — Set theme: theme.set('editorial') or theme.set('console')
-  theme.get()        — Get current theme
-        `)
+      const htmlElement = document.documentElement;
+      window.themeToggle = () => {
+        htmlElement.dispatchEvent(new CustomEvent('theme:toggle'));
+        console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
       };
-      theme.help();
+      window.themeSet = (name) => {
+        if (!["editorial", "console"].includes(name)) {
+          console.error("Invalid theme. Use 'editorial' or 'console'");
+          return;
+        }
+        htmlElement.setAttribute("data-theme", name);
+        localStorage.setItem("theme-preference", name);
+        console.log(`✓ Theme: ${name}`);
+      };
+      console.log(`
+🎨 Theme Control (uses existing Stimulus controller)
+  themeToggle()        — Switch between editorial (light) & console (dark)
+  themeSet('editorial') or themeSet('console') — Set specific theme
+      `);
     </script>
   </body>
 </html>
