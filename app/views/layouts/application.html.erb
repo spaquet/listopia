@@ -74,20 +74,12 @@
         }
       };
 
-      // Debug info
       console.log(`
 🎨 Theme Control (calls Stimulus theme_controller)
   themeToggle()           — Switch between editorial (light) & console (dark)
   themeSet('editorial')   — Set light theme
   themeSet('console')     — Set dark theme
       `);
-      console.log("Debug: Stimulus?", !!window.Stimulus);
-      console.log("Debug: Controllers count:", window.Stimulus?.controllers?.length || 0);
-      if (window.Stimulus?.controllers) {
-        window.Stimulus.controllers.forEach((c, i) => {
-          console.log(`  [${i}] has toggle=${typeof c.toggle}, has setTheme=${typeof c.setTheme}`);
-        });
-      }
     </script>
   </body>
 </html>
