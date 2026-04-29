@@ -99,12 +99,15 @@ class AiAgentsController < ApplicationController
       :max_tokens_per_run, :max_tokens_per_day, :max_tokens_per_month,
       :timeout_seconds, :max_steps, :rate_limit_per_hour,
       :tag_list, :instructions,
-      metadata: {},
-      parameters: {},
-      body_context_config: {},
-      trigger_config: {},
       pre_run_questions: []
     )
+
+    # Avoid broad nested mass-assignment from untrusted params.
+    # Keep these as hashes with safe defaults unless explicitly validated/whitelisted.
+    permitted[:metadata] = {}
+    permitted[:parameters] = {}
+    permitted[:body_context_config] = {}
+    permitted[:trigger_config] = {}
 
     # Parse JSON string for parameters field
     if permitted[:parameters].is_a?(String) && permitted[:parameters].present?
