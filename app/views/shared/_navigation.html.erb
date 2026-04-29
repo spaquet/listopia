@@ -125,9 +125,7 @@
           <%= link_to new_session_path, class: "text-ink hover:text-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-base" do %>
             Sign In
           <% end %>
-          <%= link_to new_registration_path, class: "bg-accent text-ink-inverse px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity duration-base" do %>
-            Get Started
-          <% end %>
+          <%= link_to "Get Started", new_registration_path, class: "btn btn-primary btn-sm" %>
         <% end %>
       </div>
     </div>
