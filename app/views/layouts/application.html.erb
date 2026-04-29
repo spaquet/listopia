@@ -39,10 +39,11 @@
     <script>
       const htmlElement = document.documentElement;
       const getThemeController = () => {
-        // Stimulus app is available as window.Stimulus
+        // Stimulus app available as window.Stimulus
         if (!window.Stimulus) return null;
+        // Find controller by checking for toggle method (more reliable)
         for (const controller of window.Stimulus.controllers) {
-          if (controller.constructor.name === "ThemeController") {
+          if (typeof controller.toggle === "function" && typeof controller.setTheme === "function") {
             return controller;
           }
         }
@@ -55,7 +56,7 @@
           controller.toggle();
           console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
         } else {
-          console.error("Theme controller not found");
+          console.error("Theme controller not found. Stimulus might not be loaded yet.");
         }
       };
 
@@ -69,7 +70,7 @@
           controller.setTheme(name);
           console.log(`✓ Theme: ${htmlElement.getAttribute("data-theme")}`);
         } else {
-          console.error("Theme controller not found");
+          console.error("Theme controller not found. Stimulus might not be loaded yet.");
         }
       };
 
