@@ -12,11 +12,11 @@
     "@stimulus-components/notification": "^3.0.0",
     "@stimulus-components/reveal": "^5.0.0",
     "@stimulus-components/scroll-to": "^5.0.1",
-    "@tailwindcss/cli": "^4.3.0",
+    "@tailwindcss/cli": "^4.3.1",
     "highlight.js": "^11.11.1",
-    "marked": "^18.0.4",
+    "marked": "^18.0.5",
     "sortablejs": "^1.15.7",
     "stimulus-textarea-autogrow": "^4.1.0",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.1"
   }
 }
