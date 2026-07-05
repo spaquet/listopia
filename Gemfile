@@ -151,7 +151,7 @@ group :test do
   gem "simplecov", "~> 0.22.0", require: false
 
   # Additional RSpec gems
-  gem "shoulda-matchers", "~> 7.0" # For better model validations testing
+  gem "shoulda-matchers", "~> 8.0.1" # For better model validations testing
   gem "pundit-matchers", "~> 4.0.0" # For Pundit authorization matchers
   gem "database_cleaner-active_record" # For cleaning test database
   gem "rails-controller-testing" # For testing controllers properly
