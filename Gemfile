@@ -148,7 +148,7 @@ group :test do
   gem "webmock", "~> 3.18"
 
   # Code coverage reporting
-  gem "simplecov", "~> 0.22.0", require: false
+  gem "simplecov", "~> 1.1.1", require: false
 
   # Additional RSpec gems
   gem "shoulda-matchers", "~> 8.0.1" # For better model validations testing
